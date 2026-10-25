@@ -1,5 +1,13 @@
 {
   "schema_version": 1,
-  "skills": [],
-  "note": "Aucun skill tiers téléchargé dans cette V0. Ajouter source, commit, licence et empreinte avant intégration."
+  "skills": [
+    {
+      "source": "https://github.com/mattpocock/skills",
+      "author": "Matt Pocock",
+      "license": "MIT",
+      "license_file": "skills/LICENSE-UPSTREAM-MIT",
+      "catalog_origin": "upstream"
+    }
+  ],
+  "note": "Skills marqués origin: upstream dans skills/catalog.json, adaptés pour le kit. Commit d’origine non relevé : le noter à la prochaine reprise."
 }

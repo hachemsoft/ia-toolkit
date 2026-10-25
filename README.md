@@ -53,6 +53,15 @@ Versions vérifiées, où chaque fichier est posé et ce qui diffère d’une CL
 - **Par CLI** : [matrice](docs/cli/matrice.md), [Gemini CLI](docs/cli/gemini.md), [Antigravity CLI](docs/cli/agy.md), [Codex CLI](docs/cli/codex.md), [passer de Gemini à agy](docs/cli/gemini-vers-agy.md).
 - **Déployer et maintenir** : [l’installeur](docs/installeur.md), [contribution](docs/contributing.md), [format des commandes](docs/format.md), [référence des skills](docs/skills-reference.md), [évaluations](docs/evals.md), [revue d’usage](docs/usage-review.md), [pilote](docs/pilote.md), [sources](docs/sources.md), [historique](CHANGELOG.md).
 
+## Crédits et inspirations
+
+- **Workflow** : les six étapes, chacune close par un artefact que la suivante lit, viennent de [« The AI-native SDLC playbook »](https://claude.com/fr/resources/articles/the-ai-native-sdlc-playbook) d’Anthropic.
+- **Skills du socle** : repris et adaptés de [mattpocock/skills](https://github.com/mattpocock/skills), de Matt Pocock, sous licence MIT : entretien avant de construire, glossaire et ADR, skills petits et composables.
+- **Mécanismes de discipline** : les tables d’excuses (« trop simple pour un test ») et la revue adverse par un agent de doute viennent de [agent-skills](https://github.com/addyosmani/agent-skills), d’Addy Osmani.
+- **Autres sources** : [pstack](https://github.com/cursor/plugins/tree/main/pstack), et la comparaison de ces packs de skills par Switch Dimension, d’où vient la règle « la cérémonie suit les enjeux ».
+
+Détail dans [sources](docs/sources.md).
+
 ## Licence
 
-MIT, voir [LICENSE](LICENSE). Les skills du socle repris d’un dépôt amont gardent leur propre licence MIT, dans `skills/LICENSE-UPSTREAM-MIT`.
+MIT, voir [LICENSE](LICENSE). Les skills du socle repris de mattpocock/skills gardent leur propre licence MIT, dans `skills/LICENSE-UPSTREAM-MIT`.

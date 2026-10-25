@@ -28,7 +28,7 @@ class ConsistencyTests(unittest.TestCase):
   for f in ROOT.rglob('*'):
    if f.is_file() and f.suffix in ('.md','.json','.toml','.py','.sh','.ps1','.yml') and 'dist' not in f.parts and '.codegraph' not in f.parts and f.name!='LICENSE-UPSTREAM-MIT':
     t=f.read_text(encoding='utf-8',errors='replace').lower()
-    for term in ('po'+'cock','ask-'+'matt','setup-'+'matt'):self.assertNotIn(term,t,str(f))
+    for term in ('ask-'+'matt','setup-'+'matt'):self.assertNotIn(term,t,str(f))
  def test_contrib_skills_rules(self):
   for n,e in self.cat.items():
    if e.get('origin')=='contrib':

@@ -1,6 +1,6 @@
 # Workflow : six étapes, une commande par étape
 
-Le kit suit le cycle du « AI-native SDLC playbook » : chaque étape se termine par un artefact versionné que l’étape suivante lit. Les commandes sont des verbes anglais, tapés dans la CLI ; les skills qui les réalisent restent sous le capot. `/guide` explique par quoi commencer.
+Le kit suit le cycle du [« AI-native SDLC playbook »](https://claude.com/fr/resources/articles/the-ai-native-sdlc-playbook) d’Anthropic : chaque étape se termine par un artefact versionné que l’étape suivante lit. Les commandes sont des verbes anglais, tapés dans la CLI ; les skills qui les réalisent restent sous le capot. `/guide` explique par quoi commencer.
 
 ## La cérémonie suit les enjeux
 
