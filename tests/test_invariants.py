@@ -108,5 +108,21 @@ class InvariantTests(unittest.TestCase):
         self.assertNotIsInstance(agy, ContextHost)
         self.assertNotIsInstance(codex, ContextHost)
 
+    def test_each_cli_alone_gets_the_whole_profile(self):
+        """Installée seule, chaque CLI reçoit tous les skills et tous les agents du profil."""
+        profile = json.loads((ROOT/'profiles/general.json').read_text(encoding='utf-8'))
+        places = {'gemini': ('.gemini/skills', '.gemini/agents'),
+                  'agy': ('.gemini/skills', '.gemini/config/plugins/ai-kit/agents'),
+                  'codex': ('.codex/skills', '.codex/ai-kit/agents')}
+        for target, (skills_dir, agents_dir) in places.items():
+            home = Path(self.temp.name)/target
+            home.mkdir()
+            with contextlib.redirect_stdout(io.StringIO()):
+                apply('general', home, False, IDENTITY, target)
+            for skill in profile['skills']:
+                self.assertTrue((home/skills_dir/skill/'SKILL.md').is_file(), target+' : skill '+skill)
+            agents = sorted(f.stem for f in (home/agents_dir).iterdir())
+            self.assertEqual(agents, sorted('ai-kit-'+a for a in profile['agents']), target)
+
 if __name__ == '__main__':
     unittest.main()

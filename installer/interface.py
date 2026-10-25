@@ -42,6 +42,7 @@ class Plan:
     enabled_mcp: Dict[str, Any]
     writes: Dict[Path, bytes]  # écritures non suivies (fichiers de l'utilisateur, réglages fusionnés)
     deletes: List[Path]
+    active: List[str]  # NAME des adaptateurs actifs, dans l'ordre de ADAPTERS
     managed_write: Callable[[Path, bytes, str], None]  # écriture suivie dans l'état, refusée si le fichier a été modifié
     agent_body: Callable[[Dict[str, Any]], str]  # prompt complet d'un agent, pratiques incluses
     agent_markdown: Dict[str, str] = field(default_factory=dict)  # agents rendus par Gemini, réutilisés par agy

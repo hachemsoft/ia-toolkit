@@ -220,23 +220,33 @@ def install(p: Plan) -> None:
                 p.writes[context_file] = (remaining+'\n').encode('utf-8')
             else:
                 p.deletes.append(context_file)
+    write_skills(p)
+    for command in p.commands:
+        p.managed_write(gemini/'commands'/(command['name']+'.toml'), gemini_command_toml(command).encode('utf-8'), 'Commande')
+    for agent, definition in p.agents:
+        name = 'ai-kit-'+agent
+        data = agent_markdown(p, agent, definition)
+        p.managed_write(gemini/'agents'/(name+'.md'), data, 'Agent')
+        p.agent_markdown[name] = data
+
+def write_skills(p: Plan) -> None:
+    """Skills du profil dans ~/.gemini/skills, dossier lu par Gemini et par agy."""
     for skill, source in p.skill_sources:
         for src in source.rglob('*'):
             if src.is_file():
-                p.managed_write(gemini/'skills'/skill/src.relative_to(source), src.read_bytes(), 'Skill')
-    for command in p.commands:
-        p.managed_write(gemini/'commands'/(command['name']+'.toml'), gemini_command_toml(command).encode('utf-8'), 'Commande')
+                p.managed_write(p.home/'.gemini'/'skills'/skill/src.relative_to(source), src.read_bytes(), 'Skill')
+
+def agent_markdown(p: Plan, agent: str, definition: dict) -> bytes:
+    """Agent au format Markdown à frontmatter, commun à Gemini et agy."""
     agent_defaults = read_json(ROOT/'agents/defaults.json')
-    for agent, definition in p.agents:
-        name = 'ai-kit-'+agent
-        # Les identifiants sont des slugs validés ; JSON string est aussi une chaîne YAML valide.
-        header = ['---', 'name: '+name, 'description: '+json.dumps(definition['description'],ensure_ascii=False),
-                  'kind: local', 'tools: '+json.dumps(definition.get('tools', agent_defaults['tools'])),
-                  'max_turns: '+str(definition.get('max_turns',agent_defaults['max_turns'])),] + (['model: '+p.models[definition.get('capability','default')]] if definition.get('capability','default') in p.models else []) + [
-                  'timeout_mins: '+str(definition.get('timeout_mins',agent_defaults['timeout_mins'])), '---']
-        data = ('\n'.join(header)+'\n\n'+p.agent_body(definition)).encode('utf-8')
-        p.managed_write(gemini/'agents'/(name+'.md'), data, 'Agent')
-        p.agent_markdown[name] = data
+    capability = definition.get('capability', 'default')
+    # Les identifiants sont des slugs validés ; JSON string est aussi une chaîne YAML valide.
+    header = ['---', 'name: ai-kit-'+agent, 'description: '+json.dumps(definition['description'], ensure_ascii=False),
+              'kind: local', 'tools: '+json.dumps(definition.get('tools', agent_defaults['tools'])),
+              'max_turns: '+str(definition.get('max_turns', agent_defaults['max_turns']))]
+    header += (['model: '+p.models[capability]] if capability in p.models else [])
+    header += ['timeout_mins: '+str(definition.get('timeout_mins', agent_defaults['timeout_mins'])), '---']
+    return ('\n'.join(header)+'\n\n'+p.agent_body(definition)).encode('utf-8')
 
 def finalize(p: Plan, active: bool = True) -> None:
     """Réglages ~/.gemini/settings.json (défauts, authentification déclarée, couches, garde-fous, MCP) et ~/.gemini/.env."""

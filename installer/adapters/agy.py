@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from . import gemini
 from ..interface import DoctorContext, Plan, Status
 from ..core import (ROOT, USER_CONTEXT, json_bytes,
                     quote_path, command_skill_text)
@@ -49,6 +50,11 @@ def install(p: Plan) -> None:
     manifest_json = {'name': 'ai-kit', 'displayName': 'Kit IA', 'description': 'Contexte, commandes, garde-fous et agents du Kit IA, partagés avec les autres CLI.', 'version': (ROOT/'VERSION').read_text().strip()}
     p.managed_write(plugin/'plugin.json', json_bytes(manifest_json), 'Plugin agy')
     p.managed_write(plugin/'rules'/'AGENTS.md', agy_rules_text(p.context_names, p.context_dir.relative_to(p.home).as_posix()).encode('utf-8'), 'Plugin agy')
+    if gemini.NAME not in p.active:
+        # agy lit les skills dans ~/.gemini/skills et ses agents ont le format de Gemini : sans Gemini, les poser ici.
+        gemini.write_skills(p)
+        for agent, definition in p.agents:
+            p.agent_markdown['ai-kit-'+agent] = gemini.agent_markdown(p, agent, definition)
     skill_names = set(p.selected)
     for command in p.commands:
         if command['name'] in skill_names:

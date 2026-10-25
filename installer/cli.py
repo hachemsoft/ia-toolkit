@@ -318,7 +318,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto'):
             raise KitError('MCP : entrée ou enabled invalide.')
         if entry.get('enabled'):
             enabled_mcp['ai-kit-'+name] = validate_server(entry.get('server'))
-    p = Plan(
+    p = Plan(active=[a.NAME for a in active],
         home=home, kit=kit, state=state, old_files=old_files, overrides=overrides, profile_id=profile_id, profile=profile,
         catalog=catalog, selected=selected, skill_sources=skill_sources, commands=commands, context_names=context_names,
         kit_text=kit_text, practice_names=practice_names, practice_texts=practice_texts, user_file=context_dir/USER_CONTEXT, context_dir=context_dir,
