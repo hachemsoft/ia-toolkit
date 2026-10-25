@@ -124,5 +124,14 @@ class InvariantTests(unittest.TestCase):
             agents = sorted(f.stem for f in (home/agents_dir).iterdir())
             self.assertEqual(agents, sorted('ai-kit-'+a for a in profile['agents']), target)
 
+    def test_profile_table_is_current(self):
+        """La table des profils de docs/getting-started.md est celle que le code installe (scripts/profile_table.py --write)."""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('profile_table', ROOT/'scripts/profile_table.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        text = module.PAGE.read_text(encoding='utf-8')
+        self.assertEqual(text, module.page_with_table(text), 'lancer python3 scripts/profile_table.py --write')
+
 if __name__ == '__main__':
     unittest.main()

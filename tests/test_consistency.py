@@ -37,8 +37,9 @@ class ConsistencyTests(unittest.TestCase):
   self.assertTrue((ROOT/'skills/contrib/README.md').is_file())
  def test_general_docs_do_not_name_a_cli(self):
   """Les pages générales parlent de « l'agent » et de « la CLI » ; le spécifique va dans docs/cli/ (tableaux et liens tolérés)."""
-  general=['README.md']+['docs/'+n for n in ('getting-started.md','workflow.md','tools.md','customization.md','project-context.md','usage-review.md','extending.md','pilote.md','contributing.md','skills-reference.md','hooks.md','agents.md','format.md','identity.md','mcp.md','troubleshooting.md','ca-coince.md','evals.md')]
-  allowed=re.compile(r"cli/(gemini|matrice|agy|codex)|`gemini` ou `agy`|`gemini`, `agy` ou `codex`|gemini-2\.5|gemini-api-key|GEMINI_API_KEY|--cli gemini|\.gemini/protected-paths|Gemini CLI et Antigravity CLI",re.I)
+  # README.md n'en fait pas partie : c'est la page d'accueil, qui présente les CLI prises en charge.
+  general=['docs/'+n for n in ('getting-started.md','workflow.md','tools.md','customization.md','project-context.md','usage-review.md','extending.md','pilote.md','contributing.md','skills-reference.md','hooks.md','agents.md','format.md','identity.md','mcp.md','troubleshooting.md','ca-coince.md','evals.md')]
+  allowed=re.compile(r"cli/(gemini|matrice|agy|codex)|`gemini` ou `agy`|`gemini`, `agy` ou `codex`|gemini-2\.5|gemini-api-key|GEMINI_API_KEY|--cli gemini|\.gemini/protected-paths|Gemini CLI et Antigravity CLI|Gemini CLI, Antigravity CLI, Codex CLI|`~/\.gemini/` si Gemini CLI est installé",re.I)
   bad=[]
   for f in general:
    fence=False
