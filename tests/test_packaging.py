@@ -1,7 +1,7 @@
 import re, unittest
 from installer.core import ROOT
 class PackagingTests(unittest.TestCase):
- """pyproject.toml : version alignée, aucune dépendance, tout le contenu lu par l'installeur embarqué dans le paquet."""
+ """pyproject.toml: aligned version, no dependency, all content read by the installer shipped in the package."""
  def setUp(self):
   self.text=(ROOT/'pyproject.toml').read_text(encoding='utf-8')
  def test_version_matches_VERSION(self):

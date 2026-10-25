@@ -2,6 +2,6 @@
 
 ## Language
 
-**Marge**:
-Chiffre d'affaires moins coût, au mois.
+**Margin**:
+Revenue minus cost, per month.
 _Avoid_: profit

@@ -10,7 +10,7 @@ class PlaybookTests(unittest.TestCase):
   catalog=read_json(ROOT/'skills/catalog.json')
   for k,v in catalog.items():
    if v.get('category')=='domain':
-    text=(ROOT/v['path']/'SKILL.md').read_text(encoding='utf-8');self.assertIn('## Excuses entendues et réponses',text,k);self.assertGreaterEqual(text.count('\n| « '),3,k)
+    text=(ROOT/v['path']/'SKILL.md').read_text(encoding='utf-8');self.assertIn('## Rationalizations and rebuttals',text,k);self.assertGreaterEqual(text.count('\n| "'),3,k)
  def test_new_playbooks_in_profiles(self):
   a=read_json(ROOT/'profiles/data-analyst.json')['skills'];d=read_json(ROOT/'profiles/data-developer.json')['skills']
   for s in ('kpi-definition','incremental-replay','bigquery-cost-review','perimeter-brief'):self.assertIn(s,a)
@@ -21,7 +21,7 @@ class PlaybookTests(unittest.TestCase):
    home=Path(tmp)
    with contextlib.redirect_stdout(io.StringIO()):apply('data-developer',home)
    text=(home/'.gemini/agents/ai-kit-doubter.md').read_text(encoding='utf-8');header=text.split('---')[1]
-   self.assertIn('tools: ["read_file", "grep_search"]',header);self.assertIn('non prouvée',text)
+   self.assertIn('tools: ["read_file", "grep_search"]',header);self.assertIn('unproven',text)
  def test_commands_reference_playbooks(self):
   cmds={c['name']:c['prompt'] for c in load_commands()}
   self.assertIn('kpi-definition',cmds['intent']);self.assertIn('incremental-replay',cmds['build']);self.assertIn('bigquery-cost-review',cmds['diagnose']);self.assertIn('ai-kit-doubter',cmds['review']);self.assertIn('ai-kit-verifier',cmds['build'])
@@ -34,13 +34,13 @@ class EvalSuiteTests(unittest.TestCase):
    if case['prompt'].startswith('/'):self.assertIn(case['prompt'].split()[0][1:],names,case['name'])
    if case.get('cwd'):self.assertTrue((ROOT/'evals/fixtures'/case['cwd']).is_dir(),case['name'])
  def test_check_logic(self):
-  self.assertEqual(evals_run.check('Commencez par /intent puis /spec',{'contains':['/intent'],'not_contains':['grilling'],'regex':['/spec']}),[])
-  self.assertEqual(len(evals_run.check('rien',{'contains':['/intent'],'not_contains':['rien'],'regex':['\\d']})),3)
+  self.assertEqual(evals_run.check('Start with /intent then /spec',{'contains':['/intent'],'not_contains':['grilling'],'regex':['/spec']}),[])
+  self.assertEqual(len(evals_run.check('nothing',{'contains':['/intent'],'not_contains':['nothing'],'regex':['\\d']})),3)
  def test_api_errors_are_not_behaviour_failures(self):
   self.assertIn('API 402',evals_run.api_error(1,'...retryWithBackoff ... {\n  status: 402\n}\nAn unexpected critical error occurred'))
-  self.assertIn('authentification',evals_run.api_error(1,'Please set an Auth method in your settings.json'))
+  self.assertIn('authentication',evals_run.api_error(1,'Please set an Auth method in your settings.json'))
   self.assertIn('Antigravity',evals_run.api_error(0,'jetski: no output produced — a tool required the "command" permission that headless mode cannot prompt for'))
-  self.assertIsNone(evals_run.api_error(0,'Commencez par /intent.'))
+  self.assertIsNone(evals_run.api_error(0,'Start with /intent.'))
  def test_dry_run_lists_cases(self):
   out=io.StringIO()
   with contextlib.redirect_stdout(out):code=evals_run.main(['--dry-run'])

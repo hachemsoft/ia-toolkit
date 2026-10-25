@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-kit"
-version = "0.19.0"
-description = "Kit IA : contexte en couches, workflow en six étapes, playbooks métier et agents de revue pour Gemini CLI, Antigravity CLI et Codex CLI, sur Mac et Windows."
+version = "0.20.0"
+description = "AI Kit: layered context, a six-step workflow, domain playbooks and review agents for Gemini CLI, Antigravity CLI and Codex CLI, on Mac and Windows."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
@@ -27,8 +27,8 @@ classifiers = [
 [project.scripts]
 ai-kit = "ai_kit.cli:main"
 
-# Le code vit dans installer/ (python3 -m installer depuis le dossier du kit) ; le paquet publié l'appelle ai_kit
-# pour ne pas entrer en conflit avec le paquet PyPI « installer ». Le contenu du kit voyage sous ai_kit/kit/.
+# The code lives in installer/ (python3 -m installer from the kit folder); the published package calls it ai_kit
+# to avoid clashing with the PyPI package "installer". The kit content travels under ai_kit/kit/.
 [tool.hatch.build.targets.wheel]
 only-include = ["installer"]
 sources = { "installer" = "ai_kit" }
@@ -55,5 +55,5 @@ target-version = "py39"
 line-length = 140
 
 [tool.ruff.lint.per-file-ignores]
-# Tests écrits en lignes denses (plusieurs instructions par ligne) : reformatage décidé à part.
+# Tests written as dense lines (several statements per line): reformatting decided separately.
 "tests/*" = ["E701", "E702", "E401", "E731"]

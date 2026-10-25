@@ -1,40 +1,40 @@
 # Codex CLI
 
-Ce que le kit fait pour Codex CLI, et ce qui est propre à cette CLI. Vérifié sur Codex CLI 0.160. Les notions communes sont dans la [matrice](matrice.md).
+What the kit does for Codex CLI, and what is specific to this CLI. Verified on Codex CLI 0.160. Shared concepts are in the [CLI matrix](matrice.md).
 
-## Installer pour Codex
+## Install for Codex
 
-`setup` et `update` installent pour Codex quand la commande `codex` est présente ou que `~/.codex` existe (`--target auto`) ; `--target all` le force avec les autres CLI, `--target codex` l’installe seul, `--target gemini` ou `both` l’exclut. Codex se connecte avec son propre compte (`codex login`, compte ChatGPT ou clé OpenAI) : le kit n’y touche pas.
+`setup` and `update` install for Codex when the `codex` command is present or `~/.codex` exists (`--target auto`). `--target all` forces it alongside the other CLIs, `--target codex` installs it alone, and `--target gemini` or `both` excludes it. Codex signs in with its own account (`codex login`, ChatGPT account or OpenAI key): the kit does not touch it.
 
-## Ce que le kit installe
+## What the kit installs
 
-- **Contexte** : un bloc géré en tête de `~/.codex/AGENTS.md`, entre deux marqueurs `ai-kit`, avec les couches du kit et une copie de `30_USER.md` (dans `~/.gemini/` si Gemini est installé, sinon dans `~/.ai-kit/context/`). Le reste du fichier vous appartient et n’est jamais modifié. Codex n’incluant pas d’autres fichiers par chemin, la copie de `30_USER.md` est rafraîchie à chaque `update` : après l’avoir modifié, relancer `update` (`doctor` le signale).
-- **Skills** dans `~/.codex/skills/`. Les skills marqués « sur commande seulement » reçoivent un `agents/openai.yaml` avec `allow_implicit_invocation: false` : Codex respecte cette marque nativement, il ne les active que si on les appelle.
-- **Commandes** : un skill par commande, lui aussi sur commande seulement. Dans Codex, on les appelle par **`$intent`**, `$build`, `$test`… ; `/skills` les liste.
-- **Agents** : un rôle `ai-kit-<nom>` par agent, déclaré sous `[agents.ai-kit-<nom>]` dans le bloc géré de `~/.codex/config.toml`, ses instructions dans `~/.codex/ai-kit/agents/`.
-- **Garde-fous** activés : déclarés sous `[[hooks.PreToolUse]]` dans le même bloc ; les scripts comprennent le format d’appel de Codex, y compris les chemins d’un `apply_patch`.
-- **MCP** activés : `[mcp_servers.ai-kit-<nom>]` dans le même bloc.
+- **Context**: a managed block at the top of `~/.codex/AGENTS.md`, between two `ai-kit` markers, with the kit layers and a copy of `30_USER.md` (in `~/.gemini/` if Gemini is installed, otherwise in `~/.ai-kit/context/`). The rest of the file belongs to you and is never changed. Because Codex does not include other files by path, the copy of `30_USER.md` is refreshed on every `update`: after you edit it, run `update` again (`doctor` reports it).
+- **Skills** in `~/.codex/skills/`. Skills marked "on command only" get an `agents/openai.yaml` with `allow_implicit_invocation: false`: Codex honors this flag natively and activates them only when called.
+- **Commands**: one skill per command, also on command only. In Codex, you call them with **`$intent`**, `$build`, `$test`…; `/skills` lists them.
+- **Agents**: one `ai-kit-<name>` role per agent, declared under `[agents.ai-kit-<name>]` in the managed block of `~/.codex/config.toml`, with its instructions in `~/.codex/ai-kit/agents/`.
+- **Guardrails** that are enabled: declared under `[[hooks.PreToolUse]]` in the same block. The scripts understand the Codex call format, including the paths of an `apply_patch`.
+- **MCP servers** that are enabled: `[mcp_servers.ai-kit-<name>]` in the same block.
 
-Le bloc de `config.toml` est ajouté à la fin du fichier, vérifié avant écriture (le fichier doit rester du TOML valide) ; vos propres réglages ne bougent pas. Les deux fichiers sont sauvegardés à chaque modification.
+The `config.toml` block is appended to the end of the file and checked before writing (the file must stay valid TOML). Your own settings do not move. Both files are backed up on every change.
 
-## Approuver les garde-fous
+## Approve the guardrails
 
-Codex n’exécute un hook qu’après l’avoir approuvé : au premier lancement qui suit leur installation, il affiche « Hooks need review ». Répondre « Trust all and continue » ; « Continue without trusting » les laisse inactifs. Le kit n’écrit jamais cette approbation à votre place. En mode non interactif (`codex exec`), un hook non approuvé ne s’exécute pas.
+Codex runs a hook only after it has been approved: on the first launch after installation, it shows "Hooks need review". Answer "Trust all and continue"; "Continue without trusting" leaves them inactive. The kit never writes this approval for you. In non-interactive mode (`codex exec`), an unapproved hook does not run.
 
-## Vérifier dans Codex
+## Check in Codex
 
-`codex doctor` (configuration chargée, `config.toml parse ok`), `/skills` dans Codex, puis `$guide je dois …` dans un repo.
+`codex doctor` (configuration loaded, `config.toml parse ok`), `/skills` in Codex, then `$guide I need to …` in a repository.
 
-## Particularités
+## Specifics
 
-- **`~/.codex/AGENTS.override.md`** : s’il existe, Codex le lit à la place d’`AGENTS.md`, et le contexte du kit est ignoré ; `doctor` le signale.
-- **Contexte du repo** : Codex lit nativement l’`AGENTS.md` du repo et de ses dossiers, comme le kit l’organise.
-- **Journaux lus par `usage`** : `~/.codex/history.jsonl` (prompts tapés, commandes `$intent` ou `/intent`).
-- **Évaluations** : `python3 evals/run.py --cli codex` lance `codex exec` en bac à sable lecture seule ; `/intent` dans un cas devient `$intent`.
-- **Profils de capacité** : la clé `models` d’`overrides.json` porte des noms de modèles Gemini et n’est pas appliquée aux agents Codex, qui gardent le modèle de la session.
+- **`~/.codex/AGENTS.override.md`**: if it exists, Codex reads it instead of `AGENTS.md`, and the kit context is ignored; `doctor` reports it.
+- **Repository context**: Codex natively reads the `AGENTS.md` of the repository and its folders, as the kit organizes it.
+- **Logs read by `usage`**: `~/.codex/history.jsonl` (typed prompts, `$intent` or `/intent` commands).
+- **Evals**: `python3 evals/run.py --cli codex` runs `codex exec` in a read-only sandbox; `/intent` in a case becomes `$intent`.
+- **Capability profiles**: the `models` key of `overrides.json` holds Gemini model names and is not applied to Codex agents, which keep the session model.
 
-## Dépannage propre à Codex
+## Codex troubleshooting
 
-- **« Bloc du kit modifié à la main »** : une ligne a été changée entre les marqueurs `ai-kit` ; reporter le changement hors du bloc (ou dans `30_USER.md` ou `overrides.json`), retirer le bloc, puis `update`.
-- **« hooks.PreToolUse déjà défini sous une autre forme »** : votre `config.toml` déclare ses hooks autrement que par `[[hooks.PreToolUse]]` ; le kit ne réécrit pas vos réglages, il refuse.
-- **Les garde-fous ne bloquent rien** : ils n’ont pas été approuvés ; relancer Codex en interactif et répondre « Trust ».
+- **"Kit block edited by hand"**: a line was changed between the `ai-kit` markers. Move the change outside the block (or into `30_USER.md` or `overrides.json`), remove the block, then run `update`.
+- **"hooks.PreToolUse already defined in another form"**: your `config.toml` declares its hooks in a form other than `[[hooks.PreToolUse]]`. The kit does not rewrite your settings; it refuses.
+- **The guardrails block nothing**: they were not approved. Restart Codex in interactive mode and answer "Trust".

@@ -1,95 +1,95 @@
-# Démarrer
+# Getting started
 
-Cette page est pour quelqu’un qui n’a jamais vu le kit. Quinze minutes, dans l’ordre.
+This page is for someone who has never seen the kit. Fifteen minutes, in order.
 
-## 1. Installer (une fois)
+## 1. Install (once)
 
-1. Récupérer le kit dans un dossier durable, par exemple `Documents` : `git clone <url du dépôt> ai-kit`. Sans git : bouton « Télécharger ZIP » sur la page du dépôt, puis extraire dans `Documents/ai-kit`.
-2. Ouvrir un terminal **dans ce dossier**. Mac : clic droit sur le dossier, « Nouveau terminal au dossier ». Windows : dans l’Explorateur, ouvrir le dossier puis taper `powershell` dans la barre d’adresse et Entrée.
-3. Lancer :
-   - Mac : `sh scripts/bootstrap.sh`
-   - Windows : `.\scripts\bootstrap.ps1` (si les scripts sont bloqués : `py -3 -m installer setup`)
-4. Confirmer l’identité détectée (votre email professionnel), puis choisir le profil :
-   - **1. Général** : le workflow et les outils, sans playbook métier ; le bon choix en cas de doute.
-   - **2. Développeur Java** : Maven ou Gradle, Spring, JUnit ; revue de code et de sécurité.
-   - **3. DevOps** : Terraform, Kubernetes, Helm, pipelines CI/CD ; revue d’infrastructure et de sécurité.
-   - **4. Architecte** : décisions d’architecture (ADR), conception, revue de design.
-   - **5. Data Analyst** : vous écrivez surtout du SQL, du dbt, des requêtes BigQuery, des indicateurs.
-   - **6. Développeur Data** : les mêmes, plus du code Python ou JavaScript.
+1. Get the kit into a durable folder, for example `Documents`: `git clone <repository url> ai-kit`. Without git: "Download ZIP" button on the repository page, then extract into `Documents/ai-kit`.
+2. Open a terminal **in that folder**. Mac: right-click the folder, "New Terminal at Folder". Windows: in Explorer, open the folder, then type `powershell` in the address bar and press Enter.
+3. Run:
+   - Mac: `sh scripts/bootstrap.sh`
+   - Windows: `.\scripts\bootstrap.ps1` (if scripts are blocked: `py -3 -m installer setup`)
+4. Confirm the detected identity (your work email), then choose the profile:
+   - **1. General**: the workflow and tools, without domain playbooks; the right choice if in doubt.
+   - **2. Java Developer**: Maven or Gradle, Spring, JUnit; code and security review.
+   - **3. DevOps**: Terraform, Kubernetes, Helm, CI/CD pipelines; infrastructure and security review.
+   - **4. Architect**: architecture decisions (ADR), design, design review.
+   - **5. Data Analyst**: you mostly write SQL, dbt, BigQuery queries, KPIs.
+   - **6. Data Developer**: the same, plus Python or JavaScript code.
 
-   Le profil se change à tout moment en relançant `setup`. Un skill ou un agent d’un autre profil s’ajoute dans `~/.ai-kit/overrides.json` (voir [personnalisation](customization.md)).
-5. **Quelle CLI ?** Rien à choisir dans le cas courant : le kit configure les CLI qu’il trouve sur le poste (Gemini CLI, Antigravity CLI, Codex CLI), et Gemini CLI si aucune n’est encore installée. Pour forcer : ajouter `--target` à la commande, par exemple `sh scripts/bootstrap.sh setup --target codex`.
+   You can change the profile at any time by running `setup` again. A skill or agent from another profile is added in `~/.ai-kit/overrides.json` (see [customization](customization.md)).
+5. **Which CLI?** Nothing to choose in the usual case: the kit configures the CLIs it finds on the workstation (Gemini CLI, Antigravity CLI, Codex CLI), and Gemini CLI if none is installed yet. To force a choice: add `--target` to the command, for example `sh scripts/bootstrap.sh setup --target codex`.
 
-   | `--target` | CLI configurées |
+   | `--target` | CLIs configured |
    | --- | --- |
-   | `auto` (défaut) | celles présentes sur le poste ; Gemini CLI si aucune |
-   | `gemini`, `agy`, `codex` | cette CLI seule |
-   | `both` | Gemini CLI et Antigravity CLI |
-   | `all` | les trois |
+   | `auto` (default) | those present on the workstation; Gemini CLI if none |
+   | `gemini`, `agy`, `codex` | that CLI only |
+   | `both` | Gemini CLI and Antigravity CLI |
+   | `all` | all three |
 
-   Une CLI installée plus tard est prise en compte au prochain `update`.
-6. L’installation se termine par un appel réel au modèle. **Vert** : c’est fini. Sinon, le message dit exactement quoi faire (une ligne à ajouter, une commande à lancer) ; le faire puis relancer `doctor --live`.
+   A CLI installed later is picked up at the next `update`.
+6. Installation ends with a real call to the model. **Green**: you are done. Otherwise, the message says exactly what to do (a line to add, a command to run); do it, then run `doctor --live` again.
 
-Si votre organisation impose un projet Google Cloud ou un modèle, c’est une ligne dans `~/.ai-kit/overrides.json`, donnée par votre équipe plateforme ; voir [personnalisation](customization.md#authentification-et-modèle). Sinon il n’y a rien à déclarer.
+If your organization requires a Google Cloud project or a model, that is one line in `~/.ai-kit/overrides.json`, provided by your platform team; see [customization](customization.md#authentication-and-model). Otherwise there is nothing to declare.
 
-## 2. Première session (cinq minutes)
+## 2. First session (five minutes)
 
-1. Aller dans votre repo : `cd <dossier du repo>`. Sans cela, l’agent ne voit pas le contexte du projet.
-2. Lancer votre CLI : `gemini`, `agy` ou `codex`. Dans Gemini et agy, les commandes s’écrivent `/guide` ; dans Codex, `$guide`. Cette page les écrit avec `/`.
-3. Taper : **« Initialise le contexte du projet »**. L’agent propose, fichier par fichier et avec votre accord, `AGENTS.md` (une page sur le repo), `GLOSSARY.md` (les mots du métier), `REVIEW.md` (ce qu’une revue vérifie) et deux lignes de `.gitignore` pour les notes de travail. Si quelqu’un l’a déjà fait dans ce repo, passer.
-4. Taper : `/guide je dois …` avec votre besoin du jour. Il répond : quel niveau de cérémonie, quelle commande, ce qu’elle produit, un exemple de prompt.
+1. Go to your repo: `cd <repo folder>`. Without this, the agent does not see the project context.
+2. Start your CLI: `gemini`, `agy` or `codex`. In Gemini and agy, commands are written `/guide`; in Codex, `$guide`. This page writes them with `/`.
+3. Type: **"Initialize the project context"**. The agent proposes, file by file and with your approval, `AGENTS.md` (one page about the repo), `GLOSSARY.md` (the domain terms), `REVIEW.md` (what a review checks) and two `.gitignore` lines for working notes. If someone has already done this in the repo, skip it.
+4. Type: `/guide I need to …` with today's need. It answers: which level of ceremony, which command, what it produces, an example prompt.
 
-## 3. Travailler : une commande par étape
+## 3. Work: one command per step
 
-| Vous voulez | Tapez | Vous obtenez |
+| You want to | Type | You get |
 | --- | --- | --- |
-| cadrer une idée, un ticket, un incident | `/intent <ce que vous voulez>` | un entretien, puis `intent.md` (note locale) |
-| transformer l’intent en contrat | `/spec` | `spec.md`, relu dans la MR |
-| réaliser | `/build <ticket ou spec>` | `plan.md` à accepter, puis code et tests, une tranche à la fois |
-| vérifier | `/test` | la sortie réelle des vérifications du repo |
-| faire relire avant de fusionner | `/review main` (`full` pour la production) | constats classés par passe et gravité |
-| décrire la merge request | `/ship` | la description, preuves incluses ; rien n’est poussé |
-| comprendre un bug ou un chiffre faux | `/diagnose <symptôme>` | cause prouvée, correctif, test de non-régression |
-| apprendre un périmètre | `/learn <sujet>` | leçons, quiz, fiches dans `docs/learn/<sujet>/` |
-| comprendre une zone ou la dernière réponse | `/explain <zone>` ou `/explain` | une carte en termes du glossaire, ou une reformulation |
-| améliorer l’environnement de l’agent | `/retro` | des propositions pour `AGENTS.md`, les checks, les skills |
-| noter ce qui a coincé, sans s’arrêter | `/friction <une phrase>` | une ligne locale, reprise à la revue d’usage ; rien n’est envoyé |
+| frame an idea, a ticket, an incident | `/intent <what you want>` | an interview, then `intent.md` (local note) |
+| turn the intent into a contract | `/spec` | `spec.md`, reviewed in the MR |
+| implement | `/build <ticket or spec>` | `plan.md` to accept, then code and tests, one slice at a time |
+| verify | `/test` | the real output of the repo's checks |
+| get a review before merging | `/review main` (`full` for production) | findings sorted by pass and severity |
+| describe the merge request (MR) | `/ship` | the description, evidence included; nothing is pushed |
+| understand a bug or a wrong number | `/diagnose <symptom>` | proven cause, fix, regression test |
+| learn an area | `/learn <topic>` | lessons, quizzes, reference sheets in `docs/learn/<topic>/` |
+| understand an area or the last answer | `/explain <area>` or `/explain` | a map in glossary terms, or a rephrasing |
+| improve the agent's environment | `/retro` | proposals for `AGENTS.md`, checks, skills |
+| record what got in the way, without stopping | `/friction <one sentence>` | a local line, picked up in the usage review; nothing is sent |
 
-Ce que chaque profil installe :
+What each profile installs:
 
-<!-- table-profils:début -->
-| Profil | Étapes du workflow | Autres commandes | Agents |
+<!-- profile-table:start -->
+| Profile | Workflow steps | Other commands | Agents |
 | --- | --- | --- | --- |
-| **Général** (`general`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, code-reviewer, verifier, doubter |
-| **Développeur Java** (`java-developer`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/triage` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, verifier, doubter, code-reviewer, security-reviewer |
+| **General** (`general`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, code-reviewer, verifier, doubter |
+| **Java Developer** (`java-developer`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/triage` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, verifier, doubter, code-reviewer, security-reviewer |
 | **DevOps** (`devops`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/map` `/triage` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, verifier, doubter, infra-reviewer, security-reviewer |
-| **Architecte** (`architect`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/guide` `/friction` `/learn` `/explain` `/retro` `/research` `/audit` | repo-investigator, verifier, doubter, architecture-reviewer, code-reviewer |
+| **Architect** (`architect`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/guide` `/friction` `/learn` `/explain` `/retro` `/research` `/audit` | repo-investigator, verifier, doubter, architecture-reviewer, code-reviewer |
 | **Data Analyst** (`data-analyst`) | `/intent` `/build` `/test` `/ship` `/diagnose` | `/guide` `/friction` `/learn` | repo-investigator, sql-reviewer, dbt-reviewer, verifier |
-| **Développeur Data** (`data-developer`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/triage` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, code-reviewer, verifier, doubter, sql-reviewer, dbt-reviewer |
-<!-- table-profils:fin -->
+| **Data Developer** (`data-developer`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/triage` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, code-reviewer, verifier, doubter, sql-reviewer, dbt-reviewer |
+<!-- profile-table:end -->
 
-`/design` façonne une interface ou répond à une question de conception par un prototype jetable ; `/map` découpe un gros chantier en tickets de décision ; `/triage` fait avancer les tickets entrants ; `/research` instruit une question sur des sources primaires ; `/audit` repère les modules à approfondir. `/ask`, `/handoff`, `/research`, `/wizard` et `/audit` s’ajoutent à tout profil qui ne les a pas : `{"extra_commands": ["handoff"]}` dans `~/.ai-kit/overrides.json`, puis `update`. Le détail des agents : [agents](agents.md).
+`/design` shapes an interface or answers a design question with a throwaway prototype; `/map` splits a large piece of work into decision tickets; `/triage` moves incoming tickets forward; `/research` investigates a question using primary sources; `/audit` finds modules worth deepening. `/ask`, `/handoff`, `/research`, `/wizard` and `/audit` can be added to any profile that lacks them: `{"extra_commands": ["handoff"]}` in `~/.ai-kit/overrides.json`, then `update`. Agent details: [agents](agents.md).
 
-La règle qui évite de tout dérouler : **la cérémonie suit les enjeux**. Une retouche se fait sans commande. Une petite fonctionnalité : `/intent` court puis `/build`. Seuls une grande évolution ou un changement en production passent par `/spec` et `/review full`. Chaque commande dit en une ligne le niveau qu’elle a retenu.
+The rule that avoids running everything: **ceremony matches the stakes**. A small fix needs no command. A small feature: a short `/intent`, then `/build`. Only a large change or a production change goes through `/spec` and `/review full`. Each command states in one line the level it chose.
 
-## 4. Ce que vous verrez, et ce qui est normal
+## 4. What you will see, and what is normal
 
-- `/help` liste les commandes avec une description en anglais ; l’agent vous répond dans votre langue. Les artefacts gardent des titres anglais, leur contenu est dans la langue de l’équipe.
-- `intent.md` et `plan.md` sont des notes locales, ignorées par git ; `spec.md` et `REVIEW.md` sont versionnés. L’agent ne commite jamais sans votre accord.
-- Les playbooks métier de votre profil (Java, infrastructure, architecture, SQL et dbt…) s’activent seuls quand la tâche s’y prête ; vous n’avez pas à les nommer.
-- Dans agy, une demande de permission avant une commande shell est normale : répondre ; « toujours autoriser » retient votre choix dans vos réglages agy, le kit n’y touche pas.
-- Sans MCP connecté, l’agent ne lit pas vos données réelles : donner le SQL et les schémas autorisés, ou faire configurer la connexion par l’équipe plateforme.
+- `/help` lists the commands with English descriptions; the agent answers in your language. Artifacts keep English headings; their content is in the team's language.
+- `intent.md` and `plan.md` are local notes, ignored by git; `spec.md` and `REVIEW.md` are versioned. The agent never commits without your approval.
+- Your profile's domain playbooks (Java, infrastructure, architecture, SQL and dbt…) activate on their own when the task calls for them; you do not need to name them.
+- In agy, a permission request before a shell command is normal: answer it; "always allow" saves your choice in your agy settings, and the kit does not touch them.
+- Without a connected MCP server, the agent does not read your real data: provide the SQL and the authorized schemas, or have the platform team configure the connection.
 
-## 5. Quand ça coince
+## 5. Troubleshooting
 
-1. Depuis le dossier du kit : `sh scripts/bootstrap.sh doctor --live` (Mac) ou `.\scripts\bootstrap.ps1 doctor --live` (Windows). Il dit quoi faire.
-2. La page [Ça coince ?](troubleshooting.md) : un symptôme, une cause, une commande.
-3. Sinon un ticket, avec le gabarit de la page [pilote](pilot.md). Et à chaud, `/friction <une phrase>` : la revue d’usage la reprendra. Il deviendra un contrôle, une ligne de la page ou un cas d’évaluation, jamais une explication orale répétée.
+1. From the kit folder: `sh scripts/bootstrap.sh doctor --live` (Mac) or `.\scripts\bootstrap.ps1 doctor --live` (Windows). It tells you what to do.
+2. The [Troubleshooting](troubleshooting.md) page: one symptom, one cause, one command.
+3. Otherwise a ticket, using the template on the [pilot](pilot.md) page. And on the spot, `/friction <one sentence>`: the usage review will pick it up. It will become a check, a line on that page or an eval case, never a repeated verbal explanation.
 
-## 6. Plus tard
+## 6. Later
 
-- Vos préférences (langue, style, domaines) : `30_USER.md`, créé pour vous et jamais réécrit par le kit. Il est dans `~/.gemini/` si Gemini CLI est installé, sinon dans `~/.ai-kit/context/` ; `doctor` affiche son chemin.
-- Ajouter ou retirer des commandes, skills, agents, MCP, garde-fous : `~/.ai-kit/overrides.json`, puis `update`. Voir [personnalisation](customization.md).
-- Écrire votre propre skill, ou remplacer un skill du kit pour vous, pour un repo ou pour l’équipe : [ajouter ou remplacer un skill](extending.md).
-- Quand l’équipe veut que l’agent lise et crée des tickets : `setup-workflow` dans le repo (demande `glab` ou `gh`).
-- Mise à jour du kit : `git pull` puis `update` depuis son dossier (sans git : retélécharger le ZIP, remplacer le dossier, puis `update`).
+- Your preferences (language, style, domains): `30_USER.md`, created for you and never rewritten by the kit. It is in `~/.gemini/` if Gemini CLI is installed, otherwise in `~/.ai-kit/context/`; `doctor` shows its path.
+- Add or remove commands, skills, agents, MCP servers, guardrails: `~/.ai-kit/overrides.json`, then `update`. See [customization](customization.md).
+- Write your own skill, or replace a kit skill for yourself, a repo or the team: [add or replace a skill](extending.md).
+- When the team wants the agent to read and create tickets: `setup-workflow` in the repo (requires `glab` or `gh`).
+- Kit update: `git pull`, then `update` from its folder (without git: download the ZIP again, replace the folder, then `update`).

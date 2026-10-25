@@ -1,32 +1,32 @@
-# Faire évoluer le kit
+# Evolving the kit
 
-1. Modifier les pratiques générales dans practices/ ; le préfixe numérique du fichier (`10-company.md`) fixe sa position dans le contexte de l’agent. Garder les faits métier dans les projets.
-2. Ajouter un skill avec un nom unique, un SKILL.md court et son entrée dans skills/catalog.json : sous `skills/contrib/` avec un propriétaire nommé quand c’est une proposition d’équipe, sous `skills/internal/` quand les mainteneurs du kit le prennent en charge ; la marche complète (catalogue, profils, commande, cas d’évaluation) est dans [ajouter ou remplacer un skill](extending.md).
-3. Sélectionner les skills dans les profils. Ne pas installer tout le catalogue par défaut.
-4. Pour les skills repris d’un dépôt amont, recopier les dossiers tels quels dans skills/internal/common/, retirer les fichiers propres à d’autres outils, conserver le texte de licence (skills/LICENSE-UPSTREAM-MIT) et relancer les tests ; aucun téléchargement automatique.
-5. Ajouter un MCP uniquement après validation du serveur, du transport, de l’authentification et de ses prérequis Windows/Mac. Ne pas committer de secrets.
-6. Exécuter les tests, faire un essai avec --home dans un dossier temporaire, puis rejouer les évaluations (`python3 evals/run.py`) quand un skill, une commande ou une pratique change. Quand l’agent se trompe, ajouter le prompt fautif comme cas d’évaluation avant de corriger le skill.
-7. Valider ensuite sur un vrai Mac et un poste Windows standard sans administrateur, puis dans chaque CLI prise en charge, authentifiée.
-8. Publier : la version est dans `VERSION` et dans `pyproject.toml` (un test vérifie qu’elles sont égales) ; commit, tag `v<version>`, push. Les utilisateurs font `git pull` puis `update`. `sh scripts/package.sh` construit une archive hors git si besoin. Pour les développeurs qui préfèrent `pipx` : `pipx install git+<url du dépôt>` fournit la commande `ai-kit` (même chose que le lanceur) ; ce n’est pas la voie documentée pour l’équipe. `python3 -m build` construit le paquet, qui embarque le contenu sous `ai_kit/kit/`. Un nouveau dossier de contenu lu par l’installeur s’ajoute à `[tool.hatch.build.targets.wheel.force-include]` ; le test de paquet échoue sinon. `update` applique la version extraite ou installée.
+1. Edit the general practices in practices/. The numeric prefix of the file (`10-company.md`) sets its position in the agent context. Keep business facts in the projects.
+2. Add a skill with a unique name, a short SKILL.md and its entry in skills/catalog.json: under `skills/contrib/` with a named owner when it is a team proposal, under `skills/internal/` when the kit maintainers take it on. The full procedure (catalog, profiles, command, eval case) is in [add or replace a skill](extending.md).
+3. Select the skills in the profiles. Do not install the whole catalog by default.
+4. For skills taken from an upstream repository, copy the folders as is into skills/internal/common/, remove files specific to other tools, keep the licence text (skills/LICENSE-UPSTREAM-MIT) and run the tests again; no automatic download.
+5. Add an MCP server only after validating the server, the transport, the authentication and its Windows/Mac prerequisites. Do not commit secrets.
+6. Run the tests, do a trial with --home in a temporary folder, then replay the evals (`python3 evals/run.py`) when a skill, a command or a practice changes. When the agent gets it wrong, add the failing prompt as an eval case before fixing the skill.
+7. Then validate on a real Mac and a standard Windows workstation without admin rights, then in each supported CLI, signed in.
+8. Release: the version is in `VERSION` and in `pyproject.toml` (a test checks that they match); commit, tag `v<version>`, push. Users run `git pull` then `update`. `sh scripts/package.sh` builds an archive outside git if needed. For developers who prefer `pipx`: `pipx install git+<repository url>` provides the `ai-kit` command (same as the launcher); it is not the documented path for the team. `python3 -m build` builds the package, which bundles the content under `ai_kit/kit/`. A new content folder read by the installer goes into `[tool.hatch.build.targets.wheel.force-include]`; otherwise the package test fails. `update` applies the extracted or installed version.
 
-Les commandes sont écrites une fois dans `commands/<nom>.md` ([format pivot](format.md)). Le contenu ne dépend d’aucune CLI : gabarits dans `templates/` (dont `kit-context.md`, qui devient `00_KIT.md`), agents et leurs réglages par défaut dans `agents/`, profils et annuaire de l’organisation (domaines autorisés, profil par email) dans `profiles/`, scripts installés et exécutés sur le poste (garde-fous, frictions) dans `runtime/`. Seules les données propres à une CLI vivent avec son code (`installer/adapters/gemini_defaults.json`). Le code suit le même découpage : `installer/core.py` pour les briques communes, `installer/cli.py` pour l’orchestration (un plan neutre de ce qu’il faut installer), et un module par CLI dans `installer/adapters/` (`gemini.py`, `agy.py`, `codex.py`), tous avec la même interface, décrite dans `installer/interface.py` : le plan neutre (`Plan`), le contexte de `doctor` et le contrat des adaptateurs (`Adapter`, plus deux capacités facultatives, `ContextHost` et `LiveCheck`). `cli.py` ne nomme aucune CLI : il ne parle qu’à cette interface, et un test vérifie que chaque adaptateur la respecte. Le test photo (`tests/snapshot.py`) garantit qu’un changement de code ne modifie aucun fichier installé sans que la référence soit réécrite exprès ; la [matrice des CLI](cli/matrice.md) dit ce que chacun produit ; la sortie Antigravity (plugin, skills de commande) en fait partie. Une CLI de plus est un module d’adaptateur de plus : voir [ajouter une CLI](#ajouter-une-cli).
+Commands are written once in `commands/<name>.md` ([pivot format](format.md)). The content depends on no CLI: templates in `templates/` (including `kit-context.md`, which becomes `00_KIT.md`), agents and their default settings in `agents/`, profiles and the organization directory (allowed domains, profile by email) in `profiles/`, scripts installed and run on the workstation (guardrails, frictions) in `runtime/`. Only data specific to one CLI lives with its code (`installer/adapters/gemini_defaults.json`). The code follows the same split: `installer/core.py` for the shared building blocks, `installer/cli.py` for orchestration (a neutral plan of what to install), and one module per CLI in `installer/adapters/` (`gemini.py`, `agy.py`, `codex.py`), all with the same interface, described in `installer/interface.py`: the neutral plan (`Plan`), the `doctor` context and the adapter contract (`Adapter`, plus two optional capabilities, `ContextHost` and `LiveCheck`). `cli.py` names no CLI: it talks only to this interface, and a test checks that each adapter follows it. The snapshot test (`tests/snapshot.py`) guarantees that a code change alters no installed file unless the reference is rewritten on purpose; the [CLI matrix](cli/matrice.md) says what each one produces; the Antigravity output (plugin, command skills) is part of it. One more CLI is one more adapter module: see [add a CLI](#add-a-cli).
 
-Critères de recette : installation sans édition obligatoire, conservation de `30_USER.md`, changement de profil, conflits non destructifs, découverte des skills et connexion des MCP configurés.
+Acceptance criteria: installation without mandatory editing, `30_USER.md` preserved, profile change, non-destructive conflicts, skill discovery and connection of configured MCP servers.
 
-Quand une version corrige des frictions remontées, le `CHANGELOG` le dit en une ligne, avec le nombre de signalements.
+When a version fixes reported frictions, the `CHANGELOG` says so in one line, with the number of reports.
 
-Règle de support : un ticket ne se règle jamais deux fois à l’oral. Chaque ticket devient un contrôle de `doctor` (avec son remède), une ligne de `docs/troubleshooting.md`, ou un cas d’évaluation dans `evals/cases/`. Le kit est corrigé sur les tickets réels, pas sur des suppositions.
+Support rule: a ticket is never resolved verbally twice. Each ticket becomes a `doctor` check (with its fix), a line in `docs/troubleshooting.md`, or an eval case in `evals/cases/`. The kit is fixed based on real tickets, not assumptions.
 
-Avant une MR : `python3 -m unittest discover -s tests` et `ruff check .` (installé par `pip install -e '.[dev]'`, ou sans installation avec `uvx ruff check .`). La CI lance les deux.
+Before a merge request (MR): `python3 -m unittest discover -s tests` and `ruff check .` (installed by `pip install -e '.[dev]'`, or without installing with `uvx ruff check .`). CI runs both.
 
-## Ajouter un profil
+## Add a profile
 
-1. `profiles/<id>.json` : `practices`, `skills` (partir de `general.json`, puis ajouter le playbook métier), `agents`, `mcp.recommended`, et `commands` seulement pour restreindre la liste (sinon toutes celles dont les skills sont installés).
-2. Le playbook métier, s’il y en a un : [ajouter un skill](extending.md#pour-lorganisation--dans-le-kit), catégorie `domain` ; le brancher dans `commands/build.md` ou `commands/diagnose.md` « si installé ».
-3. Le menu de `setup` : une ligne dans `PROFILE_MENU` (`installer/cli.py`).
-4. Les tests : la liste des profils (`tests/test_profiles_general.py`), un scénario dans `tests/snapshot.py` puis `python3 tests/snapshot.py --update`, et la table des profils : `python3 scripts/profile_table.py --write`.
-5. Le profil dans le README (table des profils).
+1. `profiles/<id>.json`: `practices`, `skills` (start from `general.json`, then add the domain playbook), `agents`, `mcp.recommended`, and `commands` only to restrict the list (otherwise all those whose skills are installed).
+2. The domain playbook, if there is one: [add a skill](extending.md#for-the-organization-in-the-kit), category `domain`; wire it into `commands/build.md` or `commands/diagnose.md` "if installed".
+3. The `setup` menu: a line in `PROFILE_MENU` (`installer/cli.py`).
+4. The tests: the profile list (`tests/test_profiles_general.py`), a scenario in `tests/snapshot.py` then `python3 tests/snapshot.py --update`, and the profile table: `python3 scripts/profile_table.py --write`.
+5. The profile in the README (profile table).
 
-## Ajouter une CLI
+## Add a CLI
 
-Voir [ajouter une CLI](cli/matrice.md#ajouter-une-cli) : un module dans `installer/adapters/`, son entrée dans `ADAPTERS`, sa colonne dans la matrice, sa page dans `docs/cli/`.
+See [add a CLI](cli/matrice.md#add-a-cli): a module in `installer/adapters/`, its entry in `ADAPTERS`, its column in the matrix, its page in `docs/cli/`.

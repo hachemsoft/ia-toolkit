@@ -1,12 +1,12 @@
-# <Nom du projet>
+# <Project name>
 
-<Une phrase : ce que fait ce repo et pour qui.>
+<One sentence: what this repo does and for whom.>
 
 ## Commands
-- Install: `<commande>`
-- Run: `<commande>`
-- Test: `<commande>`
-- Lint: `<commande>`
+- Install: `<command>`
+- Run: `<command>`
+- Test: `<command>`
+- Lint: `<command>`
 
 ## Verifying your work
 Test what changed and what depends on it, whoever owns it. The full suite runs in CI.
@@ -37,15 +37,15 @@ Delete the rows of stacks this repo does not use; add one per other stack, same 
 - Commits and MR: `<convention>`
 
 ## Architecture
-- Warehouse and project: `<projet BigQuery>`, datasets `<liste>`
-- Development target: `<target dbt ou environnement>`; never build on `<prod>` without instruction
+- Warehouse and project: `<BigQuery project>`, datasets `<list>`
+- Development target: `<dbt target or environment>`; never build on `<prod>` without instruction
 - Layers: `<source → staging → intermediate → mart>`; grain documented at the top of each model
-- `<dossier>` holds `<quoi>`; never edit `<généré>`
+- `<folder>` holds `<what>`; never edit `<generated>`
 
 ## Things the agent gets wrong
-- <Erreur vue deux fois, et la règle qui l’évite.>
+- <Mistake seen twice, and the rule that prevents it.>
 
 ## Where the rest lives
-- Architecture: `docs/<fichier>`
-- Models and KPIs: `<chemin>`
-- Runbooks: `<chemin>`
+- Architecture: `docs/<file>`
+- Models and KPIs: `<path>`
+- Runbooks: `<path>`

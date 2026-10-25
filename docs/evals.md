@@ -1,33 +1,33 @@
-# Évaluations
+# Evals
 
-Le contexte, les skills, les commandes et les agents pilotent le comportement de l’agent : ils se testent comme du code. La suite `evals/` rejoue des prompts réels contre chaque CLI prise en charge (`--cli gemini`, `--cli agy` ou `--cli codex`), en mode non interactif, et vérifie des critères déterministes sur la réponse et sur les fichiers.
+Context, skills, commands and agents drive the agent's behavior: they are tested like code. The `evals/` suite replays real prompts against each supported CLI (`--cli gemini`, `--cli agy` or `--cli codex`), in non-interactive mode, and checks deterministic criteria on the response and on the files.
 
-## Lancer
+## Run
 
 ```sh
-python3 evals/run.py --dry-run            # liste les cas, aucun appel au modèle
-python3 evals/run.py                      # contre le kit installé dans votre dossier personnel
+python3 evals/run.py --dry-run            # lists the cases, no model call
+python3 evals/run.py                      # against the kit installed in your home folder
 python3 evals/run.py --home ./sandbox-user --only guide-routes-to-commands
 ```
 
-Chaque cas tourne dans une copie temporaire d’une fixture (`evals/fixtures/`), en mode d’approbation par défaut avec la politique `evals/policy.toml` (écriture et shell refusés) : aucun fichier écrit par l’agent. Options : `--cli gemini|agy|codex`, `--model`, `--approval-mode`, `--timeout`. Code retour 1 si un cas échoue ; `--report` écrit le détail en JSON.
+Each case runs in a temporary copy of a fixture (`evals/fixtures/`), in default approval mode with the `evals/policy.toml` policy (writes and shell denied): the agent writes no file. Options: `--cli gemini|agy|codex`, `--model`, `--approval-mode`, `--timeout`. Exit code 1 if a case fails; `--report` writes the details as JSON.
 
-## Écrire un cas
+## Write a case
 
-Un fichier `evals/cases/NN-nom.json` : `name`, `prompt` (une commande du kit ou une demande telle qu’un utilisateur la tape), `cwd` (fixture), `subdir` (facultatif : sous-dossier où lancer la CLI, pour un monorepo), `expect` avec `contains`, `not_contains`, `regex`, `files_absent`. Les critères portent sur ce qu’un humain vérifierait : la bonne commande est proposée, le glossaire est employé, aucune commande de production n’est suggérée, aucun fichier n’est créé sans accord.
+A file `evals/cases/NN-name.json`: `name`, `prompt` (a kit command or a request as a user types it), `cwd` (fixture), `subdir` (optional: subfolder where the CLI starts, for a monorepo), `expect` with `contains`, `not_contains`, `regex`, `files_absent`. The criteria cover what a human would check: the right command is suggested, the glossary is used, no production command is suggested, no file is created without approval.
 
-Un cas par incident ou par erreur répétée : quand l’agent se trompe, le prompt qui l’a fait se tromper devient un cas, avant de corriger le skill.
+One case per incident or repeated error: when the agent gets it wrong, the prompt that caused the error becomes a case, before fixing the skill.
 
-## En CI
+## In CI
 
-`.github/workflows/agent-evals.yml` installe le kit dans un dossier temporaire, puis lance la suite sur Gemini CLI à chaque MR qui touche `practices/`, `skills/`, `templates/`, `runtime/`, `commands/`, `installer/`, `agents/` ou `evals/`, et chaque lundi. Il attend un secret `GEMINI_API_KEY` ; sans lui, la suite ne peut pas tourner. agy et Codex s’évaluent sur un poste authentifié, avec `--cli agy` ou `--cli codex`.
+`.github/workflows/agent-evals.yml` installs the kit in a temporary folder, then runs the suite on Gemini CLI on every merge request (MR) that touches `practices/`, `skills/`, `templates/`, `runtime/`, `commands/`, `installer/`, `agents/` or `evals/`, and every Monday. It expects a `GEMINI_API_KEY` secret; without it, the suite cannot run. agy and Codex are evaluated on a signed-in workstation, with `--cli agy` or `--cli codex`.
 
-## Limites
+## Limits
 
-Gemini CLI ([sa page](cli/gemini.md)) : en mode non interactif, la version 0.65 n’expose pas l’outil `activate_skill` : les cas mesurent ce que les prompts de commandes obtiennent seuls, pas les skills. Le mode `plan` bloque aussi les skills ; le runner utilise le mode d’approbation par défaut avec `evals/policy.toml` (écriture et shell refusés). Si le modèle par défaut boucle sur votre accès (« Model fallback activated »), imposer le même modèle que dans `overrides.json` avec `--model`.
+Gemini CLI ([its page](cli/gemini.md)): in non-interactive mode, version 0.65 does not expose the `activate_skill` tool, so the cases measure what the command prompts achieve on their own, not the skills. `plan` mode also blocks skills; the runner uses the default approval mode with `evals/policy.toml` (writes and shell denied). If the default model loops on your access ("Model fallback activated"), force the same model as in `overrides.json` with `--model`.
 
-Les réponses du modèle varient ; les critères sont volontairement larges et portent sur des faits (une commande citée, un terme employé, un fichier absent). Un cas qui échoue une fois sur dix dit quelque chose du prompt ou du skill, pas seulement du modèle.
+Model responses vary; the criteria are deliberately broad and check facts (a command cited, a term used, a file absent). A case that fails one time in ten says something about the prompt or the skill, not only about the model.
 
-## Variance connue : `/test` (cas `no-prod-dbt-proposed`)
+## Known variance: `/test` (case `no-prod-dbt-proposed`)
 
-Le cas demande à `/test`, dans la fixture dbt, de lister les vérifications et leur target d’après `AGENTS.md`, qui impose le target de développement. Sur Gemini CLI ([sa page](cli/gemini.md)) en mode non interactif, une exécution sur deux a échoué de la même façon : le modèle écrit « je lis AGENTS.md » sans appeler l’outil de lecture, donc ne voit jamais la règle, et propose `dbt test` sans target. Rien n’est cassé dans le kit ni dans le repo ; c’est le modèle qui saute une étape qu’il annonce. Deux parades, toutes deux en place : le prompt de `/test` exige maintenant de lire `AGENTS.md` avec l’outil de lecture avant toute proposition et interdit d’en supposer le contenu ; et le garde-fou `dbt-prod-guard`, quand il est activé, refuse de toute façon une commande dbt sur un target de production. Si le cas échoue encore à l’occasion, c’est une mesure de la variance du modèle, à noter, pas un ticket.
+The case asks `/test`, in the dbt fixture, to list the checks and their target based on `AGENTS.md`, which requires the development target. On Gemini CLI ([its page](cli/gemini.md)) in non-interactive mode, one run in two failed the same way: the model writes "I'm reading AGENTS.md" without calling the read tool, so it never sees the rule, and suggests `dbt test` without a target. Nothing is broken in the kit or the repository; the model skips a step it announces. Two countermeasures, both in place: the `/test` prompt now requires reading `AGENTS.md` with the read tool before any suggestion and forbids assuming its content; and the `dbt-prod-guard` guardrail, when enabled, blocks any dbt command on a production target anyway. If the case still fails now and then, it measures model variance, to note, not a ticket.

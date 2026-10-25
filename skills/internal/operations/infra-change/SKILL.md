@@ -1,16 +1,16 @@
 ---
 name: infra-change
-description: "Préparer ou revoir un changement d’infrastructure ou de livraison : Terraform, Kubernetes, Helm, pipeline CI/CD, Dockerfile, configuration cloud. Déclencheurs : modifier le pipeline, ajouter une ressource, changer un déploiement, ouvrir un port, monter de version une image, revoir ce plan Terraform."
+description: "Prepare or review an infrastructure or delivery change: Terraform, Kubernetes, Helm, CI/CD pipeline, Dockerfile, cloud configuration. Triggers: modify the pipeline, add a resource, change a deployment, open a port, bump an image version, review this Terraform plan."
 ---
 
 # infra-change
 
-Lire `AGENTS.md`, la structure des environnements (dossiers, workspaces, overlays, valeurs Helm) et la façon dont le repo déploie : qui applique, depuis où, avec quel compte. Travailler sur l’environnement de développement ou de recette que le repo désigne ; jamais la production sans instruction explicite. Avant tout changement, dire le rayon d’impact : ressources créées, modifiées, détruites ou recréées, services touchés, coupure possible. Produire la preuve en lecture seule que le repo prévoit (`terraform plan`, `helm diff`, `kubectl diff`, `--dry-run`, validation du pipeline) et la lire ligne à ligne ; une destruction ou un remplacement non voulu arrête le travail. Ne jamais lancer `apply`, `destroy`, un déploiement ou une commande qui modifie un environnement partagé : proposer la commande et la laisser à la personne ou au pipeline. Vérifier le moindre privilège (droits IAM, ports, exposition publique), l’absence de secret en clair (variables, fichiers, journaux du pipeline) et l’épinglage des versions (images, modules, providers, actions). Écrire le retour arrière avant la livraison. Décrire la livraison avec le skill mr, plan ou diff à l’appui.
+Read `AGENTS.md`, the environment layout (folders, workspaces, overlays, Helm values) and how the repo deploys: who applies, from where, with which account. Work on the development or staging environment the repo designates; never production without an explicit instruction. Before any change, state the blast radius: resources created, modified, destroyed or recreated, services affected, possible outage. Produce the read-only proof the repo provides (`terraform plan`, `helm diff`, `kubectl diff`, `--dry-run`, pipeline validation) and read it line by line; an unintended destruction or replacement stops the work. Never run `apply`, `destroy`, a deployment or any command that modifies a shared environment: propose the command and leave it to the person or the pipeline. Check least privilege (IAM permissions, ports, public exposure), the absence of plaintext secrets (variables, files, pipeline logs) and version pinning (images, modules, providers, actions). Write the rollback before delivery. Describe the delivery with the mr skill, with the plan or diff as evidence.
 
-## Excuses entendues et réponses
-| Excuse | Réponse |
+## Rationalizations and rebuttals
+| Excuse | Rebuttal |
 | --- | --- |
-| « C’est juste une variable, pas besoin de plan » | Une variable peut recréer une ressource ; le plan le dit en dix secondes. |
-| « J’applique en dev, ça ne casse rien » | Un environnement partagé reste partagé ; proposer la commande, ne pas la lancer. |
-| « Je mets `latest`, ce sera toujours à jour » | Une version non épinglée change sans revue ; épingler et monter de version par MR. |
-| « Le retour arrière, on verra si ça casse » | Sans retour arrière écrit, l’incident dure le temps de l’inventer. |
+| "It's just a variable, no need for a plan" | A variable can recreate a resource; the plan tells you in ten seconds. |
+| "I'll apply in dev, it won't break anything" | A shared environment is still shared; propose the command, do not run it. |
+| "I'll use `latest`, it will always be up to date" | An unpinned version changes without review; pin it and bump the version through a merge request (MR). |
+| "Rollback, we'll see if it breaks" | Without a written rollback, the incident lasts as long as it takes to invent one. |

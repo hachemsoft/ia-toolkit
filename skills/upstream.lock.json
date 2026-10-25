@@ -9,5 +9,5 @@
       "catalog_origin": "upstream"
     }
   ],
-  "note": "Skills marqués origin: upstream dans skills/catalog.json, adaptés pour le kit. Commit d’origine non relevé : le noter à la prochaine reprise."
+  "note": "Skills marked origin: upstream in skills/catalog.json, adapted for the kit. Original commit not recorded: note it at the next upstream sync."
 }

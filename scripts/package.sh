@@ -1,5 +1,5 @@
 #!/bin/sh
-# Construit l'archive de distribution du kit : dist/ai-kit-<version>.zip, sans caches ni fichiers locaux.
+# Builds the kit distribution archive: dist/ai-kit-<version>.zip, without caches or local files.
 set -eu
 KIT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 VERSION=$(tr -d '[:space:]' < "$KIT_DIR/VERSION")

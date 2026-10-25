@@ -1,4 +1,4 @@
-"""Adaptateur Antigravity CLI (agy) : plugin ~/.gemini/config/plugins/ai-kit (règles, agents, garde-fous, MCP) et skills de commande."""
+"""Antigravity CLI (agy) adapter: plugin ~/.gemini/config/plugins/ai-kit (rules, agents, guardrails, MCP) and command skills."""
 import json
 import shutil
 import subprocess
@@ -15,14 +15,14 @@ from ..core import (ROOT, USER_CONTEXT, json_bytes,
 AGY_PLUGIN = '.gemini/config/plugins/ai-kit'
 
 def agy_rules_text(context_names, context_dir='.gemini'):
-    lines = ['# Kit IA', '', 'Règles toujours actives du kit, partagées avec les autres CLI. Les fichiers inclus ci-dessous sont la source : ne pas les copier ici.', '']
+    lines = ['# AI Kit', '', 'Always-on kit rules, shared with the other CLIs. The files included below are the source: do not copy them here.', '']
     for name in list(context_names)+[USER_CONTEXT]:
         lines.append('@['+name[:-3].lower()+'](~/'+context_dir+'/'+name+')')
         lines.append('')
-    lines += ['Commandes du kit : chaque commande est un skill du même nom ; `/guide` explique par quoi commencer. Lire aussi `AGENTS.md`, `GLOSSARY.md` et `REVIEW.md` du repo courant.']
+    lines += ['Kit commands: each command is a skill with the same name; `/guide` explains where to start. Also read `AGENTS.md`, `GLOSSARY.md` and `REVIEW.md` in the current repo.']
     return '\n'.join(lines)+'\n'
 
-# --- Interface d'adaptateur ---------------------------------------------------------------------------------------
+# --- Adapter interface ---------------------------------------------------------------------------------------------
 NAME = 'agy'
 LABEL = 'Antigravity CLI'
 COMMAND = 'agy'
@@ -45,21 +45,21 @@ def present(home):
 agy_present = present
 
 def install(p: Plan) -> None:
-    """Plugin ai-kit (règles qui incluent les couches par chemin, agents, garde-fous, MCP) et skills de commande."""
+    """ai-kit plugin (rules that include the layers by path, agents, guardrails, MCP) and command skills."""
     plugin = p.home/AGY_PLUGIN
-    manifest_json = {'name': 'ai-kit', 'displayName': 'Kit IA', 'description': 'Contexte, commandes, garde-fous et agents du Kit IA, partagés avec les autres CLI.', 'version': (ROOT/'VERSION').read_text(encoding='utf-8').strip()}
+    manifest_json = {'name': 'ai-kit', 'displayName': 'AI Kit', 'description': 'AI Kit context, commands, guardrails and agents, shared with the other CLIs.', 'version': (ROOT/'VERSION').read_text(encoding='utf-8').strip()}
     p.managed_write(plugin/'plugin.json', json_bytes(manifest_json), 'Plugin agy')
     p.managed_write(plugin/'rules'/'AGENTS.md', agy_rules_text(p.context_names, p.context_dir.relative_to(p.home).as_posix()).encode('utf-8'), 'Plugin agy')
     if gemini.NAME not in p.active:
-        # agy lit les skills dans ~/.gemini/skills et ses agents ont le format de Gemini : sans Gemini, les poser ici.
+        # agy reads skills from ~/.gemini/skills and its agents use the Gemini format: without Gemini, put them here.
         gemini.write_skills(p)
         for agent, definition in p.agents:
             p.agent_markdown['ai-kit-'+agent] = gemini.agent_markdown(p, agent, definition)
     skill_names = set(p.selected)
     for command in p.commands:
         if command['name'] in skill_names:
-            continue  # un skill du même nom existe déjà : il sert de commande dans agy
-        p.managed_write(p.home/'.gemini'/'skills'/command['name']/'SKILL.md', command_skill_text(command).encode('utf-8'), 'Skill de commande')
+            continue  # a skill with the same name already exists: it serves as the command in agy
+        p.managed_write(p.home/'.gemini'/'skills'/command['name']/'SKILL.md', command_skill_text(command).encode('utf-8'), 'Command skill')
     for agent_name, agent_bytes in p.agent_markdown.items():
         p.managed_write(plugin/'agents'/(agent_name+'.md'), agent_bytes, 'Plugin agy')
     agy_hooks = {}
@@ -75,7 +75,7 @@ def finalize(p: Plan, active: bool = True) -> None:
     return None
 
 def summary(p: Plan) -> Optional[str]:
-    return 'Antigravity : plugin ai-kit installé dans ~/'+AGY_PLUGIN+' (redémarrer agy pour le voir).'
+    return 'Antigravity: ai-kit plugin installed in ~/'+AGY_PLUGIN+' (restart agy to see it).'
 
 def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     plugin_dir = home/AGY_PLUGIN
@@ -84,14 +84,14 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     if shutil.which('agy'):
         try:
             proc = subprocess.run(['agy','plugin','validate',str(plugin_dir)],capture_output=True,text=True,encoding='utf-8',timeout=60)
-            status('Validation passed' in proc.stdout+proc.stderr,'Plugin Antigravity ai-kit valide (agy plugin validate)')
+            status('Validation passed' in proc.stdout+proc.stderr,'Antigravity ai-kit plugin valid (agy plugin validate)')
         except (OSError, subprocess.SubprocessError):
-            print('[Info] agy plugin validate n’a pas pu être lancé.')
+            print('[Info] agy plugin validate could not be run.')
     else:
-        print('[Info] Plugin Antigravity installé ; agy absent du PATH, validation non faite.')
+        print('[Info] Antigravity plugin installed; agy not on the PATH, validation not done.')
 
 def history(home, state):
-    """~/.gemini/antigravity-cli/history.jsonl : une ligne JSON par prompt tapé (display, timestamp en ms, conversationId)."""
+    """~/.gemini/antigravity-cli/history.jsonl: one JSON line per typed prompt (display, timestamp in ms, conversationId)."""
     path = home/'.gemini/antigravity-cli/history.jsonl'
     if not path.is_file():
         return

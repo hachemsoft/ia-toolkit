@@ -1,10 +1,10 @@
 {
   "name": "explain-uses-glossary",
-  "prompt": "/explain le modèle stg_commandes",
+  "prompt": "/explain the stg_commandes model",
   "cwd": "dbt-mini",
   "expect": {
     "regex": [
-      "(commande|stg_commandes)",
+      "(orders?\\b|stg_commandes)",
       "(shop\\.orders|source)"
     ]
   },

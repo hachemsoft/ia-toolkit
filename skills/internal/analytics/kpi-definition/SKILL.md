@@ -1,27 +1,27 @@
 ---
 name: kpi-definition
-description: "Définir ou redéfinir un KPI avant de le calculer : grain, population, période, exclusions, source de vérité, propriétaire. Déclencheurs : définir un indicateur, le KPI ne colle pas, deux chiffres différents pour la même mesure, nouvelle métrique."
+description: "Define or redefine a KPI before computing it: grain, population, period, exclusions, source of truth, owner. Triggers: define an indicator, the KPI doesn't match, two different numbers for the same measure, new metric."
 ---
 
 # kpi-definition
 
-Un KPI sans définition écrite produit deux chiffres différents dès la deuxième personne qui le calcule. La définition précède la requête.
+A KPI without a written definition produces two different numbers as soon as a second person computes it. The definition comes before the query.
 
-## Déroulé
-1. Lire `GLOSSARY.md` et les définitions existantes (doc dbt, dashboards, tickets). Si le terme existe, partir de lui ; ne pas créer un synonyme. Si le repo a un `GLOSSARY-MAP.md` (plusieurs équipes), dire de quel glossaire vient la définition ; un indicateur partagé par plusieurs équipes a une seule définition, dans le glossaire commun, avec un propriétaire nommé, et les glossaires d’équipe y renvoient au lieu de le redéfinir. Si deux définitions existent, le signaler et demander qui tranche avant d’écrire.
-2. Fixer, dans cet ordre, en posant une question à la fois quand c’est ambigu : le grain (une ligne par quoi), la population (qui entre, qui sort, et la règle qui le dit), la période (fenêtre, fuseau, date de référence : événement, enregistrement ou traitement), les exclusions (tests, annulations, doublons, comptes internes), la formule (numérateur, dénominateur, agrégation), la source de vérité (table ou modèle, et pourquoi elle), la fraîcheur attendue, le propriétaire métier.
-3. Écrire la définition dans le format du glossaire : un terme, une définition de deux phrases, les synonymes à éviter ; le détail (formule, exclusions, source) dans la doc du modèle qui le porte.
-4. Écrire la requête d’assertion qui valide la définition sur un cas connu (un mois, un périmètre dont le chiffre est admis) avant la requête de production. Elle devient un test.
-5. Si la définition change un chiffre publié, le dire explicitement et proposer un ADR.
+## Steps
+1. Read `GLOSSARY.md` and the existing definitions (dbt docs, dashboards, tickets). If the term exists, start from it; do not create a synonym. If the repo has a `GLOSSARY-MAP.md` (several teams), say which glossary the definition comes from; an indicator shared by several teams has a single definition, in the common glossary, with a named owner, and the team glossaries refer to it instead of redefining it. If two definitions exist, flag it and ask who decides before writing.
+2. Settle, in this order, asking one question at a time when it is ambiguous: the grain (one row per what), the population (who is in, who is out, and the rule that says so), the period (window, time zone, reference date: event, record or processing), the exclusions (tests, cancellations, duplicates, internal accounts), the formula (numerator, denominator, aggregation), the source of truth (table or model, and why that one), the expected freshness, the business owner.
+3. Write the definition in the glossary format: one term, a two-sentence definition, the synonyms to avoid; the details (formula, exclusions, source) go in the documentation of the model that carries it.
+4. Write the assertion query that validates the definition on a known case (a month, a scope whose number is accepted) before the production query. It becomes a test.
+5. If the definition changes a published number, say so explicitly and propose an ADR.
 
-## Excuses entendues et réponses
-| Excuse | Réponse |
+## Rationalizations and rebuttals
+| Excuse | Rebuttal |
 | --- | --- |
-| « Tout le monde sait ce qu’est un client actif » | Deux équipes ont déjà deux définitions ; écrire la règle d’activité et sa fenêtre. |
-| « On prendra la date de la table, c’est pareil » | Date d’événement, d’enregistrement et de traitement divergent sur les données tardives ; choisir et nommer. |
-| « Le dénominateur est évident » | Le ratio change avec la population du dénominateur ; l’écrire et le tester sur un mois connu. |
-| « On exclura les cas bizarres après » | Les exclusions font partie de la définition ; les lister maintenant, sinon le chiffre bouge à chaque exécution. |
-| « Le dashboard fait déjà foi » | Un dashboard n’est pas une définition ; retrouver sa requête, la lire, la documenter ou la corriger. |
+| "Everyone knows what an active customer is" | Two teams already have two definitions; write the activity rule and its window. |
+| "We'll take the table's date, it's the same" | Event, record and processing dates diverge on late-arriving data; choose and name it. |
+| "The denominator is obvious" | The ratio changes with the denominator's population; write it and test it on a known month. |
+| "We'll exclude the odd cases later" | Exclusions are part of the definition; list them now, otherwise the number moves on every run. |
+| "The dashboard is already the reference" | A dashboard is not a definition; find its query, read it, document it or fix it. |
 
-## Interdits
-Pas de requête de production avant la définition écrite. Pas de nouveau terme quand le glossaire en a un. Pas de chiffre publié sans assertion sur un cas connu.
+## Forbidden
+No production query before the written definition. No new term when the glossary already has one. No published number without an assertion on a known case.

@@ -1,1 +1,1 @@
-"""Installateur du Kit IA, bibliothèque standard uniquement."""
+"""AI Kit installer, standard library only."""

@@ -1,27 +1,27 @@
-# Passer de Gemini CLI à Antigravity CLI : ce qui change, ce qui ne change pas
+# Moving from Gemini CLI to Antigravity CLI: what changes, what does not
 
-Une page pour les personnes qui passent de Gemini CLI à agy. À lire en deux minutes.
+A page for people moving from Gemini CLI to agy. A two-minute read.
 
-## Ce qui ne change pas
+## What does not change
 
-- **Les commandes** : celles de votre profil ([table des profils](../getting-started.md#3-travailler--une-commande-par-étape)) et votre `extra_commands` restent les mêmes. Mêmes noms, mêmes artefacts (`docs/sdlc/<date>-<slug>/intent.md`, `spec.md`, `plan.md`).
-- **Votre fichier** : `~/.gemini/30_USER.md`. Il est lu par les deux outils.
-- **Les repos** : `AGENTS.md`, `GLOSSARY.md`, `REVIEW.md`, `.agents/skills/`. Rien à migrer.
-- **Les garde-fous et le relevé d’usage** : mêmes réglages dans `~/.ai-kit/overrides.json`.
+- **Commands**: those of your profile ([profile table](../getting-started.md#3-work-one-command-per-step)) and your `extra_commands` stay the same. Same names, same artifacts (`docs/sdlc/<date>-<slug>/intent.md`, `spec.md`, `plan.md`).
+- **Your file**: `~/.gemini/30_USER.md`. Both tools read it.
+- **Repositories**: `AGENTS.md`, `GLOSSARY.md`, `REVIEW.md`, `.agents/skills/`. Nothing to migrate.
+- **Guardrails and usage review**: same settings in `~/.ai-kit/overrides.json`.
 
-## Ce qui change
+## What changes
 
-- **Lancer** : `agy` au lieu de `gemini`, toujours depuis le dossier du repo.
-- **Voir ce qui est installé** : `/help` dans agy liste les commandes, qui sont des skills ; `agy plugin list` montre le plugin `ai-kit`.
-- **Un redémarrage** d’agy après chaque `update` du kit, pour qu’il redécouvre le plugin.
-- **Les permissions** : agy demande l’accord avant une commande shell ou une écriture. Répondre ; « toujours autoriser » enregistre la règle dans vos réglages agy, que le kit ne modifie jamais. En mode automatique (`agy -p`), les outils refusés arrêtent la réponse.
+- **Launch**: `agy` instead of `gemini`, still from the repository folder.
+- **See what is installed**: `/help` in agy lists the commands, which are skills; `agy plugin list` shows the `ai-kit` plugin.
+- **A restart** of agy after each kit `update`, so it rediscovers the plugin.
+- **Permissions**: agy asks for approval before a shell command or a write. Answer it; "always allow" saves the rule in your agy settings, which the kit never changes. In automatic mode (`agy -p`), denied tools stop the response.
 
-## Si ça coince
+## Troubleshooting
 
-1. `sh scripts/bootstrap.sh doctor --live` (Mac) ou `.\scripts\bootstrap.ps1 doctor --live` (Windows) : il dit quoi faire.
-2. La page [Ça coince ?](../troubleshooting.md).
-3. Sinon, un ticket : il deviendra un contrôle `doctor`, une ligne de la page, ou un cas d’évaluation, jamais une explication orale répétée.
+1. `sh scripts/bootstrap.sh doctor --live` (Mac) or `.\scripts\bootstrap.ps1 doctor --live` (Windows): it tells you what to do.
+2. The [Troubleshooting](../troubleshooting.md) page.
+3. Otherwise, a ticket: it will become a `doctor` check, a line on the page, or an eval case, never a repeated verbal explanation.
 
-## Pour installer ou mettre à jour
+## Install or update
 
-Depuis le dossier du kit : `sh scripts/bootstrap.sh update` (Mac) ou `.\scripts\bootstrap.ps1 update` (Windows). Le kit détecte Gemini et agy et installe pour les deux.
+From the kit folder: `sh scripts/bootstrap.sh update` (Mac) or `.\scripts\bootstrap.ps1 update` (Windows). The kit detects Gemini and agy and installs for both.

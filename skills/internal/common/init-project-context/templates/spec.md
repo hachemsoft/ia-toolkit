@@ -1,28 +1,28 @@
-# Spec: <titre> (from intent.md <date>)
+# Spec: <title> (from intent.md <date>)
 
-Status: draft | accepted · Reviewed by: <product owner> · Date: <YYYY-MM-DD> · Versioned: this file is the contract reviewers read in the MR
+Status: draft | accepted · Reviewed by: <product owner> · Date: <YYYY-MM-DD> · Versioned: this file is the contract reviewers read in the merge request (MR)
 
 ## Objective
-<Une phrase reliée au Proposed outcome de l’intent.>
+<One sentence tied to the intent's Proposed outcome.>
 
 ## Scope and non-goals
-- In : <…>
-- Out : <…>
+- In: <…>
+- Out: <…>
 
 ## Requirements
-Chaque exigence a un critère d’acceptation vérifiable.
-1. <Exigence> — Acceptance : <ce qu’on observe quand c’est fait>.
+Each requirement has a verifiable acceptance criterion.
+1. <Requirement> — Acceptance: <what you observe when it is done>.
 
 ## Data contracts
-| Objet | Grain | Clé | Sources | Fraîcheur | Règles (dates, exclusions, NULL) |
+| Object | Grain | Key | Sources | Freshness | Rules (dates, exclusions, NULL) |
 | --- | --- | --- | --- | --- | --- |
-| <modèle ou table> | <une ligne par …> | <colonnes> | <…> | <…> | <…> |
+| <model or table> | <one row per …> | <columns> | <…> | <…> | <…> |
 
 ## Constraints and policies applied
-<Pratiques entreprise et Data appliquées pendant la rédaction, avec la règle citée.>
+<Company practices and Data practices applied while writing, with the rule cited.>
 
 ## Areas of concern
-<Là où deux règles se contredisent, où une exigence ne peut pas être tenue, où le coût ou le risque est notable. Chaque point désigne qui tranche.>
+<Where two rules contradict each other, where a requirement cannot be met, where cost or risk is significant. Each point names who decides.>
 
 ## Open questions
 - <…>

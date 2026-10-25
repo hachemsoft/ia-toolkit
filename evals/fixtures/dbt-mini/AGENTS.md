@@ -1,6 +1,6 @@
 # ventes-mini
 
-Mini repo dbt de test pour les évaluations du kit.
+Mini dbt test repo for the kit evaluations.
 
 ## Commands
 - Test: `dbt test --target dev`

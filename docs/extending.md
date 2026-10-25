@@ -1,98 +1,98 @@
-# Ajouter ou remplacer un skill
+# Add or replace a skill
 
-Trois portées, trois endroits. Le choix dépend de qui doit voir le skill, pas de ce qu'il fait.
+Three scopes, three places. The choice depends on who must see the skill, not on what it does.
 
-| Pour | Où le mettre | Vu par | Mise à jour du kit |
+| For | Where to put it | Seen by | Kit update |
 | --- | --- | --- | --- |
-| vous seul | le dossier des skills de votre CLI ([matrice](cli/matrice.md)), `<nom>/SKILL.md` | votre CLI | intact : le kit ne touche qu'aux dossiers qu'il a lui-même installés |
-| un repo et toute son équipe | `<repo>/.agents/skills/<nom>/SKILL.md`, versionné | les CLI qui lisent `.agents/skills/` ([matrice](cli/matrice.md)) | sans effet |
-| toute l'organisation | `skills/internal/<catégorie>/<nom>/` dans le kit, plus le catalogue | tous les postes à la prochaine distribution | c'est le kit |
+| you only | your CLI's skills folder ([matrix](cli/matrice.md)), `<name>/SKILL.md` | your CLI | untouched: the kit only touches folders it installed itself |
+| a repo and its whole team | `<repo>/.agents/skills/<name>/SKILL.md`, versioned | CLIs that read `.agents/skills/` ([matrix](cli/matrice.md)) | no effect |
+| the whole organization | `skills/internal/<category>/<name>/` in the kit, plus the catalog | every workstation at the next distribution | it is the kit |
 
-Un skill est un dossier avec un `SKILL.md` qui commence par un en-tête `name` et `description`, puis des consignes courtes. Les fichiers annexes (gabarits, références) vont dans le même dossier. Le skill `write-a-skill` et la référence `writing-great-skills`, tous deux en option (`extra_skills`), aident à l'écrire ; la règle qui compte : la description dit quand s'en servir, le corps dit quoi faire, rien d'autre.
+A skill is a folder with a `SKILL.md` that starts with a `name` and `description` header, then short instructions. Supporting files (templates, references) go in the same folder. The `write-a-skill` skill and the `writing-great-skills` reference, both optional (`extra_skills`), help you write it. The rule that matters: the description says when to use it, the body says what to do, nothing else.
 
 ```markdown
 ---
 name: revue-dashboard
-description: "Relire un tableau de bord avant publication : filtres, périodes, totaux, libellés. Déclencheurs : relire ce dashboard, avant de publier, le total ne colle pas."
+description: "Review a dashboard before publishing: filters, periods, totals, labels. Triggers: review this dashboard, before publishing, the total does not match."
 ---
 
 # revue-dashboard
-1. Lister les filtres actifs et la période ; comparer au titre.
-2. Recalculer un total sur une période connue ; écart toléré : aucun.
+1. List the active filters and the period; compare with the title.
+2. Recompute a total on a known period; tolerated gap: none.
 3. ...
 ```
 
-## Pour vous seul
+## For you only
 
-Créer `<nom>/SKILL.md` dans le dossier des skills de votre CLI ([matrice](cli/matrice.md)), avec un **nom qui n'existe pas dans le kit**. La CLI le lit au prochain lancement ; `update` le laisse tel quel. Pour vérifier, lister les skills dans la CLI (la commande est sur sa page, voir la [matrice](cli/matrice.md)).
+Create `<name>/SKILL.md` in your CLI's skills folder ([matrix](cli/matrice.md)), with a **name that does not exist in the kit**. The CLI reads it at the next start; `update` leaves it as is. To check, list the skills in the CLI (the command is on its page, see the [matrix](cli/matrice.md)).
 
-Deux pièges. Un dossier de même nom qu'un skill du kit dans ce dossier bloque `update` (« existant non géré par le kit ») : le kit refuse d'écraser ce qu'il n'a pas posé. Et certaines CLI lisent un second dossier de skills qui l'emporte à nom égal et masque le skill du kit (voir la page de votre CLI) ; `doctor` liste les skills ainsi masqués. Pour remplacer un skill du kit sans ces effets, passer par un repo ou par le kit, ci-dessous.
+Two traps. A folder in that location with the same name as a kit skill blocks `update` ("existing file not managed by the kit"): the kit refuses to overwrite what it did not install. And some CLIs read a second skills folder that wins on equal names and hides the kit skill (see your CLI's page); `doctor` lists skills hidden this way. To replace a kit skill without these effects, go through a repo or the kit, below.
 
-## Pour un repo
+## For a repo
 
-Créer `<repo>/.agents/skills/<nom>/SKILL.md` et le versionner. Dans un monorepo, préfixer le nom par la zone (`finance-cloture-mensuelle`) : les skills de repo valent pour toutes les équipes. Les CLI qui lisent `.agents/skills/` le trouvent dans ce repo, et un skill de repo **l'emporte sur un skill du kit de même nom**, vérifié sur les CLI prises en charge ([matrice](cli/matrice.md)) : c'est la façon propre de remplacer, pour un projet, un playbook livré (`sql-review` adapté aux conventions du repo, par exemple). `AGENTS.md` peut le mentionner en une ligne pour que les humains le trouvent aussi.
+Create `<repo>/.agents/skills/<name>/SKILL.md` and version it. In a monorepo, prefix the name with the zone (`finance-cloture-mensuelle`): repo skills apply to all teams. CLIs that read `.agents/skills/` find it in that repo, and a repo skill **wins over a kit skill with the same name**, verified on the supported CLIs ([matrix](cli/matrice.md)). This is the clean way to replace a shipped playbook for one project (for example, `sql-review` adapted to the repo's conventions). `AGENTS.md` can mention it in one line so humans find it too.
 
-Une commande du kit se surcharge de la même façon, sous la forme que lit la CLI ([matrice](cli/matrice.md)).
+Override a kit command the same way, in the form the CLI reads ([matrix](cli/matrice.md)).
 
-## Pour l'organisation : dans le kit
+## For the organization: in the kit
 
-Deux dossiers, deux niveaux d'engagement. `skills/internal/` : livré et maintenu par les mainteneurs du kit, dans les profils. `skills/contrib/` : proposé par une personne ou une équipe qui en reste propriétaire, jamais installé par défaut (`tier: optional`, `origin: contrib`, `owner` dans le catalogue), activable d'une ligne par qui le veut. Un skill contribué qui sert largement passe sous `internal` à une revue d'usage ; un skill sans propriétaire joignable en sort. Les règles sont dans `skills/contrib/README.md` et vérifiées par les tests. La marche ci-dessous vaut pour les deux, seuls le dossier et les champs `origin`, `owner`, `tier` changent.
+Two folders, two levels of commitment. `skills/internal/`: shipped and maintained by the kit maintainers, in the profiles. `skills/contrib/`: proposed by a person or a team who stays its owner, never installed by default (`tier: optional`, `origin: contrib`, `owner` in the catalog), enabled with one line by anyone who wants it. A contributed skill that is widely used moves to `internal` at a usage review; a skill without a reachable owner is removed. The rules are in `skills/contrib/README.md` and checked by the tests. The steps below apply to both; only the folder and the `origin`, `owner`, `tier` fields change.
 
 
-1. **Le dossier** : `skills/internal/<catégorie>/<nom>/SKILL.md` (catégories existantes : `common` pour le workflow et les outils, puis une par métier : `development`, `operations`, `architecture`, `analytics`), ou `skills/contrib/<nom>/SKILL.md` pour une contribution. Le nom du dossier et le `name` de l'en-tête sont identiques.
-2. **Le catalogue** `skills/catalog.json`, une entrée par skill :
+1. **The folder**: `skills/internal/<category>/<name>/SKILL.md` (existing categories: `common` for workflow and tools, then one per domain: `development`, `operations`, `architecture`, `analytics`), or `skills/contrib/<name>/SKILL.md` for a contribution. The folder name and the header `name` are identical.
+2. **The catalog** `skills/catalog.json`, one entry per skill:
    ```json
    "revue-dashboard": {
      "path": "skills/internal/analytics/revue-dashboard",
      "origin": "internal",
-     "description": "Relire un tableau de bord avant publication : filtres, périodes, totaux, libellés.",
+     "description": "Review a dashboard before publishing: filters, periods, totals, labels.",
      "category": "domain",
      "tier": "profile",
      "requires": []
    }
    ```
-   `category` : `workflow` (une étape, derrière une commande), `tool` (utilitaire, derrière une commande), `domain` (playbook métier, activé par la tâche), `reference` (vocabulaire lu par d'autres skills), `setup`. `tier` : `core` (dans tous les profils, un test le vérifie), `profile` (selon le profil), `optional` (via `extra_skills` ou `extra_commands`). `requires` installe les dépendances avec lui ; `needs_agents: true` signale qu'il délègue à des sous-agents.
-3. **Les profils** `profiles/*.json` : l'ajouter aux profils qui doivent l'avoir, ou le laisser `optional`. Un playbook métier n'est jamais dans le profil `general`.
-4. **Une commande, si c'est une étape ou un outil** : un fichier `commands/<nom>.md`, en-tête (`name`, `description` en anglais, `category`, `stage` pour un workflow, `skills`, `order`) et prompt avec `{{args}}` ; voir [le format pivot](format.md). Chaque adaptateur en fait la commande de sa CLI. Une fiche dans `docs/tools.md` pour un outil.
-5. **Un cas d'évaluation** `evals/cases/NN-<nom>.json` avec le prompt qui doit déclencher le skill et un critère observable, puis `python3 -m unittest discover -s tests` et `python3 evals/run.py`.
-6. **Distribuer** : commit, MR, tag ; les postes font `git pull` puis `update`.
+   `category`: `workflow` (a step, behind a command), `tool` (utility, behind a command), `domain` (domain playbook, activated by the task), `reference` (vocabulary read by other skills), `setup`. `tier`: `core` (in all profiles, a test checks it), `profile` (depends on the profile), `optional` (through `extra_skills` or `extra_commands`). `requires` installs the dependencies with it; `needs_agents: true` signals that it delegates to subagents.
+3. **The profiles** `profiles/*.json`: add it to the profiles that need it, or leave it `optional`. A domain playbook is never in the `general` profile.
+4. **A command, if it is a step or a tool**: a `commands/<name>.md` file, with a header (`name`, `description` in English, `category`, `stage` for a workflow, `skills`, `order`) and a prompt with `{{args}}`; see [the pivot format](format.md). Each adapter turns it into its CLI's command. Add an entry in `docs/tools.md` for a tool.
+5. **An eval case** `evals/cases/NN-<name>.json` with the prompt that must trigger the skill and an observable criterion, then `python3 -m unittest discover -s tests` and `python3 evals/run.py`.
+6. **Distribute**: commit, merge request (MR), tag; workstations run `git pull` then `update`.
 
-## Exemple complet : un outil `/dashboard-check` en vingt minutes
+## Full example: a `/dashboard-check` tool in twenty minutes
 
-Le besoin : relire un tableau de bord avant publication. Un skill, une commande, un cas d'évaluation, et il existe dans chaque CLI prise en charge.
+The need: review a dashboard before publishing. One skill, one command, one eval case, and it exists in every supported CLI.
 
-1. Le skill, `skills/contrib/dashboard-check/SKILL.md` (contribution d'une analyste qui en reste propriétaire) :
+1. The skill, `skills/contrib/dashboard-check/SKILL.md` (contributed by an analyst who stays its owner):
 
    ```markdown
    ---
    name: dashboard-check
-   description: "Relire un tableau de bord avant publication : filtres, période, totaux, libellés. Déclencheurs : relire ce dashboard, avant de publier, le total ne colle pas."
+   description: "Review a dashboard before publishing: filters, period, totals, labels. Triggers: review this dashboard, before publishing, the total does not match."
    ---
 
    # dashboard-check
-   1. Lister les filtres actifs et la période ; vérifier qu'ils correspondent au titre.
-   2. Recalculer un total sur une période dont le chiffre est connu ; écart toléré : aucun.
-   3. Relire chaque libellé avec le GLOSSARY.md du repo ; proposer les termes manquants.
-   4. Rendre : ce qui est vérifié, ce qui ne l'est pas, ce qu'il faut corriger avant publication.
+   1. List the active filters and the period; check that they match the title.
+   2. Recompute a total on a period whose figure is known; tolerated gap: none.
+   3. Check each label against the repo's GLOSSARY.md; propose the missing terms.
+   4. Report: what is verified, what is not, what must be fixed before publishing.
 
-   ## Interdits
-   Pas de validation sur un échantillon ; pas de total "à peu près".
+   ## Forbidden
+   No validation on a sample; no "roughly right" total.
    ```
 
-2. L'entrée de catalogue, dans `skills/catalog.json` :
+2. The catalog entry, in `skills/catalog.json`:
 
    ```json
    "dashboard-check": {
      "path": "skills/contrib/dashboard-check",
      "origin": "contrib",
      "owner": "equipe-reporting",
-     "description": "Relire un tableau de bord avant publication : filtres, période, totaux, libellés.",
+     "description": "Review a dashboard before publishing: filters, period, totals, labels.",
      "category": "tool",
      "tier": "optional"
    }
    ```
 
-3. La commande, `commands/dashboard-check.md` :
+3. The command, `commands/dashboard-check.md`:
 
    ```markdown
    ---
@@ -110,30 +110,30 @@ Le besoin : relire un tableau de bord avant publication. Un skill, une commande,
    Answer in the user's language. State in one line whether this is a quick check or a full review. Follow the skill's four steps and end with what blocks publication.
    ```
 
-4. Le cas d'évaluation, `evals/cases/05-dashboard-check-totals.json` :
+4. The eval case, `evals/cases/05-dashboard-check-totals.json`:
 
    ```json
    {
      "name": "dashboard-check-totals",
-     "prompt": "/dashboard-check le tableau de bord ventes mensuelles, total octobre 1 240 commandes",
+     "prompt": "/dashboard-check the monthly sales dashboard, October total 1,240 orders",
      "cwd": "dbt-mini",
-     "expect": { "regex": ["(total|1 240)", "(filtre|période)"] }
+     "expect": { "regex": ["(total|1,240)", "(filter|period)"] }
    }
    ```
 
-5. Vérifier et distribuer : `python3 -m unittest discover -s tests`, `python3 evals/run.py --only dashboard-check-totals`, puis commit, MR et tag ; les postes font `git pull` puis `update`. Qui veut l'outil l'active d'une ligne : `{"extra_commands": ["dashboard-check"]}` dans `~/.ai-kit/overrides.json`, puis `update` ; `/dashboard-check` apparaît dans chaque CLI prise en charge.
+5. Check and distribute: `python3 -m unittest discover -s tests`, `python3 evals/run.py --only dashboard-check-totals`, then commit, merge request (MR) and tag; workstations run `git pull` then `update`. Anyone who wants the tool enables it with one line: `{"extra_commands": ["dashboard-check"]}` in `~/.ai-kit/overrides.json`, then `update`; `/dashboard-check` appears in every supported CLI.
 
-## Remplacer un skill du kit pour l'organisation
+## Replace a kit skill for the organization
 
-Garder le nom et, s'il y en a une, la commande : les autres skills et les docs s'y réfèrent. Deux cas.
+Keep the name and, if there is one, the command: other skills and the docs refer to them. Two cases.
 
-- **Skill interne** (`origin: internal`) : modifier le `SKILL.md` en place, rejouer tests et évaluations.
-- **Skill du socle** (`origin: upstream`, repris tel quel sous licence MIT) : ne pas l'éditer, il sera écrasé à la prochaine recopie amont. Écrire une version maison courte dans `skills/internal/<catégorie>/<nom>/`, même nom, changer `path` et `origin` dans le catalogue. L'ancienne version reste disponible en la gardant sous un autre nom en `optional`. C'est ce que la [revue d'usage](usage-review.md) appelle « version maison ».
+- **Internal skill** (`origin: internal`): edit the `SKILL.md` in place, rerun tests and evals.
+- **Base skill** (`origin: upstream`, taken as is under the MIT license): do not edit it; the next upstream copy will overwrite it. Write a short in-house version in `skills/internal/<category>/<name>/`, same name, and change `path` and `origin` in the catalog. The old version stays available if you keep it under another name as `optional`. This is what the [usage review](usage-review.md) calls an "in-house version".
 
-## Retirer un skill
+## Remove a skill
 
-Pour soi : `"disabled_skills": ["<nom>"]` dans `~/.ai-kit/overrides.json`, puis `update`. Un skill requis par un autre ne se désactive pas seul ; `update` le dit. Pour l'organisation : le passer en `optional` dans le catalogue plutôt que de le supprimer, ce qui le laisse accessible d'une ligne.
+For yourself: `"disabled_skills": ["<name>"]` in `~/.ai-kit/overrides.json`, then `update`. A skill required by another one cannot be disabled on its own; `update` says so. For the organization: set it to `optional` in the catalog rather than deleting it, so it stays available with one line.
 
-## Ce qui ne se personnalise pas par un skill
+## What a skill does not customize
 
-Les préférences de forme et de langue : `30_USER.md` dans le dossier de la CLI. Les règles d'un repo : son `AGENTS.md`. Les garde-fous déterministes : `overrides.json` sous `hooks` et le fichier `.ai-kit/protected-paths` du repo. Les agents : `extra_agents` et `disabled_agents`, ou un fichier dans `agents/internal/` du kit. Voir [personnalisation](customization.md).
+Form and language preferences: `30_USER.md` in the CLI folder. A repo's rules: its `AGENTS.md`. Deterministic guardrails: `overrides.json` under `hooks` and the repo's `.ai-kit/protected-paths` file. Agents: `extra_agents` and `disabled_agents`, or a file in the kit's `agents/internal/`. See [customization](customization.md).

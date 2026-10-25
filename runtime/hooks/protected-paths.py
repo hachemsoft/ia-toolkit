@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Garde-fou Gemini (BeforeTool, write_file|replace) : refuse l'écriture sous un chemin protégé.
+"""Gemini guardrail (BeforeTool, write_file|replace): blocks writes under a protected path.
 
-Les chemins protégés sont des motifs glob, un par ligne, dans <repo>/.ai-kit/protected-paths (ou l'ancien <repo>/.gemini/protected-paths), commentaires avec #.
-Exemple : target/**  ·  models/legacy/**  ·  *.lock  ·  dbt_project.yml
-Sans fichier de motifs, tout est autorisé. Sortie : JSON {"decision": "deny", "reason": ...} ou {}.
+Protected paths are glob patterns, one per line, in <repo>/.ai-kit/protected-paths (or the legacy <repo>/.gemini/protected-paths), comments with #.
+Example: target/**  ·  models/legacy/**  ·  *.lock  ·  dbt_project.yml
+Without a patterns file, everything is allowed. Output: JSON {"decision": "deny", "reason": ...} or {}.
 """
 import fnmatch
 import json
@@ -11,7 +11,7 @@ import os
 import re
 import sys
 
-# Fichier des chemins protégés d'un dossier : .ai-kit/protected-paths (neutre, toutes CLI), et l'ancien .gemini/protected-paths, lu aussi.
+# Protected-paths file of a folder: .ai-kit/protected-paths (neutral, all CLIs), and the legacy .gemini/protected-paths, also read.
 PATTERN_FILES = (os.path.join('.ai-kit', 'protected-paths'), os.path.join('.gemini', 'protected-paths'))
 
 def patterns(directory):
@@ -25,8 +25,8 @@ def patterns(directory):
     return found
 
 def pattern_dirs(cwd):
-    """Dossiers dont le fichier des chemins protégés s'applique : du dossier de lancement jusqu'à la racine du repo
-    (le premier dossier qui contient .git). Un monorepo lancé depuis un sous-dossier reste protégé par la racine."""
+    """Folders whose protected-paths file applies: from the launch folder up to the repo root
+    (the first folder that contains .git). A monorepo started from a subfolder stays protected by the root."""
     dirs, current = [], os.path.abspath(cwd)
     while True:
         dirs.append(current)
@@ -38,22 +38,22 @@ def pattern_dirs(cwd):
         current = parent
 
 def matches(relative, pattern):
-    # '**' couvre aussi zéro dossier ; fnmatch ne le fait pas seul. Comparaison insensible à la casse (macOS, Windows).
+    # '**' also covers zero folders; fnmatch does not do that on its own. Case-insensitive comparison (macOS, Windows).
     relative, pattern = relative.lower(), pattern.lower()
     candidates = {pattern, pattern.replace('/**', ''), pattern.replace('**/', '')}
     if any(fnmatch.fnmatchcase(relative, c) for c in candidates):
         return True
-    # Préfixe de dossier avec frontière : target/** protège target/x.sql, pas targets/x.sql.
+    # Folder prefix with a boundary: target/** protects target/x.sql, not targets/x.sql.
     return any(relative == p[:-3] or relative.startswith(p[:-3] + '/') for p in candidates if p.endswith('/**'))
 
 def deny_output(payload, reason):
-    """Refus dans la forme que la CLI attend : Codex et les CLI au format PreToolUse valident strictement leur sortie."""
+    """Refusal in the shape the CLI expects: Codex and the CLIs using the PreToolUse format validate their output strictly."""
     if payload.get('hook_event_name') == 'PreToolUse':
         return {'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': reason}}
     return {'decision': 'deny', 'reason': reason}
 
 def as_text(value):
-    """Une commande peut arriver en chaîne ou en liste d'arguments (Codex : ["bash", "-lc", "..."])."""
+    """A command can arrive as a string or as a list of arguments (Codex: ["bash", "-lc", "..."])."""
     if isinstance(value, list):
         return ' '.join(str(v) for v in value)
     return str(value or '')
@@ -61,7 +61,7 @@ def as_text(value):
 PATCH_HEADER = re.compile(r'^\*\*\* (?:Add|Update|Delete) File: (.+)$|^\*\*\* Move to: (.+)$|^\+\+\+ b/(.+)$', re.M)
 
 def target_paths(tool, args):
-    """Fichiers qu'un appel d'outil va écrire : un chemin direct (Gemini, agy, CLI au format Write/Edit) ou les en-têtes d'un patch (Codex apply_patch)."""
+    """Files a tool call will write: a direct path (Gemini, agy, CLIs using the Write/Edit format) or the headers of a patch (Codex apply_patch)."""
     if not isinstance(args, dict):
         args = {'input': args}
     for key in ('file_path', 'TargetFile', 'AbsolutePath', 'FilePath', 'path', 'Path'):
@@ -76,7 +76,7 @@ def target_paths(tool, args):
     return []
 
 def use_utf8():
-    """Les CLI envoient et lisent de l'UTF-8 ; sous Windows, la console vaut cp1252 par défaut : la forcer pour l'entrée et la sortie."""
+    """The CLIs send and read UTF-8; on Windows the console defaults to cp1252: force UTF-8 for input and output."""
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding='utf-8')
@@ -90,8 +90,8 @@ def main():
     except Exception:
         print('{}')
         return
-    # Formes d'entrée : Gemini CLI (tool_name / tool_input.file_path), Antigravity (toolCall.name / toolCall.args.TargetFile...),
-    # Codex (hook_event_name PreToolUse, apply_patch dont les chemins sont dans les en-têtes du patch).
+    # Input shapes: Gemini CLI (tool_name / tool_input.file_path), Antigravity (toolCall.name / toolCall.args.TargetFile...),
+    # Codex (hook_event_name PreToolUse, apply_patch whose paths are in the patch headers).
     call = payload.get('toolCall') or {}
     tool = str(payload.get('tool_name') or call.get('name') or '')
     if not re.search(r'write|replace|edit|patch', tool, re.I):
@@ -112,20 +112,20 @@ def main():
     print('{}')
 
 def check(file_path, cwd):
-    """Raison du refus si le fichier tombe sous un chemin protégé, sinon None."""
+    """Reason for refusal if the file falls under a protected path, otherwise None."""
     absolute = file_path if os.path.isabs(file_path) else os.path.join(cwd, file_path)
     for directory in pattern_dirs(cwd):
         try:
             relative = os.path.relpath(os.path.normpath(absolute), os.path.normpath(directory)).replace(os.sep, '/')
         except ValueError:
-            # Windows : autre lecteur que ce dossier, donc hors de ses motifs.
+            # Windows: a different drive from this folder, so outside its patterns.
             continue
         if relative == '..' or relative.startswith('../'):
             continue
         for pattern in patterns(directory):
             if not matches(relative, pattern):
                 continue
-            return 'Refusé par le kit : « ' + relative + ' » correspond au chemin protégé « ' + pattern + ' » déclaré dans les chemins protégés du repo (.ai-kit/protected-paths). Proposer le changement à une personne plutôt que de l’écrire.'
+            return 'Blocked by the kit: "' + relative + '" matches the protected path "' + pattern + '" declared in the repo protected paths (.ai-kit/protected-paths). Propose the change to a person instead of writing it.'
     return None
 
 if __name__ == '__main__':

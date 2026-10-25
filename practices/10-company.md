@@ -1,8 +1,8 @@
-# Pratiques entreprise — base proposée à valider
-Ces recommandations sont une proposition initiale, pas une politique interne approuvée.
-- Respecter les habilitations et utiliser les services autorisés par l’entreprise.
-- Garder les secrets hors du code, des prompts, des logs et des commits.
-- Minimiser les données personnelles exposées dans les exemples et résultats.
-- Expliciter les hypothèses et demander les décisions métier manquantes.
-- Documenter les décisions transverses selon le processus du projet.
-- Les instructions textuelles ne remplacent pas les contrôles IAM ni les politiques administrées.
+# Company practices — proposed baseline, to validate
+These recommendations are an initial proposal, not an approved internal policy.
+- Respect access rights and use the services authorized by the company.
+- Keep secrets out of code, prompts, logs and commits.
+- Minimize personal data exposed in examples and results.
+- State assumptions explicitly and ask for missing business decisions.
+- Document cross-cutting decisions according to the project's process.
+- Text instructions do not replace IAM controls or administered policies.

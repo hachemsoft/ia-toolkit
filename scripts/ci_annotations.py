@@ -1,6 +1,6 @@
-"""Publie chaque test en échec comme annotation GitHub Actions (::error), lisible sans ouvrir les journaux.
+"""Publishes each failing test as a GitHub Actions annotation (::error), readable without opening the logs.
 
-Usage en CI, après `python -m unittest ... 2>&1 | tee test-output.txt` : python scripts/ci_annotations.py test-output.txt
+Usage in CI, after `python -m unittest ... 2>&1 | tee test-output.txt`: python scripts/ci_annotations.py test-output.txt
 """
 import re
 import sys
@@ -9,7 +9,7 @@ SEPARATOR = re.compile(r'^(=+|-+)$')
 
 
 def failures(text):
-    """(titre, détail) pour chaque bloc FAIL: ou ERROR: de la sortie unittest."""
+    """(title, detail) for each FAIL: or ERROR: block of the unittest output."""
     lines = text.splitlines()
     for index, line in enumerate(lines):
         if not re.match(r'^(FAIL|ERROR): ', line):
@@ -27,7 +27,7 @@ def escape(value):
 
 
 if __name__ == '__main__':
-    sys.stdout.reconfigure(encoding='utf-8')  # console Windows en cp1252 : les traces contiennent des accents
+    sys.stdout.reconfigure(encoding='utf-8')  # Windows console in cp1252: tracebacks may contain non-ASCII characters
     with open(sys.argv[1], encoding='utf-8', errors='replace') as handle:
         output = handle.read()
     for title, detail in failures(output):

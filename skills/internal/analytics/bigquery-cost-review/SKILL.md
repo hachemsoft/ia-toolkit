@@ -1,28 +1,28 @@
 ---
 name: bigquery-cost-review
-description: "Revoir le coût d’une requête, d’un modèle ou d’un job BigQuery avant et après un changement : octets lus, partitions, clustering, slots, fréquence. Déclencheurs : coût BigQuery, facture, octets scannés, requête chère, optimiser le coût, pourquoi ça coûte."
+description: "Review the cost of a BigQuery query, model or job before and after a change: bytes read, partitions, clustering, slots, frequency. Triggers: BigQuery cost, bill, bytes scanned, expensive query, optimize cost, why does this cost so much."
 ---
 
 # bigquery-cost-review
 
-Le coût se mesure, il ne s’estime pas à l’œil. Une seule modification entre deux mesures.
+Cost is measured, not eyeballed. One change between two measurements.
 
-## Déroulé
-1. Obtenir le SQL, le schéma des tables lues (partitionnement, clustering), la fréquence d’exécution et le mode de facturation (à la demande ou slots).
-2. Mesurer avant : estimation d’octets par dry run, et pour un job déjà exécuté, octets facturés, slots-ms et durée dans l’historique des jobs. Noter les trois chiffres ; un dry run ne donne ni temps ni slots.
-3. Chercher dans cet ordre : filtre de partition absent ou non poussé (fonction sur la colonne de partition, jointure avant filtre), colonnes lues inutilement, tables non partitionnées lues en entier, jointures qui multiplient avant d’agréger, sous-requêtes répétées, résultats intermédiaires qui mériteraient une table.
-4. Proposer une modification à la fois, qui conserve la sémantique. Vérifier l’égalité des résultats sur un périmètre représentatif par une requête de comparaison. Mesurer après, avec les mêmes trois chiffres.
-5. Ramener au coût mensuel : octets ou slots par exécution fois la fréquence. C’est ce chiffre qui décide si le changement vaut sa complexité.
-6. Fixer un budget maximal avant toute nouvelle exécution coûteuse ; refuser de lancer une requête dont l’estimation dépasse ce budget sans accord.
+## Steps
+1. Get the SQL, the schema of the tables read (partitioning, clustering), the run frequency and the billing model (on-demand or slots).
+2. Measure before: bytes estimate from a dry run, and for a job already run, bytes billed, slot-ms and duration from the job history. Note the three figures; a dry run gives neither time nor slots.
+3. Look, in this order, for: a missing or non-pushed-down partition filter (function on the partition column, join before filter), columns read needlessly, unpartitioned tables read in full, joins that multiply rows before aggregating, repeated subqueries, intermediate results that deserve a table.
+4. Propose one change at a time that preserves semantics. Verify the results are equal on a representative scope with a comparison query. Measure after, with the same three figures.
+5. Convert to monthly cost: bytes or slots per run times the frequency. That number decides whether the change is worth its complexity.
+6. Set a maximum budget before any new expensive run; refuse to run a query whose estimate exceeds that budget without agreement.
 
-## Excuses entendues et réponses
-| Excuse | Réponse |
+## Rationalizations and rebuttals
+| Excuse | Rebuttal |
 | --- | --- |
-| « Un LIMIT réduit les octets lus » | Non : BigQuery lit les colonnes entières ; seul un filtre de partition ou de cluster réduit le scan. |
-| « Le dry run dit que c’est petit » | Le dry run ignore les slots et le temps ; regarder le job réel pour une requête lente. |
-| « C’est une petite requête » | Une petite requête lancée toutes les cinq minutes coûte plus qu’une grosse mensuelle ; compter la fréquence. |
-| « SELECT * est plus simple à maintenir » | Chaque colonne lue est facturée ; nommer les colonnes. |
-| « On a optimisé, c’est forcément moins cher » | Mesurer après, avec les mêmes chiffres qu’avant ; sinon ce n’est pas une optimisation, c’est une hypothèse. |
+| "A LIMIT reduces bytes read" | No: BigQuery reads whole columns; only a partition or cluster filter reduces the scan. |
+| "The dry run says it's small" | The dry run ignores slots and time; look at the actual job for a slow query. |
+| "It's a small query" | A small query run every five minutes costs more than a large monthly one; count the frequency. |
+| "SELECT * is easier to maintain" | Every column read is billed; name the columns. |
+| "We optimized, so it's necessarily cheaper" | Measure after, with the same figures as before; otherwise it is not an optimization, it is a hypothesis. |
 
-## Interdits
-Pas de recommandation sans mesure avant et après. Pas d’exécution au-delà du budget fixé. Pas de changement de sémantique présenté comme une optimisation.
+## Forbidden
+No recommendation without a before and after measurement. No run beyond the set budget. No semantic change presented as an optimization.

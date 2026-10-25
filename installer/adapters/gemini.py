@@ -1,4 +1,4 @@
-"""Adaptateur Gemini CLI : couches dans ~/.gemini, skills, commandes TOML, agents, réglages, authentification, journaux."""
+"""Gemini CLI adapter: layers in ~/.gemini, skills, TOML commands, agents, settings, authentication, logs."""
 import json
 import os
 from pathlib import Path
@@ -14,33 +14,33 @@ from ..core import (ROOT, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, PROJECT
                     digest, merge_defaults, run_timed,
                     record_auto_friction, _ts)
 
-PROJECT_CONTEXT = ('GEMINI.md', 'AGENTS.md')  # fichiers de contexte de repo que Gemini doit lire
+PROJECT_CONTEXT = ('GEMINI.md', 'AGENTS.md')  # repo context files Gemini must read
 
 ENV_MARKER = '# ai-kit : '
 
 ENV_KEYS = ('GOOGLE_GENAI_USE_VERTEXAI', 'GOOGLE_CLOUD_PROJECT', 'GOOGLE_CLOUD_LOCATION')
 
 def env_text(env_file, managed):
-    """Contenu de ~/.gemini/.env : les lignes de l'utilisateur sont conservées, les lignes du kit (marqueur + variables gérées) remplacées ou retirées."""
+    """Content of ~/.gemini/.env: the user's lines are kept, the kit lines (marker + managed variables) replaced or removed."""
     lines = env_file.read_text(encoding='utf-8').splitlines() if env_file.exists() else []
     kept = [line for line in lines if line.split('=',1)[0].strip() not in ENV_KEYS and not line.strip().startswith(ENV_MARKER)]
     if managed is not None:
         label, variables = managed
-        kept += [ENV_MARKER + label + ' (géré par le kit, modifier overrides.json)'] + [k+'='+v for k,v in variables.items()]
+        kept += [ENV_MARKER + label + ' (managed by the kit, edit overrides.json)'] + [k+'='+v for k,v in variables.items()]
     if not kept and not lines:
         return None
     return '\n'.join(kept) + '\n' if kept else ''
 
 def merge_context_filenames(settings, managed=(), retired=()):
-    """Garantir le contexte du kit et du projet, sans retirer les fichiers personnels ; retirer les couches que le kit gérait et ne produit plus."""
+    """Ensure the kit and project context, without removing personal files; remove the layers the kit used to manage and no longer produces."""
     context = settings.setdefault('context', {})
     if not isinstance(context, dict):
-        raise KitError('context doit être un objet ; configuration laissée intacte.')
+        raise KitError('context must be an object; configuration left untouched.')
     names = context.get('fileName', [])
     if isinstance(names, str):
         names = [names]
     if not isinstance(names, list) or not all(isinstance(name, str) and name.strip() for name in names):
-        raise KitError('context.fileName doit être un nom ou une liste de noms non vides ; configuration laissée intacte.')
+        raise KitError('context.fileName must be a name or a list of non-empty names; configuration left untouched.')
     stale = set(retired) - set(managed)
     context['fileName'] = list(dict.fromkeys(list(managed) + [USER_CONTEXT] + list(PROJECT_CONTEXT) + [n for n in names if n not in stale]))
     return settings
@@ -49,13 +49,13 @@ def context_parts(text):
     if START not in text and END not in text:
         return text, None, ''
     if text.count(START) != 1 or text.count(END) != 1:
-        raise KitError('Marqueurs du kit invalides dans GEMINI.md.')
+        raise KitError('Invalid kit markers in GEMINI.md.')
     before, rest = text.split(START)
     managed, after = rest.split(END)
     return before, START+managed+END, after
 
 def gemini_active_account(home):
-    """Compte Google actif de Gemini, ou None. Lecture seule, jamais les jetons."""
+    """Active Google account of Gemini, or None. Read only, never the tokens."""
     path = home/'.gemini/google_accounts.json'
     if not path.exists():
         return None
@@ -67,53 +67,53 @@ def gemini_active_account(home):
     return active if isinstance(active, str) and EMAIL.fullmatch(active) else None
 
 def gemini_command_toml(command):
-    """Adaptateur Gemini CLI : fichier de commande TOML (description, prompt avec {{args}})."""
+    """Gemini CLI adapter: TOML command file (description, prompt with {{args}})."""
     return 'description = ' + json.dumps(command['description'], ensure_ascii=False) + '\n\nprompt = """\n' + command['prompt'] + '"""\n'
 
 def kit_hook_groups(groups):
-    """Indices des groupes de hooks posés par le kit dans une liste de settings."""
+    """Indexes of the hook groups added by the kit in a settings list."""
     return [i for i,g in enumerate(groups) if isinstance(g,dict) and any(isinstance(h,dict) and str(h.get('name','')).startswith('ai-kit-') for h in g.get('hooks',[]))]
 
-LIVE_PROMPT = 'Réponds uniquement OK.'
+LIVE_PROMPT = 'Reply with OK only.'
 
 def diagnose_live(returncode, output, timed_out, settings):
-    """Un diagnostic en une phrase et le remède, à partir de la sortie d'un appel réel à Gemini."""
+    """A one-sentence diagnosis and the fix, from the output of a real call to Gemini."""
     if timed_out:
-        return ('Gemini ne répond pas dans le délai : le modèle par défaut est probablement indisponible sur votre accès et Gemini boucle sur un repli.',
-                'Fixer un modèle : "model": "gemini-2.5-flash" dans ~/.ai-kit/overrides.json puis update (ou model.name dans ~/.gemini/settings.json).')
+        return ('Gemini does not answer in time: the default model is probably unavailable for your access and Gemini is looping on a fallback.',
+                'Pin a model: "model": "gemini-2.5-flash" in ~/.ai-kit/overrides.json then update (or model.name in ~/.gemini/settings.json).')
     if 'prepayment credits are depleted' in output or ('402' in output and 'credits' in output):
-        return ('Crédits AI Studio épuisés : la clé API configurée n’a plus de solde (HTTP 402).',
-                'Recharger le projet AI Studio, ou passer en connexion Google (/auth dans gemini), ou en Vertex AI (selectedType vertex-ai, GOOGLE_GENAI_USE_VERTEXAI=true, GOOGLE_CLOUD_PROJECT).')
+        return ('AI Studio credits depleted: the configured API key has no balance left (HTTP 402).',
+                'Top up the AI Studio project, or switch to Google sign-in (/auth in gemini), or to Vertex AI (selectedType vertex-ai, GOOGLE_GENAI_USE_VERTEXAI=true, GOOGLE_CLOUD_PROJECT).')
     if 'API Keys are Disallowed' in output or 'API keys are not supported' in output:
-        return ('La politique de votre organisation Google Cloud interdit les clés API.',
-                'Utiliser les identifiants applicatifs : gcloud auth application-default login, selectedType vertex-ai, et retirer GEMINI_API_KEY / GOOGLE_API_KEY de l’environnement.')
+        return ('Your Google Cloud organization policy forbids API keys.',
+                'Use application default credentials: gcloud auth application-default login, selectedType vertex-ai, and remove GEMINI_API_KEY / GOOGLE_API_KEY from the environment.')
     if 'aiplatform.googleapis.com' in output and ('has not been used' in output or 'is disabled' in output):
         match = re.search(r'project=([a-z0-9-]+)', output)
-        project = match.group(1) if match else os.environ.get('GOOGLE_CLOUD_PROJECT', '<projet>')
-        return ('L’API Vertex AI n’est pas activée sur le projet ' + project + ' (HTTP 403).',
+        project = match.group(1) if match else os.environ.get('GOOGLE_CLOUD_PROJECT', '<project>')
+        return ('The Vertex AI API is not enabled on project ' + project + ' (HTTP 403).',
                 'gcloud services enable aiplatform.googleapis.com --project ' + project)
     if 'When using Vertex AI, you must specify' in output:
-        return ('Authentification Vertex AI sans projet ni région.',
-                'Déclarer le projet dans ~/.ai-kit/overrides.json : "vertex": {"project": "<projet>", "location": "<région>"} puis update ; ou exporter GOOGLE_CLOUD_PROJECT et GOOGLE_CLOUD_LOCATION.')
+        return ('Vertex AI authentication without a project or region.',
+                'Declare the project in ~/.ai-kit/overrides.json: "vertex": {"project": "<project>", "location": "<region>"} then update; or export GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION.')
     if 'requires setting the GOOGLE_CLOUD_PROJECT' in output:
-        return ('Votre compte Gemini Code Assist (licence Standard ou Enterprise) exige un projet Google Cloud.',
-                'Déclarer "code_assist": {"project": "<projet>"} dans ~/.ai-kit/overrides.json puis update ; ou exporter GOOGLE_CLOUD_PROJECT.')
+        return ('Your Gemini Code Assist account (Standard or Enterprise licence) requires a Google Cloud project.',
+                'Declare "code_assist": {"project": "<project>"} in ~/.ai-kit/overrides.json then update; or export GOOGLE_CLOUD_PROJECT.')
     if 'Please set an Auth method' in output:
-        return ('Aucune authentification Gemini configurée.',
-                'Lancer gemini puis /auth, ou définir GEMINI_API_KEY, ou GOOGLE_GENAI_USE_VERTEXAI=true avec GOOGLE_CLOUD_PROJECT.')
+        return ('No Gemini authentication configured.',
+                'Run gemini then /auth, or set GEMINI_API_KEY, or GOOGLE_GENAI_USE_VERTEXAI=true with GOOGLE_CLOUD_PROJECT.')
     if re.search(r'status: 403|"code": 403', output):
-        return ('Accès refusé par l’API (HTTP 403) : droit IAM manquant sur le projet ou le modèle.',
-                'Demander le rôle Vertex AI User sur le projet à son administrateur.')
+        return ('Access denied by the API (HTTP 403): missing IAM permission on the project or the model.',
+                'Ask the project administrator for the Vertex AI User role.')
     if re.search(r'status: 401|"code": 401', output):
-        return ('Authentification refusée (HTTP 401).', 'Relancer /auth dans gemini ; si vous utilisez Vertex, gcloud auth application-default login.')
+        return ('Authentication refused (HTTP 401).', 'Run /auth again in gemini; if you use Vertex, gcloud auth application-default login.')
     if re.search(r'status: 429|"code": 429|RESOURCE_EXHAUSTED', output):
-        return ('Quota dépassé (HTTP 429).', 'Attendre, ou demander un quota supérieur sur le projet.')
+        return ('Quota exceeded (HTTP 429).', 'Wait, or ask for a higher quota on the project.')
     if returncode == 0 and 'OK' in output:
         return (None, None)
-    return ('Gemini a répondu mais pas comme attendu (code ' + str(returncode) + ').', 'Lire la sortie complète : gemini --debug -p "' + LIVE_PROMPT + '"')
+    return ('Gemini answered but not as expected (code ' + str(returncode) + ').', 'Read the full output: gemini --debug -p "' + LIVE_PROMPT + '"')
 
 def parse_env_file(path):
-    """Lecture d'un fichier .env à la façon de dotenv : `export` ignoré, guillemets retirés, commentaire de fin de ligne hors guillemets ignoré."""
+    """Reads a .env file the way dotenv does: `export` ignored, quotes removed, end-of-line comment outside quotes ignored."""
     values = {}
     if not path.is_file():
         return values
@@ -135,22 +135,22 @@ def parse_env_file(path):
     return values
 
 def live_check(home, timeout=90):
-    """Appel réel au modèle depuis un dossier vide. Retourne (ok, diagnostic, remède)."""
+    """Real call to the model from an empty folder. Returns (ok, diagnosis, fix, warnings)."""
     settings = read_json(home/'.gemini/settings.json')
     warnings = []
-    # Même lecture que Gemini (dotenv) : l'environnement du shell l'emporte sur ~/.gemini/.env ; rien n'est écrit dans os.environ.
+    # Same reading as Gemini (dotenv): the shell environment wins over ~/.gemini/.env; nothing is written to os.environ.
     env = dict(os.environ)
     for key, value in parse_env_file(home/'.gemini/.env').items():
         env.setdefault(key, value)
     auth = (settings.get('security') or {}).get('auth', {}).get('selectedType')
     if auth == 'gemini-api-key' and env.get('GOOGLE_GENAI_USE_VERTEXAI', '').lower() in ('true', '1', 'yes'):
-        warnings.append('selectedType vaut gemini-api-key : les variables Vertex de l’environnement sont ignorées. Passer selectedType à vertex-ai pour utiliser Vertex.')
+        warnings.append('selectedType is gemini-api-key: the Vertex variables in the environment are ignored. Set selectedType to vertex-ai to use Vertex.')
     if auth == 'vertex-ai' and not env.get('GOOGLE_CLOUD_PROJECT'):
-        warnings.append('selectedType vaut vertex-ai sans GOOGLE_CLOUD_PROJECT dans l’environnement.')
+        warnings.append('selectedType is vertex-ai without GOOGLE_CLOUD_PROJECT in the environment.')
     if auth == 'vertex-ai' and (env.get('GEMINI_API_KEY') or env.get('GOOGLE_API_KEY')):
-        warnings.append('Une clé API est présente dans l’environnement alors que l’authentification est Vertex : retirer GEMINI_API_KEY / GOOGLE_API_KEY si l’organisation interdit les clés.')
+        warnings.append('An API key is present in the environment while authentication is Vertex: remove GEMINI_API_KEY / GOOGLE_API_KEY if the organization forbids keys.')
     if not shutil.which('gemini'):
-        return False, 'Gemini CLI absent du PATH.', 'Installer Gemini CLI selon la procédure IT.', warnings
+        return False, 'Gemini CLI not on the PATH.', 'Install Gemini CLI following the IT procedure.', warnings
     model = (settings.get('model') or {}).get('name')
     with tempfile.TemporaryDirectory() as tmp:
         command = ['gemini', '--approval-mode', 'plan', '--skip-trust'] + (['-m', model] if model else []) + ['-p', LIVE_PROMPT]
@@ -162,41 +162,41 @@ def live_check(home, timeout=90):
                 return v.decode('utf-8', 'replace') if isinstance(v, bytes) else (v or '')
             output, code, timed_out = text(exc.stdout) + '\n' + text(exc.stderr), None, True
         except OSError as exc:
-            return False, 'Impossible de lancer gemini : ' + str(exc), 'Vérifier l’installation de Gemini CLI.', warnings
+            return False, 'Cannot run gemini: ' + str(exc), 'Check the Gemini CLI installation.', warnings
     diagnostic, remedy = diagnose_live(code, output, timed_out, settings)
     return diagnostic is None, diagnostic, remedy, warnings
 
 def print_live(home, timeout=90):
     ok, diagnostic, remedy, warnings = live_check(home, timeout)
     for warning in warnings:
-        print('[À vérifier] '+warning)
+        print('[Check] '+warning)
     if ok:
-        print('[OK] Appel réel au modèle : Gemini répond.')
+        print('[OK] Real call to the model: Gemini answers.')
         return 0
-    print('[À vérifier] '+diagnostic)
-    print('           Remède : '+remedy)
+    print('[Check] '+diagnostic)
+    print('        Fix: '+remedy)
     record_auto_friction(home, diagnostic, 'gemini')
     return 1
 
-# --- Interface d'adaptateur ---------------------------------------------------------------------------------------
+# --- Adapter interface ---------------------------------------------------------------------------------------------
 NAME = 'gemini'
 LABEL = 'Gemini CLI'
 COMMAND = 'gemini'
 HOME_DIR = '.gemini'
-MANAGED_PREFIXES = ('.gemini/skills/', '.gemini/agents/', '.gemini/commands/', '.gemini/hooks/ai-kit/')  # le dernier : ancien emplacement des garde-fous
+MANAGED_PREFIXES = ('.gemini/skills/', '.gemini/agents/', '.gemini/commands/', '.gemini/hooks/ai-kit/')  # the last one: former location of the guardrails
 
-# Commandes intégrées : ne comptent pas comme commandes inconnues dans le relevé d'usage.
+# Built-in commands: not counted as unknown commands in the usage report.
 BUILTIN_COMMANDS = {'about','agents','auth','bug','chat','clear','commands','compress','copy','corgi','directory','docs','editor','extensions','help','hooks','ide','init','mcp','memory','model','permissions','plan','planning','policies','privacy','quit','exit','restore','resume','settings','setup-github','skills','stats','terminal-setup','theme','tools','vim','config','diff','keybindings','remote-control','login','logout'}
 
 def present(home):
     return bool(shutil.which(COMMAND)) or (home/HOME_DIR/'settings.json').is_file()
 
 def context_dir(home):
-    """Gemini n'importe que des fichiers situés dans ~/.gemini (vérifié sur 0.65) : quand il est installé, il héberge les couches et 30_USER.md."""
+    """Gemini only imports files located in ~/.gemini (checked on 0.65): when it is installed, it hosts the layers and 30_USER.md."""
     return home/HOME_DIR
 
 def is_managed(rel):
-    """Chemin qu'une installation du kit a pu poser pour Gemini, donc qu'il peut retirer s'il est intact."""
+    """Path a kit installation may have put in place for Gemini, so one it can remove if intact."""
     if rel.startswith(MANAGED_PREFIXES):
         return True
     return rel.startswith('.gemini/') and bool(CONTEXT_NAME.fullmatch(rel[len('.gemini/'):])) and rel != '.gemini/'+USER_CONTEXT
@@ -205,16 +205,16 @@ def active_account(home):
     return gemini_active_account(home)
 
 def install(p: Plan) -> None:
-    """Skills, commandes TOML et agents dans ~/.gemini ; les couches y sont déjà, écrites par l'orchestrateur."""
+    """Skills, TOML commands and agents in ~/.gemini; the layers are already there, written by the orchestrator."""
     gemini = p.home/'.gemini'
-    # Bloc hérité des versions 0.0.x dans GEMINI.md : retiré s'il est intact.
+    # Block inherited from versions 0.0.x in GEMINI.md: removed if intact.
     context_file = gemini/'GEMINI.md'
     if context_file.exists():
         old_context = context_file.read_text(encoding='utf-8')
         before, old_block, after = context_parts(old_context)
         if old_block is not None:
             if p.state.get('context_hash') != digest(old_block.encode()):
-                raise KitError('Bloc du kit modifié ou non reconnu dans GEMINI.md. Déplacer vos changements vers '+str(p.user_file)+' puis retirer le bloc entre les marqueurs ai-kit avant update.')
+                raise KitError('Kit block modified or not recognised in GEMINI.md. Move your changes to '+str(p.user_file)+' then remove the block between the ai-kit markers before update.')
             remaining = (before.rstrip('\n')+'\n\n'+after.lstrip('\n')).strip('\n')
             if remaining:
                 p.writes[context_file] = (remaining+'\n').encode('utf-8')
@@ -222,7 +222,7 @@ def install(p: Plan) -> None:
                 p.deletes.append(context_file)
     write_skills(p)
     for command in p.commands:
-        p.managed_write(gemini/'commands'/(command['name']+'.toml'), gemini_command_toml(command).encode('utf-8'), 'Commande')
+        p.managed_write(gemini/'commands'/(command['name']+'.toml'), gemini_command_toml(command).encode('utf-8'), 'Command')
     for agent, definition in p.agents:
         name = 'ai-kit-'+agent
         data = agent_markdown(p, agent, definition)
@@ -230,17 +230,17 @@ def install(p: Plan) -> None:
         p.agent_markdown[name] = data
 
 def write_skills(p: Plan) -> None:
-    """Skills du profil dans ~/.gemini/skills, dossier lu par Gemini et par agy."""
+    """Profile skills in ~/.gemini/skills, a folder read by Gemini and by agy."""
     for skill, source in p.skill_sources:
         for src in source.rglob('*'):
             if src.is_file():
                 p.managed_write(p.home/'.gemini'/'skills'/skill/src.relative_to(source), src.read_bytes(), 'Skill')
 
 def agent_markdown(p: Plan, agent: str, definition: dict) -> bytes:
-    """Agent au format Markdown à frontmatter, commun à Gemini et agy."""
+    """Agent in Markdown with front matter, shared by Gemini and agy."""
     agent_defaults = read_json(ROOT/'agents/defaults.json')
     capability = definition.get('capability', 'default')
-    # Les identifiants sont des slugs validés ; JSON string est aussi une chaîne YAML valide.
+    # Identifiers are validated slugs; a JSON string is also a valid YAML string.
     header = ['---', 'name: ai-kit-'+agent, 'description: '+json.dumps(definition['description'], ensure_ascii=False),
               'kind: local', 'tools: '+json.dumps(definition.get('tools', agent_defaults['tools'])),
               'max_turns: '+str(definition.get('max_turns', agent_defaults['max_turns']))]
@@ -249,7 +249,7 @@ def agent_markdown(p: Plan, agent: str, definition: dict) -> bytes:
     return ('\n'.join(header)+'\n\n'+p.agent_body(definition)).encode('utf-8')
 
 def finalize(p: Plan, active: bool = True) -> None:
-    """Réglages ~/.gemini/settings.json (défauts, authentification déclarée, couches, garde-fous, MCP) et ~/.gemini/.env."""
+    """Settings ~/.gemini/settings.json (defaults, declared authentication, layers, guardrails, MCP) and ~/.gemini/.env."""
     if not active:
         return
     gemini = p.home/'.gemini'
@@ -257,26 +257,26 @@ def finalize(p: Plan, active: bool = True) -> None:
     settings_file = gemini/'settings.json'
     settings = read_json(settings_file)
     merge_defaults(settings, read_json(Path(__file__).resolve().parent/'gemini_defaults.json'))
-    # Authentification : le kit ne la touche que sur déclaration explicite dans overrides.json (vertex ou code_assist).
+    # Authentication: the kit only touches it when explicitly declared in overrides.json (vertex or code_assist).
     vertex, code_assist, model = overrides.get('vertex'), overrides.get('code_assist'), overrides.get('model')
     if vertex is not None and code_assist is not None:
-        raise KitError('overrides.json : déclarer vertex ou code_assist, pas les deux.')
+        raise KitError('overrides.json: declare vertex or code_assist, not both.')
     if model is not None:
         if not isinstance(model, str) or not re.fullmatch(r'[a-z0-9][a-z0-9.-]{1,60}', model):
-            raise KitError('model doit être un nom de modèle Gemini, par exemple gemini-2.5-flash.')
+            raise KitError('model must be a Gemini model name, for example gemini-2.5-flash.')
         settings.setdefault('model', {})['name'] = model
     env_managed = None
     if vertex is not None:
         if not isinstance(vertex, dict) or not isinstance(vertex.get('project'), str) or not re.fullmatch(PROJECT_ID, vertex['project']):
-            raise KitError('vertex.project doit être un identifiant de projet Google Cloud.')
+            raise KitError('vertex.project must be a Google Cloud project ID.')
         location = vertex.get('location', 'us-central1')
         if not isinstance(location, str) or not re.fullmatch(r'[a-z0-9-]+|global', location):
-            raise KitError('vertex.location invalide.')
+            raise KitError('Invalid vertex.location.')
         settings.setdefault('security', {}).setdefault('auth', {})['selectedType'] = 'vertex-ai'
         env_managed = ('Vertex AI', {'GOOGLE_GENAI_USE_VERTEXAI': 'true', 'GOOGLE_CLOUD_PROJECT': vertex['project'], 'GOOGLE_CLOUD_LOCATION': location})
     elif code_assist is not None:
         if not isinstance(code_assist, dict) or not isinstance(code_assist.get('project'), str) or not re.fullmatch(PROJECT_ID, code_assist['project']):
-            raise KitError('code_assist.project doit être un identifiant de projet Google Cloud.')
+            raise KitError('code_assist.project must be a Google Cloud project ID.')
         settings.setdefault('security', {}).setdefault('auth', {})['selectedType'] = 'oauth-personal'
         env_managed = ('Gemini Code Assist', {'GOOGLE_CLOUD_PROJECT': code_assist['project']})
     env_file = gemini/'.env'
@@ -290,16 +290,16 @@ def finalize(p: Plan, active: bool = True) -> None:
     merge_context_filenames(settings, p.context_names, retired)
     original_hooks = settings.get('hooks')
     if original_hooks is not None and not isinstance(original_hooks, dict):
-        raise KitError('hooks doit être un objet dans settings.json.')
+        raise KitError('hooks must be an object in settings.json.')
     original_hooks = original_hooks or {}
     old_hooks = state.get('hooks', {})
     for name, old in old_hooks.items():
         groups = original_hooks.get(old['event'], [])
         if not isinstance(groups, list):
-            raise KitError('settings.json : hooks.'+old['event']+' doit être une liste.')
+            raise KitError('settings.json: hooks.'+old['event']+' must be a list.')
         for i in kit_hook_groups(groups):
             if any(h.get('name') == 'ai-kit-'+name for h in groups[i].get('hooks', [])) and groups[i] != old['group']:
-                raise KitError('Garde-fou du kit modifié dans settings.json : '+name)
+                raise KitError('Kit guardrail modified in settings.json: '+name)
     merged_hooks = {}
     for event, groups in original_hooks.items():
         if not isinstance(groups, list):
@@ -316,15 +316,15 @@ def finalize(p: Plan, active: bool = True) -> None:
         settings.pop('hooks', None)
     servers = settings.get('mcpServers',{})
     if not isinstance(servers,dict):
-        raise KitError('mcpServers doit être un objet.')
+        raise KitError('mcpServers must be an object.')
     old_mcp = state.get('mcp',{})
     for name,old in old_mcp.items():
         if name in servers and servers[name] != old:
-            raise KitError('MCP du kit modifié dans settings.json : '+name)
+            raise KitError('Kit MCP modified in settings.json: '+name)
         servers.pop(name,None)
     for name,server in p.enabled_mcp.items():
         if name in servers and servers[name] != server:
-            raise KitError('Nom de MCP déjà utilisé : '+name)
+            raise KitError('MCP name already in use: '+name)
         servers[name] = server
     if servers or 'mcpServers' in settings:
         settings['mcpServers'] = servers
@@ -334,7 +334,7 @@ def summary(p: Plan) -> Optional[str]:
     return None
 
 def skill_description_weight(home, skill_names):
-    """Octets de descriptions injectés par Gemini à chaque tour pour les skills installés."""
+    """Bytes of descriptions Gemini injects on every turn for the installed skills."""
     total = 0
     for name in skill_names:
         path = home/'.gemini/skills'/name/'SKILL.md'
@@ -349,59 +349,59 @@ def installed_skills(home, state):
     return [s for s in names if (home/'.gemini/skills'/s/'SKILL.md').is_file()]
 
 def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
-    """Contrôles propres à Gemini : exécutable, compte actif, contexte personnel, commandes, skills masqués, réglages."""
-    status(bool(shutil.which(COMMAND)),'Gemini CLI dans le PATH. Si absent : suivre la procédure IT approuvée.')
+    """Gemini-specific checks: executable, active account, personal context, commands, shadowed skills, settings."""
+    status(bool(shutil.which(COMMAND)),'Gemini CLI on the PATH. If missing: follow the approved IT procedure.')
     active = gemini_active_account(home)
     identity = state.get('user', {})
     if active:
-        status(not identity.get('email') or active.lower() == identity['email'].lower(),'Compte Gemini actif identique à l’identité enregistrée : '+active)
-        status(ctx.domain_allowed(active, ctx.allowed_domains()),'Compte Gemini actif dans les domaines autorisés')
+        status(not identity.get('email') or active.lower() == identity['email'].lower(),'Active Gemini account matches the recorded identity: '+active)
+        status(ctx.domain_allowed(active, ctx.allowed_domains()),'Active Gemini account in the allowed domains')
     else:
-        print('[Info] Aucun compte Gemini actif détecté (non connecté, ou mode clé API / Vertex).')
+        print('[Info] No active Gemini account detected (not signed in, or API key / Vertex mode).')
     skills = installed_skills(home, state)
     installed_commands = sorted(rel.split('/')[2][:-5] for rel in state.get('files',{}) if rel.startswith('.gemini/commands/'))
     by_name = {c['name']: c for c in ctx.load_commands()}
     for name in installed_commands:
         missing = [s for s in by_name.get(name,{}).get('skills',[]) if s not in skills]
-        status(name in by_name and not missing,'Commande /'+name+' : skills présents'+(' (manque '+', '.join(missing)+')' if missing else ''))
-    print('[Info] '+str(len(skills))+' skills, '+str(len(installed_commands))+' commandes ; descriptions de skills injectées à chaque tour : '+str(skill_description_weight(home, skills))+' octets.')
+        status(name in by_name and not missing,'Command /'+name+': skills present'+(' (missing '+', '.join(missing)+')' if missing else ''))
+    print('[Info] '+str(len(skills))+' skills, '+str(len(installed_commands))+' commands; skill descriptions injected on every turn: '+str(skill_description_weight(home, skills))+' bytes.')
     shadowed = [s for s in skills if (home/'.agents/skills'/s/'SKILL.md').is_file()]
-    status(not shadowed,'Aucun skill du kit masqué par une copie dans ~/.agents/skills'+(' (masqués : '+', '.join(shadowed)+')' if shadowed else ''))
+    status(not shadowed,'No kit skill shadowed by a copy in ~/.agents/skills'+(' (shadowed: '+', '.join(shadowed)+')' if shadowed else ''))
     legacy = home/'.gemini/GEMINI.md'
-    status(not legacy.exists() or START not in legacy.read_text(encoding='utf-8'),'Aucun bloc hérité du kit dans GEMINI.md')
+    status(not legacy.exists() or START not in legacy.read_text(encoding='utf-8'),'No legacy kit block in GEMINI.md')
     settings = read_json(home/'.gemini/settings.json')
     names = settings.get('context',{}).get('fileName',[])
     names = [names] if isinstance(names,str) else names
     expected_names = ctx.managed_context_names(ctx.profile)+[USER_CONTEXT]+list(PROJECT_CONTEXT)
-    status(isinstance(names,list) and all(n in names for n in expected_names),'context.fileName contient les couches du kit, GEMINI.md et AGENTS.md')
-    status(settings.get('skills',{}).get('enabled',True) is not False,'Skills non désactivés dans les settings utilisateur')
+    status(isinstance(names,list) and all(n in names for n in expected_names),'context.fileName contains the kit layers, GEMINI.md and AGENTS.md')
+    status(settings.get('skills',{}).get('enabled',True) is not False,'Skills not disabled in the user settings')
     agents_enabled = settings.get('experimental',{}).get('enableAgents',True) is not False
-    status(agents_enabled,'Agents non désactivés dans les settings utilisateur')
+    status(agents_enabled,'Agents not disabled in the user settings')
     if not agents_enabled:
         catalog = read_json(ROOT/'skills/catalog.json')
         needing = sorted(s for s in skills if catalog.get(s,{}).get('needs_agents'))
         if needing:
-            print('[Info] Skills qui délèguent à des sous-agents, dégradés sans eux : '+', '.join(needing))
+            print('[Info] Skills that delegate to subagents, degraded without them: '+', '.join(needing))
     for name,hook in state.get('hooks',{}).items():
         groups = (settings.get('hooks') or {}).get(hook['event'], [])
         script = Path(hook['group']['hooks'][0]['command'].split()[-1].strip('"\''))
-        status(isinstance(groups,list) and hook['group'] in groups and script.is_file(),'Garde-fou actif : '+name)
+        status(isinstance(groups,list) and hook['group'] in groups and script.is_file(),'Guardrail active: '+name)
     if not state.get('hooks'):
-        print('[Info] Aucun garde-fou activé ; voir docs/hooks.md (dbt-prod-guard, protected-paths).')
+        print('[Info] No guardrail enabled; see docs/hooks.md (dbt-prod-guard, protected-paths).')
     for name,server in state.get('mcp',{}).items():
-        status(settings.get('mcpServers',{}).get(name)==server,'Configuration MCP : '+name)
+        status(settings.get('mcpServers',{}).get(name)==server,'MCP configuration: '+name)
         if server.get('command'):
-            status(bool(shutil.which(server['command'])),'Exécutable MCP disponible : '+name)
+            status(bool(shutil.which(server['command'])),'MCP executable available: '+name)
 
 def doctor_hint():
-    return 'Gemini : vérifier /memory show, /mcp et /skills list dans Gemini.'
+    return 'Gemini: check /memory show, /mcp and /skills list in Gemini.'
 
 def live(home):
-    """Appel réel au modèle, avec diagnostic et remède ; 0 si Gemini répond."""
+    """Real call to the model, with diagnosis and fix; 0 if Gemini answers."""
     return print_live(home)
 
 def installed_from_files(state):
-    """État écrit avant la 0.17 : les noms installés se déduisent des chemins Gemini enregistrés."""
+    """State written before 0.17: the installed names are derived from the recorded Gemini paths."""
     files = state.get('files', {})
     return {'skills': sorted({rel.split('/')[2] for rel in files if rel.startswith('.gemini/skills/')}),
             'commands': sorted(rel.split('/')[2][:-5] for rel in files if rel.startswith('.gemini/commands/')),
@@ -411,7 +411,7 @@ def session_logs(home):
     return sorted((home/'.gemini/tmp').glob('*/chats/*.json')) if (home/'.gemini/tmp').is_dir() else []
 
 def history(home, state):
-    """Événements d'usage lus dans les journaux de session Gemini : prompts, skills activés, agents appelés, erreurs."""
+    """Usage events read from the Gemini session logs: prompts, activated skills, called agents, errors."""
     for path in session_logs(home):
         try:
             data = json.loads(path.read_text(encoding='utf-8'))

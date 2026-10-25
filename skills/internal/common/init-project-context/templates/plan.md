@@ -3,14 +3,14 @@
 Approved by: <name> · Date: <YYYY-MM-DD> · Ceremony: tweak | small feature | large or fuzzy | production · Local working note (not committed by default)
 
 ## Files that change
-<chemin> (new | modified) — <pourquoi>
+<path> (new | modified) — <why>
 
 ## Order of work
-1. <Tranche fine, vérifiable seule.>
+1. <Thin slice, verifiable on its own.>
 2. <…>
 
 ## Risks
-<Ce que ça peut casser, l’étape la plus risquée, les alternatives écartées et pourquoi.>
+<What it can break, the riskiest step, the rejected alternatives and why.>
 
 ## Proof
-<Pour chaque tranche : le test, la requête d’assertion ou la vérification qui prouve qu’elle est faite. Commandes exactes.>
+<For each slice: the test, the assertion query or the check that proves it is done. Exact commands.>

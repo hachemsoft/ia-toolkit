@@ -1,16 +1,16 @@
 ---
 name: architecture-decision
-description: "Instruire et documenter une décision d’architecture (ADR) : options, critères, conséquences, réversibilité. Déclencheurs : quelle architecture choisir, faut-il découper ce service, choisir une base ou un framework, écrire un ADR, revoir ce design, cette décision est-elle réversible."
+description: "Investigate and document an architecture decision (ADR): options, criteria, consequences, reversibility. Triggers: which architecture to choose, should we split this service, choose a database or a framework, write an ADR, review this design, is this decision reversible."
 ---
 
 # architecture-decision
 
-Partir du problème, pas de la solution : contraintes, qualités attendues (latence, volume, disponibilité, coût, sécurité, capacité de l’équipe à maintenir) et ce qui est hors périmètre. Lire les ADR existants du repo et l’architecture en place avant de proposer quoi que ce soit ; une décision qui en contredit une autre le dit et propose de la remplacer explicitement. Si le besoin est flou, l’éclaircir d’abord avec le skill grilling. Poser au moins deux options réelles, dont « ne rien changer » quand elle tient, et les comparer sur les mêmes critères, avec les preuves disponibles (mesures, documentation, prototype jetable avec le skill prototype). Pour chaque option : conséquences, coût de sortie, ce qui devient plus difficile. Classer la décision : réversible à faible coût (trancher vite) ou difficile à défaire (prendre le temps, faire relire). Rédiger l’ADR dans le dossier et le format du repo (sinon `docs/adr/NNNN-titre.md` : contexte, décision, options écartées, conséquences, statut) et demander confirmation avant d’écrire. Garder le vocabulaire du domaine avec le skill domain-modeling.
+Start from the problem, not the solution: constraints, required qualities (latency, volume, availability, cost, security, the team's capacity to maintain it) and what is out of scope. Read the repo's existing ADRs and the current architecture before proposing anything; a decision that contradicts another one says so and explicitly proposes to supersede it. If the need is unclear, clarify it first with the grilling skill. Lay out at least two real options, including "change nothing" when it holds, and compare them on the same criteria, with the available evidence (measurements, documentation, a throwaway prototype with the prototype skill). For each option: consequences, exit cost, what becomes harder. Classify the decision: cheap to reverse (decide quickly) or hard to undo (take the time, get it reviewed). Write the ADR in the repo's folder and format (otherwise `docs/adr/NNNN-title.md`: context, decision, rejected options, consequences, status) and ask for confirmation before writing. Keep the domain vocabulary with the domain-modeling skill.
 
-## Excuses entendues et réponses
-| Excuse | Réponse |
+## Rationalizations and rebuttals
+| Excuse | Rebuttal |
 | --- | --- |
-| « Il n’y a qu’une option sérieuse » | Alors la comparer à « ne rien changer » prend cinq lignes ; sinon on ne sait pas ce qu’on achète. |
-| « On documentera la décision plus tard » | Plus tard, les raisons sont oubliées et il ne reste que la décision ; l’ADR court s’écrit maintenant. |
-| « Tout le monde utilise cette techno » | La question est ce qu’elle coûte ici, avec cette équipe et ces contraintes. |
-| « C’est réversible de toute façon » | Dire ce que coûterait le retour : données migrées, contrats publiés, compétences à acquérir. |
+| "There is only one serious option" | Then comparing it to "change nothing" takes five lines; otherwise you do not know what you are buying. |
+| "We'll document the decision later" | Later, the reasons are forgotten and only the decision remains; the short ADR gets written now. |
+| "Everyone uses this technology" | The question is what it costs here, with this team and these constraints. |
+| "It's reversible anyway" | Say what going back would cost: migrated data, published contracts, skills to acquire. |

@@ -2,10 +2,10 @@
 
 ## Language
 
-**Commande**:
-Un achat validé par un client, une ligne par commande.
-_Avoid_: order, transaction
+**Order**:
+A purchase confirmed by a customer, one row per order.
+_Avoid_: sale, transaction
 
-**Client actif**:
-Client ayant au moins une commande validée sur les 90 derniers jours glissants.
-_Avoid_: client récent, client vivant
+**Active customer**:
+Customer with at least one confirmed order over the last 90 rolling days.
+_Avoid_: recent customer, live customer

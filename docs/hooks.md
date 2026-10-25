@@ -1,6 +1,6 @@
-# Garde-fous
+# Guardrails
 
-Un skill est un contrôle consultatif : il rend une violation rare. Un hook de la CLI est déterministe : il la rend quasi impossible. Le kit en livre deux, désactivés par défaut, à activer dans `~/.ai-kit/overrides.json` :
+A skill is an advisory control: it makes a violation rare. A CLI hook is deterministic: it makes it nearly impossible. The kit ships two, off by default, to enable in `~/.ai-kit/overrides.json`:
 
 ```json
 {
@@ -11,36 +11,36 @@ Un skill est un contrôle consultatif : il rend une violation rare. Un hook de l
 }
 ```
 
-Puis `update`. Les scripts sont installés une fois, dans `~/.ai-kit/hooks/`, et déclarés à chaque CLI dans la forme qu’elle lit ([matrice](cli/matrice.md)) ; vos propres hooks sont conservés. Les mêmes scripts comprennent l’appel d’outil de chaque CLI prise en charge. `doctor` indique les garde-fous actifs. Les hooks s’exécutent avec le Python qui a lancé l’installeur.
+Then `update`. The scripts are installed once, in `~/.ai-kit/hooks/`, and declared to each CLI in the form it reads ([matrix](cli/matrice.md)); your own hooks are kept. The same scripts understand the tool call of each supported CLI. `doctor` shows the active guardrails. Hooks run with the Python that launched the installer.
 
 ## `dbt-prod-guard`
 
-Refuse toute commande shell `dbt` (aussi `./dbt`, `/chemin/dbt`, `dbt.exe`, toute casse) dont le target est `prod`, `production` ou `prd`, écrit `--target prod`, `--target=prod`, `-t prod`, `-tprod`, avec ou sans guillemets, ou `DBT_TARGET=prod`. Liste modifiable par la variable `AI_KIT_PROD_TARGETS`, séparée par des virgules. Une personne autorisée peut exporter `AI_KIT_ALLOW_PROD=1` dans sa session ; le hook laisse alors passer et l’affiche.
+Blocks any `dbt` shell command (also `./dbt`, `/path/dbt`, `dbt.exe`, any case) whose target is `prod`, `production` or `prd`, written `--target prod`, `--target=prod`, `-t prod`, `-tprod`, with or without quotes, or `DBT_TARGET=prod`. Change the list with the `AI_KIT_PROD_TARGETS` variable, comma-separated. An authorized person can export `AI_KIT_ALLOW_PROD=1` in their session; the hook then lets the command through and says so.
 
-Le refus est renvoyé à l’agent comme une erreur d’outil avec le message du kit, qui le redirige vers le target de développement déclaré dans `AGENTS.md`.
+The refusal goes back to the agent as a tool error with the kit's message, which redirects it to the development target declared in `AGENTS.md`.
 
-Sans `--target` ni `DBT_TARGET`, il lit le target par défaut dans `profiles.yml` (`--profiles-dir`, puis `DBT_PROFILES_DIR`, puis le repo, puis `~/.dbt`) et refuse s’il est en production, en le disant. Lecture minimale sans PyYAML : les lignes `target:` indentées sous un profil ; avec plusieurs profils dans le fichier, le hook peut refuser par excès, `AI_KIT_ALLOW_PROD=1` reste l’échappatoire.
+Without `--target` or `DBT_TARGET`, it reads the default target in `profiles.yml` (`--profiles-dir`, then `DBT_PROFILES_DIR`, then the repo, then `~/.dbt`) and blocks if it is production, saying so. Minimal parsing without PyYAML: indented `target:` lines under a profile. With several profiles in the file, the hook may block too much; `AI_KIT_ALLOW_PROD=1` stays the escape hatch.
 
 ## `protected-paths`
 
-Refuse l’écriture d’un fichier par un outil de l’agent sous les motifs listés dans `<repo>/.ai-kit/protected-paths`, un motif glob par ligne, commentaires avec `#` :
+Blocks an agent tool from writing a file under the patterns listed in `<repo>/.ai-kit/protected-paths`, one glob pattern per line, comments with `#`:
 
 ```
-# Sorties générées et contrats figés
+# Generated output and frozen contracts
 target/**
 models/legacy/**
 dbt_project.yml
 *.lock
 ```
 
-Sans ce fichier, tout est autorisé. L’ancien emplacement `<repo>/.gemini/protected-paths` est toujours lu, en plus ; `.ai-kit/` est neutre, valable pour toutes les CLI. Le fichier se versionne avec le repo ; c’est la place des chemins que `AGENTS.md` déclare sous « Things the agent gets wrong : never edit … ». Le garde-fou lit le fichier du dossier où l’agent est lancé et celui de chaque dossier parent jusqu’à la racine du repo, chacun relatif à son propre dossier : dans un monorepo, les chemins protégés de la racine s’appliquent aussi depuis une zone. La comparaison ignore la casse (`TARGET/x.sql` est protégé par `target/**`) et respecte les frontières de dossier (`targets/x.sql` ne l’est pas). Sur Windows, un fichier sur un autre lecteur que le repo est hors des motifs, donc autorisé.
+Without this file, everything is allowed. The old location `<repo>/.gemini/protected-paths` is still read as well; `.ai-kit/` is neutral and valid for all CLIs. Version the file with the repo; it is where the paths that `AGENTS.md` declares under "Things the agent gets wrong: never edit …" belong. The guardrail reads the file in the folder where the agent starts and in each parent folder up to the repo root, each relative to its own folder: in a monorepo, the root's protected paths also apply from a zone. Matching ignores case (`TARGET/x.sql` is protected by `target/**`) and respects folder boundaries (`targets/x.sql` is not). On Windows, a file on a different drive from the repo is outside the patterns, so it is allowed.
 
-## Limites
+## Limits
 
-- Les hooks ne couvrent que les actions passées par les outils de la CLI. Un script lancé hors de la CLI n’est pas concerné.
-- Ils protègent un poste. Les règles non négociables d’une organisation relèvent de politiques administrées côté plateforme, pas du kit.
-- Un hook qui plante laisse passer l’action et n’interrompt pas la CLI : les scripts renvoient toujours un JSON, même sur entrée invalide.
+- Hooks only cover actions that go through the CLI's tools. A script run outside the CLI is not covered.
+- They protect one workstation. An organization's non-negotiable rules belong to policies administered on the platform side, not to the kit.
+- A hook that crashes lets the action through and does not interrupt the CLI: the scripts always return JSON, even on invalid input.
 
-## Ajouter un garde-fou
+## Add a guardrail
 
-Un script Python dans `runtime/hooks/` (partagé par toutes les CLI), une entrée dans `hooks.json` (événement, matcher, script, description), des tests dans `tests/test_hooks.py` qui lui passent le JSON d’entrée de chaque CLI prise en charge, une section ici.
+A Python script in `runtime/hooks/` (shared by all CLIs), an entry in `hooks.json` (event, matcher, script, description), tests in `tests/test_hooks.py` that feed it the input JSON of each supported CLI, and a section here.

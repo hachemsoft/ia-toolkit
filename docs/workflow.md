@@ -1,75 +1,75 @@
-# Workflow : six étapes, une commande par étape
+# Workflow: six steps, one command per step
 
-Le kit suit le cycle du [« AI-native SDLC playbook »](https://claude.com/fr/resources/articles/the-ai-native-sdlc-playbook) d’Anthropic : chaque étape se termine par un artefact versionné que l’étape suivante lit. Les commandes sont des verbes anglais, tapés dans la CLI ; les skills qui les réalisent restent sous le capot. `/guide` explique par quoi commencer.
+The kit follows the cycle from Anthropic's ["AI-native SDLC playbook"](https://claude.com/resources/articles/the-ai-native-sdlc-playbook): each step ends with a versioned artifact that the next step reads. Commands are English verbs typed in the CLI; the skills that carry them out stay under the hood. `/guide` explains where to start.
 
-## La cérémonie suit les enjeux
+## Ceremony matches the stakes
 
-| Enjeu | Quoi faire | Commandes |
+| Stakes | What to do | Commands |
 | --- | --- | --- |
-| Retouche (libellé, filtre, couleur) | faire, vérifier soi-même | aucune ; `/test` si le repo a des tests |
-| Visuel ou exploratoire | itérer avec l’agent, regarder, recommencer | `/design` pour un prototype jetable |
-| Petite fonctionnalité | court cadrage, puis test-first | `/intent` court, `/build`, `/test`, `/ship` |
-| Grande ou floue | spec, plan par phases, vérification entre chaque | `/intent`, `/spec`, `/build` par ticket, `/review`, `/ship` |
-| Production, irréversible, données sensibles | tout ce qui précède, revue complète | `/review full`, garde-fous actifs |
+| Small fix (label, filter, colour) | do it, check it yourself | none; `/test` if the repo has tests |
+| Visual or exploratory | iterate with the agent, look, start again | `/design` for a throwaway prototype |
+| Small feature | short framing, then test-first | short `/intent`, `/build`, `/test`, `/ship` |
+| Large or unclear | spec, phased plan, verification between phases | `/intent`, `/spec`, `/build` per ticket, `/review`, `/ship` |
+| Production, irreversible, sensitive data | all of the above, full review | `/review full`, guardrails active |
 
-Chaque commande annonce en une ligne le niveau qu’elle a retenu. `/review` accepte `quick` ou `full` en argument.
+Each command states in one line the level it chose. `/review` accepts `quick` or `full` as an argument.
 
-## Les étapes
+## The steps
 
-Les commandes installées dépendent du profil : voir la [table des profils](getting-started.md#3-travailler--une-commande-par-étape). Une commande absente s’ajoute d’une ligne, `extra_commands` dans `~/.ai-kit/overrides.json`, puis `update`.
+The installed commands depend on the profile: see the [profile table](getting-started.md#3-work-one-command-per-step). A missing command is added with one line, `extra_commands` in `~/.ai-kit/overrides.json`, then `update`.
 
-| Étape | Commande | Artefact | Ce que fait la commande |
+| Step | Command | Artifact | What the command does |
 | --- | --- | --- | --- |
-| Plan | `/intent <idée, ticket, incident>` | `intent.md` | entretien par rounds jusqu’à une compréhension partagée ; problème, résultat attendu, utilisateurs et systèmes touchés, contraintes, questions ouvertes ; glossaire et ADR mis à jour |
-| Plan | `/map <chantier>` (développeurs) | tickets de décision | cartographier un chantier trop grand pour une session, décisions d’abord, puis `/spec` |
-| Design | `/spec` | `spec.md` | à partir de l’intent accepté, sans nouvel entretien : objectif, périmètre, exigences avec critères d’acceptation, contrats de données (grain, clés, sources, fraîcheur), règles appliquées pendant la rédaction, points de vigilance ; un fichier, jamais un ticket (le découpage en tickets est `to-tickets`, sur demande) |
-| Build | `/design <question>` (développeurs) | esquisse d’interface ou prototype | plusieurs formes d’un module comparées, ou prototype jetable pour trancher |
-| Build | `/build <ticket ou spec>` | `plan.md`, puis diff et tests | plan en mode plan (fichiers, ordre, risques, preuves), accepté avant tout code ; implémentation une tranche à la fois, test rouge d’abord ; vérification finale par l’agent vérificateur quand il est installé |
-| Test | `/test [périmètre]` | sortie réelle des vérifications | teste ce qui a changé et ce qui en dépend, quelle que soit l’équipe : fichiers modifiés par rapport à la branche de base, commande « Changed » de chaque pile dans le bloc « Verifying your work » d’`AGENTS.md`, suite complète si un fichier partagé a changé ; même règle avec les outils du repo si le bloc manque, trouvés d’abord dans la CI ; si aucune commande ne se déduit, il le dit, demande les commandes et propose de les écrire dans `AGENTS.md` ; colle la sortie ; corrige le code, jamais le test |
-| Deploy | `/review [base] [quick\|full]` | constats classés | passes bugs, sécurité, données, conformité à `spec.md` (et `plan.md` quand il est présent localement), selon `REVIEW.md` du repo ou le gabarit du kit ; les axes du skill amont sont remplacés par ces passes ; en mode `full`, passe de doute sur chaque affirmation |
-| Deploy | `/ship` | description de MR | résumé visuel, preuves avant/après, porte à sens unique ou double ; ne pousse rien |
-| Maintain | `/diagnose <symptôme>` | cause prouvée, test de non-régression | signal rouge/vert avant toute correction ; pour la donnée, une requête d’assertion ou un test dbt ; le constat peut redevenir un `intent.md` |
-| Maintain | `/triage` (développeurs) | tickets prêts pour un agent | machine à états de triage sur les tickets entrants |
+| Plan | `/intent <idea, ticket, incident>` | `intent.md` | interview in rounds until shared understanding; problem, expected outcome, affected users and systems, constraints, open questions; glossary and ADRs updated |
+| Plan | `/map <work item>` (developers) | decision tickets | map a piece of work too large for one session, decisions first, then `/spec` |
+| Design | `/spec` | `spec.md` | from the accepted intent, without a new interview: goal, scope, requirements with acceptance criteria, data contracts (grain, keys, sources, freshness), rules applied while writing, points of attention; one file, never a ticket (splitting into tickets is `to-tickets`, on request) |
+| Build | `/design <question>` (developers) | interface sketch or prototype | several shapes of a module compared, or a throwaway prototype to decide |
+| Build | `/build <ticket or spec>` | `plan.md`, then diff and tests | plan in plan mode (files, order, risks, evidence), accepted before any code; implementation one slice at a time, failing test first; final check by the verifier agent when installed |
+| Test | `/test [scope]` | real output of the checks | tests what changed and what depends on it, whatever the team: files changed against the base branch, the "Changed" command of each stack in the "Verifying your work" block of `AGENTS.md`, full suite if a shared file changed; same rule with the repo's tools if the block is missing, looked up in CI first; if no command can be inferred, it says so, asks for the commands and offers to write them into `AGENTS.md`; pastes the output; fixes the code, never the test |
+| Deploy | `/review [base] [quick\|full]` | sorted findings | bug, security, data and compliance passes against `spec.md` (and `plan.md` when present locally), following the repo's `REVIEW.md` or the kit template; these passes replace the upstream skill's axes; in `full` mode, a doubt pass on each claim |
+| Deploy | `/ship` | MR description | visual summary, before/after evidence, one-way or two-way door; pushes nothing |
+| Maintain | `/diagnose <symptom>` | proven cause, regression test | red/green signal before any fix; for data, an assertion query or a dbt test; the finding can become an `intent.md` again |
+| Maintain | `/triage` (developers) | tickets ready for an agent | triage state machine for incoming tickets |
 
-Les gabarits d’`intent.md`, `spec.md`, `plan.md`, `REVIEW.md` et `AGENTS.md` sont installés avec le skill `init-project-context`. Convention d’emplacement : un dossier par changement, `docs/sdlc/<AAAA-MM-JJ>-<slug>/`, qui regroupe les trois artefacts. `REVIEW.md` reste à la racine. Un repo peut documenter une autre convention dans `AGENTS.md`.
+The templates for `intent.md`, `spec.md`, `plan.md`, `REVIEW.md` and `AGENTS.md` are installed with the `init-project-context` skill. Location convention: one folder per change, `docs/sdlc/<AAAA-MM-JJ>-<slug>/`, holding the three artifacts. `REVIEW.md` stays at the root. A repo can document another convention in `AGENTS.md`.
 
-**Ce qui est versionné.** `spec.md` et `REVIEW.md` sont commités : la spec est le contrat que le relecteur lit dans la MR, `REVIEW.md` ses axes. `intent.md` et `plan.md` sont des notes de travail locales, ignorées par git (`init-project-context` propose les lignes de `.gitignore`) : on n’a pas envie de relire dans l’historique un entretien ou un plan de travail, et ils changent à chaque itération. Une équipe qui préfère tout versionner le dit dans `AGENTS.md`, et `/review` compare alors aussi au `plan.md`. Dans tous les cas, l’agent ne commite jamais sans accord.
+**What is versioned.** `spec.md` and `REVIEW.md` are committed: the spec is the contract the reviewer reads in the MR, and `REVIEW.md` holds its review axes. `intent.md` and `plan.md` are local working notes, ignored by git (`init-project-context` proposes the `.gitignore` lines): nobody wants to reread an interview or a work plan in the history, and they change at each iteration. A team that prefers to version everything says so in `AGENTS.md`, and `/review` then also compares against `plan.md`. In every case, the agent never commits without approval.
 
-**Langue.** Les titres de sections des artefacts restent en anglais, comme dans les gabarits : ils sont stables et cherchables. Le contenu est dans la langue de l’équipe ; les réponses de l’agent sont dans la langue de la personne. Les descriptions de commandes affichées par `/help` sont en anglais.
+**Language.** Artifact section headings stay in English, as in the templates: they are stable and searchable. The content is in the team's language; the agent's answers are in the person's language. Command descriptions shown by `/help` are in English.
 
-## Playbooks métier
+## Domain playbooks
 
-Skills métier en français, activés par le modèle quand la tâche s’y prête et enchaînés par les commandes :
+Domain skills, activated by the model when the task calls for them and chained by the commands:
 
-| Playbook | Enchaîné par | Rôle |
+| Playbook | Chained by | Role |
 | --- | --- | --- |
-| `kpi-definition` | `/intent` | grain, population, période, exclusions, source de vérité, propriétaire, avant toute requête |
-| `sql-review` | `/diagnose` | grain, cardinalités des jointures, NULL, dates, résultats suspects |
-| `dbt-model-change` | `/build` | test-first avec `dbt test` sur le target de développement |
-| `incremental-replay` | `/build`, `/diagnose` | clé unique, données tardives, fenêtre de retraitement, idempotence du rejeu |
-| `bigquery-query-review` | `/build`, `/diagnose` | sémantique conservée, partitions, plan d’exécution |
-| `bigquery-cost-review` | `/build`, `/diagnose` | octets, slots, fréquence, coût mensuel, budget avant exécution |
-| `perimeter-brief` | `/learn` | fiche HTML d’un périmètre, quiz, termes candidats au glossaire |
-| `python-js-change` | `/build` (Développeur Data) | conventions du repo, TDD, interface avant implémentation |
-| `java-change` | `/build` (Développeur Java) | conventions du repo et du build Maven ou Gradle, JUnit, contrats publics |
-| `infra-change` | `/build`, `/diagnose` (DevOps) | rayon d’impact, preuve en lecture seule (plan, diff), jamais d’apply ni de déploiement, retour arrière |
-| `architecture-decision` | `/spec` (Architecte) | options comparées, critères, conséquences, réversibilité, ADR |
+| `kpi-definition` | `/intent` | grain, population, period, exclusions, source of truth, owner, before any query |
+| `sql-review` | `/diagnose` | grain, join cardinalities, NULL, dates, suspicious results |
+| `dbt-model-change` | `/build` | test-first with `dbt test` on the development target |
+| `incremental-replay` | `/build`, `/diagnose` | unique key, late data, reprocessing window, replay idempotence |
+| `bigquery-query-review` | `/build`, `/diagnose` | preserved semantics, partitions, execution plan |
+| `bigquery-cost-review` | `/build`, `/diagnose` | bytes, slots, frequency, monthly cost, budget before execution |
+| `perimeter-brief` | `/learn` | HTML sheet for an area, quiz, candidate glossary terms |
+| `python-js-change` | `/build` (Data Developer) | repo conventions, TDD, interface before implementation |
+| `java-change` | `/build` (Java Developer) | repo and Maven or Gradle build conventions, JUnit, public contracts |
+| `infra-change` | `/build`, `/diagnose` (DevOps) | blast radius, read-only evidence (plan, diff), never an apply or a deployment, rollback |
+| `architecture-decision` | `/spec` (Architect) | compared options, criteria, consequences, reversibility, ADR |
 
-Les playbooks Data sont dans les deux profils Data ; `python-js-change`, `java-change`, `infra-change` et `architecture-decision` sont chacun dans le profil indiqué. Un playbook d’un autre profil s’ajoute par `extra_skills` dans `overrides.json`. Les tables d’excuses, les déclencheurs des descriptions et les sections « Interdits » sont ce qui fait qu’un playbook s’active au bon moment.
+The Data playbooks are in both Data profiles; `python-js-change`, `java-change`, `infra-change` and `architecture-decision` are each in the profile shown. A playbook from another profile is added with `extra_skills` in `overrides.json`. Rationalization tables, description triggers and "Forbidden" sections are what make a playbook activate at the right time.
 
-Chaque playbook se termine par une table « Excuses entendues et réponses » : les raisons qu’un agent invoque pour sauter une étape, et ce qu’on lui répond. Quand l’agent trouve une nouvelle excuse, elle entre dans la table.
+Each playbook ends with a "Rationalizations and rebuttals" table: the reasons an agent gives to skip a step, and the reply it gets. When the agent finds a new rationalization, it goes into the table.
 
-## Revue adverse
+## Adversarial review
 
-`/review full` ajoute une passe de doute : l’agent `ai-kit-doubter`, dans un contexte frais et en lecture seule, extrait les affirmations dont le changement dépend, cherche pour chacune une preuve ou un contre-exemple, et classe prouvée, réfutée, non prouvée. Une affirmation sans preuve lisible est rapportée comme Important.
+`/review full` adds a doubt pass: the `ai-kit-doubter` agent, in a fresh read-only context, extracts the claims the change depends on, looks for evidence or a counter-example for each, and classifies them as proven, refuted or unproven. A claim without readable evidence is reported as Important.
 
-## Mise en place d’un repo
+## Setting up a repo
 
-1. « Initialise le contexte du projet » : `AGENTS.md` d’une page (Commands, Verifying your work, Conventions, Architecture, Things the agent gets wrong), `GLOSSARY.md` pré-rempli avec le vocabulaire du repo, `REVIEW.md`, et les lignes de `.gitignore` pour les notes locales. Pas d’ADR vide, pas de copie des gabarits.
-2. Plus tard, seulement si l’équipe veut que l’agent lise et crée des tickets (`/map`, `/triage`, `to-tickets`) : `setup-workflow`, qui demande `glab` (GitLab) ou `gh` (GitHub) installé et connecté, ou choisit le mode markdown local. Il écrit `docs/agents/issue-tracker.md` et un bloc dans `AGENTS.md`.
+1. "Initialize the project context": a one-page `AGENTS.md` (Commands, Verifying your work, Conventions, Architecture, Things the agent gets wrong), `GLOSSARY.md` pre-filled with the repo's vocabulary, `REVIEW.md`, and the `.gitignore` lines for local notes. No empty ADR, no copy of the templates.
+2. Later, only if the team wants the agent to read and create tickets (`/map`, `/triage`, `to-tickets`): `setup-workflow`, which requires `glab` (GitLab) or `gh` (GitHub) installed and logged in, or chooses local markdown mode. It writes `docs/agents/issue-tracker.md` and a block in `AGENTS.md`.
 
-Un repo peut surcharger une commande, sous la forme que lit la CLI ([matrice](cli/matrice.md)).
+A repo can override a command, in the form the CLI reads ([matrix](cli/matrice.md)).
 
-## Sous le capot
+## Under the hood
 
-Les commandes sont écrites une fois dans `commands/<nom>.md` ([format pivot](format.md)) ; chaque adaptateur en dérive la forme de sa CLI ([matrice](cli/matrice.md)). Leur prompt active un ou plusieurs skills. Leur comportement se vérifie avec la suite d’[évaluations](evals.md). La liste des skills, leur catégorie et leur origine sont dans [skills-reference.md](skills-reference.md) ; les outils hors flux dans [tools.md](tools.md).
+Commands are written once in `commands/<name>.md` ([pivot format](format.md)); each adapter derives its CLI's form from it ([matrix](cli/matrice.md)). Their prompt activates one or more skills. Their behaviour is checked with the [evals](evals.md) suite. The list of skills, their category and origin are in [skills-reference.md](skills-reference.md); tools outside the flow are in [tools.md](tools.md).

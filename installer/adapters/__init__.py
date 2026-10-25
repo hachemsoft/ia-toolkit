@@ -1,8 +1,8 @@
-"""Un module par CLI. Le contrat que chaque module respecte est dans installer/interface.py :
-Adapter (obligatoire), ContextHost et LiveCheck (capacités facultatives).
+"""One module per CLI. The contract each module follows is in installer/interface.py:
+Adapter (required), ContextHost and LiveCheck (optional capabilities).
 
-Le premier de ADAPTERS est la CLI par défaut, installée quand aucune CLI n'est détectée.
-Ajouter une CLI = écrire un module ici et l'ajouter à ADAPTERS ; voir docs/cli/matrice.md.
+The first of ADAPTERS is the default CLI, installed when no CLI is detected.
+Adding a CLI = writing a module here and adding it to ADAPTERS; see docs/cli/matrice.md.
 """
 from . import gemini, agy, codex
 

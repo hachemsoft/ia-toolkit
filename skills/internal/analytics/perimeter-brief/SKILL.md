@@ -1,28 +1,28 @@
 ---
 name: perimeter-brief
-description: "Produire la fiche d’un périmètre Data à partir d’un repo dbt et de sa doc : sources, couches, modèles clés et leur grain, KPI, règles, propriétaires, questions ouvertes ; plus un quiz et les termes candidats au glossaire. Déclencheurs : fiche du périmètre, onboarding sur un domaine, présente-moi ce périmètre, première leçon."
+description: "Produce the brief of a Data perimeter from a dbt repo and its documentation: sources, layers, key models and their grain, KPIs, rules, owners, open questions; plus a quiz and candidate glossary terms. Triggers: perimeter brief, onboarding on a domain, walk me through this perimeter, first lesson."
 ---
 
 # perimeter-brief
 
-Le document qu’on donne à quelqu’un qui arrive sur un périmètre, et la première leçon de `/learn` quand le sujet est un domaine Data. Tout vient du repo et de sa doc : rien d’inventé.
+The document you give to someone joining a perimeter, and the first lesson of `/learn` when the subject is a Data domain. Everything comes from the repo and its documentation: nothing invented.
 
-## Déroulé
-1. Inventorier : `dbt_project.yml`, sources déclarées, modèles par couche (source, staging, intermédiaire, mart), exposures, tests, descriptions ; `GLOSSARY.md`, ADR, README, dashboards référencés. Noter ce qui manque.
-2. Pour chaque modèle clé (les marts et ce dont ils dépendent directement) : grain tel que documenté ou déduit de la clé, sources, fraîcheur, tests présents. Signaler tout grain non documenté comme question ouverte, pas comme certitude.
-3. Lister les KPI exposés avec leur définition quand elle existe ; sinon, la marquer « non définie » et renvoyer vers `kpi-definition`.
-4. Relever les règles transverses : dates de référence, fuseaux, exclusions, périmètres d’habilitation, targets dbt et environnements.
-5. Produire la fiche en HTML autonome, lisible et imprimable, sans dépendance externe obligatoire : titre, résumé en cinq lignes, schéma des couches (texte ou SVG simple), tableau des modèles clés, tableau des KPI, règles, propriétaires, questions ouvertes, sources consultées avec chemins. L’enregistrer sous `docs/learn/<périmètre>/reference/perimeter-brief.html` avec l’accord de la personne.
-6. Produire un quiz de dix questions à choix multiples fondées sur la fiche ; réponses de même longueur, position de la bonne réponse variée, explication d’une ligne par question. Même dossier, `quiz-01.html`.
-7. Lister les termes candidats au `GLOSSARY.md` au format de `domain-modeling` ; proposer, ne pas écrire sans accord.
+## Steps
+1. Inventory: `dbt_project.yml`, declared sources, models by layer (source, staging, intermediate, mart), exposures, tests, descriptions; `GLOSSARY.md`, ADRs, README, referenced dashboards. Note what is missing.
+2. For each key model (the marts and what they depend on directly): grain as documented or inferred from the key, sources, freshness, existing tests. Flag any undocumented grain as an open question, not as a certainty.
+3. List the exposed KPIs with their definition when it exists; otherwise mark it "undefined" and refer to `kpi-definition`.
+4. Record cross-cutting rules: reference dates, time zones, exclusions, access scopes, dbt targets and environments.
+5. Produce the brief as standalone HTML, readable and printable, with no required external dependency: title, five-line summary, layer diagram (text or simple SVG), table of key models, table of KPIs, rules, owners, open questions, sources consulted with paths. Save it as `docs/learn/<perimeter>/reference/perimeter-brief.html` with the person's agreement.
+6. Produce a ten-question multiple-choice quiz based on the brief; answers of equal length, varied position of the correct answer, a one-line explanation per question. Same folder, `quiz-01.html`.
+7. List the candidate terms for `GLOSSARY.md` in the `domain-modeling` format; propose them, do not write without agreement.
 
-## Excuses entendues et réponses
-| Excuse | Réponse |
+## Rationalizations and rebuttals
+| Excuse | Rebuttal |
 | --- | --- |
-| « Le grain est évident d’après le nom du modèle » | Un nom n’est pas un contrat ; lire la clé et les tests, sinon marquer « à confirmer ». |
-| « Le KPI est défini dans le dashboard » | Retrouver la requête ; si elle n’est pas dans le repo, le KPI est non défini ici. |
-| « Je complète avec ce que je sais du domaine » | Le savoir général n’est pas le périmètre de cette équipe ; citer un fichier ou poser la question. |
-| « Une fiche courte suffit, on verra les détails plus tard » | Courte oui, mais les questions ouvertes y figurent : c’est elles qui coûtent plus tard. |
+| "The grain is obvious from the model name" | A name is not a contract; read the key and the tests, otherwise mark it "to confirm". |
+| "The KPI is defined in the dashboard" | Find the query; if it is not in the repo, the KPI is undefined here. |
+| "I'll fill in with what I know about the domain" | General knowledge is not this team's perimeter; cite a file or ask the question. |
+| "A short brief is enough, we'll see the details later" | Short yes, but the open questions go in it: they are what costs later. |
 
-## Interdits
-Aucune affirmation sans chemin de fichier à l’appui. Pas d’écriture dans le repo sans accord. Pas de quiz sur ce qui n’est pas dans la fiche.
+## Forbidden
+No statement without a supporting file path. No writing to the repo without agreement. No quiz on anything that is not in the brief.

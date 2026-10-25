@@ -18,10 +18,10 @@ class UsageTests(unittest.TestCase):
   return out.getvalue(),json.loads(rep.read_text(encoding='utf-8'))
  def test_counts_commands_skills_agents(self):
   now=datetime.now(timezone.utc)
-  self.write_session('s1',[msg('user',now,displayContent="[{'text': '/intent idée'}]"),msg('gemini',now,toolCalls=[{'name':'activate_skill','args':{'name':'grill-with-docs'}},{'name':'ai-kit-verifier','args':{}}]),msg('user',now,displayContent="[{'text': 'bonjour /intent dans une phrase'}]"),msg('error',now,content='x')])
+  self.write_session('s1',[msg('user',now,displayContent="[{'text': '/intent idea'}]"),msg('gemini',now,toolCalls=[{'name':'activate_skill','args':{'name':'grill-with-docs'}},{'name':'ai-kit-verifier','args':{}}]),msg('user',now,displayContent="[{'text': 'hello /intent in a sentence'}]"),msg('error',now,content='x')])
   text,rep=self.run_usage()
   self.assertEqual(rep['commands'],{'intent':1});self.assertEqual(rep['skills'],{'grill-with-docs':1});self.assertEqual(rep['agents'],{'ai-kit-verifier':1});self.assertEqual(rep['errors'],1);self.assertEqual(rep['sessions'],1)
-  self.assertIn('intent',rep['unused_commands'] and [] or ['intent']);self.assertNotIn('intent',rep['unused_commands']);self.assertIn('ship',rep['unused_commands']);self.assertFalse(rep['enough_data']);self.assertIn('Données insuffisantes',text)
+  self.assertIn('intent',rep['unused_commands'] and [] or ['intent']);self.assertNotIn('intent',rep['unused_commands']);self.assertIn('ship',rep['unused_commands']);self.assertFalse(rep['enough_data']);self.assertIn('Not enough data',text)
  def test_old_sessions_ignored(self):
   old=datetime.now(timezone.utc)-timedelta(days=100)
   self.write_session('old',[msg('user',old,displayContent="[{'text': '/ship'}]")])
@@ -33,10 +33,10 @@ class UsageTests(unittest.TestCase):
    self.write_session('s'+str(i),[msg('user',now,displayContent="[{'text': '/intent x'}]") for _ in range(5)]+[msg('gemini',now,toolCalls=[{'name':'activate_skill','args':{'name':'grill-with-docs'}}])])
   text,rep=self.run_usage()
   self.assertTrue(rep['enough_data']);c=rep['core_candidates_to_demote']
-  self.assertIn('teach',c);self.assertNotIn('grill-with-docs',c);self.assertNotIn('grilling',c);self.assertNotIn('domain-modeling',c);self.assertNotIn('sql-review',c);self.assertIn('Candidats à sortir du noyau',text)
+  self.assertIn('teach',c);self.assertNotIn('grill-with-docs',c);self.assertNotIn('grilling',c);self.assertNotIn('domain-modeling',c);self.assertNotIn('sql-review',c);self.assertIn('Candidates to remove from the core',text)
  def test_agy_history_counted(self):
   import time;now=int(time.time()*1000);h=self.home/'.gemini/antigravity-cli/history.jsonl';h.parent.mkdir(parents=True,exist_ok=True)
-  h.write_text('\n'.join([json.dumps({'display':'/intent idée','timestamp':now,'conversationId':'c1'}),json.dumps({'display':'bonjour','timestamp':now,'conversationId':'c1'}),json.dumps({'display':'/ship','timestamp':now-200*86400*1000,'conversationId':'old'}),'pas du json']),encoding='utf-8')
+  h.write_text('\n'.join([json.dumps({'display':'/intent idea','timestamp':now,'conversationId':'c1'}),json.dumps({'display':'hello','timestamp':now,'conversationId':'c1'}),json.dumps({'display':'/ship','timestamp':now-200*86400*1000,'conversationId':'old'}),'not json']),encoding='utf-8')
   text,rep=self.run_usage();self.assertEqual(rep['commands'],{'intent':1});self.assertEqual(rep['sessions'],1);self.assertEqual(rep['prompts'],2)
  def test_requires_installation(self):
   with tempfile.TemporaryDirectory() as tmp:

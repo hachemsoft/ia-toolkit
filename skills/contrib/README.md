@@ -1,11 +1,11 @@
-# Skills contribués
+# Contributed skills
 
-Ici vont les skills que les personnes de l’organisation proposent au kit, un dossier par skill : `skills/contrib/<nom>/SKILL.md`. Ce qui est sous `skills/internal/` est livré et maintenu par les mainteneurs du kit ; ce qui est ici est maintenu par la personne nommée dans le catalogue.
+This is where the skills that people in the organization propose to the kit go, one folder per skill: `skills/contrib/<name>/SKILL.md`. What is under `skills/internal/` is shipped and maintained by the kit maintainers; what is here is maintained by the person named in the catalog.
 
-Règles, vérifiées par les tests :
+Rules, checked by the tests:
 
-- une entrée dans `skills/catalog.json` avec `"origin": "contrib"`, `"owner": "<prénom.nom ou équipe>"`, et `"tier": "optional"` : un skill contribué ne s’installe jamais par défaut, chacun l’active d’une ligne (`extra_skills` dans `~/.ai-kit/overrides.json`) ;
-- un nom qui n’existe pas déjà dans le kit ; pour remplacer un skill livré, voir [docs/extending.md](../../docs/extending.md) ;
-- un cas d’évaluation dans `evals/cases/` qui montre le skill en action, ou une ligne « Déclencheurs » dans la description qui dit quand il s’active.
+- an entry in `skills/catalog.json` with `"origin": "contrib"`, `"owner": "<firstname.lastname or team>"`, and `"tier": "optional"`: a contributed skill is never installed by default, each person enables it with one line (`extra_skills` in `~/.ai-kit/overrides.json`);
+- a name that does not already exist in the kit; to replace a shipped skill, see [docs/extending.md](../../docs/extending.md);
+- an evaluation case in `evals/cases/` that shows the skill in action, or a "Triggers" line in the description that says when it activates.
 
-Promotion : quand la revue d’usage montre qu’un skill contribué sert largement, il passe sous `skills/internal/` avec `"origin": "internal"`, et entre dans un profil. Retrait : un skill contribué sans propriétaire joignable est retiré à la revue d’usage suivante.
+Promotion: when the usage review shows that a contributed skill is widely used, it moves under `skills/internal/` with `"origin": "internal"`, and joins a profile. Removal: a contributed skill without a reachable owner is removed at the next usage review.

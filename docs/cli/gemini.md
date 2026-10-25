@@ -1,45 +1,45 @@
 # Gemini CLI
 
-Ce que le kit fait pour Gemini CLI, et ce qui est propre à cette CLI. Comportement vérifié sur Gemini CLI 0.65. Les notions communes sont dans la [matrice](matrice.md).
+What the kit does for Gemini CLI, and what is specific to this CLI. Behavior verified on Gemini CLI 0.65. Shared concepts are in the [CLI matrix](matrice.md).
 
-## Ce que le kit installe
+## What the kit installs
 
-- **Contexte** : `00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md` et `30_USER.md` dans `~/.gemini/`, déclarés dans `context.fileName` de `~/.gemini/settings.json`, suivis de `GEMINI.md` et `AGENTS.md` pour les repos. Les noms personnels déjà présents dans `context.fileName` sont conservés.
-- **Skills** dans `~/.gemini/skills/`, **commandes** dans `~/.gemini/commands/*.toml`, **agents** dans `~/.gemini/agents/ai-kit-*.md`.
-- **Garde-fous** activés : scripts dans `~/.ai-kit/hooks/` (partagés par toutes les CLI), déclarés sous `hooks.BeforeTool` dans des groupes nommés `ai-kit-<nom>`. Vos propres hooks sont conservés.
-- **MCP** activés dans `overrides.json` : entrées `ai-kit-<nom>` sous `mcpServers`.
-- **Réglage par défaut** : `skills.enabled`, seulement s'il manque.
+- **Context**: `00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md` and `30_USER.md` in `~/.gemini/`, declared in `context.fileName` of `~/.gemini/settings.json`, followed by `GEMINI.md` and `AGENTS.md` for repositories. Personal names already present in `context.fileName` are kept.
+- **Skills** in `~/.gemini/skills/`, **commands** in `~/.gemini/commands/*.toml`, **agents** in `~/.gemini/agents/ai-kit-*.md`.
+- **Guardrails** that are enabled: scripts in `~/.ai-kit/hooks/` (shared by all CLIs), declared under `hooks.BeforeTool` in groups named `ai-kit-<name>`. Your own hooks are kept.
+- **MCP servers** enabled in `overrides.json`: `ai-kit-<name>` entries under `mcpServers`.
+- **Default setting**: `skills.enabled`, only if it is missing.
 
-## Authentification et modèle
+## Authentication and model
 
-Le kit n'y touche que sur déclaration dans `overrides.json` ; détail dans [personnalisation](../customization.md#authentification-et-modèle).
+The kit touches these only when declared in `overrides.json`; details in [customization](../customization.md#authentication-and-model).
 
-| Déclaration | Effet dans Gemini |
+| Declaration | Effect in Gemini |
 | --- | --- |
-| `vertex` | `security.auth.selectedType` sur `vertex-ai` ; `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` dans `~/.gemini/.env` |
-| `code_assist` | `selectedType` sur `oauth-personal` ; `GOOGLE_CLOUD_PROJECT` dans `~/.gemini/.env` |
-| `model` | `model.name` dans `settings.json` |
+| `vertex` | `security.auth.selectedType` set to `vertex-ai`; `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` in `~/.gemini/.env` |
+| `code_assist` | `selectedType` set to `oauth-personal`; `GOOGLE_CLOUD_PROJECT` in `~/.gemini/.env` |
+| `model` | `model.name` in `settings.json` |
 
-Les lignes du kit dans `.env` portent le commentaire `# ai-kit :` et disparaissent quand la clé est retirée.
+The kit lines in `.env` carry the comment `# ai-kit :` and disappear when the key is removed.
 
-## Vérifier dans Gemini
+## Check in Gemini
 
-`/memory show` (les quatre couches avant le contexte du repo), `/commands list`, `/skills list`, `/agents list` (après `/agents reload`), `/mcp`.
+`/memory show` (the four layers before the repository context), `/commands list`, `/skills list`, `/agents list` (after `/agents reload`), `/mcp`.
 
-## Particularités
+## Specifics
 
-- **Alias `~/.agents/skills`** : Gemini le lit aussi, et il l'emporte sur `~/.gemini/skills` à nom égal (« Skill conflict detected » au démarrage). `doctor` liste les skills du kit ainsi masqués.
-- **Contexte des sous-dossiers** : lancé à la racine d'un repo, Gemini lit aussi les `AGENTS.md` et `GEMINI.md` des sous-dossiers ; un `.geminiignore` limite ce qu'il parcourt.
-- **Mode non interactif (`gemini -p`)** : l'outil d'activation de skill n'est pas exposé ; les commandes du kit disent quoi faire sans lui. Le mode `plan` bloque aussi les skills.
-- **Sous-agents** : activés par défaut depuis 0.65 ; un `experimental.enableAgents` à `false` les désactive, le kit le respecte et `doctor` le signale. L'en-tête `model:` d'un agent est lu (profils de capacité, voir [agents](../agents.md)).
-- **Identité** : le compte Google actif est lu dans `~/.gemini/google_accounts.json` (champ `active`), jamais les jetons.
+- **`~/.agents/skills` alias**: Gemini reads it too, and it wins over `~/.gemini/skills` when names match ("Skill conflict detected" at startup). `doctor` lists the kit skills hidden this way.
+- **Subfolder context**: when launched at the root of a repository, Gemini also reads the `AGENTS.md` and `GEMINI.md` of subfolders; a `.geminiignore` limits what it walks.
+- **Non-interactive mode (`gemini -p`)**: the skill activation tool is not exposed; the kit commands say what to do without it. `plan` mode also blocks skills.
+- **Subagents**: enabled by default since 0.65. An `experimental.enableAgents` set to `false` disables them; the kit respects it and `doctor` reports it. The `model:` header of an agent is read (capability profiles, see [agents](../agents.md)).
+- **Identity**: the active Google account is read from `~/.gemini/google_accounts.json` (`active` field), never the tokens.
 
-## Dépannage propre à Gemini
+## Gemini troubleshooting
 
-- **Gemini absent** : le kit prépare les fichiers mais n'installe pas Gemini ; utiliser la procédure IT, puis se connecter.
-- **Contexte non chargé** : `/memory show` dans un repo ; si les couches manquent, vérifier `context.fileName` et une éventuelle politique administrée.
-- **Variables Vertex ignorées** : `selectedType` vaut encore `gemini-api-key` ; déclarer `vertex` dans `overrides.json` puis `update`, ou `/auth`.
-- **Bloc hérité dans `GEMINI.md`** (installations 0.0.x) : copier vos ajouts dans `~/.gemini/30_USER.md`, retirer le bloc entre les marqueurs `ai-kit` de `~/.gemini/GEMINI.md`, puis `update`.
-- **Skill installé hors du kit** (par exemple `gemini skills install`) : le retirer, ou l'ajouter à `disabled_skills`.
+- **Gemini missing**: the kit prepares the files but does not install Gemini. Use the IT procedure, then sign in.
+- **Context not loaded**: run `/memory show` in a repository. If layers are missing, check `context.fileName` and any managed policy.
+- **Vertex variables ignored**: `selectedType` is still `gemini-api-key`. Declare `vertex` in `overrides.json` then run `update`, or use `/auth`.
+- **Legacy block in `GEMINI.md`** (0.0.x installs): copy your additions to `~/.gemini/30_USER.md`, remove the block between the `ai-kit` markers in `~/.gemini/GEMINI.md`, then run `update`.
+- **Skill installed outside the kit** (for example `gemini skills install`): remove it, or add it to `disabled_skills`.
 
-Passer à agy : [ce qui change, ce qui ne change pas](gemini-to-agy.md).
+Moving to agy: [what changes, what does not](gemini-to-agy.md).

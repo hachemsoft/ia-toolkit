@@ -1,58 +1,58 @@
-# Référence des skills
+# Skills reference
 
-Liste complète du catalogue (`skills/catalog.json`). Les utilisateurs n’ont pas à connaître ces noms : ils passent par les commandes. Cette page sert à qui veut voir ce qu’il y a dessous ou étendre le kit.
+Full list of the catalog (`skills/catalog.json`). Users do not need to know these names: they go through the commands. This page is for people who want to see what is underneath or extend the kit.
 
-Catégories : `workflow` (une étape du SDLC), `tool` (utilitaire hors flux), `domain` (playbook métier : Java, infrastructure, architecture, Data…), `reference` (vocabulaire consulté par les autres skills), `setup` (mise en place d’un repo). Tiers : `core` installé dans tous les profils (vérifié par un test), `profile` selon le profil, `optional` via `extra_skills` ou `extra_commands`.
+Categories: `workflow` (an SDLC step), `tool` (utility outside the flow), `domain` (domain playbook: Java, infrastructure, architecture, Data…), `reference` (vocabulary consulted by other skills), `setup` (repository setup). Tiers: `core` installed in all profiles (checked by a test), `profile` depending on the profile, `optional` through `extra_skills` or `extra_commands`.
 
-| Skill | Catégorie | Tier | Commandes | Description |
+| Skill | Category | Tier | Commands | Description |
 | --- | --- | --- | --- | --- |
-| `grilling` | workflow | core | — | Challenger un plan, une décision ou une idée par rounds de questions avant de la mettre en œuvre. |
-| `codebase-design` | reference | optional | `/design` | Vocabulaire des modules profonds : interface, couture, profondeur ; conception d’interface en plusieurs variantes. |
-| `prototype` | workflow | optional | `/design` | Prototype jetable pour trancher une question de conception, logique ou interface. |
-| `domain-modeling` | reference | core | `/spec` | Glossaire du projet (GLOSSARY.md) et décisions d’architecture (ADR). |
-| `tdd` | workflow | core | `/test` | Développement test-first : rouge, vert, refactor ; tests d’intégration privilégiés. |
-| `diagnosing-bugs` | workflow | core | `/diagnose` | Boucle de diagnostic pour bugs difficiles et régressions de performance : reproduire, réduire, hypothèse, instrumenter, corriger. |
-| `writing-for-agents` | reference | core | — | Rédiger des documents destinés aux agents : skills, AGENTS.md, docs de repo. |
-| `research` | tool | optional | `/research` | Recherche sur sources primaires, consignée dans un fichier Markdown du repo, déléguée à un agent en arrière-plan. |
-| `mr` | workflow | core | `/ship` | Rédiger la description d’une merge request : résumé visuel, preuves, risque de fusion. |
-| `guide` | tool | core | `/guide` | Quelle commande, quel outil et quel niveau de cérémonie pour la situation : routeur du kit. |
-| `grill-me` | workflow | optional | — | Entretien serré pour affûter un plan, sans dépôt ni trace écrite. |
-| `grill-with-docs` | workflow | core | `/intent` | Entretien serré qui alimente GLOSSARY.md et les ADR au fil des réponses ; point d’entrée du flux principal. |
-| `to-questionnaire` | tool | optional | `/ask` | Transformer une décision qu’on ne peut pas trancher seul en questionnaire pour quelqu’un d’autre. |
-| `to-spec` | workflow | profile | `/spec` | Transformer la conversation en spécification publiée sur le gestionnaire de tickets. |
-| `to-tickets` | workflow | profile | — | Découper un plan ou une spec en tickets traçantes avec leurs dépendances bloquantes. |
-| `wayfinder` | workflow | optional | `/map` | Cartographier un chantier trop grand pour une session en tickets de décision, résolus un par un. |
-| `implement` | workflow | core | `/build` | Implémenter un ticket ou une spec, en TDD, puis revue. |
-| `implement-spec` | workflow | optional | — | Implémenter toute une spec : tickets lus comme graphe, sous-agents en parallèle, branche d’intégration. |
-| `code-review` | workflow | core | `/review` | Revue d’un diff depuis un point fixe sur deux axes : standards du repo et conformité à la spec. |
-| `triage` | workflow | optional | `/triage` | Faire avancer les tickets entrants dans une machine à états de triage jusqu’à être prêts pour un agent. |
-| `retro` | tool | profile | `/retro` | Rétrospective d’une session de travail : améliorer l’environnement de l’agent, pas le code. |
-| `handoff` | tool | optional | `/handoff` | Compacter la conversation en document de passation pour un autre agent ou une autre session. |
-| `wait-what` | tool | profile | `/explain` | Reformuler le dernier message qui n’a pas été compris, avec le vocabulaire du glossaire. |
-| `zoom-out` | tool | profile | `/explain` | Prendre de la hauteur : contexte élargi et vue d’ensemble. |
-| `teach` | tool | core | `/learn` | Apprendre un périmètre ou un concept sur plusieurs sessions : leçons, quiz et fiches ; matériel partagé dans `docs/learn/<sujet>/` du repo, progression personnelle dans `~/.ai-kit/learning/`. |
-| `improve-codebase-architecture` | tool | optional | `/audit` | Repérer les modules à approfondir, rapport HTML, puis entretien sur ceux retenus. |
-| `wizard` | tool | optional | `/wizard` | Générer un assistant bash interactif pour les étapes que seul un humain peut faire. |
-| `write-a-skill` | tool | optional | — | Créer un skill : structure, divulgation progressive, ressources. |
-| `writing-great-skills` | reference | optional | — | Référence pour écrire et relire des skills prévisibles. |
-| `setup-workflow` | setup | core | — | Configurer un repo pour le flux : gestionnaire de tickets (GitHub, GitLab, local), labels de triage, emplacement du glossaire et des ADR. À lancer une fois par repo. |
-| `workflow-guide` | tool | optional | — | Quel skill ou quel flux pour la situation présente : routeur sur l’ensemble des skills. |
-| `init-project-context` | setup | core | — | Poser le contexte agent d’un repo, avec confirmation à chaque fichier : AGENTS.md court, GLOSSARY.md pré-rempli, REVIEW.md, règle git des artefacts ; ne copie pas les gabarits, ne crée pas d’ADR vide. |
-| `python-js-change` | domain | profile | — | Développer ou revoir une fonctionnalité Python ou JavaScript dans un repo existant. |
-| `java-change` | domain | profile | — | Développer ou revoir une fonctionnalité Java dans un repo existant (Maven ou Gradle, Spring ou autre). |
-| `infra-change` | domain | profile | — | Préparer ou revoir un changement d’infrastructure ou de livraison : Terraform, Kubernetes, Helm, pipeline CI/CD, Dockerfile, configuration cloud. |
-| `architecture-decision` | domain | profile | — | Instruire et documenter une décision d’architecture (ADR) : options, critères, conséquences, réversibilité. |
-| `sql-review` | domain | profile | — | Revoir du SQL BigQuery ou dbt et investiguer des agrégations, doublons ou résultats métier suspects. |
-| `dbt-model-change` | domain | profile | — | Créer, modifier, tester ou documenter un modèle dbt sur BigQuery. |
-| `bigquery-query-review` | domain | profile | — | Optimiser une requête BigQuery lente ou coûteuse et vérifier scans, partitions, jointures et plan. |
-| `kpi-definition` | domain | profile | — | Définir ou redéfinir un KPI avant de le calculer : grain, population, période, exclusions, source de vérité, propriétaire. |
-| `incremental-replay` | domain | profile | — | Rejouer ou corriger un modèle incrémental : clé unique, données tardives, fenêtre de retraitement, idempotence. |
-| `bigquery-cost-review` | domain | profile | — | Mesurer et réduire le coût d’une requête ou d’un modèle BigQuery : octets, slots, fréquence, budget avant exécution. |
-| `perimeter-brief` | domain | profile | — | Fiche HTML d’un périmètre Data, quiz et termes candidats au glossaire, première leçon de `/learn`. |
-| `clarify-request` | remplacé | | | → `grilling` |
-| `debug-systematically` | remplacé | | | → `diagnosing-bugs` |
-| `verify-change` | remplacé | | | → `tdd`, `mr` |
+| `grilling` | workflow | core | — | Challenge a plan, decision or idea through rounds of questions before implementing it. |
+| `codebase-design` | reference | optional | `/design` | Vocabulary of deep modules: interface, seam, depth; interface design in several variants. |
+| `prototype` | workflow | optional | `/design` | Throwaway prototype to settle a design, logic or interface question. |
+| `domain-modeling` | reference | core | `/spec` | Project glossary (GLOSSARY.md) and architecture decisions (ADR). |
+| `tdd` | workflow | core | `/test` | Test-first development: red, green, refactor; integration tests preferred. |
+| `diagnosing-bugs` | workflow | core | `/diagnose` | Diagnosis loop for hard bugs and performance regressions: reproduce, minimize, hypothesize, instrument, fix. |
+| `writing-for-agents` | reference | core | — | Write documents meant for agents: skills, AGENTS.md, repository docs. |
+| `research` | tool | optional | `/research` | Research on primary sources, recorded in a Markdown file in the repository, delegated to a background agent. |
+| `mr` | workflow | core | `/ship` | Write a merge request (MR) description: visual summary, evidence, merge risk. |
+| `guide` | tool | core | `/guide` | Which command, which tool and which level of ceremony for the situation: the kit router. |
+| `grill-me` | workflow | optional | — | Tight interview to sharpen a plan, with no repository or written record. |
+| `grill-with-docs` | workflow | core | `/intent` | Tight interview that feeds GLOSSARY.md and the ADRs as answers come in; entry point of the main flow. |
+| `to-questionnaire` | tool | optional | `/ask` | Turn a decision you cannot make alone into a questionnaire for someone else. |
+| `to-spec` | workflow | profile | `/spec` | Turn the conversation into a specification published on the ticket tracker. |
+| `to-tickets` | workflow | profile | — | Split a plan or spec into tracer tickets with their blocking dependencies. |
+| `wayfinder` | workflow | optional | `/map` | Map a body of work too large for one session into decision tickets, resolved one by one. |
+| `implement` | workflow | core | `/build` | Implement a ticket or a spec, with TDD, then review. |
+| `implement-spec` | workflow | optional | — | Implement a whole spec: tickets read as a graph, subagents in parallel, integration branch. |
+| `code-review` | workflow | core | `/review` | Review a diff from a fixed point on two axes: repository standards and compliance with the spec. |
+| `triage` | workflow | optional | `/triage` | Move incoming tickets through a triage state machine until they are ready for an agent. |
+| `retro` | tool | profile | `/retro` | Retrospective of a work session: improve the agent's environment, not the code. |
+| `handoff` | tool | optional | `/handoff` | Compact the conversation into a handoff document for another agent or session. |
+| `wait-what` | tool | profile | `/explain` | Rephrase the last message that was not understood, using the glossary vocabulary. |
+| `zoom-out` | tool | profile | `/explain` | Step back: wider context and overview. |
+| `teach` | tool | core | `/learn` | Learn a scope or concept over several sessions: lessons, quizzes and cards; shared material in the repository's `docs/learn/<topic>/`, personal progress in `~/.ai-kit/learning/`. |
+| `improve-codebase-architecture` | tool | optional | `/audit` | Spot modules to deepen, HTML report, then an interview on the selected ones. |
+| `wizard` | tool | optional | `/wizard` | Generate an interactive bash wizard for steps only a human can perform. |
+| `write-a-skill` | tool | optional | — | Create a skill: structure, progressive disclosure, resources. |
+| `writing-great-skills` | reference | optional | — | Reference for writing and reviewing predictable skills. |
+| `setup-workflow` | setup | core | — | Configure a repository for the flow: ticket tracker (GitHub, GitLab, local), triage labels, location of the glossary and ADRs. Run once per repository. |
+| `workflow-guide` | tool | optional | — | Which skill or flow for the current situation: router across all skills. |
+| `init-project-context` | setup | core | — | Set up a repository's agent context, with confirmation for each file: short AGENTS.md, prefilled GLOSSARY.md, REVIEW.md, git rule for artifacts; does not copy the templates, does not create an empty ADR. |
+| `python-js-change` | domain | profile | — | Develop or review a Python or JavaScript feature in an existing repository. |
+| `java-change` | domain | profile | — | Develop or review a Java feature in an existing repository (Maven or Gradle, Spring or other). |
+| `infra-change` | domain | profile | — | Prepare or review an infrastructure or delivery change: Terraform, Kubernetes, Helm, CI/CD pipeline, Dockerfile, cloud configuration. |
+| `architecture-decision` | domain | profile | — | Investigate and document an architecture decision (ADR): options, criteria, consequences, reversibility. |
+| `sql-review` | domain | profile | — | Review BigQuery or dbt SQL and investigate suspicious aggregations, duplicates or business results. |
+| `dbt-model-change` | domain | profile | — | Create, change, test or document a dbt model on BigQuery. |
+| `bigquery-query-review` | domain | profile | — | Optimize a slow or costly BigQuery query and check scans, partitions, joins and plan. |
+| `kpi-definition` | domain | profile | — | Define or redefine a KPI before computing it: grain, population, period, exclusions, source of truth, owner. |
+| `incremental-replay` | domain | profile | — | Replay or fix an incremental model: unique key, late data, reprocessing window, idempotence. |
+| `bigquery-cost-review` | domain | profile | — | Measure and reduce the cost of a BigQuery query or model: bytes, slots, frequency, budget before running. |
+| `perimeter-brief` | domain | profile | — | HTML brief of a Data scope, quiz and candidate glossary terms, first lesson of `/learn`. |
+| `clarify-request` | replaced | | | → `grilling` |
+| `debug-systematically` | replaced | | | → `diagnosing-bugs` |
+| `verify-change` | replaced | | | → `tdd`, `mr` |
 
-## Origine
+## Origin
 
-Les skills `origin: upstream` sont repris de [mattpocock/skills](https://github.com/mattpocock/skills) (Matt Pocock, licence MIT) (`skills/LICENSE-UPSTREAM-MIT`), en anglais ; trois adaptations : `pr` devient `mr`, et les deux skills amont dont le nom portait celui de leur auteur deviennent `setup-workflow` et `workflow-guide`. Les skills `origin: contrib` (sous `skills/contrib/`) sont proposés par des personnes de l’organisation qui en restent propriétaires, toujours optionnels. Les skills `origin: internal` sont écrits pour le kit, en français. Voir [workflow](workflow.md) et [outils](tools.md) pour l’usage.
+Skills with `origin: upstream` come from [mattpocock/skills](https://github.com/mattpocock/skills) (Matt Pocock, MIT licence) (`skills/LICENSE-UPSTREAM-MIT`), in English. Three adaptations: `pr` becomes `mr`, and the two upstream skills whose name carried their author's name become `setup-workflow` and `workflow-guide`. Skills with `origin: contrib` (under `skills/contrib/`) are proposed by people in the organization who remain their owners; they are always optional. Skills with `origin: internal` are written for the kit, in French. See [workflow](workflow.md) and [tools](tools.md) for usage.

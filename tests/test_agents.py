@@ -20,25 +20,25 @@ class AgentTests(unittest.TestCase):
   self.run_kit('data-developer');self.assertNotIn('model:',self.agent('verifier').read_text(encoding='utf-8'))
   self.overrides({'models':{'fast':'gemini-2.5-flash','deep':'gemini-2.5-pro'}});self.run_kit('data-developer')
   self.assertIn('model: gemini-2.5-flash',self.agent('verifier').read_text(encoding='utf-8'));self.assertIn('model: gemini-2.5-pro',self.agent('doubter').read_text(encoding='utf-8'));self.assertNotIn('model:',self.agent('sql-reviewer').read_text(encoding='utf-8'))
-  self.overrides({'models':{'fast':'Pas Un Modèle'}})
+  self.overrides({'models':{'fast':'Not A Model'}})
   with self.assertRaises(KitError):self.run_kit('data-developer')
  def test_developer_and_switch(self):
   self.run_kit();self.assertFalse(self.agent('doubter').exists());self.run_kit('data-developer');self.assertTrue(self.agent('code-reviewer').exists());self.assertTrue(self.agent('sql-reviewer').exists());self.assertTrue(self.agent('doubter').exists());self.assertTrue(self.agent('repo-investigator').exists())
  def test_extra_and_disable(self):
   self.overrides({'extra_agents':['code-reviewer'],'disabled_agents':['dbt-reviewer']});self.run_kit();self.assertTrue(self.agent('code-reviewer').exists());self.assertFalse(self.agent('dbt-reviewer').exists())
  def test_modified_agent_blocks(self):
-  self.run_kit();self.agent('sql-reviewer').write_text('personnel',encoding='utf-8')
+  self.run_kit();self.agent('sql-reviewer').write_text('personal',encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit('data-developer')
   self.assertEqual(read_json(self.home/'.ai-kit/state.json')['profile'],'data-analyst')
  def test_existing_agent_blocks(self):
-  p=self.agent('sql-reviewer');p.parent.mkdir(parents=True);p.write_text('tiers',encoding='utf-8')
+  p=self.agent('sql-reviewer');p.parent.mkdir(parents=True);p.write_text('third-party',encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()
   self.assertFalse((self.home/'.ai-kit/state.json').exists())
  def test_unknown_agent(self):
   self.overrides({'extra_agents':['unknown']})
   with self.assertRaises(KitError):self.run_kit()
  def test_generated_tools_and_context(self):
-  self.run_kit();text=self.agent('sql-reviewer').read_text(encoding='utf-8');header=text.split('---')[1];self.assertIn('name: ai-kit-sql-reviewer',header);self.assertIn('kind: local',header);self.assertIn('tools: ["read_file", "grep_search"]',header);self.assertNotIn('run_shell_command',header);self.assertNotIn('mcp_*',header);self.assertIn('Pratiques d’équipe',text);self.assertIn('Pratiques entreprise',text);self.assertNotIn('Mon contexte',text)
+  self.run_kit();text=self.agent('sql-reviewer').read_text(encoding='utf-8');header=text.split('---')[1];self.assertIn('name: ai-kit-sql-reviewer',header);self.assertIn('kind: local',header);self.assertIn('tools: ["read_file", "grep_search"]',header);self.assertNotIn('run_shell_command',header);self.assertNotIn('mcp_*',header);self.assertIn('Team practices',text);self.assertIn('Company practices',text);self.assertNotIn('My context',text)
  def test_older_state_without_agents(self):
   self.run_kit()
   state_path=self.home/'.ai-kit/state.json';state=read_json(state_path)

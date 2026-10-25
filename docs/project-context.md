@@ -1,41 +1,41 @@
-# Couche projet
+# Project layer
 
-Le kit prépare le poste ; le repo porte son propre contexte. L’agent lit, après les couches globales, l’`AGENTS.md` du repo et des dossiers traversés (et les fichiers propres à sa CLI, voir la [matrice](cli/matrice.md)). C’est là que se jouent les règles métier, les commandes et les surcharges de préférences.
+The kit prepares the workstation; the repo carries its own context. After the global layers, the agent reads the `AGENTS.md` of the repo and of the folders it goes through (and its CLI's own files, see the [matrix](cli/matrice.md)). That is where business rules, commands and preference overrides live.
 
-## Fichiers attendus dans un repo
+## Expected files in a repo
 
-| Fichier | Rôle | Tenu par |
+| File | Role | Maintained by |
 | --- | --- | --- |
-| `AGENTS.md` | table des matières courte : démarrer, tester, données, conventions, où est le reste | `writing-for-agents` |
-| `GLOSSARY.md` | un terme, une définition, les synonymes à éviter | `domain-modeling` |
-| `docs/adr/NNNN-slug.md` | décisions coûteuses à défaire, surprenantes sans contexte, issues d’un vrai arbitrage | `domain-modeling` |
-| `REVIEW.md` | passes de revue, sens d’Important, plafond de nits | `init-project-context`, `/review` |
-| `docs/sdlc/<date>-<slug>/` | `intent.md`, `spec.md`, `plan.md` d’un changement ; un dossier par changement ; `spec.md` versionné, `intent.md` et `plan.md` locaux (`.gitignore`) | `/intent`, `/spec`, `/build` |
-| `docs/agents/issue-tracker.md` | gestionnaire de tickets et labels de triage, seulement quand `setup-workflow` a été lancé | `setup-workflow`, `/map`, `/triage` |
-| `.agents/skills/<nom>/` | skills propres au repo, prioritaires sur le kit à nom égal | l’équipe du repo |
+| `AGENTS.md` | short table of contents: start, test, data, conventions, where the rest is | `writing-for-agents` |
+| `GLOSSARY.md` | one term, one definition, synonyms to avoid | `domain-modeling` |
+| `docs/adr/NNNN-slug.md` | decisions that are costly to undo, surprising without context, the result of a real trade-off | `domain-modeling` |
+| `REVIEW.md` | review passes, meaning of Important, cap on nits | `init-project-context`, `/review` |
+| `docs/sdlc/<date>-<slug>/` | `intent.md`, `spec.md`, `plan.md` of a change; one folder per change; `spec.md` versioned, `intent.md` and `plan.md` local (`.gitignore`) | `/intent`, `/spec`, `/build` |
+| `docs/agents/issue-tracker.md` | issue tracker and triage labels, only when `setup-workflow` has been run | `setup-workflow`, `/map`, `/triage` |
+| `.agents/skills/<name>/` | repo-specific skills, taking priority over the kit on equal names | the repo team |
 
-Un repo qui a déjà un fichier de contexte propre à une CLI le garde ; il y renvoie vers `AGENTS.md` pour éviter la duplication (une ligne `@AGENTS.md`, par exemple ; voir la page de la CLI dans la [matrice](cli/matrice.md)).
+A repo that already has a CLI-specific context file keeps it; that file points to `AGENTS.md` to avoid duplication (an `@AGENTS.md` line, for example; see the CLI's page in the [matrix](cli/matrice.md)).
 
-## Première mise en place
+## First setup
 
-Dans le repo, demander « Initialise le contexte du projet ». Le skill `init-project-context` lit le repo, propose `AGENTS.md`, `GLOSSARY.md` et `REVIEW.md` à partir de ses gabarits, propose les lignes de `.gitignore` pour `intent.md` et `plan.md`, attend une confirmation par fichier et ne remplace jamais un fichier existant. Il ne copie pas les gabarits d’artefacts dans le repo et ne crée pas d’ADR vide : le dossier `docs/adr/` apparaît avec la première décision.
+In the repo, ask "Initialize the project context". The `init-project-context` skill reads the repo, proposes `AGENTS.md`, `GLOSSARY.md` and `REVIEW.md` from its templates, proposes the `.gitignore` lines for `intent.md` and `plan.md`, waits for a confirmation per file and never replaces an existing file. It does not copy the artifact templates into the repo and does not create an empty ADR: the `docs/adr/` folder appears with the first decision.
 
-## Monorepo : plusieurs équipes, un repo
+## Monorepo: several teams, one repo
 
-Un repo partagé par plusieurs équipes (par exemple un projet dbt commun à la finance et au marketing) s’organise en zones : la racine porte ce qui est commun, chaque dossier d’équipe porte ce qui lui est propre.
+A repo shared by several teams (for example a dbt project shared by finance and marketing) is organized in zones: the root carries what is shared, each team folder carries what is its own.
 
-| Où | Quoi | Propriétaire |
+| Where | What | Owner |
 | --- | --- | --- |
-| racine | `AGENTS.md` commun (dont « Verifying your work »), `REVIEW.md`, `.ai-kit/protected-paths`, `GLOSSARY.md` commun ou `GLOSSARY-MAP.md` | l’équipe qui tient la plateforme |
-| `<zone>/` | `AGENTS.md` de la zone, son glossaire si elle en a un, ses artefacts dans `<zone>/docs/sdlc/` | l’équipe de la zone |
+| root | shared `AGENTS.md` (including "Verifying your work"), `REVIEW.md`, `.ai-kit/protected-paths`, shared `GLOSSARY.md` or `GLOSSARY-MAP.md` | the team that runs the platform |
+| `<zone>/` | the zone's `AGENTS.md`, its glossary if it has one, its artifacts in `<zone>/docs/sdlc/` | the zone team |
 
-- **Lancer l’agent depuis le dossier de sa zone** (`cd finance` puis la CLI). Il lit alors l’`AGENTS.md` de la racine et celui de la zone. Lancé à la racine, il demande dans quelle zone on travaille.
-- **Les vérifications** suivent la règle générale : ce qui a changé et ce qui en dépend, quelle que soit l’équipe. `/test`, `/review` et `/ship` nomment les autres zones touchées (pour dbt, les modèles qui dépendent des modèles modifiés), pour que leurs propriétaires relisent. Avec un manifest de production, `dbt build --select state:modified+ --defer --state <manifest>` ne reconstruit que ce qui a changé et lit le reste depuis la production.
-- **Les chemins protégés** de la racine s’appliquent aussi quand l’agent est lancé dans une zone ; une zone peut ajouter son propre `.ai-kit/protected-paths`.
-- **Un indicateur partagé** a une seule définition, dans le glossaire commun, avec un propriétaire nommé ; les glossaires de zone y renvoient.
-- **Les skills de repo** vivent dans `.agents/skills/` à la racine et valent pour tout le monde : les préfixer par la zone (`finance-cloture-mensuelle`) et dire dans leur description à quoi ils s’appliquent.
-- **Trop de contexte** : lancé à la racine, l’agent peut lire aussi les `AGENTS.md` des sous-dossiers ; chaque CLI a son moyen de limiter ce qu’il parcourt (voir sa page).
-- **Qui relit quoi** : un fichier `CODEOWNERS` le fait respecter par GitLab ou GitHub.
+- **Start the agent from your zone's folder** (`cd finance` then the CLI). It then reads the root `AGENTS.md` and the zone's. Started at the root, it asks which zone you are working in.
+- **Checks** follow the general rule: what changed and what depends on it, whatever the team. `/test`, `/review` and `/ship` name the other zones touched (for dbt, the models that depend on the changed models), so their owners review. With a production manifest, `dbt build --select state:modified+ --defer --state <manifest>` rebuilds only what changed and reads the rest from production.
+- **The root's protected paths** also apply when the agent starts in a zone; a zone can add its own `.ai-kit/protected-paths`.
+- **A shared metric** has a single definition, in the shared glossary, with a named owner; zone glossaries point to it.
+- **Repo skills** live in `.agents/skills/` at the root and apply to everyone: prefix them with the zone (`finance-cloture-mensuelle`) and say in their description what they apply to.
+- **Too much context**: started at the root, the agent can also read the subfolders' `AGENTS.md` files; each CLI has its own way to limit what it scans (see its page).
+- **Who reviews what**: a `CODEOWNERS` file makes GitLab or GitHub enforce it.
 
 ```
 # CODEOWNERS
@@ -46,10 +46,10 @@ Un repo partagé par plusieurs équipes (par exemple un projet dbt commun à la 
 /marketing/           @equipe/marketing
 ```
 
-## Surcharger les préférences
+## Override preferences
 
-Pour qu’un projet impose une règle différente de `30_USER.md` (langue, niveau de détail, workflow), l’écrire dans `AGENTS.md` sous le même titre que dans le fichier personnel. `00_KIT.md` indique à l’agent que le projet l’emporte.
+For a project to enforce a rule different from `30_USER.md` (language, level of detail, workflow), write it in `AGENTS.md` under the same heading as in the personal file. `00_KIT.md` tells the agent that the project wins.
 
-## Ce que le kit ne fait pas
+## What the kit does not do
 
-Il n’écrit pas dans les repos, ne pousse rien et ne crée pas de MR. Les skills écrivent les artefacts à la demande ; un commit n’a lieu que si la personne l’a accepté dans la session (`/build` le demande une fois) ; rien n’est poussé.
+It does not write to repos, push anything or create merge requests (MR). Skills write artifacts on request; a commit happens only if the person accepted it in the session (`/build` asks once); nothing is pushed.

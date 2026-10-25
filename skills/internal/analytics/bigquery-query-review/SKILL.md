@@ -1,18 +1,18 @@
 ---
 name: bigquery-query-review
-description: "Optimiser une requête BigQuery lente ou coûteuse et vérifier scans, partitions, jointures et plan. Déclencheurs : requête lente, trop chère, octets lus, filtre de partition, plan d’exécution, slots, cette requête scanne tout."
+description: "Optimize a slow or expensive BigQuery query and check scans, partitions, joins and plan. Triggers: slow query, too expensive, bytes read, partition filter, execution plan, slots, this query scans everything."
 ---
 
 # bigquery-query-review
 
-Obtenir le SQL, les schémas et le périmètre autorisé. Examiner filtres de partition, colonnes lues, cardinalités et agrégations. Utiliser un dry run pour estimer les octets si disponible ; ce chiffre ne donne ni temps réel ni consommation de slots. Inspecter les métriques du job existant pour les problèmes d’exécution. Proposer une modification conservant la sémantique et la vérifier sur un périmètre représentatif ; une seule modification entre deux mesures, comme dans le skill diagnosing-bugs. Fixer un budget maximum avant toute nouvelle exécution coûteuse. Rapporter mesures avant/après, hypothèses et compromis. Ne jamais prétendre qu’un LIMIT réduit forcément les octets lus.
+Get the SQL, the schemas and the authorized scope. Examine partition filters, columns read, cardinalities and aggregations. Use a dry run to estimate bytes if available; that figure gives neither actual time nor slot consumption. Inspect the existing job's metrics for execution problems. Propose a change that preserves semantics and verify it on a representative scope; one change between two measurements, as in the diagnosing-bugs skill. Set a maximum budget before any new expensive run. Report before/after measurements, assumptions and trade-offs. Never claim that a LIMIT necessarily reduces bytes read.
 
-## Excuses entendues et réponses
-| Excuse | Réponse |
+## Rationalizations and rebuttals
+| Excuse | Rebuttal |
 | --- | --- |
-| « Un LIMIT réduit les octets lus » | Non ; seul un filtre de partition ou de cluster réduit le scan. |
-| « Le dry run suffit » | Il ne donne ni le temps ni les slots ; lire le job réel pour une requête lente. |
-| « C’est plus rapide, donc moins cher » | Mesurer les octets et les slots après, avec les mêmes chiffres qu’avant. |
+| "A LIMIT reduces bytes read" | No; only a partition or cluster filter reduces the scan. |
+| "The dry run is enough" | It gives neither time nor slots; read the actual job for a slow query. |
+| "It's faster, so it's cheaper" | Measure bytes and slots afterwards, with the same figures as before. |
 
-## Interdits
-Pas d’exécution d’une requête coûteuse sans budget fixé et sans dry run quand il est disponible. Pas de réécriture qui change la sémantique sans la vérifier sur un périmètre connu. Pas deux modifications entre deux mesures.
+## Forbidden
+No run of an expensive query without a set budget and without a dry run when one is available. No rewrite that changes semantics without verifying it on a known scope. Never two changes between two measurements.

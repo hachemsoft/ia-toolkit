@@ -6,21 +6,21 @@ from installer.adapters.gemini import gemini_command_toml, parse_env_file
 import tempfile
 
 class ConsistencyTests(unittest.TestCase):
- """Cohérence produit vérifiée en continu : profils, tiers, commandes, termes interdits, dépendances Python."""
+ """Product consistency checked continuously: profiles, tiers, commands, forbidden terms, Python dependencies."""
  def setUp(self):
   self.cat=read_json(ROOT/'skills/catalog.json');self.cmds=load_commands()
   self.profiles={p.stem:read_json(p) for p in (ROOT/'profiles').glob('*.json') if p.stem!='directory'}
  def test_core_tier_installed_in_every_profile(self):
   for n,e in self.cat.items():
    if e.get('tier')=='core' and not e.get('replaced_by'):
-    for pid,p in self.profiles.items():self.assertIn(n,p['skills'],n+' est core mais absent du profil '+pid)
+    for pid,p in self.profiles.items():self.assertIn(n,p['skills'],n+' is core but missing from profile '+pid)
  def test_command_prompts_only_cite_installed_playbooks(self):
   for pid,p in self.profiles.items():
    installed=[c for c in self.cmds if all(s in p['skills'] for s in c['skills']) and (not p.get('commands') or c['name'] in p['commands'])]
    for c in installed:
     text=c['prompt']
     for s,tail in re.findall(r'follow (?:the )?([a-z0-9-]+)(?: skill)?([^;.]*)',text):
-     if s in self.cat and 'if installed' not in tail:self.assertIn(s,p['skills'],'/'+c['name']+' cite '+s+' absent du profil '+pid)
+     if s in self.cat and 'if installed' not in tail:self.assertIn(s,p['skills'],'/'+c['name']+' cites '+s+' which is missing from profile '+pid)
  def test_commands_cited_by_guide_exist(self):
   text=(ROOT/'skills/internal/common/guide/SKILL.md').read_text(encoding='utf-8');names={c['name'] for c in self.cmds}
   for m in set(re.findall(r'`/([a-z]+)',text)):self.assertIn(m,names,'/'+m)
@@ -32,14 +32,14 @@ class ConsistencyTests(unittest.TestCase):
  def test_contrib_skills_rules(self):
   for n,e in self.cat.items():
    if e.get('origin')=='contrib':
-    self.assertTrue(e['path'].startswith('skills/contrib/'),n);self.assertEqual(e.get('tier'),'optional',n+' : un skill contribué est optional');self.assertTrue(e.get('owner'),n+' : owner requis')
-   elif e.get('path','').startswith('skills/contrib/'):self.fail(n+' : sous skills/contrib mais origin != contrib')
+    self.assertTrue(e['path'].startswith('skills/contrib/'),n);self.assertEqual(e.get('tier'),'optional',n+': a contributed skill is optional');self.assertTrue(e.get('owner'),n+': owner required')
+   elif e.get('path','').startswith('skills/contrib/'):self.fail(n+': under skills/contrib but origin != contrib')
   self.assertTrue((ROOT/'skills/contrib/README.md').is_file())
  def test_general_docs_do_not_name_a_cli(self):
-  """Les pages générales parlent de « l'agent » et de « la CLI » ; le spécifique va dans docs/cli/ (tableaux et liens tolérés)."""
-  # README.md n'en fait pas partie : c'est la page d'accueil, qui présente les CLI prises en charge.
+  """General pages talk about "the agent" and "the CLI"; CLI-specific content goes in docs/cli/ (tables and links tolerated)."""
+  # README.md is not part of it: it is the home page, which presents the supported CLIs.
   general=['docs/'+n for n in ('getting-started.md','workflow.md','tools.md','customization.md','project-context.md','usage-review.md','extending.md','pilot.md','contributing.md','skills-reference.md','hooks.md','agents.md','format.md','identity.md','mcp.md','troubleshooting.md','evals.md')]
-  allowed=re.compile(r"cli/(gemini|matrice|agy|codex)|`gemini` ou `agy`|`gemini`, `agy` ou `codex`|gemini-2\.5|gemini-api-key|GEMINI_API_KEY|--cli gemini|\.gemini/protected-paths|Gemini CLI et Antigravity CLI|Gemini CLI, Antigravity CLI, Codex CLI|`~/\.gemini/` si Gemini CLI est installé",re.I)
+  allowed=re.compile(r"cli/(gemini|matrice|agy|codex)|`gemini` or `agy`|`gemini`, `agy` or `codex`|gemini-2\.5|gemini-api-key|GEMINI_API_KEY|--cli gemini|\.gemini/protected-paths|Gemini CLI and Antigravity CLI|Gemini CLI, Antigravity CLI, Codex CLI|`~/\.gemini/` if Gemini CLI is installed",re.I)
   bad=[]
   for f in general:
    fence=False
@@ -48,13 +48,13 @@ class ConsistencyTests(unittest.TestCase):
     if fence or line.lstrip().startswith('|'):continue
     for word in ('gemini','antigravity','codex'):
      if word in line.lower() and not allowed.search(line):bad.append(f+':'+str(i))
-  self.assertEqual(bad,[],'nommer la CLI dans docs/cli/ ou dans un tableau')
+  self.assertEqual(bad,[],'name the CLI in docs/cli/ or in a table')
  def test_python_39_imports(self):
   for f in list((ROOT/'installer').glob('*.py'))+list((ROOT/'tests').glob('*.py'))+[ROOT/'evals/run.py']+list((ROOT/'runtime/hooks').glob('*.py')):
    self.assertNotRegex(f.read_text(encoding='utf-8'),r'^\s*(import|from)\s+(tomllib|zoneinfo\b.*|graphlib)',str(f))
  def test_generated_gemini_toml_is_valid(self):
   try:import tomllib
-  except ImportError:self.skipTest('tomllib absent')
+  except ImportError:self.skipTest('tomllib missing')
   for c in self.cmds:
    ref=tomllib.loads(gemini_command_toml(c))
    self.assertEqual(ref['description'],c['description'],c['name']);self.assertEqual(ref['prompt'],c['prompt'],c['name'])

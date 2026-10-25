@@ -1,7 +1,7 @@
 {
   "id": "dbt",
-  "description": "Outils dbt compatibles avec votre installation",
+  "description": "dbt tools compatible with your installation",
   "enabled_by_default": false,
   "server": null,
-  "note": "Renseigner un serveur approuvé ; aucune URL ou commande fictive activée."
+  "note": "Fill in an approved server; no placeholder URL or command is enabled."
 }

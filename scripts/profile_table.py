@@ -1,8 +1,8 @@
-"""Table des profils (commandes et agents installés), insérée dans docs/getting-started.md entre deux marqueurs.
+"""Profile table (installed commands and agents), inserted in docs/getting-started.md between two markers.
 
-Usage : python3 scripts/profile_table.py           affiche la table
-        python3 scripts/profile_table.py --write   la réécrit dans la page
-Un test vérifie que la page est à jour.
+Usage: python3 scripts/profile_table.py           prints the table
+       python3 scripts/profile_table.py --write   rewrites it in the page
+A test checks that the page is up to date.
 """
 import pathlib
 import sys
@@ -14,14 +14,14 @@ from installer.cli import PROFILE_MENU, allowed_commands, resolve_skills, select
 from installer.core import load_commands, read_json  # noqa: E402
 
 PAGE = ROOT/'docs/getting-started.md'
-START, END = '<!-- table-profils:début -->', '<!-- table-profils:fin -->'
+START, END = '<!-- profile-table:start -->', '<!-- profile-table:end -->'
 WORKFLOW = ('intent', 'spec', 'build', 'test', 'review', 'ship', 'diagnose')
 
 
 def table():
     commands = load_commands()
     catalog = read_json(ROOT/'skills/catalog.json')
-    rows = ['| Profil | Étapes du workflow | Autres commandes | Agents |', '| --- | --- | --- | --- |']
+    rows = ['| Profile | Workflow steps | Other commands | Agents |', '| --- | --- | --- | --- |']
     for pid, label in PROFILE_MENU:
         profile = read_json(ROOT/'profiles'/(pid+'.json'))
         resolved = resolve_skills(profile, {}, catalog, log=lambda *a: None)
@@ -31,7 +31,7 @@ def table():
         steps = ' '.join('`/'+n+'`' for n in WORKFLOW if n in names)
         others = ' '.join('`/'+n+'`' for n in names if n not in WORKFLOW)
         agents = ', '.join(profile['agents'])
-        rows.append('| **'+label.split(' : ')[0]+'** (`'+pid+'`) | '+steps+' | '+others+' | '+agents+' |')
+        rows.append('| **'+label.split(': ')[0]+'** (`'+pid+'`) | '+steps+' | '+others+' | '+agents+' |')
     return '\n'.join(rows)
 
 

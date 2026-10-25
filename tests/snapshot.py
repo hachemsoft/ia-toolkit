@@ -1,8 +1,8 @@
-"""Photo de ce que l'installeur produit : chaque fichier installé, ramené à une empreinte, pour une série de scénarios.
+"""Snapshot of what the installer produces: each installed file, reduced to a digest, for a series of scenarios.
 
-Usage : python3 tests/snapshot.py --update   (réécrit tests/golden/install-snapshot.json après un changement voulu)
-Le test tests/test_snapshot.py compare l'installation du moment à cette référence : un refactor qui change un seul
-octet installé échoue, avec la liste des fichiers touchés.
+Usage: python3 tests/snapshot.py --update   (rewrites tests/golden/install-snapshot.json after an intended change)
+The test tests/test_snapshot.py compares the current installation with this reference: a refactor that changes a single
+installed byte fails, with the list of affected files.
 """
 import contextlib, hashlib, io, json, sys, tempfile
 from pathlib import Path
@@ -53,7 +53,7 @@ def diff(reference, current):
         a, b = reference.get(name, {}), current.get(name, {})
         for rel in sorted(set(a) | set(b)):
             if a.get(rel) != b.get(rel):
-                lines.append(name + ' : ' + rel + (' (nouveau)' if rel not in a else ' (disparu)' if rel not in b else ' (modifié)'))
+                lines.append(name + ' : ' + rel + (' (new)' if rel not in a else ' (gone)' if rel not in b else ' (modified)'))
     return lines
 
 if __name__ == '__main__':
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         GOLDEN.parent.mkdir(exist_ok=True)
         GOLDEN.write_text(json.dumps(current, indent=1, sort_keys=True) + '\n', encoding='utf-8')
         changes = diff(before, current)
-        print('Référence réécrite :', sum(len(v) for v in current.values()), 'fichiers,', len(changes), 'changements')
+        print('Reference rewritten:', sum(len(v) for v in current.values()), 'files,', len(changes), 'changes')
         print('\n'.join(changes[:60]))
     else:
-        print('\n'.join(diff(json.loads(GOLDEN.read_text(encoding='utf-8')), current)) or 'identique à la référence')
+        print('\n'.join(diff(json.loads(GOLDEN.read_text(encoding='utf-8')), current)) or 'identical to the reference')

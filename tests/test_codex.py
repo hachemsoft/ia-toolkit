@@ -11,7 +11,7 @@ class CodexAdapterTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
   (self.home/'.codex').mkdir();self.agents=self.home/'.codex/AGENTS.md';self.config=self.home/'.codex/config.toml'
-  self.agents.write_text('# Mes consignes\n- toujours en français\n',encoding='utf-8');self.config.write_text('model = "gpt-x"\n\n[projects."/x"]\ntrust_level = "trusted"\n',encoding='utf-8')
+  self.agents.write_text('# My instructions\n- always in French\n',encoding='utf-8');self.config.write_text('model = "gpt-x"\n\n[projects."/x"]\ntrust_level = "trusted"\n',encoding='utf-8')
  def run_kit(self,role='data-developer',target='all',overrides=None):
   if overrides is not None:
    (self.home/'.ai-kit').mkdir(exist_ok=True);(self.home/'.ai-kit/overrides.json').write_text(json.dumps(overrides),encoding='utf-8')
@@ -29,29 +29,29 @@ class CodexAdapterTests(unittest.TestCase):
   self.assertEqual(code,0,out.getvalue())
 
  def test_crlf_user_context_keeps_block_stable(self):
-  # 30_USER.md édité sous Windows (CRLF), puis bascule vers Codex seul et update : le bloc ne doit pas paraître modifié à la main.
+  # 30_USER.md edited on Windows (CRLF), then switch to Codex only and update: the block must not look edited by hand.
   self.run_kit(target='all')
-  (self.home/'.gemini/30_USER.md').write_bytes(b'# Moi\r\nPreference Windows.\r\n')
+  (self.home/'.gemini/30_USER.md').write_bytes(b'# Me\r\nWindows preference.\r\n')
   self.run_kit(target='codex');self.run_kit(target='codex')
-  self.assertIn('Preference Windows.',(self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
+  self.assertIn('Windows preference.',(self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
   self.assertNotIn(b'\r',(self.home/'.codex/AGENTS.md').read_bytes().split(CODEX_MD[1].encode())[0])
 
  def test_user_context_follows_location_without_deleting(self):
   self.run_kit(target='all')
-  mine='# Moi\nPréférence personnelle conservée.\n'
+  mine='# Me\nPersonal preference kept.\n'
   (self.home/'.gemini/30_USER.md').write_text(mine,encoding='utf-8')
   self.run_kit(target='codex')
   self.assertEqual((self.home/'.ai-kit/context/30_USER.md').read_text(encoding='utf-8'),mine)
   self.assertEqual((self.home/'.gemini/30_USER.md').read_text(encoding='utf-8'),mine)
   self.assertFalse((self.home/'.gemini/00_KIT.md').exists())
-  self.assertIn('Préférence personnelle conservée',(self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
+  self.assertIn('Personal preference kept',(self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
   self.run_kit(target='all')
   self.assertTrue((self.home/'.gemini/00_KIT.md').is_file());self.assertFalse((self.home/'.ai-kit/context/00_KIT.md').exists())
   self.assertEqual((self.home/'.ai-kit/context/30_USER.md').read_text(encoding='utf-8'),mine)
 
  def test_install_keeps_user_content_and_adds_blocks(self):
   self.run_kit();a=self.agents.read_text(encoding='utf-8');c=self.config.read_text(encoding='utf-8')
-  self.assertIn('- toujours en français',a);self.assertTrue(a.startswith(CODEX_MD[0]));self.assertIn('$intent',a);self.assertIn('Pratiques entreprise',a);self.assertIn('# Mon contexte',a)
+  self.assertIn('- always in French',a);self.assertTrue(a.startswith(CODEX_MD[0]));self.assertIn('$intent',a);self.assertIn('Company practices',a);self.assertIn('# My context',a)
   self.assertIn('model = "gpt-x"',c);self.assertIn('trust_level = "trusted"',c);self.assertTrue(c.rstrip().endswith(CODEX_TOML[1]));self.assertIn('[agents.ai-kit-verifier]',c)
   try:import tomllib
   except ImportError:return
@@ -64,16 +64,16 @@ class CodexAdapterTests(unittest.TestCase):
   self.assertIn('allow_implicit_invocation: false',(sk/'to-spec/agents/openai.yaml').read_text(encoding='utf-8'))
   self.assertFalse((sk/'grilling/agents/openai.yaml').exists())
  def test_idempotent_and_removed_cleanly_when_target_changes(self):
-  self.run_kit();self.assertIn('Déjà à jour',self.run_kit())
+  self.run_kit();self.assertIn('Already up to date',self.run_kit())
   self.run_kit(target='gemini')
-  self.assertEqual(self.agents.read_text(encoding='utf-8'),'# Mes consignes\n- toujours en français\n');self.assertNotIn('ai-kit',self.config.read_text(encoding='utf-8'))
+  self.assertEqual(self.agents.read_text(encoding='utf-8'),'# My instructions\n- always in French\n');self.assertNotIn('ai-kit',self.config.read_text(encoding='utf-8'))
   self.assertFalse((self.home/'.codex/skills/intent').exists());self.assertFalse((self.home/'.codex/ai-kit').exists())
  def test_hand_edited_block_is_refused(self):
-  self.run_kit();self.agents.write_text(self.agents.read_text(encoding='utf-8').replace('# Kit IA (Codex)','# Kit IA modifié'),encoding='utf-8')
+  self.run_kit();self.agents.write_text(self.agents.read_text(encoding='utf-8').replace('# AI Kit (Codex)','# AI Kit edited'),encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()
  def test_user_context_change_reaches_codex_on_update(self):
-  self.run_kit();u=self.home/'.gemini/30_USER.md';u.write_text(u.read_text(encoding='utf-8')+'\n- Réponses courtes.\n',encoding='utf-8')
-  self.run_kit();self.assertIn('- Réponses courtes.',self.agents.read_text(encoding='utf-8'))
+  self.run_kit();u=self.home/'.gemini/30_USER.md';u.write_text(u.read_text(encoding='utf-8')+'\n- Short answers.\n',encoding='utf-8')
+  self.run_kit();self.assertIn('- Short answers.',self.agents.read_text(encoding='utf-8'))
  def test_hooks_declared_and_mcp(self):
   out=self.run_kit(overrides={'hooks':{'dbt-prod-guard':True},'mcp':{'documentation':{'enabled':True,'server':{'httpUrl':'https://docs.example.org/mcp'}}}})
   c=self.config.read_text(encoding='utf-8');self.assertIn('[[hooks.PreToolUse]]',c);self.assertIn('dbt-prod-guard.py',c);self.assertIn('[mcp_servers.ai-kit-documentation]',c);self.assertIn('url = "https://docs.example.org/mcp"',c);self.assertIn('Trust',out)
@@ -84,13 +84,13 @@ class CodexAdapterTests(unittest.TestCase):
   self.run_kit();import time
   from installer.cli import usage
   now=int(time.time());h=self.home/'.codex/history.jsonl'
-  h.write_text('\n'.join(json.dumps({'session_id':'s1','ts':now,'text':x}) for x in ('$intent clients actifs','$intent clients actifs','/nope'))+'\n',encoding='utf-8')
+  h.write_text('\n'.join(json.dumps({'session_id':'s1','ts':now,'text':x}) for x in ('$intent active customers','$intent active customers','/nope'))+'\n',encoding='utf-8')
   with contextlib.redirect_stdout(io.StringIO()):usage(self.home,42,self.home/'r.json')
   r=read_json(self.home/'r.json');self.assertEqual(r['commands'].get('intent'),2);self.assertEqual(r['repeated_prompts'],1);self.assertEqual(r['unknown_commands'],{'nope':1})
  def test_doctor_reports_codex_blocks(self):
   self.run_kit();out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
-  self.assertIn('[OK] Bloc du kit intact dans ~/.codex/AGENTS.md',out.getvalue());self.assertIn('[OK] Codex a la dernière version de 30_USER.md',out.getvalue())
+  self.assertIn('[OK] Kit block intact in ~/.codex/AGENTS.md',out.getvalue());self.assertIn('[OK] Codex has the latest version of 30_USER.md',out.getvalue())
 
 class CodexHookPayloadTests(unittest.TestCase):
  def test_dbt_guard_codex_shell_list_and_output_format(self):

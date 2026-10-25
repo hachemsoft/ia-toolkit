@@ -1,6 +1,6 @@
 # data-mono
 
-Monorepo dbt partagé par deux équipes : finance et marketing. Un seul projet dbt.
+dbt monorepo shared by two teams: finance and marketing. A single dbt project.
 
 ## Areas
 - `finance/`: own AGENTS.md, owner team finance.

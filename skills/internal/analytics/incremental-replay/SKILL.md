@@ -1,28 +1,28 @@
 ---
 name: incremental-replay
-description: "Concevoir ou corriger un modèle incrémental et son rejeu : clé unique, données tardives, fenêtre de retraitement, idempotence, full refresh. Déclencheurs : incrémental, rejeu, backfill, données tardives, le modèle double des lignes, full-refresh."
+description: "Design or fix an incremental model and its replay: unique key, late-arriving data, reprocessing window, idempotence, full refresh. Triggers: incremental, replay, backfill, late-arriving data, the model duplicates rows, full-refresh."
 ---
 
 # incremental-replay
 
-Un incrémental se définit par son rejeu : si on ne sait pas dire ce qui se passe quand on retraite une période, le modèle n’est pas prêt.
+An incremental model is defined by its replay: if you cannot say what happens when a period is reprocessed, the model is not ready.
 
-## Déroulé
-1. Établir le grain du modèle et la clé qui l’identifie. Vérifier l’unicité de la clé sur la source avec une requête d’assertion avant toute chose.
-2. Choisir la stratégie en la justifiant : insertion seule, fusion sur clé, suppression puis insertion par partition. Pour BigQuery, dire si la table est partitionnée et sur quelle colonne ; la stratégie par partition est la seule qui rend le rejeu d’une période trivial.
-3. Définir la fenêtre de retard tolérée (données tardives) et la fenêtre de retraitement à chaque exécution ; les écrire dans la doc du modèle, pas seulement dans le code.
-4. Écrire le scénario de rejeu : commande exacte pour retraiter une période, effet sur les lignes existantes, coût estimé, durée. Tester le scénario sur le target de développement : exécuter deux fois la même période et vérifier que le résultat est identique (idempotence) par une requête de comparaison.
-5. Documenter quand un `--full-refresh` est nécessaire (changement de logique, de grain, de clé) et ce qu’il coûte ; ne jamais le lancer sur la production sans instruction et sans estimation.
-6. Ajouter les tests : unicité de la clé, non-nullité, volume par partition comparé à la source, fraîcheur.
+## Steps
+1. Establish the model's grain and the key that identifies it. Check the key's uniqueness on the source with an assertion query before anything else.
+2. Choose the strategy and justify it: insert only, merge on key, delete then insert by partition. For BigQuery, say whether the table is partitioned and on which column; the partition strategy is the only one that makes replaying a period trivial.
+3. Define the tolerated lateness window (late-arriving data) and the reprocessing window on each run; write them in the model's documentation, not only in the code.
+4. Write the replay scenario: exact command to reprocess a period, effect on existing rows, estimated cost, duration. Test the scenario on the development target: run the same period twice and check that the result is identical (idempotence) with a comparison query.
+5. Document when a `--full-refresh` is needed (change of logic, grain or key) and what it costs; never run it on production without an instruction and without an estimate.
+6. Add the tests: key uniqueness, not-null, volume per partition compared to the source, freshness.
 
-## Excuses entendues et réponses
-| Excuse | Réponse |
+## Rationalizations and rebuttals
+| Excuse | Rebuttal |
 | --- | --- |
-| « Les doublons viennent de la source, ce n’est pas le modèle » | Le modèle a une clé ; si elle n’est pas unique en sortie, le modèle est faux, quelle que soit la source. |
-| « On fera un full refresh si ça dérive » | Un full refresh sur une grosse table coûte et bloque ; concevoir le rejeu par période maintenant. |
-| « Les données tardives sont rares » | Rares n’est pas zéro ; fixer la fenêtre et mesurer combien arrivent au-delà. |
-| « Deux exécutions donnent le même résultat, forcément » | Prouver l’idempotence par une comparaison avant/après sur une période ; ne pas le supposer. |
-| « dbt gère l’incrémental tout seul » | dbt applique la stratégie choisie ; la clé, la fenêtre et le rejeu restent des décisions à écrire. |
+| "The duplicates come from the source, not the model" | The model has a key; if it is not unique in the output, the model is wrong, whatever the source. |
+| "We'll do a full refresh if it drifts" | A full refresh on a large table is costly and blocking; design per-period replay now. |
+| "Late-arriving data is rare" | Rare is not zero; set the window and measure how much arrives beyond it. |
+| "Two runs give the same result, obviously" | Prove idempotence with a before/after comparison on one period; do not assume it. |
+| "dbt handles incremental on its own" | dbt applies the chosen strategy; the key, the window and the replay remain decisions to write down. |
 
-## Interdits
-Pas de modèle incrémental sans clé vérifiée unique. Pas de rejeu non testé sur le target de développement. Pas de `--full-refresh` en production sans instruction écrite.
+## Forbidden
+No incremental model without a key verified unique. No replay untested on the development target. No `--full-refresh` in production without a written instruction.

@@ -50,16 +50,16 @@ class CommandTests(unittest.TestCase):
  def test_doctor_reports_commands_and_weight(self):
   self.run_kit();out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
-  text=out.getvalue();self.assertEqual([line for line in text.splitlines() if line.startswith('[À vérifier]') and 'PATH' not in line],[],text);self.assertIn('[OK] Commande /intent : skills présents',text);self.assertIn('descriptions de skills injectées',text);self.assertIn('[OK] .gemini/commands/intent.toml',text)
+  text=out.getvalue();self.assertEqual([line for line in text.splitlines() if line.startswith('[Check]') and 'PATH' not in line],[],text);self.assertIn('[OK] Command /intent: skills present',text);self.assertIn('skill descriptions injected',text);self.assertIn('[OK] .gemini/commands/intent.toml',text)
   (self.home/'.gemini/skills/teach/SKILL.md').unlink();sp=self.home/'.ai-kit/state.json';st=read_json(sp);del st['files']['.gemini/skills/teach/SKILL.md'];sp.write_text(json.dumps(st),encoding='utf-8')
   out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
-  self.assertIn('[À vérifier] Commande /learn : skills présents (manque teach)',out.getvalue())
+  self.assertIn('[Check] Command /learn: skills present (missing teach)',out.getvalue())
  def test_doctor_detects_agents_alias_shadowing(self):
   self.run_kit();(self.home/'.agents/skills/tdd').mkdir(parents=True);(self.home/'.agents/skills/tdd/SKILL.md').write_text('---\nname: tdd\ndescription: mine\n---\n',encoding='utf-8')
   out=io.StringIO()
   with contextlib.redirect_stdout(out):code=doctor(self.home)
-  self.assertEqual(code,1);self.assertIn('[À vérifier] Aucun skill du kit masqué par une copie dans ~/.agents/skills (masqués : tdd)',out.getvalue())
+  self.assertEqual(code,1);self.assertIn('[Check] No kit skill shadowed by a copy in ~/.agents/skills (shadowed: tdd)',out.getvalue())
  def test_templates_installed_with_init_skill(self):
   self.run_kit();base=self.home/'.gemini/skills/init-project-context/templates'
   for n in ('intent.md','spec.md','plan.md','REVIEW.md','AGENTS.md','GLOSSARY.md'):self.assertTrue((base/n).is_file(),n)

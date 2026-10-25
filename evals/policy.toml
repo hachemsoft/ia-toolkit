@@ -1,7 +1,7 @@
-# Politique Gemini pour les évaluations : activer les skills sans confirmation, refuser toute écriture et tout shell.
+# Gemini policy for the evaluations: activate skills without confirmation, refuse every write and every shell.
 [[rules]]
 name = "Allow skill activation"
-description = "Les évaluations mesurent les skills ; leur activation ne doit pas attendre une confirmation."
+description = "The evaluations measure the skills; their activation must not wait for a confirmation."
 action = "allow"
 toolName = "activate_skill"
 

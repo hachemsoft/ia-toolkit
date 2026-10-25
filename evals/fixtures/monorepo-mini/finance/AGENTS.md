@@ -1,6 +1,6 @@
 # finance
 
-Modèles de marge et de clôture. Les marts finance sont lus par l'équipe marketing (`roi_campagnes`).
+Margin and closing models. The finance marts are read by the marketing team (`roi_campagnes`).
 
 ## Conventions
 - Vocabulary: `GLOSSARY.md` at the repo root.

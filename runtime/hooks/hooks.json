@@ -4,13 +4,13 @@
       "event": "BeforeTool",
       "matcher": "run_shell_command",
       "script": "dbt-prod-guard.py",
-      "description": "Refuse une commande dbt sur un target de production (prod, production, prd ou AI_KIT_PROD_TARGETS) sauf AI_KIT_ALLOW_PROD=1."
+      "description": "Blocks a dbt command on a production target (prod, production, prd or AI_KIT_PROD_TARGETS) unless AI_KIT_ALLOW_PROD=1."
     },
     "protected-paths": {
       "event": "BeforeTool",
       "matcher": "write_file|replace",
       "script": "protected-paths.py",
-      "description": "Refuse l’écriture sous les motifs listés dans <repo>/.ai-kit/protected-paths."
+      "description": "Blocks writes under the patterns listed in <repo>/.ai-kit/protected-paths."
     }
   }
 }

@@ -11,11 +11,11 @@ class HookScriptTests(unittest.TestCase):
   for cmd in ('dbt run --target prod','dbt build -t prd','cd x && dbt test --target=production','DBT_TARGET=prod dbt run',"dbt run --target 'prod'",'dbt run --target="prod"','dbt run -tprod','./dbt run -t prod','/usr/local/bin/dbt run --target prod','DBT run -t prod','dbt.exe run -t prod'):
    self.assertEqual(run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}).get('decision'),'deny',cmd)
  def test_hook_output_is_utf8_whatever_the_console(self):
-  # Console Windows (cp1252) : le refus, accentué, doit arriver en UTF-8, ce que lisent les CLI.
+  # Windows console (cp1252): the refusal must arrive as UTF-8, which is what the CLIs read.
   for script,payload in (('dbt-prod-guard.py',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt run --target prod'}}}),('dbt-prod-guard.py',{'hook_event_name':'PreToolUse','tool_name':'shell','tool_input':{'command':['bash','-lc','dbt run -t prod']}})):
-   # Sans -I, pour que PYTHONIOENCODING simule la console Windows.
+   # Without -I, so that PYTHONIOENCODING simulates the Windows console.
    proc=subprocess.run([sys.executable,str(H/script)],input=json.dumps(payload).encode('utf-8'),capture_output=True,env={**os.environ,'PYTHONIOENCODING':'cp1252'})
-   text=proc.stdout.decode('utf-8');self.assertIn('Refusé',text,proc.stderr)
+   text=proc.stdout.decode('utf-8');self.assertIn('Blocked by the kit',text,proc.stderr)
  def test_dbt_dev_allowed_and_non_dbt_ignored(self):
   for cmd in ('dbt test -t dev','dbt run','ls prod','python prod.py --target prod','dbt run -t prod-like','dbt run --target production_dev','mydbt run -t prod'):
    self.assertNotIn('decision',run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}),cmd)
@@ -25,29 +25,29 @@ class HookScriptTests(unittest.TestCase):
   self.assertEqual(run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':'dbt run -t live'}},{'AI_KIT_PROD_TARGETS':'live,prod'}).get('decision'),'deny')
  def test_dbt_default_target_from_profiles(self):
   with tempfile.TemporaryDirectory() as tmp:
-   (Path(tmp)/'profiles.yml').write_text('mon_projet:\n  target: prod\n  outputs:\n    prod: {type: bigquery}\n    dev: {type: bigquery}\n',encoding='utf-8')
+   (Path(tmp)/'profiles.yml').write_text('my_project:\n  target: prod\n  outputs:\n    prod: {type: bigquery}\n    dev: {type: bigquery}\n',encoding='utf-8')
    run=lambda cmd,env=None:run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','cwd':tmp,'tool_input':{'command':cmd}},{'DBT_PROFILES_DIR':tmp,'HOME':tmp,**(env or {})})
    self.assertEqual(run('dbt run').get('decision'),'deny');self.assertIn('profiles.yml',run('dbt run')['reason'])
    self.assertNotIn('decision',run('dbt run -t dev'));self.assertNotIn('decision',run('dbt run',{'AI_KIT_ALLOW_PROD':'1'}))
-   (Path(tmp)/'profiles.yml').write_text('mon_projet:\n  target: dev\n',encoding='utf-8');self.assertNotIn('decision',run('dbt run'))
+   (Path(tmp)/'profiles.yml').write_text('my_project:\n  target: dev\n',encoding='utf-8');self.assertNotIn('decision',run('dbt run'))
  def test_protected_paths(self):
   with tempfile.TemporaryDirectory() as tmp:
-   (Path(tmp)/'.gemini').mkdir();(Path(tmp)/'.gemini/protected-paths').write_text('# protégé\ntarget/**\ndbt_project.yml\n*.lock\n',encoding='utf-8')
+   (Path(tmp)/'.gemini').mkdir();(Path(tmp)/'.gemini/protected-paths').write_text('# protected\ntarget/**\ndbt_project.yml\n*.lock\n',encoding='utf-8')
    deny=lambda p,tool='write_file':run_hook('protected-paths.py',{'tool_name':tool,'cwd':tmp,'tool_input':{'file_path':p}}).get('decision')
    self.assertEqual(deny(tmp+'/target/run.sql'),'deny');self.assertEqual(deny('dbt_project.yml','replace'),'deny');self.assertEqual(deny('poetry.lock'),'deny')
    self.assertIsNone(deny('models/a.sql'));self.assertIsNone(deny('target/x','run_shell_command'))
    self.assertIsNone(deny('targets/x.sql'));self.assertIsNone(deny('target_new.sql'));self.assertEqual(deny('TARGET/x.sql'),'deny')
-   self.assertIsNone(run_hook('protected-paths.py',{'tool_name':'write_file','cwd':tmp,'tool_input':{'file_path':'D:\\ailleurs\\x.sql'}}).get('decision'))
+   self.assertIsNone(run_hook('protected-paths.py',{'tool_name':'write_file','cwd':tmp,'tool_input':{'file_path':'D:\\elsewhere\\x.sql'}}).get('decision'))
   with tempfile.TemporaryDirectory() as tmp:
    self.assertIsNone(run_hook('protected-paths.py',{'tool_name':'write_file','cwd':tmp,'tool_input':{'file_path':'target/x'}}).get('decision'))
  def test_protected_paths_from_repo_root_when_launched_in_subfolder(self):
   with tempfile.TemporaryDirectory() as tmp:
-   root=Path(tmp);(root/'.git').mkdir();(root/'.gemini').mkdir();(root/'.gemini/protected-paths').write_text('target/**\nfinance/clotures/**\n',encoding='utf-8')
+   root=Path(tmp);(root/'.git').mkdir();(root/'.gemini').mkdir();(root/'.gemini/protected-paths').write_text('target/**\nfinance/closing/**\n',encoding='utf-8')
    (root/'finance/.gemini').mkdir(parents=True);(root/'finance/.gemini/protected-paths').write_text('seeds/**\n',encoding='utf-8')
    sub=str(root/'finance')
    deny=lambda p:run_hook('protected-paths.py',{'tool_name':'write_file','cwd':sub,'tool_input':{'file_path':p}}).get('decision')
-   self.assertEqual(deny(str(root/'target/x.sql')),'deny');self.assertEqual(deny('clotures/2026.sql'),'deny');self.assertEqual(deny('seeds/a.csv'),'deny')
-   self.assertIsNone(deny('models/marge.sql'));self.assertIsNone(deny(str(root/'marketing/seeds/a.csv')))
+   self.assertEqual(deny(str(root/'target/x.sql')),'deny');self.assertEqual(deny('closing/2026.sql'),'deny');self.assertEqual(deny('seeds/a.csv'),'deny')
+   self.assertIsNone(deny('models/margin.sql'));self.assertIsNone(deny(str(root/'marketing/seeds/a.csv')))
  def test_protected_paths_neutral_file_and_legacy_file_both_read(self):
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp);(root/'.git').mkdir();(root/'.ai-kit').mkdir();(root/'.ai-kit/protected-paths').write_text('target/**\n',encoding='utf-8')
@@ -59,7 +59,7 @@ class HookScriptTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as tmp:
    home=Path(tmp);(home/'.ai-kit').mkdir();(home/'.ai-kit/overrides.json').write_text(json.dumps({'hooks':{'dbt-prod-guard':True}}),encoding='utf-8')
    with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',home,False,None,'gemini')
-   # Simuler une installation 0.16 : script à l'ancien emplacement, suivi par l'état.
+   # Simulate a 0.16 installation: script at the old location, tracked by the state.
    old=home/'.gemini/hooks/ai-kit/dbt-prod-guard.py';old.parent.mkdir(parents=True);old.write_bytes((H/'dbt-prod-guard.py').read_bytes())
    state=read_json(home/'.ai-kit/state.json');state['files']['.gemini/hooks/ai-kit/dbt-prod-guard.py']=hashlib.sha256(old.read_bytes()).hexdigest()
    (home/'.ai-kit/state.json').write_text(json.dumps(state),encoding='utf-8')
@@ -83,7 +83,7 @@ class HookInstallTests(unittest.TestCase):
  def test_enable_then_disable(self):
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':True}});self.run_kit()
   groups=self.settings()['hooks']['BeforeTool'];self.assertEqual(len(groups),2);names={g['hooks'][0]['name'] for g in groups};self.assertEqual(names,{'ai-kit-dbt-prod-guard','ai-kit-protected-paths'})
-  self.assertEqual(groups[0]['matcher'],'run_shell_command');self.assertTrue((self.home/'.ai-kit/hooks/dbt-prod-guard.py').is_file());self.assertIn(str(self.home.resolve()),groups[0]['hooks'][0]['command'])  # Windows : le dossier temporaire a un nom court (RUNNER~1)
+  self.assertEqual(groups[0]['matcher'],'run_shell_command');self.assertTrue((self.home/'.ai-kit/hooks/dbt-prod-guard.py').is_file());self.assertIn(str(self.home.resolve()),groups[0]['hooks'][0]['command'])  # Windows: the temporary folder has a short name (RUNNER~1)
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':False}});self.run_kit()
   groups=self.settings()['hooks']['BeforeTool'];self.assertEqual(len(groups),1);self.assertFalse((self.home/'.ai-kit/hooks/protected-paths.py').exists())
   self.overrides({'hooks':{}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertFalse((self.home/'.gemini/hooks/ai-kit').exists())
@@ -102,10 +102,10 @@ class HookInstallTests(unittest.TestCase):
  def test_doctor_reports(self):
   self.overrides({'hooks':{'dbt-prod-guard':True}});self.run_kit();out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
-  self.assertIn('[OK] Garde-fou actif : dbt-prod-guard',out.getvalue())
+  self.assertIn('[OK] Guardrail active: dbt-prod-guard',out.getvalue())
   self.overrides({'hooks':{}});self.run_kit();out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
-  self.assertIn('Aucun garde-fou activé',out.getvalue())
+  self.assertIn('No guardrail enabled',out.getvalue())
  def test_verifier_agent_has_shell_others_do_not(self):
   self.run_kit('data-developer');base=self.home/'.gemini/agents'
   v=(base/'ai-kit-verifier.md').read_text(encoding='utf-8');self.assertIn('run_shell_command',v.split('---')[1]);self.assertIn('max_turns: 15',v)

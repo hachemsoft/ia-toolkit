@@ -1,44 +1,44 @@
-# Matrice des CLI
+# CLI matrix
 
-Le contenu du kit (pratiques, skills, commandes, agents, garde-fous) est écrit une fois, sans rien de propre à une CLI. Chaque CLI le reçoit par son adaptateur, à l'endroit et dans la forme qu'elle lit. Cette page dit où, CLI par CLI. Pour en brancher une nouvelle, on remplit sa colonne : c'est le cahier des charges de son adaptateur.
+The kit content (practices, skills, commands, agents, guardrails) is written once, with nothing specific to any CLI. Each CLI receives it through its adapter, in the place and form it reads. This page says where, CLI by CLI. To plug in a new one, fill in its column: that is the specification for its adapter.
 
-## Où en est chaque CLI
+## Status of each CLI
 
-| CLI | Adaptateur | Vérifiée sur | Page |
+| CLI | Adapter | Verified on | Page |
 | --- | --- | --- | --- |
-| Gemini CLI | ✅ intégrée | 0.65 | [Gemini CLI](gemini.md) |
-| Antigravity CLI (agy) | ✅ intégrée | 1.4.7 | [Antigravity CLI](agy.md) |
-| Codex CLI | ✅ intégrée | 0.160 | [Codex CLI](codex.md) |
-| Claude Code | ❌ pas d'adaptateur | — | — |
-| GitHub Copilot CLI | ❌ pas d'adaptateur | — | — |
+| Gemini CLI | ✅ integrated | 0.65 | [Gemini CLI](gemini.md) |
+| Antigravity CLI (agy) | ✅ integrated | 1.4.7 | [Antigravity CLI](agy.md) |
+| Codex CLI | ✅ integrated | 0.160 | [Codex CLI](codex.md) |
+| Claude Code | ❌ no adapter | — | — |
+| GitHub Copilot CLI | ❌ no adapter | — | — |
 
-Une CLI sans adaptateur peut déjà lire les fichiers de repo du kit (`AGENTS.md`, `GLOSSARY.md`, `REVIEW.md`) si elle lit `AGENTS.md`, mais elle n'a ni les couches globales, ni les commandes, ni les skills, ni les garde-fous du kit.
+A CLI without an adapter can already read the kit's repository files (`AGENTS.md`, `GLOSSARY.md`, `REVIEW.md`) if it reads `AGENTS.md`, but it has none of the kit's global layers, commands, skills or guardrails.
 
-## Notion par notion
+## Concept by concept
 
-| Notion du kit | Gemini CLI | Antigravity CLI (agy) | Codex CLI |
+| Kit concept | Gemini CLI | Antigravity CLI (agy) | Codex CLI |
 | --- | --- | --- | --- |
-| Dossier de la CLI | `~/.gemini/` | `~/.gemini/` (lu aussi par agy) et `~/.gemini/config/plugins/ai-kit/` | `~/.codex/` |
-| Couches de contexte (`00_KIT`, `10_COMPANY`, `20_TEAM`) | fichiers dans `~/.gemini/`, déclarés dans `context.fileName` de `settings.json` | incluses par chemin depuis `rules/AGENTS.md` du plugin | bloc géré en tête de `~/.codex/AGENTS.md` |
-| Contexte personnel `30_USER.md` | `~/.gemini/30_USER.md`, déclaré dans `context.fileName` | inclus par chemin depuis le plugin | copié dans ce bloc à chaque `update` |
-| Contexte du repo | `AGENTS.md` ou `GEMINI.md`, à la racine et dans les dossiers traversés | `AGENTS.md`, `GEMINI.md`, `.agents/rules/` | `AGENTS.md` (et `AGENTS.override.md`), à la racine et dans les dossiers |
-| Skills du kit | `~/.gemini/skills/<nom>/SKILL.md` | les mêmes (`~/.gemini/skills/`) | `~/.codex/skills/<nom>/SKILL.md`, « sur commande seulement » respecté (`agents/openai.yaml`) |
-| Skills d'un repo | `<repo>/.agents/skills/` ou `<repo>/.gemini/skills/` | `<repo>/.agents/skills/` | `<repo>/.agents/skills/` |
-| Commandes (`commands/<nom>.md`) | `~/.gemini/commands/<nom>.toml` | un skill de commande `~/.gemini/skills/<nom>/` (dans agy, tout skill est une commande) | un skill de commande, appelé par `$<nom>` |
-| Surcharger une commande dans un repo | `<repo>/.gemini/commands/<nom>.toml` | `<repo>/.agents/skills/<nom>/SKILL.md` | `<repo>/.agents/skills/<nom>/SKILL.md` |
-| Agents | `~/.gemini/agents/ai-kit-<nom>.md` | `agents/` du plugin | `[agents.ai-kit-<nom>]` dans le bloc géré de `config.toml` |
-| Garde-fous | groupes `ai-kit-*` sous `hooks.BeforeTool` de `settings.json` | `hooks.json` du plugin (`PreToolUse`) | `[[hooks.PreToolUse]]` dans ce bloc, à approuver dans Codex (« Trust ») |
-| Chemins protégés d'un repo | `<repo>/.ai-kit/protected-paths`, lu par le script du kit | le même fichier, lu par le même script | le même fichier, lu par le même script |
-| MCP | `mcpServers` de `settings.json` | `mcp_config.json` du plugin | `[mcp_servers.ai-kit-<nom>]` dans ce bloc |
-| Permissions | mode d'approbation de Gemini | règles de chaque personne dans `~/.gemini/antigravity-cli/settings.json`, jamais écrites par le kit | bac à sable et approbations de Codex, jamais réglés par le kit |
-| Journaux lus par `usage` | `~/.gemini/tmp/*/chats/*.json` | `~/.gemini/antigravity-cli/history.jsonl` | `~/.codex/history.jsonl` |
-| Appel réel de `doctor --live` | `gemini -p` | non (agy est vérifié par `agy plugin validate`) | non (`codex doctor` vérifie sa configuration) |
-| Évaluations | `evals/run.py --cli gemini` | `evals/run.py --cli agy` | `evals/run.py --cli codex` |
-| Authentification réglée par le kit | sur déclaration : `vertex`, `code_assist`, `model` dans `overrides.json` | jamais ; voir [la page agy](agy.md#authentification--compte-ou-projet-google-cloud) | jamais (`codex login`) |
-| Page détaillée | [Gemini CLI](gemini.md) | [Antigravity CLI](agy.md) | [Codex CLI](codex.md) |
+| CLI folder | `~/.gemini/` | `~/.gemini/` (also read by agy) and `~/.gemini/config/plugins/ai-kit/` | `~/.codex/` |
+| Context layers (`00_KIT`, `10_COMPANY`, `20_TEAM`) | files in `~/.gemini/`, declared in `context.fileName` of `settings.json` | included by path from the plugin's `rules/AGENTS.md` | managed block at the top of `~/.codex/AGENTS.md` |
+| Personal context `30_USER.md` | `~/.gemini/30_USER.md`, declared in `context.fileName` | included by path from the plugin | copied into that block on every `update` |
+| Repository context | `AGENTS.md` or `GEMINI.md`, at the root and in the folders traversed | `AGENTS.md`, `GEMINI.md`, `.agents/rules/` | `AGENTS.md` (and `AGENTS.override.md`), at the root and in the folders |
+| Kit skills | `~/.gemini/skills/<name>/SKILL.md` | the same (`~/.gemini/skills/`) | `~/.codex/skills/<name>/SKILL.md`, "on command only" honored (`agents/openai.yaml`) |
+| Repository skills | `<repo>/.agents/skills/` or `<repo>/.gemini/skills/` | `<repo>/.agents/skills/` | `<repo>/.agents/skills/` |
+| Commands (`commands/<name>.md`) | `~/.gemini/commands/<name>.toml` | a command skill `~/.gemini/skills/<name>/` (in agy, every skill is a command) | a command skill, called with `$<name>` |
+| Override a command in a repository | `<repo>/.gemini/commands/<name>.toml` | `<repo>/.agents/skills/<name>/SKILL.md` | `<repo>/.agents/skills/<name>/SKILL.md` |
+| Agents | `~/.gemini/agents/ai-kit-<name>.md` | plugin `agents/` | `[agents.ai-kit-<name>]` in the managed block of `config.toml` |
+| Guardrails | `ai-kit-*` groups under `hooks.BeforeTool` of `settings.json` | plugin `hooks.json` (`PreToolUse`) | `[[hooks.PreToolUse]]` in that block, to approve in Codex ("Trust") |
+| Repository protected paths | `<repo>/.ai-kit/protected-paths`, read by the kit script | the same file, read by the same script | the same file, read by the same script |
+| MCP | `mcpServers` of `settings.json` | plugin `mcp_config.json` | `[mcp_servers.ai-kit-<name>]` in that block |
+| Permissions | Gemini approval mode | each person's rules in `~/.gemini/antigravity-cli/settings.json`, never written by the kit | Codex sandbox and approvals, never set by the kit |
+| Logs read by `usage` | `~/.gemini/tmp/*/chats/*.json` | `~/.gemini/antigravity-cli/history.jsonl` | `~/.codex/history.jsonl` |
+| Real call by `doctor --live` | `gemini -p` | no (agy is checked by `agy plugin validate`) | no (`codex doctor` checks its configuration) |
+| Evals | `evals/run.py --cli gemini` | `evals/run.py --cli agy` | `evals/run.py --cli codex` |
+| Authentication set by the kit | when declared: `vertex`, `code_assist`, `model` in `overrides.json` | never; see [the agy page](agy.md#authentication-google-account-or-google-cloud-project) | never (`codex login`) |
+| Detailed page | [Gemini CLI](gemini.md) | [Antigravity CLI](agy.md) | [Codex CLI](codex.md) |
 
-**Où vivent les couches et `30_USER.md`.** Gemini n'importe que des fichiers situés dans `~/.gemini` (vérifié sur la 0.65). Quand Gemini est installé, les couches et `30_USER.md` sont donc dans `~/.gemini/`, et agy et Codex les lisent depuis là. Sans Gemini (`--target codex`, `--target agy`, ou un poste où seule une autre CLI est détectée), ils sont dans `~/.ai-kit/context/`, et aucun dossier `~/.gemini` n'est créé pour Codex. Si l'emplacement change, `30_USER.md` est recopié au nouvel endroit s'il y manque ; l'ancien n'est jamais supprimé. `doctor` indique le fichier en vigueur.
+**Where the layers and `30_USER.md` live.** Gemini imports only files located in `~/.gemini` (verified on 0.65). When Gemini is installed, the layers and `30_USER.md` are therefore in `~/.gemini/`, and agy and Codex read them from there. Without Gemini (`--target codex`, `--target agy`, or a workstation where only another CLI is detected), they are in `~/.ai-kit/context/`, and no `~/.gemini` folder is created for Codex. If the location changes, `30_USER.md` is copied to the new place if it is missing there; the old one is never deleted. `doctor` shows the file in effect.
 
-## Ajouter une CLI
+## Add a CLI
 
-Une nouvelle CLI, c'est un module dans `installer/adapters/`, ajouté à la liste `ADAPTERS`, qui respecte le contrat `Adapter` de `installer/interface.py`, sa colonne dans le tableau ci-dessus et ses scénarios dans `tests/snapshot.py`. Ce que cet adaptateur doit savoir faire : où écrire chaque ligne ci-dessus, comment la CLI charge un contexte global sans copier `30_USER.md`, sous quelle forme elle reçoit une commande, et comment elle passe un appel d'outil à un script de garde-fou (le JSON qu'elle envoie et la réponse qu'elle attend).
+A new CLI is a module in `installer/adapters/`, added to the `ADAPTERS` list, that follows the `Adapter` contract of `installer/interface.py`, plus its column in the table above and its scenarios in `tests/snapshot.py`. What this adapter must know how to do: where to write each row above, how the CLI loads a global context without copying `30_USER.md`, in what form it receives a command, and how it passes a tool call to a guardrail script (the JSON it sends and the response it expects).

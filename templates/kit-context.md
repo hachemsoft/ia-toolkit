@@ -1,36 +1,36 @@
-# Kit IA
-Profil : {profile}
-Ce contexte s’applique aux activités professionnelles de l’équipe. Il est chargé dans tous les projets.
+# AI Kit
+Profile: {profile}
+This context applies to the team's professional work. It is loaded in every project.
 
-## Priorité entre les couches
-1. Les pratiques entreprise et d’équipe (fichiers 10 et 20) s’appliquent par défaut ; pour y déroger, la personne le demande explicitement et la dérogation est notée dans la réponse.
-2. Le fichier 30_USER.md ajuste la forme des réponses et le workflow par défaut.
-3. Les instructions du projet courant (GEMINI.md, AGENTS.md, docs du repo) l’emportent sur 30_USER.md en cas de conflit.
-4. Une demande explicite dans la conversation l’emporte sur 30_USER.md.
+## Priority between layers
+1. Company and team practices (files 10 and 20) apply by default; to depart from them, the person asks explicitly and the exception is noted in the reply.
+2. The 30_USER.md file adjusts the form of replies and the default workflow.
+3. The current project's instructions (GEMINI.md, AGENTS.md, repo docs) take precedence over 30_USER.md in case of conflict.
+4. An explicit request in the conversation takes precedence over 30_USER.md.
 
-## Langue
-Répondre dans la langue de la personne. Les titres de sections des artefacts (intent.md, spec.md, plan.md, REVIEW.md) restent en anglais, comme dans les gabarits ; leur contenu est dans la langue de l’équipe.
+## Language
+Reply in the person's language. The section headings of artifacts (intent.md, spec.md, plan.md, REVIEW.md) stay in English, as in the templates; their content is in the team's language.
 
-## Commandes
-La cérémonie suit les enjeux : une retouche se fait sans artefact, une fonctionnalité passe par les étapes, la production exige la revue complète. `/guide` aide à choisir.
-Seules les commandes ci-dessous sont installées pour ce profil. Ne jamais en proposer une autre ; si une commande absente conviendrait, dire qu’elle s’active d’une ligne (`extra_commands` dans `~/.ai-kit/overrides.json`, puis `update`).
+## Commands
+Ceremony follows the stakes: a tweak is done without an artifact, a feature goes through the steps, production requires the full review. `/guide` helps choose.
+Only the commands below are installed for this profile. Never propose another one; if a missing command would fit, say it can be enabled with one line (`extra_commands` in `~/.ai-kit/overrides.json`, then `update`).
 {commands}
 
-## Playbooks métier
-Activés automatiquement quand la tâche s’y prête ; `/intent`, `/build`, `/diagnose` et `/learn` les enchaînent.
+## Domain playbooks
+Activated automatically when the task fits; `/intent`, `/build`, `/diagnose` and `/learn` chain them.
 {playbooks}
 
-## Lire les skills du socle
-Les skills de workflow sont repris tels quels d’un socle écrit pour d’autres outils. Correspondance à appliquer sans le dire :
-- « Skill tool », « call the skill », « activate the X skill » : l’outil d’activation de skill, jamais `invoke_agent` (un skill n’est pas un agent). Si cet outil est absent, suivre les consignes de la commande sans chercher d’agent du même nom.
-- « sub-agent », « background agent », « dispatch » : utiliser les agents `ai-kit-*` installés ; sinon faire le travail soi-même, dans la conversation.
-- `CLAUDE.md` : lire et écrire `AGENTS.md` (ou `GEMINI.md` si le repo l’utilise). Ne jamais créer de `CLAUDE.md`.
-- « PR », « pull request » : merge request (MR) ; « GitHub » : le gestionnaire de tickets et de dépôt déclaré par le repo (`docs/agents/issue-tracker.md`), sans en supposer un.
-- `/setup-workflow`, `/pr`, `/tdd`, `/code-review`, `/implement-spec` : les skills `setup-workflow`, `mr`, `tdd`, `code-review`, `implement-spec`, pas des commandes.
-- Un skill dont l’en-tête porte `disable-model-invocation: true` ne s’active que si la personne tape sa commande ou le demande nommément.
-- Un script bash proposé par un skill : sur Windows, donner l’équivalent PowerShell ou les étapes manuelles.
+## Reading the base skills
+The workflow skills are taken as is from a base written for other tools. Apply this mapping without mentioning it:
+- "Skill tool", "call the skill", "activate the X skill": the skill activation tool, never `invoke_agent` (a skill is not an agent). If that tool is missing, follow the command's instructions without looking for an agent of the same name.
+- "sub-agent", "background agent", "dispatch": use the installed `ai-kit-*` agents; otherwise do the work yourself, in the conversation.
+- `CLAUDE.md`: read and write `AGENTS.md` (or `GEMINI.md` if the repo uses it). Never create a `CLAUDE.md`.
+- "PR", "pull request": merge request (MR); "GitHub": the ticket tracker and repository host declared by the repo (`docs/agents/issue-tracker.md`), without assuming one.
+- `/setup-workflow`, `/pr`, `/tdd`, `/code-review`, `/implement-spec`: the skills `setup-workflow`, `mr`, `tdd`, `code-review`, `implement-spec`, not commands.
+- A skill whose header has `disable-model-invocation: true` activates only if the person types its command or asks for it by name.
+- A bash script proposed by a skill: on Windows, give the PowerShell equivalent or the manual steps.
 
-## Artefacts et git
-Un dossier par changement : `docs/sdlc/<AAAA-MM-JJ>-<slug>/`. `spec.md` et `REVIEW.md` sont versionnés (contrat relu dans la MR). `intent.md` et `plan.md` sont des notes de travail locales, ignorées par git, sauf règle contraire dans `AGENTS.md`. Ne jamais commiter sans l’accord de la personne.
+## Artifacts and git
+One folder per change: `docs/sdlc/<YYYY-MM-DD>-<slug>/`. `spec.md` and `REVIEW.md` are committed (the contract reviewed in the merge request (MR)). `intent.md` and `plan.md` are local working notes, ignored by git, unless `AGENTS.md` says otherwise. Never commit without the person's agreement.
 
-{frictions}Lire le contexte du projet courant avant d’agir ; ne pas inventer ses règles métier. Monorepo : lancé à la racine d’un repo dont des sous-dossiers ont leur propre AGENTS.md, demander d’abord dans quelle zone on travaille ; dans une zone, suivre son AGENTS.md et écrire ses artefacts dans `<zone>/docs/sdlc/`.
+{frictions}Read the current project's context before acting; do not invent its business rules. Monorepo: when started at the root of a repo whose subfolders have their own AGENTS.md, first ask which area you are working in; within an area, follow its AGENTS.md and write its artifacts in `<zone>/docs/sdlc/`.

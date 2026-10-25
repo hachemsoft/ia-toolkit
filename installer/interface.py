@@ -1,10 +1,10 @@
-"""Contrat entre l'orchestrateur (cli.py) et les adaptateurs (adapters/*.py).
+"""Contract between the orchestrator (cli.py) and the adapters (adapters/*.py).
 
-- Plan : ce qu'il faut installer, construit une fois par l'orchestrateur, neutre vis-à-vis des CLI.
-- DoctorContext : ce que l'orchestrateur prête aux contrôles des adaptateurs.
-- Adapter : ce que chaque module d'adaptateur doit fournir ; ContextHost et LiveCheck sont des capacités facultatives.
+- Plan: what to install, built once by the orchestrator, neutral with respect to the CLIs.
+- DoctorContext: what the orchestrator lends to the adapters' checks.
+- Adapter: what each adapter module must provide; ContextHost and LiveCheck are optional capabilities.
 
-Un adaptateur est un module Python : les protocoles décrivent ses attributs et fonctions de module.
+An adapter is a Python module: the protocols describe its module attributes and functions.
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Protocol, Set,
 
 @dataclass
 class Plan:
-    """Plan neutre d'une installation. Les adaptateurs le lisent et ajoutent leurs écritures via managed_write."""
+    """Neutral plan of an installation. The adapters read it and add their writes through managed_write."""
     home: Path
     kit: Path
     state: Dict[str, Any]
@@ -24,31 +24,31 @@ class Plan:
     profile_id: str
     profile: Dict[str, Any]
     catalog: Dict[str, Any]
-    selected: List[str]  # skills retenus
-    skill_sources: List[Tuple[str, Path]]  # (nom du skill, dossier source)
+    selected: List[str]  # selected skills
+    skill_sources: List[Tuple[str, Path]]  # (skill name, source folder)
     commands: List[Dict[str, Any]]
-    context_names: List[str]  # couches gérées, dans l'ordre (00_KIT.md, 10_…, 20_…)
+    context_names: List[str]  # managed layers, in order (00_KIT.md, 10_…, 20_…)
     kit_text: str
     practice_names: List[str]
     practice_texts: List[str]
-    context_dir: Path  # dossier des couches et de 30_USER.md
+    context_dir: Path  # folder of the layers and 30_USER.md
     user_file: Path
     user_context_text: str
-    agents: List[Tuple[str, Dict[str, Any]]]  # (nom, définition)
+    agents: List[Tuple[str, Dict[str, Any]]]  # (name, definition)
     models: Dict[str, Any]
     hooks_dir: Path
     hook_manifest: Dict[str, Any]
     enabled_hooks: Dict[str, Any]
     enabled_mcp: Dict[str, Any]
-    writes: Dict[Path, bytes]  # écritures non suivies (fichiers de l'utilisateur, réglages fusionnés)
+    writes: Dict[Path, bytes]  # untracked writes (user files, merged settings)
     deletes: List[Path]
-    active: List[str]  # NAME des adaptateurs actifs, dans l'ordre de ADAPTERS
-    managed_write: Callable[[Path, bytes, str], None]  # écriture suivie dans l'état, refusée si le fichier a été modifié
-    agent_body: Callable[[Dict[str, Any]], str]  # prompt complet d'un agent, pratiques incluses
-    agent_markdown: Dict[str, str] = field(default_factory=dict)  # agents rendus par Gemini, réutilisés par agy
-    blocks: Dict[str, str] = field(default_factory=dict)  # empreintes des blocs gérés dans des fichiers de l'utilisateur
+    active: List[str]  # NAME of the active adapters, in ADAPTERS order
+    managed_write: Callable[[Path, bytes, str], None]  # write tracked in the state, refused if the file was modified
+    agent_body: Callable[[Dict[str, Any]], str]  # full prompt of an agent, practices included
+    agent_markdown: Dict[str, str] = field(default_factory=dict)  # agents rendered by Gemini, reused by agy
+    blocks: Dict[str, str] = field(default_factory=dict)  # digests of the managed blocks in user files
     migrated_prefs: bool = False
-    adapter_data: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # données privées d'un adaptateur, par NAME
+    adapter_data: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # private data of an adapter, by NAME
 
 
 @dataclass
@@ -65,11 +65,11 @@ Status = Callable[[bool, str], None]
 
 @runtime_checkable
 class Adapter(Protocol):
-    NAME: str  # valeur de --target
-    LABEL: str  # nom affiché
-    COMMAND: str  # exécutable
-    HOME_DIR: str  # dossier de la CLI, relatif au dossier personnel
-    BUILTIN_COMMANDS: Set[str]  # commandes intégrées, ignorées par usage
+    NAME: str  # value of --target
+    LABEL: str  # display name
+    COMMAND: str  # executable
+    HOME_DIR: str  # CLI folder, relative to the home folder
+    BUILTIN_COMMANDS: Set[str]  # built-in commands, ignored by usage
     MANAGED_PREFIXES: Tuple[str, ...]
 
     def present(self, home: Path) -> bool: ...
@@ -85,12 +85,12 @@ class Adapter(Protocol):
 
 @runtime_checkable
 class ContextHost(Protocol):
-    """La CLI ne lit son contexte que dans son dossier : si elle est active, les couches et 30_USER.md y sont écrits."""
+    """The CLI only reads its context from its own folder: if it is active, the layers and 30_USER.md are written there."""
     def context_dir(self, home: Path) -> Path: ...
     def installed_from_files(self, state: Dict[str, Any]) -> Dict[str, List[str]]: ...
 
 
 @runtime_checkable
 class LiveCheck(Protocol):
-    """La CLI sait faire un appel réel au modèle, avec diagnostic."""
+    """The CLI can make a real call to the model, with diagnosis."""
     def live(self, home: Path) -> int: ...

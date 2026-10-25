@@ -1,31 +1,31 @@
 ---
 name: init-project-context
-description: "Poser le contexte agent d’un repo : AGENTS.md court, GLOSSARY.md pré-rempli avec le vocabulaire du repo, dossier docs/ prêt pour les ADR. Déclencheurs : initialise le contexte du projet, crée le AGENTS.md, pose le glossaire, prépare le repo pour l’agent."
+description: "Set up a repo's agent context: a short AGENTS.md, a GLOSSARY.md prefilled with the repo's vocabulary, a docs/ folder ready for ADRs. Triggers: initialize the project context, create the AGENTS.md, set up the glossary, prepare the repo for the agent."
 ---
 
 # init-project-context
 
-Le kit n’écrit jamais dans un repo. Ce skill le fait, à la demande, avec confirmation avant chaque fichier.
+The kit never writes to a repo. This skill does, on request, with confirmation before each file.
 
-## Avant d’écrire
-1. Lire le repo : README, `dbt_project.yml`, `pyproject.toml` ou `package.json`, commandes de test, CI, dossiers principaux. Noter les commandes réelles, pas des commandes supposées.
-2. Vérifier ce qui existe déjà : `AGENTS.md`, `GEMINI.md`, `GLOSSARY.md`, `GLOSSARY-MAP.md`, `docs/adr/`. Ne jamais remplacer un fichier existant : proposer un complément.
-3. Lire le skill `writing-for-agents` pour la forme d’`AGENTS.md`, et `domain-modeling` avec `GLOSSARY-FORMAT.md` pour le glossaire.
+## Before writing
+1. Read the repo: README, `dbt_project.yml`, `pyproject.toml` or `package.json`, test commands, CI, main folders. Note the actual commands, not assumed ones.
+2. Check what already exists: `AGENTS.md`, `GEMINI.md`, `GLOSSARY.md`, `GLOSSARY-MAP.md`, `docs/adr/`. Never replace an existing file: propose an addition.
+3. Read the `writing-for-agents` skill for the shape of `AGENTS.md`, and `domain-modeling` with `GLOSSARY-FORMAT.md` for the glossary.
 
-## Fichiers proposés
-- Bloc « Verifying your work » : générique, le même pour un repo Data et un repo d’application, déduit automatiquement. Repérer les piles utilisées en lisant, dans cet ordre, la CI d’abord (`.gitlab-ci.yml`, `.github/workflows/`, `Jenkinsfile`), qui lance déjà les vraies commandes ; puis les fichiers de pile (`dbt_project.yml`, `pyproject.toml`, `setup.cfg`, `pytest.ini`, `package.json` et ses scripts, `go.mod`, `pom.xml`, `build.gradle`, `Cargo.toml`) ; puis `Makefile`, `justfile` ou `Taskfile` et le README. Pour chaque pile trouvée, remplir pour chacune la commande sur le périmètre modifié et la commande complète, la branche de base, les fichiers partagés qui imposent la suite complète, le target de développement ; supprimer les lignes des piles absentes. Proposer de lancer chaque commande une fois, avec accord, et n’écrire que celles qui passent ; signaler celles qui échouent. Si aucune pile ni commande de test ne se déduit du repo, ne rien inventer : laisser le bloc avec ses `<…>`, le dire clairement, et demander à la personne d’y écrire elle-même les commandes de test du repo (ou de les donner, pour que l’agent les écrive).
-- `AGENTS.md` à partir de `templates/AGENTS.md` : une page, structurée comme le fichier de contexte du playbook SDLC : Commands, Verifying your work, Conventions, Architecture, Things the agent gets wrong, Where the rest lives. Remplacer chaque `<…>` par les faits lus dans le repo ; supprimer les lignes sans fait. Si le repo utilise déjà `GEMINI.md`, le conserver et y ajouter `@AGENTS.md` plutôt que dupliquer.
-- `GLOSSARY.md` au format `domain-modeling` (exemple : `templates/GLOSSARY.md`). Pour un repo de données (dbt, SQL, pipelines), partir des termes Data génériques du gabarit et retirer ceux qui ne s’appliquent pas. Pour tout autre repo, ne garder du gabarit que sa structure et relever les termes métier rencontrés dans le code, les API et la doc. Chaque terme avec ses synonymes à éviter.
-- `REVIEW.md` à partir de `templates/REVIEW.md` : les passes de revue que `/review` suit (bugs, sécurité, données, conformité), ce que veut dire Important, le plafond de nits. Adapter la passe données au périmètre, ou la retirer si le repo ne manipule pas de données.
-- Règle git des artefacts, avec confirmation : ajouter à `.gitignore` les lignes `docs/sdlc/**/intent.md`, `docs/sdlc/**/plan.md` et `docs/sdlc/handoff-*.md` (notes de travail locales) ; `spec.md` et `REVIEW.md` restent versionnés. Si l’équipe préfère tout versionner, l’écrire dans `AGENTS.md` et ne pas toucher `.gitignore`.
-- Gabarits d’artefacts `templates/intent.md`, `templates/spec.md`, `templates/plan.md` : ne pas les copier dans le repo ; `/intent`, `/spec` et `/build` les lisent depuis ce skill et écrivent l’artefact rempli au moment voulu. Convention : un dossier par changement, `docs/sdlc/<AAAA-MM-JJ>-<slug>/` contenant `intent.md`, `spec.md`, `plan.md` ; l’historique git du dossier est la piste d’audit. L’écrire dans `AGENTS.md`.
-- `docs/adr/` : ne pas créer de fichier vide. Si une décision structurante est déjà visible dans le repo (matérialisation incrémentale, convention de couches, outil imposé), proposer un premier ADR selon `ADR-FORMAT.md` ; sinon dire que le dossier sera créé avec la première décision.
+## Proposed files
+- "Verifying your work" block: generic, the same for a Data repo and an application repo, inferred automatically. Identify the stacks in use by reading, in this order, the CI first (`.gitlab-ci.yml`, `.github/workflows/`, `Jenkinsfile`), which already runs the real commands; then the stack files (`dbt_project.yml`, `pyproject.toml`, `setup.cfg`, `pytest.ini`, `package.json` and its scripts, `go.mod`, `pom.xml`, `build.gradle`, `Cargo.toml`); then `Makefile`, `justfile` or `Taskfile` and the README. For each stack found, fill in the command on the changed scope and the full command, the base branch, the shared files that require the full suite, the development target; delete the rows of absent stacks. Offer to run each command once, with agreement, and write only those that pass; report those that fail. If no stack or test command can be inferred from the repo, invent nothing: leave the block with its `<…>`, say so clearly, and ask the person to write the repo's test commands in it themselves (or to give them, so the agent writes them).
+- `AGENTS.md` from `templates/AGENTS.md`: one page, structured like the SDLC playbook's context file: Commands, Verifying your work, Conventions, Architecture, Things the agent gets wrong, Where the rest lives. Replace each `<…>` with facts read from the repo; delete lines without a fact. If the repo already uses `GEMINI.md`, keep it and add `@AGENTS.md` to it rather than duplicating.
+- `GLOSSARY.md` in the `domain-modeling` format (example: `templates/GLOSSARY.md`). For a data repo (dbt, SQL, pipelines), start from the template's generic Data terms and remove those that do not apply. For any other repo, keep only the template's structure and collect the business terms found in the code, the APIs and the docs. Each term with its synonyms to avoid.
+- `REVIEW.md` from `templates/REVIEW.md`: the review passes `/review` follows (bugs, security, data, compliance), what Important means, the nit cap. Adapt the data pass to the scope, or remove it if the repo does not handle data.
+- Git rule for artifacts, with confirmation: add to `.gitignore` the lines `docs/sdlc/**/intent.md`, `docs/sdlc/**/plan.md` and `docs/sdlc/handoff-*.md` (local working notes); `spec.md` and `REVIEW.md` stay committed. If the team prefers to commit everything, write it in `AGENTS.md` and do not touch `.gitignore`.
+- Artifact templates `templates/intent.md`, `templates/spec.md`, `templates/plan.md`: do not copy them into the repo; `/intent`, `/spec` and `/build` read them from this skill and write the filled artifact at the right time. Convention: one folder per change, `docs/sdlc/<YYYY-MM-DD>-<slug>/` containing `intent.md`, `spec.md`, `plan.md`; the folder's git history is the audit trail. Write this in `AGENTS.md`.
+- `docs/adr/`: do not create an empty file. If a structuring decision is already visible in the repo (incremental materialization, layer convention, mandated tool), propose a first ADR following `ADR-FORMAT.md`; otherwise say the folder will be created with the first decision.
 
-## Déroulé
-1. Présenter le plan : fichiers à créer, résumé de chacun.
-2. Pour chaque fichier, montrer le contenu complet et attendre la confirmation.
-3. Proposer ensuite `setup-workflow` pour déclarer le gestionnaire de tickets (GitLab via `glab`, GitHub ou markdown local) et les labels de triage que `to-spec`, `to-tickets` et `code-review` attendent.
-4. Après écriture, tester : demander à l’agent d’accomplir une tâche courante du repo en ne lisant que ces fichiers. Ajouter ce qui a manqué, retirer ce qui n’a pas servi.
+## Steps
+1. Present the plan: files to create, a summary of each.
+2. For each file, show the full content and wait for confirmation.
+3. Then propose `setup-workflow` to declare the ticket tracker (GitLab via `glab`, GitHub or local markdown) and the triage labels that `to-spec`, `to-tickets` and `code-review` expect.
+4. After writing, test: ask the agent to perform a common task in the repo reading only these files. Add what was missing, remove what was not used.
 
-## Interdits
-Pas d’écriture sans confirmation. Pas de fichier qui répète la structure du code. Pas de terme inventé : chaque entrée du glossaire vient du repo ou de la personne.
+## Forbidden
+No writing without confirmation. No file that repeats the code structure. No invented term: each glossary entry comes from the repo or from the person.

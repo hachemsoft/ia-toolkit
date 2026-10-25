@@ -1,36 +1,36 @@
 ---
 name: guide
-description: "Routeur du kit : quelle commande, quel outil et quel niveau de cérémonie pour la situation décrite. Déclencheurs : quel skill pour, par quoi je commence, comment on fait ici, guide, aide sur le workflow."
+description: "Kit router: which command, which tool and what level of ceremony for the situation described. Triggers: which skill for, where do I start, how do we do this here, guide, help with the workflow."
 ---
 
 # guide
 
-Répondre dans la langue de la personne, en quelques lignes : le niveau de cérémonie, la commande ou l’outil, l’artefact produit, un exemple de prompt. Ne citer les noms de skills que si on le demande.
+Reply in the person's language, in a few lines: the level of ceremony, the command or tool, the artifact produced, an example prompt. Mention skill names only if asked.
 
-Ne proposer que les commandes listées sous « Commandes » dans le contexte du kit (00_KIT.md) : ce sont celles installées pour ce profil. Les tableaux ci-dessous donnent la carte complète ; quand la commande qui conviendrait n’est pas installée (par exemple `/spec`, `/review`, `/explain` pour un analyste), le dire en une ligne avec la façon de l’activer : `extra_commands` dans `~/.ai-kit/overrides.json`, puis `update`.
+Propose only the commands listed under "Commands" in the kit context (00_KIT.md): those are the ones installed for this profile. The tables below give the full map; when the command that would fit is not installed (for example `/spec`, `/review`, `/explain` for an analyst), say so in one line with how to enable it: `extra_commands` in `~/.ai-kit/overrides.json`, then `update`.
 
-## Niveau de cérémonie d’abord
-| Enjeu | Quoi faire | Commandes |
+## Level of ceremony first
+| Stakes | What to do | Commands |
 | --- | --- | --- |
-| Retouche (libellé, filtre, couleur) | faire, vérifier soi-même | aucune ; `/test` si le repo a des tests |
-| Visuel ou exploratoire | itérer avec l’agent, regarder, recommencer | `/design` pour un prototype jetable |
-| Petite fonctionnalité | court cadrage, puis test-first | `/intent` court, `/build`, `/test`, `/ship` |
-| Grande ou floue | spec, plan par phases, vérification entre chaque | `/intent`, `/spec`, `/build` par ticket, `/review`, `/ship` |
-| Production, irréversible, données sensibles | tout ce qui précède, revue complète | `/review full`, hooks actifs |
+| Tweak (label, filter, colour) | do it, check it yourself | none; `/test` if the repo has tests |
+| Visual or exploratory | iterate with the agent, look, start again | `/design` for a throwaway prototype |
+| Small feature | short framing, then test-first | short `/intent`, `/build`, `/test`, `/ship` |
+| Large or fuzzy | spec, phased plan, verification between each phase | `/intent`, `/spec`, `/build` per ticket, `/review`, `/ship` |
+| Production, irreversible, sensitive data | everything above, full review | `/review full`, hooks active |
 
-## Les étapes et leurs artefacts
-- `/intent <idée>` → `intent.md` (Plan). `/map` quand le chantier dépasse une session.
-- `/spec` → `spec.md` (Design). `/design` pour la forme d’un module ou un prototype.
-- `/build <ticket>` → `plan.md`, puis code et tests, une tranche à la fois (Build).
-- `/test` → sortie réelle des vérifications (Test).
-- `/review [base] [quick|full]` → constats classés (Deploy). `/ship` → description de MR.
-- `/diagnose <symptôme>` → cause prouvée et test de non-régression (Maintain). `/triage` pour les tickets entrants.
+## The steps and their artifacts
+- `/intent <idea>` → `intent.md` (Plan). `/map` when the work spans more than one session.
+- `/spec` → `spec.md` (Design). `/design` for the shape of a module or a prototype.
+- `/build <ticket>` → `plan.md`, then code and tests, one slice at a time (Build).
+- `/test` → actual output of the checks (Test).
+- `/review [base] [quick|full]` → ranked findings (Deploy). `/ship` → merge request (MR) description.
+- `/diagnose <symptom>` → proven cause and regression test (Maintain). `/triage` for incoming tickets.
 
-## Les outils, à tout moment
-`/learn` apprendre un périmètre ou un concept · `/explain` carte d’une zone ou reformulation · `/ask` questionnaire pour un propriétaire métier · `/retro` améliorer l’environnement de l’agent · `/handoff` passation · `/research` sources primaires · `/wizard` étapes humaines · `/audit` santé du code.
+## The tools, at any time
+`/learn` learn a perimeter or a concept · `/explain` map of an area or rephrasing · `/ask` questionnaire for a business owner · `/retro` improve the agent's environment · `/handoff` handover · `/research` primary sources · `/wizard` human steps · `/audit` code health.
 
-## Mise en place d’un repo
-Première fois : « Initialise le contexte du projet » (AGENTS.md, GLOSSARY.md, REVIEW.md, règle git des artefacts). Plus tard, quand l’équipe veut que l’agent lise et crée des tickets (`/map`, `/triage`, to-tickets) : `setup-workflow`, qui demande `glab` ou `gh` installé.
+## Setting up a repo
+First time: "Initialize the project context" (AGENTS.md, GLOSSARY.md, REVIEW.md, git rule for artifacts). Later, when the team wants the agent to read and create tickets (`/map`, `/triage`, to-tickets): `setup-workflow`, which requires `glab` or `gh` installed.
 
-## Hors des commandes
-Les skills métier Data (SQL, dbt, BigQuery, Python/JS) s’activent seuls quand la tâche s’y prête ; `/build` et `/diagnose` les enchaînent. Pour la carte complète du flux amont, le skill `workflow-guide` est disponible en option.
+## Outside the commands
+The Data domain skills (SQL, dbt, BigQuery, Python/JS) activate on their own when the task fits; `/build` and `/diagnose` chain them. For the full map of the upstream flow, the `workflow-guide` skill is available as an option.

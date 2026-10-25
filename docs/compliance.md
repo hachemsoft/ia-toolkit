@@ -1,49 +1,49 @@
-# Conformité et gouvernance
+# Compliance and governance
 
-Cette page aide le service conformité, sécurité ou juridique d’une organisation à analyser le kit. Elle ne revendique aucune conformité : le kit n’est ni certifié ni évalué par un tiers. Elle dit ce que le kit fait, ce qu’il ne fait pas, et ce qui reste à la charge de l’organisation.
+This page helps an organization's compliance, security or legal team assess the kit. It claims no compliance: the kit is neither certified nor assessed by a third party. It says what the kit does, what it does not do, and what remains the organization's responsibility.
 
-## Ce qu’est le kit, en termes de gouvernance
+## What the kit is, in governance terms
 
-Le kit est un outil de configuration. Il installe des fichiers texte (contexte, commandes, skills, agents, garde-fous) dans les dossiers de CLI d’agent de code déjà présentes sur le poste : Gemini CLI, Antigravity CLI, Codex CLI. Il ne fournit pas de modèle, n’appelle aucun service à l’installation, sauf l’appel de vérification au modèle que `setup` fait avec la CLI et le compte de la personne (`--no-live` le saute), et ne traite aucune donnée métier. Les prompts, le code et les données que voit l’agent partent chez le fournisseur du modèle selon le contrat de la CLI choisie (compte Google, Gemini Code Assist, Vertex AI, OpenAI) : c’est ce contrat qui régit leur traitement, pas le kit.
+The kit is a configuration tool. It installs text files (context, commands, skills, agents, guardrails) in the folders of coding agent CLIs already present on the workstation: Gemini CLI, Antigravity CLI, Codex CLI. It provides no model and calls no service during installation, except the check call to the model that `setup` makes with the person's CLI and account (`--no-live` skips it). It processes no business data. The prompts, code and data the agent sees go to the model provider under the contract of the chosen CLI (Google account, Gemini Code Assist, Vertex AI, OpenAI): that contract governs their processing, not the kit.
 
-## Cadres de référence
+## Reference frameworks
 
-| Cadre | Nature | Ce qu’il vise |
+| Framework | Type | What it covers |
 | --- | --- | --- |
-| Règlement européen sur l’IA (AI Act) | règlement, obligatoire dans l’UE | surtout les fournisseurs de modèles et les systèmes à haut risque ; pour tous les déployeurs, une obligation de maîtrise de l’IA par le personnel |
-| NIST AI RMF | cadre volontaire de gestion des risques | quatre fonctions : gouverner, cartographier, mesurer, gérer |
-| ISO/IEC 42001 | norme de système de management de l’IA | certifie une organisation, jamais un outil |
+| EU Artificial Intelligence Regulation (AI Act) | regulation, mandatory in the EU | mainly model providers and high-risk systems; for all deployers, an AI literacy obligation for staff |
+| NIST AI RMF | voluntary risk management framework | four functions: govern, map, measure, manage |
+| ISO/IEC 42001 | AI management system standard | certifies an organization, never a tool |
 
-Un assistant de code n’entre pas, en principe, dans les usages à haut risque de l’AI Act. La qualification dépend de l’usage réel et doit être confirmée par l’organisation.
+A coding assistant does not, in principle, fall under the AI Act's high-risk uses. The classification depends on actual use and must be confirmed by the organization.
 
-## Ce que le kit apporte
+## What the kit provides
 
-| Thème | Ce que fait le kit | Où le vérifier |
+| Topic | What the kit does | Where to check |
 | --- | --- | --- |
-| Supervision humaine | la personne lance chaque commande ; l’agent ne commite, ne pousse, ne déploie et ne lance un `apply` d’infrastructure qu’avec son accord ; la cérémonie (spec, revue complète) monte avec les enjeux | `practices/`, `commands/`, [workflow](workflow.md) |
-| Garde-fous déterministes | refus d’une commande dbt sur un target de production ; refus d’écrire sous des chemins protégés déclarés par le repo ; désactivés par défaut, activés par l’organisation | `runtime/hooks/`, [garde-fous](hooks.md) |
-| Revue | agents de revue en lecture seule (code, sécurité, infrastructure, architecture, SQL, dbt) et agent de doute pour les changements à enjeu | `agents/`, [agents](agents.md) |
-| Permissions | aucun mode qui saute les confirmations ; le kit n’écrit jamais les permissions des CLI ni les approbations de garde-fous de Codex | test `test_invariants.py` |
-| Données sur le poste | aucune télémétrie ; relevé d’usage et frictions lus et écrits en local ; aucun identifiant stocké | [revue d’usage](usage-review.md), `runtime/friction.py` |
-| Authentification | jamais choisie par le kit ; seulement ce que l’organisation déclare dans `overrides.json` | [personnalisation](customization.md) |
-| Traçabilité de l’installation | chaque fichier installé est suivi par empreinte ; sauvegarde avant chaque écriture ; refus d’écraser un fichier modifié à la main | `~/.ai-kit/state.json`, `~/.ai-kit/backups/` |
-| Maîtrise de l’IA par le personnel | parcours « Démarrer », `/guide` qui explique quelle commande et quel niveau de cérémonie choisir, `/learn` et `/explain` pour comprendre un périmètre ou du code | [démarrer](getting-started.md), [outils](tools.md) |
-| Qualité mesurée | évaluations du comportement de l’agent sur des cas fixes, rejouables à chaque changement du kit | `evals/`, [évaluations](evals.md) |
-| Code ouvert | sources lisibles, licence MIT, provenance des skills repris | `LICENSE`, [sources](sources.md) |
+| Human oversight | the person starts each command; the agent commits, pushes, deploys or runs an infrastructure `apply` only with their approval; ceremony matches the stakes (spec, full review) | `practices/`, `commands/`, [workflow](workflow.md) |
+| Deterministic guardrails | blocks a dbt command on a production target; blocks writes under protected paths declared by the repository; disabled by default, enabled by the organization | `runtime/hooks/`, [guardrails](hooks.md) |
+| Review | read-only review agents (code, security, infrastructure, architecture, SQL, dbt) and a doubter agent for high-stakes changes | `agents/`, [agents](agents.md) |
+| Permissions | no mode that skips confirmations; the kit never writes CLI permissions or Codex guardrail approvals | test `test_invariants.py` |
+| Data on the workstation | no telemetry; usage review and frictions read and written locally; no credentials stored | [usage review](usage-review.md), `runtime/friction.py` |
+| Authentication | never chosen by the kit; only what the organization declares in `overrides.json` | [customization](customization.md) |
+| Installation traceability | each installed file is tracked by fingerprint; backup before each write; refuses to overwrite a file edited by hand | `~/.ai-kit/state.json`, `~/.ai-kit/backups/` |
+| AI literacy for staff | "Getting started" path, `/guide` which explains which command and which level of ceremony to choose, `/learn` and `/explain` to understand a scope or code | [getting started](getting-started.md), [tools](tools.md) |
+| Measured quality | evals of agent behavior on fixed cases, replayable on every kit change | `evals/`, [evals](evals.md) |
+| Open code | readable sources, MIT licence, provenance of the reused skills | `LICENSE`, [sources](sources.md) |
 
-## Ce que le kit ne fait pas
+## What the kit does not do
 
-- **Pas de journal des actions de l’agent.** Les CLI tiennent leurs propres journaux de session ; le kit les lit pour le relevé d’usage, sans les conserver ni les centraliser.
-- **Pas de preuve signée des revues.** Une revue par un agent produit un texte, pas une attestation vérifiable.
-- **Pas de contrôle des données envoyées au modèle.** Le kit ne filtre ni le code ni les données que l’agent lit ; les règles du repo (`AGENTS.md`, chemins protégés) guident l’agent, elles ne bloquent pas la lecture.
-- **Pas de gestion de parc.** Le kit ne s’impose pas aux postes, ne remonte rien et ne vérifie pas qui l’a installé.
-- **Pas d’inventaire des modèles.** Le modèle utilisé dépend de la CLI et du compte ; `overrides.json` peut l’imposer, sans le garantir.
+- **No log of agent actions.** The CLIs keep their own session logs; the kit reads them for the usage review, without keeping or centralizing them.
+- **No signed proof of reviews.** A review by an agent produces text, not a verifiable attestation.
+- **No control of data sent to the model.** The kit filters neither the code nor the data the agent reads; the repository rules (`AGENTS.md`, protected paths) guide the agent, they do not block reading.
+- **No fleet management.** The kit is not enforced on workstations, reports nothing and does not check who installed it.
+- **No model inventory.** The model used depends on the CLI and the account; `overrides.json` can set it, without guaranteeing it.
 
-## Ce qui reste à la charge de l’organisation
+## What remains the organization's responsibility
 
-1. Choisir les CLI et les contrats des fournisseurs de modèles, et vérifier ce qu’ils prévoient pour les données (conservation, entraînement, localisation).
-2. Classer les données et les repos : ceux qu’un agent peut lire, ceux qui exigent une revue complète, ceux qui sont exclus.
-3. Valider les pratiques entreprise et d’équipe (`practices/`), proposées comme base.
-4. Activer les garde-fous utiles et déclarer les chemins protégés de chaque repo.
-5. Former le personnel (parcours « Démarrer », pilote), puis suivre l’usage avec la [revue d’usage](usage-review.md).
-6. Si un journal des actions ou une preuve de revue est exigé, l’obtenir de la CLI ou de la plateforme (journaux d’audit du fournisseur, revue de MR obligatoire), le kit ne le fournit pas.
+1. Choose the CLIs and the model provider contracts, and check what they provide for data (retention, training, location).
+2. Classify data and repositories: those an agent can read, those that require a full review, those that are excluded.
+3. Validate the company and team practices (`practices/`), offered as a baseline.
+4. Enable the useful guardrails and declare the protected paths of each repository.
+5. Train staff ("Getting started" path, pilot), then track usage with the [usage review](usage-review.md).
+6. If a log of actions or a proof of review is required, get it from the CLI or the platform (provider audit logs, mandatory merge request (MR) review); the kit does not provide it.

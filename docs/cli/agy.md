@@ -1,59 +1,59 @@
 # Antigravity CLI (agy)
 
-Le kit vise Gemini CLI et Antigravity CLI avec une seule source. Quand `agy` est présent sur le poste (ou le dossier `~/.gemini/config/`), `setup` et `update` installent aussi la sortie Antigravity ; `--target gemini` l’empêche, `--target both` la force avec Gemini, `--target agy` l’installe seule (les couches vont alors dans `~/.ai-kit/context/`).
+The kit targets Gemini CLI and Antigravity CLI from a single source. When `agy` is present on the workstation (or the `~/.gemini/config/` folder exists), `setup` and `update` also install the Antigravity output. `--target gemini` prevents it, `--target both` forces it alongside Gemini, and `--target agy` installs it alone (the layers then go to `~/.ai-kit/context/`).
 
-## Ce qui est partagé sans rien faire
+## What is shared with no extra work
 
-- **Les skills** : agy lit `~/.gemini/skills/`, donc les skills du kit, les playbooks métier et les skills de repo (`.agents/skills/`) sont visibles des deux côtés.
-- **Le contexte du repo** : `AGENTS.md`, `GEMINI.md`, `GLOSSARY.md`, `REVIEW.md`, les `.agents/rules/`.
-- **`30_USER.md`** et les couches du kit, via le plugin ci-dessous.
+- **Skills**: agy reads `~/.gemini/skills/`, so the kit skills, domain playbooks and repository skills (`.agents/skills/`) are visible on both sides.
+- **Repository context**: `AGENTS.md`, `GEMINI.md`, `GLOSSARY.md`, `REVIEW.md`, the `.agents/rules/`.
+- **`30_USER.md`** and the kit layers, through the plugin below.
 
-## Ce que le kit ajoute pour agy
+## What the kit adds for agy
 
-Un plugin `~/.gemini/config/plugins/ai-kit/`, validé par `agy plugin validate` dans `doctor` :
+A plugin `~/.gemini/config/plugins/ai-kit/`, validated by `agy plugin validate` in `doctor`:
 
-| Fichier | Rôle |
+| File | Role |
 | --- | --- |
-| `plugin.json` | nom, description, version du kit |
-| `rules/AGENTS.md` | règles toujours actives qui incluent les quatre couches par chemin (`@[00_kit](~/.gemini/00_KIT.md)`, …, `@[30_user](~/.gemini/30_USER.md)`, ou `~/.ai-kit/context/` sans Gemini) : une seule source, aucune copie |
-| `agents/ai-kit-*.md` | les mêmes agents que Gemini (vérificateur, revue adverse, revue SQL, dbt, code) ; visibles dans agy |
-| `hooks.json` | les deux garde-fous, `enabled` suivant `overrides.json`, charge utile agy (`toolCall.args.CommandLine`) comprise par les scripts |
-| `mcp_config.json` | les MCP activés dans `overrides.json`, quand il y en a |
+| `plugin.json` | name, description, kit version |
+| `rules/AGENTS.md` | always-on rules that include the four layers by path (`@[00_kit](~/.gemini/00_KIT.md)`, …, `@[30_user](~/.gemini/30_USER.md)`, or `~/.ai-kit/context/` without Gemini): a single source, no copy |
+| `agents/ai-kit-*.md` | the same agents as Gemini (verifier, adversarial review, SQL review, dbt, code); visible in agy |
+| `hooks.json` | the two guardrails, `enabled` following `overrides.json`; the scripts understand the agy payload (`toolCall.args.CommandLine`) |
+| `mcp_config.json` | the MCP servers enabled in `overrides.json`, when there are any |
 
-Et des **skills de commande** dans `~/.gemini/skills/` : agy n’a pas de fichiers de commande, mais tout skill est une commande `/<nom>`. Pour chaque commande du profil sans skill homonyme (`intent`, `spec`, `build`, `test`, `review`, `ship`, `diagnose`, `design`, `map`, `learn`, `explain`, `ask`, `audit`), le kit génère un skill du même nom dont le corps est le prompt de la commande. `/guide`, `/retro`, `/triage`, `/research`, `/handoff`, `/wizard` existent déjà comme skills. Dans Gemini, ces skills de commande sont aussi visibles : leur description précise de ne s’activer que sur la commande ou une demande explicite.
+And **command skills** in `~/.gemini/skills/`: agy has no command files, but every skill is a `/<name>` command. For each profile command without a skill of the same name (`intent`, `spec`, `build`, `test`, `review`, `ship`, `diagnose`, `design`, `map`, `learn`, `explain`, `ask`, `audit`), the kit generates a skill of the same name whose body is the command prompt. `/guide`, `/retro`, `/triage`, `/research`, `/handoff`, `/wizard` already exist as skills. In Gemini, these command skills are also visible: their description says to activate only on the command or an explicit request.
 
-Après l’installation, redémarrer agy : un nouveau plugin n’est découvert qu’au démarrage.
+After installation, restart agy: it discovers a new plugin only at startup.
 
-## Vérifié le 25 octobre 2026 sur agy 1.4.7
+## Verified on 25 October 2026 on agy 1.4.7
 
-- `agy plugin validate` passe ; `agy plugin list` montre `ai-kit` avec les agents du profil (6 pour un développeur, 4 pour un analyste), 1 règle, 2 hooks.
-- En mode print, agy cite mot pour mot la section « Priorité entre les couches » de `00_KIT.md` : les inclusions par chemin fonctionnent.
-- Les agents `ai-kit-*` du profil sont listés par agy.
-- `/guide` et `/intent` fonctionnent par les skills de commande ; `/guide` route vers `/diagnose` pour un modèle dbt qui double des lignes.
+- `agy plugin validate` passes; `agy plugin list` shows `ai-kit` with the profile agents (6 for a developer, 4 for an analyst), 1 rule, 2 hooks.
+- In print mode, agy quotes word for word the "Priority between layers" section of `00_KIT.md`: path includes work.
+- agy lists the profile's `ai-kit-*` agents.
+- `/guide` and `/intent` work through the command skills; `/guide` routes to `/diagnose` for a dbt model that duplicates rows.
 
-## Limites connues
+## Known limits
 
-- **Mode print et permissions** : agy abandonne toute la réponse dès qu’un outil demande une permission qu’il ne peut pas poser. Les commandes qui lisent le repo (`/intent`, `/explain`, `/test`) échouent donc en `agy -p` tant que la personne n’a pas validé de règles de lecture dans ses propres réglages agy. En interactif, agy demande la permission et tout fonctionne. Le runner d’évaluations classe ce cas en erreur d’infrastructure, pas en échec de comportement.
-- **Outil d’écriture** : le garde-fou `protected-paths` reconnaît les outils dont le nom contient `write`, `replace` ou `edit` et cherche le chemin dans `TargetFile`, `AbsolutePath`, `file_path` ou `path`. À confirmer sur un vrai appel d’écriture agy.
-- **Champ `tools` des agents** : accepté par le validateur ; son effet exact dans agy n’est pas documenté.
-- **Journaux** : `usage` lit `~/.gemini/antigravity-cli/history.jsonl` (prompts et commandes tapées) ; les activations de skills ne sont pas visibles dans ce fichier.
+- **Print mode and permissions**: agy drops the whole response as soon as a tool asks for a permission it cannot request. Commands that read the repository (`/intent`, `/explain`, `/test`) therefore fail in `agy -p` until the person has approved read rules in their own agy settings. In interactive mode, agy asks for permission and everything works. The evals runner classifies this case as an infrastructure error, not a behavior failure.
+- **Write tool**: the `protected-paths` guardrail recognizes tools whose name contains `write`, `replace` or `edit` and looks for the path in `TargetFile`, `AbsolutePath`, `file_path` or `path`. To be confirmed on a real agy write call.
+- **Agent `tools` field**: accepted by the validator; its exact effect in agy is not documented.
+- **Logs**: `usage` reads `~/.gemini/antigravity-cli/history.jsonl` (prompts and typed commands); skill activations are not visible in this file.
 
-## Authentification : compte ou projet Google Cloud
+## Authentication: Google account or Google Cloud project
 
-Par défaut agy signe avec le compte Google de la personne et consomme son quota individuel ; quand il est épuisé, agy répond « Individual quota reached » (HTTP 429) jusqu’à la réinitialisation. Une organisation peut à la place faire signer agy avec les identifiants applicatifs Google Cloud et facturer un projet : variable d’environnement `AGY_ADC_AUTH=1` dans le shell, identifiants posés par `gcloud auth application-default login`, et projet de quota de ces identifiants (`gcloud auth application-default set-quota-project <projet>`) avec l’API Agent Platform (`aiplatform.googleapis.com`) activée. C’est le projet de quota des identifiants qui compte, pas `GOOGLE_CLOUD_PROJECT`. Exemple, sur un poste qui a déjà fait `gcloud auth application-default login` :
+By default agy signs in with the person's Google account and uses their individual quota. When it runs out, agy answers "Individual quota reached" (HTTP 429) until the reset. An organization can instead have agy sign in with Google Cloud application default credentials and bill a project: set the environment variable `AGY_ADC_AUTH=1` in the shell, create the credentials with `gcloud auth application-default login`, and set the quota project of these credentials (`gcloud auth application-default set-quota-project <project>`) with the Agent Platform API (`aiplatform.googleapis.com`) enabled. The quota project of the credentials is what counts, not `GOOGLE_CLOUD_PROJECT`. Example, on a workstation that has already run `gcloud auth application-default login`:
 
 ```sh
-gcloud auth application-default set-quota-project mon-projet-gcp
-export AGY_ADC_AUTH=1   # dans le profil du shell pour que ce soit permanent
+gcloud auth application-default set-quota-project my-gcp-project
+export AGY_ADC_AUTH=1   # in your shell profile to make it permanent
 agy
 ```
 
-Un 403 « Agent Platform API has not been used in project … » dit que l’API n’est pas activée sur ce projet de quota : `gcloud services enable aiplatform.googleapis.com --project mon-projet-gcp`. Les modèles proposés par `/model` dépendent alors de ce que le projet peut utiliser. Le kit ne règle pas cette variable : elle relève du poste et de l’organisation, comme pour Vertex côté Gemini CLI (`vertex` dans `overrides.json`).
+A 403 "Agent Platform API has not been used in project …" means the API is not enabled on this quota project: `gcloud services enable aiplatform.googleapis.com --project my-gcp-project`. The models offered by `/model` then depend on what the project can use. The kit does not set this variable: it belongs to the workstation and the organization, as with Vertex on the Gemini CLI side (`vertex` in `overrides.json`).
 
-## Permissions : à chaque personne, jamais au kit
+## Permissions: up to each person, never the kit
 
-agy demande l’accord avant une commande shell ou une écriture, et propose de retenir la réponse. Ces règles (`permissions.allow` dans `~/.gemini/antigravity-cli/settings.json`) sont celles du poste et de la personne : elles reflètent ce qu’elle accepte que l’agent fasse chez elle. Le kit ne les écrit pas, ne les lit pas pour les modifier et ne touche jamais à ce fichier ; `update` le laisse intact (vérifié par un test). Une organisation qui veut un socle de règles le fait par sa propre distribution de settings, hors du kit, pour que les choix de chacun ne soient pas écrasés.
+agy asks for approval before a shell command or a write, and offers to remember the answer. These rules (`permissions.allow` in `~/.gemini/antigravity-cli/settings.json`) belong to the workstation and the person: they reflect what the person accepts the agent doing on their machine. The kit does not write them, does not read them to change them and never touches this file; `update` leaves it intact (checked by a test). An organization that wants a baseline set of rules does it through its own settings distribution, outside the kit, so that each person's choices are not overwritten.
 
-## Dépannage
+## Troubleshooting
 
-`doctor` valide le plugin et signale les skills du kit masqués par des copies dans `~/.agents/skills`. Les skills de commande peuvent entrer en collision avec d’anciens skills personnels du même nom (`review`, `diagnose`, `test`…) : les déplacer ou les renommer, `update` refuse d’écraser ce qu’il ne gère pas.
+`doctor` validates the plugin and reports kit skills hidden by copies in `~/.agents/skills`. Command skills can collide with older personal skills of the same name (`review`, `diagnose`, `test`…): move or rename them; `update` refuses to overwrite what it does not manage.

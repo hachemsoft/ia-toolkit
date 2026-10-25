@@ -1,16 +1,16 @@
 ---
 name: java-change
-description: "Développer ou revoir une fonctionnalité Java dans un repo existant (Maven ou Gradle, Spring ou autre). Déclencheurs : ajouter un endpoint, modifier un service Java, corriger un bug Spring, migrer une dépendance, relire ce code Java."
+description: "Develop or review a Java feature in an existing repo (Maven or Gradle, Spring or other). Triggers: add an endpoint, modify a Java service, fix a Spring bug, migrate a dependency, review this Java code."
 ---
 
 # java-change
 
-Lire les instructions du repo, le `pom.xml` ou le `build.gradle`, la version de Java et du framework, et deux classes voisines qui font déjà quelque chose de semblable. Suivre leurs patterns : découpage en couches, injection de dépendances, gestion des exceptions, mapping des DTO, logs. Ne pas introduire de bibliothèque, d’annotation ou de style nouveau (Lombok, réactif, records) si le repo ne l’utilise pas déjà. Préserver les contrats publics : signatures d’API, schémas JSON, migrations de base déjà appliquées, propriétés de configuration. Développer selon le skill tdd : test JUnit rouge au niveau le plus bas qui prouve le comportement, code minimal, refactor ; un test d’intégration seulement quand le comportement traverse une frontière (base, HTTP, file de messages). Lancer la commande de vérification du repo (`./mvnw verify`, `./gradlew check` ou celle de `AGENTS.md`) et rapporter sa sortie. Les secrets restent dans la configuration externe, jamais dans le code ni les tests. Décrire la livraison avec le skill mr.
+Read the repo instructions, the `pom.xml` or `build.gradle`, the Java and framework versions, and two neighbouring classes that already do something similar. Follow their patterns: layering, dependency injection, exception handling, DTO mapping, logging. Do not introduce a new library, annotation or style (Lombok, reactive, records) if the repo does not already use it. Preserve public contracts: API signatures, JSON schemas, database migrations already applied, configuration properties. Develop with the tdd skill: a red JUnit test at the lowest level that proves the behaviour, minimal code, refactor; add an integration test only when the behaviour crosses a boundary (database, HTTP, message queue). Run the repo's verification command (`./mvnw verify`, `./gradlew check` or the one in `AGENTS.md`) and report its output. Secrets stay in external configuration, never in code or tests. Describe the delivery with the mr skill.
 
-## Excuses entendues et réponses
-| Excuse | Réponse |
+## Rationalizations and rebuttals
+| Excuse | Rebuttal |
 | --- | --- |
-| « Le build est trop long, je ne le lance pas » | Lancer au moins le module touché (`-pl`, ou la tâche Gradle du sous-projet) et dire ce qui n’a pas été lancé. |
-| « J’ajoute Lombok, ce sera plus court » | Une dépendance nouvelle est une décision d’équipe ; suivre le style du repo. |
-| « Je mocke tout, c’est plus rapide » | Un mock par frontière externe ; la logique métier se teste avec de vrais objets. |
-| « Je renomme ce champ JSON pendant que j’y suis » | C’est un changement de contrat ; il se décide et se versionne à part. |
+| "The build is too long, I won't run it" | Run at least the touched module (`-pl`, or the subproject's Gradle task) and say what was not run. |
+| "I'll add Lombok, it will be shorter" | A new dependency is a team decision; follow the repo's style. |
+| "I'll mock everything, it's faster" | One mock per external boundary; test business logic with real objects. |
+| "I'll rename this JSON field while I'm at it" | That is a contract change; decide and version it separately. |

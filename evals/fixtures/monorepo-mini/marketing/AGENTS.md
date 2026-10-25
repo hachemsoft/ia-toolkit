@@ -1,3 +1,3 @@
 # marketing
 
-Modèles de campagnes. `roi_campagnes` dépend du mart finance `marge_mensuelle`.
+Campaign models. `roi_campagnes` depends on the finance mart `marge_mensuelle`.

@@ -3,7 +3,7 @@
     "path": "skills/internal/common/grilling",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
-    "description": "Challenger un plan, une décision ou une idée par rounds de questions avant de la mettre en œuvre.",
+    "description": "Challenge a plan, a decision or an idea through rounds of questions before implementing it.",
     "category": "workflow",
     "tier": "core"
   },
@@ -11,7 +11,7 @@
     "path": "skills/internal/common/codebase-design",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
-    "description": "Vocabulaire des modules profonds : interface, couture, profondeur ; conception d’interface en plusieurs variantes.",
+    "description": "Vocabulary of deep modules: interface, seam, depth; interface design in several variants.",
     "category": "reference",
     "tier": "optional"
   },
@@ -19,7 +19,7 @@
     "path": "skills/internal/common/prototype",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
-    "description": "Prototype jetable pour trancher une question de conception, logique ou interface.",
+    "description": "Throwaway prototype to settle a design, logic or interface question.",
     "category": "workflow",
     "tier": "optional"
   },
@@ -27,7 +27,7 @@
     "path": "skills/internal/common/domain-modeling",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
-    "description": "Glossaire du projet (GLOSSARY.md) et décisions d’architecture (ADR).",
+    "description": "Project glossary (GLOSSARY.md) and architecture decisions (ADRs).",
     "category": "reference",
     "tier": "core"
   },
@@ -35,7 +35,7 @@
     "path": "skills/internal/common/tdd",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
-    "description": "Développement test-first : rouge, vert, refactor ; tests d’intégration privilégiés.",
+    "description": "Test-first development: red, green, refactor; integration tests preferred.",
     "category": "workflow",
     "tier": "core"
   },
@@ -43,7 +43,7 @@
     "path": "skills/internal/common/diagnosing-bugs",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
-    "description": "Boucle de diagnostic pour bugs difficiles et régressions de performance : reproduire, réduire, hypothèse, instrumenter, corriger.",
+    "description": "Diagnosis loop for hard bugs and performance regressions: reproduce, minimize, hypothesize, instrument, fix.",
     "category": "workflow",
     "tier": "core"
   },
@@ -51,7 +51,7 @@
     "path": "skills/internal/common/writing-for-agents",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
-    "description": "Rédiger des documents destinés aux agents : skills, AGENTS.md, docs de repo.",
+    "description": "Write documents intended for agents: skills, AGENTS.md, repo docs.",
     "category": "reference",
     "tier": "core"
   },
@@ -60,7 +60,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "needs_agents": true,
-    "description": "Recherche sur sources primaires, consignée dans un fichier Markdown du repo, déléguée à un agent en arrière-plan.",
+    "description": "Research on primary sources, recorded in a Markdown file in the repo, delegated to a background agent.",
     "category": "tool",
     "tier": "optional"
   },
@@ -68,14 +68,14 @@
     "path": "skills/internal/common/mr",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
-    "description": "Rédiger la description d’une merge request : résumé visuel, preuves, risque de fusion.",
+    "description": "Write a merge request description: visual summary, evidence, merge risk.",
     "category": "workflow",
     "tier": "core"
   },
   "guide": {
     "path": "skills/internal/common/guide",
     "origin": "internal",
-    "description": "Quelle commande, quel outil et quel niveau de cérémonie pour la situation : routeur du kit.",
+    "description": "Which command, which tool and what level of ceremony for the situation: kit router.",
     "category": "tool",
     "tier": "core"
   },
@@ -86,7 +86,7 @@
     "requires": [
       "grilling"
     ],
-    "description": "Entretien serré pour affûter un plan, sans dépôt ni trace écrite.",
+    "description": "Tight interview to sharpen a plan, with no repo and no written record.",
     "category": "workflow",
     "tier": "optional"
   },
@@ -98,7 +98,7 @@
       "grilling",
       "domain-modeling"
     ],
-    "description": "Entretien serré qui alimente GLOSSARY.md et les ADR au fil des réponses ; point d’entrée du flux principal.",
+    "description": "Tight interview that feeds GLOSSARY.md and the ADRs as answers come in; entry point of the main flow.",
     "category": "workflow",
     "tier": "core"
   },
@@ -106,7 +106,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/to-questionnaire",
-    "description": "Transformer une décision qu’on ne peut pas trancher seul en questionnaire pour quelqu’un d’autre.",
+    "description": "Turn a decision you cannot make alone into a questionnaire for someone else.",
     "category": "tool",
     "tier": "optional"
   },
@@ -114,7 +114,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/to-spec",
-    "description": "Transformer la conversation en spécification publiée sur le gestionnaire de tickets.",
+    "description": "Turn the conversation into a specification published on the ticket tracker.",
     "category": "workflow",
     "tier": "profile"
   },
@@ -125,7 +125,7 @@
     "requires": [
       "to-spec"
     ],
-    "description": "Découper un plan ou une spec en tickets traçantes avec leurs dépendances bloquantes.",
+    "description": "Split a plan or a spec into tracer-bullet tickets with their blocking dependencies.",
     "category": "workflow",
     "tier": "profile"
   },
@@ -136,7 +136,7 @@
     "requires": [
       "grilling"
     ],
-    "description": "Cartographier un chantier trop grand pour une session en tickets de décision, résolus un par un.",
+    "description": "Map a piece of work too large for one session into decision tickets, resolved one by one.",
     "category": "workflow",
     "tier": "optional"
   },
@@ -148,7 +148,7 @@
       "tdd",
       "code-review"
     ],
-    "description": "Implémenter un ticket ou une spec, en TDD, puis revue.",
+    "description": "Implement a ticket or a spec, with TDD, then review.",
     "category": "workflow",
     "tier": "core"
   },
@@ -160,7 +160,7 @@
       "implement"
     ],
     "needs_agents": true,
-    "description": "Implémenter toute une spec : tickets lus comme graphe, sous-agents en parallèle, branche d’intégration.",
+    "description": "Implement a whole spec: tickets read as a graph, sub-agents in parallel, integration branch.",
     "category": "workflow",
     "tier": "optional"
   },
@@ -168,7 +168,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/code-review",
-    "description": "Revue d’un diff depuis un point fixe sur deux axes : standards du repo et conformité à la spec.",
+    "description": "Review of a diff from a fixed point on two axes: repo standards and compliance with the spec.",
     "category": "workflow",
     "tier": "core"
   },
@@ -179,7 +179,7 @@
     "requires": [
       "grilling"
     ],
-    "description": "Faire avancer les tickets entrants dans une machine à états de triage jusqu’à être prêts pour un agent.",
+    "description": "Move incoming tickets through a triage state machine until they are ready for an agent.",
     "category": "workflow",
     "tier": "optional"
   },
@@ -187,7 +187,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/retro",
-    "description": "Rétrospective d’une session de travail : améliorer l’environnement de l’agent, pas le code.",
+    "description": "Retrospective of a work session: improve the agent's environment, not the code.",
     "category": "tool",
     "tier": "profile"
   },
@@ -195,7 +195,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/handoff",
-    "description": "Compacter la conversation en document de passation pour un autre agent ou une autre session.",
+    "description": "Compact the conversation into a handover document for another agent or another session.",
     "category": "tool",
     "tier": "optional"
   },
@@ -203,7 +203,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/wait-what",
-    "description": "Reformuler le dernier message qui n’a pas été compris, avec le vocabulaire du glossaire.",
+    "description": "Rephrase the last message that was not understood, using the glossary's vocabulary.",
     "category": "tool",
     "tier": "profile"
   },
@@ -211,7 +211,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/zoom-out",
-    "description": "Prendre de la hauteur : contexte élargi et vue d’ensemble.",
+    "description": "Step back: wider context and big picture.",
     "category": "tool",
     "tier": "profile"
   },
@@ -219,7 +219,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/teach",
-    "description": "Apprendre un périmètre ou un concept sur plusieurs sessions : leçons, quiz et fiches ; matériel partagé dans docs/learn/<sujet>/ du repo, progression personnelle dans ~/.ai-kit/learning/.",
+    "description": "Learn a perimeter or a concept over several sessions: lessons, quizzes and briefs; shared material in the repo's docs/learn/<topic>/, personal progress in ~/.ai-kit/learning/.",
     "category": "tool",
     "tier": "core"
   },
@@ -231,7 +231,7 @@
       "grilling",
       "codebase-design"
     ],
-    "description": "Repérer les modules à approfondir, rapport HTML, puis entretien sur ceux retenus.",
+    "description": "Find the modules to deepen, HTML report, then an interview on the ones selected.",
     "category": "tool",
     "tier": "optional"
   },
@@ -239,7 +239,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/wizard",
-    "description": "Générer un assistant bash interactif pour les étapes que seul un humain peut faire.",
+    "description": "Generate an interactive bash wizard for the steps only a human can perform.",
     "category": "tool",
     "tier": "optional"
   },
@@ -250,7 +250,7 @@
     "requires": [
       "writing-great-skills"
     ],
-    "description": "Créer un skill : structure, divulgation progressive, ressources.",
+    "description": "Create a skill: structure, progressive disclosure, resources.",
     "category": "tool",
     "tier": "optional"
   },
@@ -258,7 +258,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/writing-great-skills",
-    "description": "Référence pour écrire et relire des skills prévisibles.",
+    "description": "Reference for writing and reviewing predictable skills.",
     "category": "reference",
     "tier": "optional"
   },
@@ -266,7 +266,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/setup-workflow",
-    "description": "Configurer un repo pour le flux : gestionnaire de tickets (GitHub, GitLab, local), labels de triage, emplacement du glossaire et des ADR. À lancer une fois par repo.",
+    "description": "Configure a repo for the flow: ticket tracker (GitHub, GitLab, local), triage labels, location of the glossary and the ADRs. Run once per repo.",
     "category": "setup",
     "tier": "core"
   },
@@ -274,7 +274,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/workflow-guide",
-    "description": "Quel skill ou quel flux pour la situation présente : routeur sur l’ensemble des skills.",
+    "description": "Which skill or which flow for the current situation: router across all skills.",
     "category": "tool",
     "tier": "optional"
   },
@@ -285,35 +285,35 @@
       "writing-for-agents",
       "domain-modeling"
     ],
-    "description": "Poser le contexte agent d’un repo, avec confirmation à chaque fichier : AGENTS.md court, GLOSSARY.md pré-rempli, REVIEW.md, règle git des artefacts ; ne copie pas les gabarits, ne crée pas d’ADR vide.",
+    "description": "Set up a repo's agent context, with confirmation for each file: short AGENTS.md, prefilled GLOSSARY.md, REVIEW.md, git rule for artifacts; does not copy the templates, does not create an empty ADR.",
     "category": "setup",
     "tier": "core"
   },
   "python-js-change": {
     "path": "skills/internal/development/python-js-change",
     "origin": "internal",
-    "description": "Développer ou revoir une fonctionnalité Python ou JavaScript dans un repo existant.",
+    "description": "Develop or review a Python or JavaScript feature in an existing repo.",
     "category": "domain",
     "tier": "profile"
   },
   "sql-review": {
     "path": "skills/internal/analytics/sql-review",
     "origin": "internal",
-    "description": "Revoir du SQL BigQuery ou dbt et investiguer des agrégations, doublons ou résultats métier suspects.",
+    "description": "Review BigQuery or dbt SQL and investigate suspicious aggregations, duplicates or business results.",
     "category": "domain",
     "tier": "profile"
   },
   "dbt-model-change": {
     "path": "skills/internal/analytics/dbt-model-change",
     "origin": "internal",
-    "description": "Créer, modifier, tester ou documenter un modèle dbt sur BigQuery.",
+    "description": "Create, modify, test or document a dbt model on BigQuery.",
     "category": "domain",
     "tier": "profile"
   },
   "bigquery-query-review": {
     "path": "skills/internal/analytics/bigquery-query-review",
     "origin": "internal",
-    "description": "Optimiser une requête BigQuery lente ou coûteuse et vérifier scans, partitions, jointures et plan.",
+    "description": "Optimize a slow or expensive BigQuery query and check scans, partitions, joins and plan.",
     "category": "domain",
     "tier": "profile"
   },
@@ -322,66 +322,66 @@
     "origin": "internal",
     "category": "domain",
     "tier": "profile",
-    "description": "Définir un KPI avant de le calculer : grain, population, période, exclusions, source de vérité, propriétaire."
+    "description": "Define a KPI before computing it: grain, population, period, exclusions, source of truth, owner."
   },
   "incremental-replay": {
     "path": "skills/internal/analytics/incremental-replay",
     "origin": "internal",
     "category": "domain",
     "tier": "profile",
-    "description": "Modèle incrémental et son rejeu : clé unique, données tardives, fenêtre de retraitement, idempotence, full refresh."
+    "description": "Incremental model and its replay: unique key, late-arriving data, reprocessing window, idempotence, full refresh."
   },
   "bigquery-cost-review": {
     "path": "skills/internal/analytics/bigquery-cost-review",
     "origin": "internal",
     "category": "domain",
     "tier": "profile",
-    "description": "Coût BigQuery mesuré avant et après : octets, partitions, clustering, slots, fréquence, budget."
+    "description": "BigQuery cost measured before and after: bytes, partitions, clustering, slots, frequency, budget."
   },
   "perimeter-brief": {
     "path": "skills/internal/analytics/perimeter-brief",
     "origin": "internal",
     "category": "domain",
     "tier": "profile",
-    "description": "Fiche HTML d’un périmètre Data depuis un repo dbt, quiz et termes candidats au glossaire ; première leçon de /learn."
+    "description": "HTML brief of a Data perimeter from a dbt repo, quiz and candidate glossary terms; first lesson of /learn."
   },
   "clarify-request": {
     "replaced_by": [
       "grilling"
     ],
-    "description": "Remplacé en 0.2.0 par grilling."
+    "description": "Replaced in 0.2.0 by grilling."
   },
   "debug-systematically": {
     "replaced_by": [
       "diagnosing-bugs"
     ],
-    "description": "Remplacé en 0.2.0 par diagnosing-bugs."
+    "description": "Replaced in 0.2.0 by diagnosing-bugs."
   },
   "verify-change": {
     "replaced_by": [
       "tdd",
       "mr"
     ],
-    "description": "Remplacé en 0.2.0 par tdd et mr."
+    "description": "Replaced in 0.2.0 by tdd and mr."
   },
   "java-change": {
     "path": "skills/internal/development/java-change",
     "origin": "internal",
-    "description": "Développer ou revoir une fonctionnalité Java dans un repo existant (Maven ou Gradle, Spring ou autre).",
+    "description": "Develop or review a Java feature in an existing repo (Maven or Gradle, Spring or other).",
     "category": "domain",
     "tier": "profile"
   },
   "infra-change": {
     "path": "skills/internal/operations/infra-change",
     "origin": "internal",
-    "description": "Préparer ou revoir un changement d’infrastructure ou de livraison : Terraform, Kubernetes, Helm, pipeline CI/CD, Dockerfile, configuration cloud.",
+    "description": "Prepare or review an infrastructure or delivery change: Terraform, Kubernetes, Helm, CI/CD pipeline, Dockerfile, cloud configuration.",
     "category": "domain",
     "tier": "profile"
   },
   "architecture-decision": {
     "path": "skills/internal/architecture/architecture-decision",
     "origin": "internal",
-    "description": "Instruire et documenter une décision d’architecture (ADR) : options, critères, conséquences, réversibilité.",
+    "description": "Investigate and document an architecture decision (ADR): options, criteria, consequences, reversibility.",
     "category": "domain",
     "tier": "profile"
   }

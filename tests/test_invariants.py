@@ -1,6 +1,6 @@
-"""Invariants du kit : règles de sécurité et de comportement qu'aucun changement ne doit casser.
+"""Kit invariants: safety and behaviour rules that no change may break.
 
-Chaque test correspond à une règle écrite dans la doc (README, docs/cli/*, docs/hooks.md) ou dans les principes du projet.
+Each test matches a rule written in the docs (README, docs/cli/*, docs/hooks.md) or in the project principles.
 """
 import contextlib
 import io
@@ -43,21 +43,21 @@ class InvariantTests(unittest.TestCase):
         self.home.mkdir()
 
     def test_no_permission_bypass_in_configuration(self):
-        """Jamais de mode qui saute les confirmations (yolo, skip-permissions, approbation automatique)."""
+        """Never a mode that skips confirmations (yolo, skip-permissions, automatic approval)."""
         install(self.home, overrides={'hooks': {'dbt-prod-guard': True, 'protected-paths': True}})
         forbidden = re.compile(r'yolo|skip-permissions|dangerously|bypass|approval[-_]?(mode|policy)\s*=\s*"?never', re.I)
         for path, text in config_texts(self.home):
             self.assertIsNone(forbidden.search(text), str(path))
 
     def test_codex_hook_trust_left_to_user(self):
-        """Les hooks Codex ne tournent qu'après approbation dans Codex : le kit n'écrit jamais d'approbation."""
+        """Codex hooks only run after approval in Codex: the kit never writes an approval."""
         install(self.home, overrides={'hooks': {'dbt-prod-guard': True}})
         config = (self.home/'.codex/config.toml').read_text(encoding='utf-8')
         self.assertIn('[[hooks.PreToolUse]]', config)
         self.assertNotRegex(config, r'trusted_hash|trust_level|\btrusted\b')
 
     def test_no_authentication_without_overrides(self):
-        """Sans overrides, le kit ne configure ni l'authentification, ni le modèle, ni de fichier .env."""
+        """Without overrides, the kit configures neither authentication, nor the model, nor a .env file."""
         install(self.home)
         settings = json.loads((self.home/'.gemini/settings.json').read_text(encoding='utf-8'))
         self.assertNotIn('auth', settings.get('security', {}))
@@ -65,7 +65,7 @@ class InvariantTests(unittest.TestCase):
         self.assertFalse((self.home/'.gemini/.env').exists())
 
     def test_writes_only_under_home(self):
-        """Le kit n'écrit jamais dans le dossier courant (un repo de projet) : tout va sous le dossier personnel."""
+        """The kit never writes in the current folder (a project repo): everything goes under the home folder."""
         project = Path(self.temp.name)/'project'
         project.mkdir()
         previous = os.getcwd()
@@ -78,7 +78,7 @@ class InvariantTests(unittest.TestCase):
         self.assertEqual(sorted(p.name for p in Path(self.temp.name).iterdir()), ['home', 'project'])
 
     def test_prune_stays_bounded(self):
-        """Le rangement retire les dossiers vides laissés par une suppression, jamais un dossier racine ni structurant."""
+        """Cleanup removes empty folders left by a deletion, never a root or structural folder."""
         stop = self.home/'.gemini'
         leaf = stop/'skills'/'old-skill'/'refs'
         leaf.mkdir(parents=True)
@@ -91,16 +91,16 @@ class InvariantTests(unittest.TestCase):
         self.assertTrue(outside.is_dir())
 
     def test_merge_request_wording(self):
-        """L'équipe travaille en MR : ce que l'agent lit (commandes, pratiques, gabarits) ne parle pas de pull request."""
+        """The team works with MRs: what the agent reads (commands, practices, templates) does not mention pull requests."""
         files = [p for d in ('commands', 'practices', 'templates') for p in (ROOT/d).rglob('*.md')]
         for path in files:
             for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
                 if 'merge request' in line:
-                    continue  # la règle de traduction elle-même (00_KIT.md)
+                    continue  # the translation rule itself (00_KIT.md)
                 self.assertNotRegex(line, r'(?i:pull request)|\bPRs?\b', f'{path.relative_to(ROOT)}:{number}')
 
     def test_adapters_respect_the_contract(self):
-        """Chaque adaptateur fournit toute l'interface ; les capacités facultatives sont déclarées par leur présence."""
+        """Each adapter provides the whole interface; optional capabilities are declared by their presence."""
         for adapter in ADAPTERS:
             self.assertIsInstance(adapter, Adapter, adapter.__name__)
         self.assertEqual(len({a.NAME for a in ADAPTERS}), len(ADAPTERS))
@@ -110,7 +110,7 @@ class InvariantTests(unittest.TestCase):
         self.assertNotIsInstance(codex, ContextHost)
 
     def test_each_cli_alone_gets_the_whole_profile(self):
-        """Installée seule, chaque CLI reçoit tous les skills et tous les agents du profil."""
+        """Installed alone, each CLI gets all the skills and all the agents of the profile."""
         profile = json.loads((ROOT/'profiles/general.json').read_text(encoding='utf-8'))
         places = {'gemini': ('.gemini/skills', '.gemini/agents'),
                   'agy': ('.gemini/skills', '.gemini/config/plugins/ai-kit/agents'),
@@ -126,16 +126,16 @@ class InvariantTests(unittest.TestCase):
             self.assertEqual(agents, sorted('ai-kit-'+a for a in profile['agents']), target)
 
     def test_profile_table_is_current(self):
-        """La table des profils de docs/getting-started.md est celle que le code installe (scripts/profile_table.py --write)."""
+        """The profile table in docs/getting-started.md is the one the code installs (scripts/profile_table.py --write)."""
         import importlib.util
         spec = importlib.util.spec_from_file_location('profile_table', ROOT/'scripts/profile_table.py')
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         text = module.PAGE.read_text(encoding='utf-8')
-        self.assertEqual(text, module.page_with_table(text), 'lancer python3 scripts/profile_table.py --write')
+        self.assertEqual(text, module.page_with_table(text), 'run python3 scripts/profile_table.py --write')
 
     def test_doc_links_and_anchors_resolve(self):
-        """Chaque lien relatif de la doc mène à un fichier qui existe, et chaque ancre à un titre de ce fichier (règle des ancres GitHub)."""
+        """Each relative link in the docs leads to an existing file, and each anchor to a heading of that file (GitHub anchor rule)."""
         def slug(heading):
             return re.sub(r'[^\w\- ]', '', heading.strip().lower()).replace(' ', '-')
         pages = [ROOT/'README.md', ROOT/'CHANGELOG.md'] + list((ROOT/'docs').rglob('*.md'))
@@ -154,10 +154,10 @@ class InvariantTests(unittest.TestCase):
                     self.assertIn(anchor, headings, f'{page.relative_to(ROOT)} → {link}')
 
     def test_legacy_kit_dir_migrated(self):
-        """Une installation d'avant la 0.19 (~/.ai-toolkit) est renommée en ~/.ai-kit au premier update, sans rien perdre."""
+        """An installation from before 0.19 (~/.ai-toolkit) is renamed to ~/.ai-kit on the first update, without losing anything."""
         install(self.home, overrides={'hooks': {'dbt-prod-guard': True}})
         kit = self.home/'.ai-kit'
-        # Simuler l'ancienne installation : dossier renommé, préfixes de l'état et chemins des déclarations en .ai-toolkit.
+        # Simulate the old installation: folder renamed, state prefixes and declaration paths using .ai-toolkit.
         state = json.loads((kit/'state.json').read_text(encoding='utf-8'))
         for rel in ('.gemini/settings.json', '.codex/config.toml', '.gemini/config/plugins/ai-kit/hooks.json'):
             path = self.home/rel
@@ -166,11 +166,11 @@ class InvariantTests(unittest.TestCase):
                 state['files'][rel] = digest(path.read_bytes())
         _, block, _ = split_block((self.home/'.codex/config.toml').read_text(encoding='utf-8'), CODEX_TOML, 'config.toml')
         state['blocks']['.codex/config.toml'] = digest(block.encode('utf-8'))
-        # Tout chemin du dossier du kit enregistré dans l'état (fichiers, déclarations des garde-fous) porte l'ancien nom.
+        # Every kit folder path recorded in the state (files, guardrail declarations) carries the old name.
         (kit/'state.json').write_text(json.dumps(state).replace('.ai-kit', '.ai-toolkit'), encoding='utf-8')
         os.replace(kit, self.home/'.ai-toolkit')
         with contextlib.redirect_stdout(io.StringIO()):
-            apply('data-developer', self.home, True, IDENTITY, 'all')  # --dry-run : ne renomme rien
+            apply('data-developer', self.home, True, IDENTITY, 'all')  # --dry-run: renames nothing
         self.assertTrue((self.home/'.ai-toolkit').is_dir())
         install(self.home, overrides=None)
         self.assertFalse((self.home/'.ai-toolkit').exists())
@@ -188,7 +188,7 @@ class InvariantTests(unittest.TestCase):
             install(self.home)
 
     def test_files_always_opened_with_an_encoding(self):
-        """Sous Windows, un fichier lu ou écrit sans encodage passe en cp1252 : toujours préciser encoding='utf-8'."""
+        """On Windows, a file read or written without an encoding uses cp1252: always pass encoding='utf-8'."""
         import ast
         sources = [p for d in ('installer', 'runtime', 'scripts', 'evals', 'tests') for p in (ROOT/d).rglob('*.py')]
         missing = []

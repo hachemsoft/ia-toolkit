@@ -1,35 +1,35 @@
-# Identité de la personne connectée
+# Signed-in person's identity
 
-Le kit détecte une identité pour deux usages : écrire un en-tête dans `30_USER.md` à sa création et proposer un profil par défaut. Cette identité est déclarative et confirmée par la personne. Elle ne donne aucun droit et n’est pas une authentification.
+The kit detects an identity for two uses: writing a header in `30_USER.md` when it is created, and proposing a default profile. This identity is declarative and confirmed by the person. It grants no rights and is not authentication.
 
-## Sources, dans l’ordre
+## Sources, in order
 
-| Ordre | Source | Lecture | Limite |
+| Order | Source | Read from | Limit |
 | --- | --- | --- | --- |
-| 1 | compte Google actif de Gemini | `~/.gemini/google_accounts.json`, champ `active` | vide avant connexion ou après déconnexion ; absent en mode clé API ou Vertex |
-| 2 | Git global | `git config --global user.email` et `user.name` | dépend de git et d’une configuration renseignée |
-| 3 | session OS | nom de login | pas un email |
+| 1 | Gemini's active Google account | `~/.gemini/google_accounts.json`, `active` field | empty before sign-in or after sign-out; absent in API key or Vertex mode |
+| 2 | Global Git | `git config --global user.email` and `user.name` | depends on git and a filled-in configuration |
+| 3 | OS session | login name | not an email |
 
-Le nom git complète l’email du compte de la CLI quand les deux existent. Les jetons OAuth ne sont jamais lus.
+The git name completes the CLI account's email when both exist. OAuth tokens are never read.
 
-## Comportement
+## Behavior
 
-- En interactif, `setup` affiche « Identité détectée : … » et attend Entrée pour confirmer, ou un email pour corriger.
-- En non interactif, `--user votre.email@societe` enregistre l’identité ; sans cette option, rien n’est enregistré et une ligne le signale.
-- `update` conserve l’identité enregistrée, sauf `--user`.
-- L’état (`~/.ai-kit/state.json`) garde `user.email`, `user.name`, `user.source`.
-- L’en-tête « Personne : … » est écrit dans `30_USER.md` seulement à sa création. Le corriger à la main ensuite.
+- In interactive mode, `setup` shows "Detected identity: …" and waits for Enter to confirm, or an email to correct it.
+- In non-interactive mode, `--user your.email@company` saves the identity; without this option nothing is saved and a line says so.
+- `update` keeps the saved identity, unless `--user` is given.
+- The state (`~/.ai-kit/state.json`) keeps `user.email`, `user.name`, `user.source`.
+- The "Person: …" header is written in `30_USER.md` only when the file is created. Fix it by hand afterwards.
 
-## Profil proposé
+## Proposed profile
 
-`profiles/directory.json` associe des emails à un profil. Si l’email détecté y figure, ce profil est proposé par défaut au prompt, ou retenu en non interactif quand `--profile` est absent. `--profile` l’emporte toujours. Garder ce fichier minimal : il est distribué avec le kit.
+`profiles/directory.json` maps emails to a profile. If the detected email is listed, that profile is proposed by default at the prompt, or selected in non-interactive mode when `--profile` is absent. `--profile` always wins. Keep this file minimal: it ships with the kit.
 
-## Contrôles de doctor
+## Doctor checks
 
-- Identité enregistrée et sa source.
-- Écart entre le compte actif de la CLI et l’email enregistré.
-- Compte actif de la CLI hors des domaines listés dans `profiles/directory.json` (`allowed_domains`). Liste vide : aucun contrôle.
+- Saved identity and its source.
+- Mismatch between the CLI's active account and the saved email.
+- CLI active account outside the domains listed in `profiles/directory.json` (`allowed_domains`). Empty list: no check.
 
-## Hors périmètre
+## Out of scope
 
-Le kit ne force pas le type d’authentification de la CLI, ne bloque pas l’installation sur l’identité et ne lit pas les jetons. L’accès aux données reste contrôlé par l’IT et Google Workspace.
+The kit does not force the CLI's authentication type, does not block installation based on identity and does not read tokens. Data access stays controlled by IT and Google Workspace.

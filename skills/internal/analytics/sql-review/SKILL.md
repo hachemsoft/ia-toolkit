@@ -1,19 +1,19 @@
 ---
 name: sql-review
-description: "Revoir du SQL BigQuery ou dbt et investiguer des agrégations, doublons ou résultats métier suspects. Déclencheurs : le chiffre est faux, doublons, total qui ne colle pas, relire cette requête, jointure qui multiplie, NULL inattendus."
+description: "Review BigQuery or dbt SQL and investigate suspicious aggregations, duplicates or business results. Triggers: the number is wrong, duplicates, total that doesn't add up, review this query, join that multiplies rows, unexpected NULLs."
 ---
 
 # sql-review
 
-Identifier le grain de chaque CTE et de la sortie. Vérifier les clés et la cardinalité avant/après chaque jointure ; mesurer les multiplications et ne pas masquer un défaut avec DISTINCT. Contrôler NULL, dénominateurs nuls, fuseaux, bornes temporelles, déduplication et données tardives. Vérifier les exclusions avec la définition métier du projet. Proposer des contrôles de volumes, unicité, totaux et cas limites. Distinguer défaut certain et hypothèse à confirmer ; pour un résultat faux dont la cause n’est pas évidente, suivre la boucle du skill diagnosing-bugs avec une requête d’assertion comme signal. Présenter les corrections SQL et les validations sans lancer d’opération destructive.
+Identify the grain of each CTE and of the output. Check keys and cardinality before and after each join; measure row multiplication and do not hide a defect with DISTINCT. Check NULLs, zero denominators, time zones, time boundaries, deduplication and late-arriving data. Check exclusions against the project's business definition. Propose checks on volumes, uniqueness, totals and edge cases. Distinguish a certain defect from a hypothesis to confirm; for a wrong result whose cause is not obvious, follow the loop of the diagnosing-bugs skill with an assertion query as the signal. Present SQL fixes and validations without running any destructive operation.
 
-## Excuses entendues et réponses
-| Excuse | Réponse |
+## Rationalizations and rebuttals
+| Excuse | Rebuttal |
 | --- | --- |
-| « Un DISTINCT règle les doublons » | Il les masque ; trouver la jointure qui multiplie et corriger son grain. |
-| « Le total est à peu près bon » | À peu près n’est pas une validation ; comparer au chiffre de référence sur une période connue. |
-| « Les NULL sont rares, on ignore » | Rares dans le numérateur, catastrophiques dans un dénominateur ; les traiter explicitement. |
-| « On a toujours utilisé cette date » | Événement, enregistrement et traitement divergent sur les données tardives ; vérifier laquelle la définition veut. |
+| "A DISTINCT fixes the duplicates" | It hides them; find the join that multiplies rows and fix its grain. |
+| "The total is roughly right" | Roughly is not a validation; compare to the reference figure over a known period. |
+| "NULLs are rare, we ignore them" | Rare in the numerator, catastrophic in a denominator; handle them explicitly. |
+| "We've always used this date" | Event, record and processing dates diverge on late-arriving data; check which one the definition requires. |
 
-## Interdits
-Pas de DISTINCT pour cacher une multiplication. Pas de correction proposée sans la requête d’assertion qui la prouve. Aucune opération d’écriture ou de suppression sur les tables : la revue lit, propose, et c’est la personne qui applique.
+## Forbidden
+No DISTINCT to hide row multiplication. No fix proposed without the assertion query that proves it. No write or delete operation on tables: the review reads and proposes, and the person applies.

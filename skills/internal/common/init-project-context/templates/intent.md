@@ -1,18 +1,18 @@
-# Intent: <titre court, dans les mots de la personne qui a l’idée>
+# Intent: <short title, in the words of the person who had the idea>
 
 Author: <name> · Date: <YYYY-MM-DD> · Origin: idea | ticket <link> | incident <link> · Local working note (not committed by default)
 
 ## Problem
-<Ce qu’on ne peut pas faire aujourd’hui, qui est touché, ce que ça coûte. Faits, pas solution.>
+<What cannot be done today, who is affected, what it costs. Facts, not a solution.>
 
 ## Proposed outcome
-<Ce qui change pour les utilisateurs quand c’est fait. Observable.>
+<What changes for users when it is done. Observable.>
 
 ## Affected users and systems
-<Équipes, utilisateurs, sources, modèles, datasets, API concernés.>
+<Teams, users, sources, models, datasets, APIs involved.>
 
 ## Constraints
-<Ce qui ne bouge pas : habilitations, données personnelles, périmètres, délais, outils imposés.>
+<What does not move: access rights, personal data, scopes, deadlines, mandated tools.>
 
 ## Open questions
-- <Question qui bloque l’acceptation, et qui peut y répondre.>
+- <Question that blocks acceptance, and who can answer it.>

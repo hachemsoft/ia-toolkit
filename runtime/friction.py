@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Note une friction en une ligne dans ~/.ai-kit/frictions.jsonl, localement. Installé par le kit, appelé par /friction.
+"""Logs a friction as one line in ~/.ai-kit/frictions.jsonl, locally. Installed by the kit, called by /friction.
 
-Usage : python3 ~/.ai-kit/bin/friction.py --category <command|skill|guardrail|docs|tool|auth|other> [--command <nom>] [--cli gemini|agy] --text "<une phrase>"
-Le contexte (version du kit, profil, système) est ajouté automatiquement. Rien n'est envoyé ; le relevé d'usage
-compte ces lignes et `usage --json` les exporte pour la revue d'usage.
+Usage: python3 ~/.ai-kit/bin/friction.py --category <command|skill|guardrail|docs|tool|auth|other> [--command <name>] [--cli gemini|agy] --text "<one sentence>"
+The context (kit version, profile, system) is added automatically. Nothing is sent; the usage report
+counts these lines and `usage --json` exports them for the usage review.
 """
 import argparse
 import json
@@ -18,7 +18,7 @@ def kit_dir():
     return os.path.join(os.path.expanduser('~'), '.ai-kit')
 
 def context():
-    """Version du kit et profil lus dans l'état d'installation, système du poste."""
+    """Kit version and profile read from the installation state, machine operating system."""
     info = {'os': {'Darwin': 'mac', 'Windows': 'windows'}.get(platform.system(), platform.system().lower())}
     try:
         with open(os.path.join(kit_dir(), 'state.json'), encoding='utf-8') as handle:
@@ -43,21 +43,21 @@ def record(category, text, command='none', cli='unknown', source='person'):
 def main(argv=None):
     for stream in (sys.stdout, sys.stderr):
         try:
-            stream.reconfigure(errors='replace')  # console qui ne connaît pas un caractère : le remplacer plutôt que planter
+            stream.reconfigure(errors='replace')  # console that cannot encode a character: replace it rather than crash
         except (AttributeError, ValueError):
             pass
-    parser = argparse.ArgumentParser(description='Noter une friction, localement.')
+    parser = argparse.ArgumentParser(description='Log a friction, locally.')
     parser.add_argument('--category', required=True, choices=CATEGORIES)
-    parser.add_argument('--command', default='none', help='commande du kit en cours, ou none')
+    parser.add_argument('--command', default='none', help='current kit command, or none')
     parser.add_argument('--cli', default='unknown', choices=('gemini', 'agy', 'unknown'))
-    parser.add_argument('--text', required=True, help='une phrase, sans secret ni texte de prompt')
+    parser.add_argument('--text', required=True, help='one sentence, no secret and no prompt text')
     args = parser.parse_args(argv)
     text = ' '.join(args.text.split())
     if not text or len(text) > 300:
-        print('Le texte doit faire entre 1 et 300 caractères.', file=sys.stderr)
+        print('The text must be between 1 and 300 characters.', file=sys.stderr)
         return 2
     path, entry = record(args.category, text, args.command, args.cli)
-    print('Friction notée (' + entry['category'] + ', /' + entry['command'] + ') dans ' + path + ' ; rien n’est envoyé.')
+    print('Friction logged (' + entry['category'] + ', /' + entry['command'] + ') in ' + path + '; nothing is sent.')
     return 0
 
 if __name__ == '__main__':

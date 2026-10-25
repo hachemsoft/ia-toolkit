@@ -1,9 +1,9 @@
-﻿# Compatible Windows PowerShell 5.1 et PowerShell 7.
+﻿# Compatible with Windows PowerShell 5.1 and PowerShell 7.
 $ErrorActionPreference = 'Stop'
 $kitRoot = Split-Path -Parent $PSScriptRoot
 $kitArguments = @($args)
 if ($kitArguments.Count -eq 0) { $kitArguments = @('setup') }
-# Le dossier courant reste celui de l'utilisateur : un chemin relatif (--json, --home) se résout chez lui, pas dans le kit.
+# The current folder stays the user's: a relative path (--json, --home) resolves there, not in the kit.
 $previousPythonPath = $env:PYTHONPATH
 $env:PYTHONPATH = if ($previousPythonPath) { "$kitRoot;$previousPythonPath" } else { $kitRoot }
 try {
@@ -14,7 +14,7 @@ try {
     } elseif (Get-Command python3 -ErrorAction SilentlyContinue) {
         & python3 -m installer @kitArguments
     } else {
-        throw 'Python introuvable. Demander au support IT de rendre Python accessible dans le terminal.'
+        throw 'Python not found. Ask IT support to make Python available in the terminal.'
     }
     $kitExitCode = $LASTEXITCODE
 } finally {

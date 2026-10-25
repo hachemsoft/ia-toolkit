@@ -1,53 +1,53 @@
-# <Nom du projet>
+# <Project name>
 
-<Une ou deux phrases : le périmètre métier de ce repo et pourquoi il existe.>
+<One or two sentences: the business scope of this repo and why it exists.>
 
 ## Language
 
 **Grain**:
-Ce que représente une ligne d’une table ou d’un résultat, énoncé avant toute jointure ou agrégation.
-_Avoid_: granularité, niveau de détail
+What one row of a table or result represents, stated before any join or aggregation.
+_Avoid_: granularity, level of detail
 
-**Clé**:
-Colonne ou combinaison de colonnes qui identifie une ligne au grain déclaré.
-_Avoid_: identifiant, id technique
+**Key**:
+Column or combination of columns that identifies a row at the declared grain.
+_Avoid_: identifier, technical id
 
 **Source**:
-Donnée telle que livrée par le système d’origine, sans transformation.
-_Avoid_: raw, brut, landing
+Data as delivered by the originating system, without transformation.
+_Avoid_: raw, landing
 
 **Staging**:
-Première couche de transformation : renommage, typage, nettoyage léger, grain inchangé.
-_Avoid_: stg, préparation
+First transformation layer: renaming, typing, light cleaning, grain unchanged.
+_Avoid_: stg, preparation
 
-**Intermédiaire**:
-Transformation métier réutilisée par plusieurs marts.
-_Avoid_: int, couche technique
+**Intermediate**:
+Business transformation reused by several marts.
+_Avoid_: int, technical layer
 
 **Mart**:
-Table finale destinée à un usage : reporting, exposition, modèle. Grain documenté.
-_Avoid_: datamart, table finale, vue métier
+Final table intended for a use: reporting, exposure, model. Grain documented.
+_Avoid_: datamart, final table, business view
 
 **Dimension**:
-Attributs descriptifs d’une entité, reliés aux faits par une clé.
-_Avoid_: référentiel, table de référence
+Descriptive attributes of an entity, linked to facts by a key.
+_Avoid_: reference data, lookup table
 
-**Fait**:
-Mesures au grain d’un événement, reliées aux dimensions.
-_Avoid_: table de faits, transactions
+**Fact**:
+Measures at the grain of an event, linked to dimensions.
+_Avoid_: fact table, transactions
 
 **Partition**:
-Découpage physique d’une table par une colonne, filtrée pour réduire les octets lus.
+Physical split of a table by a column, filtered to reduce bytes read.
 _Avoid_: shard, segment
 
 **Clustering**:
-Tri physique par colonnes au sein d’une table, utile aux filtres et jointures fréquents.
-_Avoid_: index, tri
+Physical sorting by columns within a table, useful for frequent filters and joins.
+_Avoid_: index, sort
 
-**Incrémental**:
-Traitement des seules nouvelles données selon une clé et une règle de fraîcheur.
+**Incremental**:
+Processing of new data only, according to a key and a freshness rule.
 _Avoid_: delta, append
 
-**Rejeu**:
-Reconstruction d’une période de données ; son comportement se définit avant de choisir l’incrémental.
-_Avoid_: backfill, full refresh (ce dernier désigne la commande, pas l’intention)
+**Replay**:
+Rebuilding a period of data; its behaviour is defined before choosing incremental.
+_Avoid_: backfill, full refresh (the latter names the command, not the intent)

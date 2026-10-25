@@ -1,44 +1,44 @@
-# Pilote : procédure
+# Pilot: procedure
 
-Objectif : corriger le kit sur des tickets réels avant de l’ouvrir à toute l’équipe, et vérifier que personne n’a besoin d’aide pour démarrer. Un petit groupe suffit, par exemple deux analystes et un développeur, pendant une à deux semaines. Le choix des personnes et des dates appartient à l’organisation.
+Goal: fix the kit on real tickets before opening it to the whole team, and check that nobody needs help to get started. A small group is enough, for example two analysts and one developer, for one to two weeks. The choice of people and dates belongs to the organization.
 
-## Jour 1, par personne (quinze minutes)
+## Day 1, per person (fifteen minutes)
 
-1. Récupérer le kit : `git clone <url du dépôt> ai-kit` dans `Documents` (sans git : « Télécharger ZIP » sur la page du dépôt, puis extraire).
-2. Si l’organisation impose un mode d’authentification (Code Assist avec projet, Vertex AI) ou un modèle, écrire la clé correspondante dans `~/.ai-kit/overrides.json` avant l’étape suivante ; voir [personnalisation › Authentification et modèle](customization.md#authentification-et-modèle). Sinon, rien à faire.
-3. Dans ce dossier : `sh scripts/bootstrap.sh` (Mac) ou `.\scripts\bootstrap.ps1` (Windows). Confirmer l’identité, choisir le profil. L’installation se termine par un appel réel au modèle : si ce n’est pas vert, suivre le remède affiché, ne pas appeler.
-4. Ouvrir son repo habituel, lancer sa CLI (`gemini`, `agy` ou `codex`), taper `/guide je commence par quoi ?` (`$guide` dans Codex).
-5. Première fois dans le repo : « Initialise le contexte du projet », puis `setup-workflow` pour déclarer le gestionnaire de tickets de l’équipe.
+1. Get the kit: `git clone <repository url> ai-kit` in `Documents` (without git: "Download ZIP" on the repository page, then extract).
+2. If the organization requires an authentication mode (Code Assist with a project, Vertex AI) or a model, write the matching key in `~/.ai-kit/overrides.json` before the next step; see [customization › Authentication and model](customization.md#authentication-and-model). Otherwise, nothing to do.
+3. In that folder: `sh scripts/bootstrap.sh` (Mac) or `.\scripts\bootstrap.ps1` (Windows). Confirm your identity, choose the profile. Installation ends with a real call to the model: if it is not green, follow the remedy shown, do not call for help.
+4. Open your usual repo, start your CLI (`gemini`, `agy` or `codex`), type `/guide where do I start?` (`$guide` in Codex).
+5. First time in the repo: "Initialize the project context", then `setup-workflow` to declare the team's ticket tracker.
 
-## Pendant le pilote
+## During the pilot
 
-- Travailler normalement, en passant par les commandes.
-- Quand ça coince : `doctor --live`, puis la page « Ça coince ? », puis un ticket.
-- Fin de chaque session un peu longue : `/retro`, et noter ce qu’il propose.
-- Dans agy, répondre aux demandes de permission : « toujours autoriser » enregistre la règle dans vos propres réglages agy, le kit n’y touche pas.
+- Work normally, going through the commands.
+- When something goes wrong: `doctor --live`, then the "Troubleshooting" page, then a ticket.
+- At the end of each longer session: `/retro`, and note what it proposes.
+- In agy, answer permission requests: "always allow" saves the rule in your own agy settings, and the kit does not touch them.
 
-## Ticket de support, gabarit
+## Support ticket template
 
 ```
-Commande ou action :
-Ce que j’attendais :
-Ce qui s’est passé (sortie copiée) :
-Sortie de doctor --live :
+Command or action:
+What I expected:
+What happened (copied output):
+doctor --live output:
 ```
 
-Chaque ticket est traité par la règle : contrôle `doctor`, ligne de « Ça coince ? », ou cas d’évaluation. Jamais une explication orale répétée.
+Each ticket is handled by the rule: a `doctor` check, a line in "Troubleshooting", or an eval case. Never a repeated verbal explanation.
 
-## Fin de pilote
+## End of pilot
 
-1. `python3 -m installer usage --json <poste>.json` sur chaque poste ; agrégation par l’équipe.
-2. Les cas d’évaluation passés sur chaque CLI depuis un poste pilote.
-3. Revue des tickets : ce qui a été transformé en contrôle, page ou cas.
-4. Décision : ouverture à toute l’équipe confirmée ou non, périmètre des commandes analyste confirmé ou ajusté, première [revue d’usage](usage-review.md) si le relevé a assez de matière.
+1. `python3 -m installer usage --json <workstation>.json` on each workstation; aggregated by the team.
+2. The eval cases run on each CLI from a pilot workstation.
+3. Ticket review: what was turned into a check, a page or a case.
+4. Decision: opening to the whole team confirmed or not, scope of analyst commands confirmed or adjusted, first [usage review](usage-review.md) if the report has enough material.
 
-## Ce que le pilote doit répondre
+## What the pilot must answer
 
-- Un analyste comprend-il `/guide` et `/intent` sans lire la doc ?
-- `doctor --live` suffit-il à régler les pannes d’authentification sans intervention ?
-- Les skills de commande se déclenchent-ils sans qu’on les tape, et est-ce gênant ?
-- Les garde-fous activés gênent-ils le travail normal ?
-- Les demandes de permission d’agy sont-elles comprises et acceptées sans aide ?
+- Does an analyst understand `/guide` and `/intent` without reading the docs?
+- Is `doctor --live` enough to fix authentication failures without intervention?
+- Do command skills trigger without being typed, and is that a problem?
+- Do the enabled guardrails get in the way of normal work?
+- Are agy permission requests understood and accepted without help?

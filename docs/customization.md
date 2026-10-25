@@ -1,25 +1,25 @@
-# Personnalisation
+# Customization
 
-Le dossier utilisateur est celui de Windows ou macOS, pas celui du projet.
+The user folder is the Windows or macOS one, not the project folder.
 
-## Les couches de contexte
+## Context layers
 
-Le kit installe des fichiers courts, chargés par l’agent dans tous vos projets, dans cet ordre. Ils sont dans `~/.gemini/` si Gemini CLI est installé (il ne lit que son dossier), sinon dans `~/.ai-kit/context/` ; détail par CLI : [matrice](cli/matrice.md#ajouter-une-cli).
+The kit installs short files that the agent loads in all your projects, in this order. They live in `~/.gemini/` if Gemini CLI is installed (it only reads its own folder), otherwise in `~/.ai-kit/context/`. Details per CLI: [matrix](cli/matrice.md#add-a-cli).
 
-| Fichier | Propriétaire | Contenu |
+| File | Owner | Content |
 | --- | --- | --- |
-| `00_KIT.md` | kit | profil, règle de priorité entre les couches |
-| `10_COMPANY.md` | kit | pratiques entreprise |
-| `20_TEAM.md` | kit | pratiques d’équipe |
-| `30_USER.md` | vous | langue, style, niveau, domaines, workflow par défaut |
+| `00_KIT.md` | kit | profile, priority rule between layers |
+| `10_COMPANY.md` | kit | company practices |
+| `20_TEAM.md` | kit | team practices |
+| `30_USER.md` | you | language, style, level, domains, default workflow |
 
-Les fichiers du kit sont des sorties générées : les modifier bloque `update`. Tout ce qui vous est propre va dans `30_USER.md`, créé une fois au `setup` et jamais réécrit ensuite. Une modification y prend effet au prochain lancement de la CLI, sans `update`.
+The kit files are generated output: editing them blocks `update`. Everything specific to you goes in `30_USER.md`. `setup` creates it once and never rewrites it. A change takes effect the next time the CLI starts, without `update`.
 
-Règle de priorité, écrite dans `00_KIT.md` : les pratiques s’imposent ; `30_USER.md` ajuste la forme et le workflow ; l’`AGENTS.md` du projet l’emporte sur `30_USER.md` en cas de conflit. L’agent lit les fichiers les uns après les autres, il n’y a pas de surcharge mécanique : c’est la rédaction qui fait la priorité.
+Priority rule, written in `00_KIT.md`: practices are mandatory; `30_USER.md` adjusts form and workflow; the project's `AGENTS.md` wins over `30_USER.md` on conflict. The agent reads the files one after another. There is no mechanical override: the wording sets the priority.
 
-## Le format des rapports
+## Report format
 
-`/build`, `/test`, `/diagnose` et `/review` finissent par un rapport. Pour en changer la forme, ajouter une section `## Report` : dans `30_USER.md` pour soi, dans l’`AGENTS.md` du repo pour l’équipe, qui l’emporte. Sans section, le format par défaut du kit s’applique. Exemple pour un repo Data :
+`/build`, `/test`, `/diagnose` and `/review` end with a report. To change its form, add a `## Report` section: in `30_USER.md` for yourself, in the repo's `AGENTS.md` for the team (which wins). Without a section, the kit's default format applies. Example for a Data repo:
 
 ```markdown
 ## Report
@@ -30,25 +30,25 @@ Règle de priorité, écrite dans `00_KIT.md` : les pratiques s’imposent ; `30
 - What is left, and who must decide it.
 ```
 
-`/build` et `/diagnose` s’arrêtent aussi d’eux-mêmes après trois corrections ratées sur la même vérification, et rapportent ce qu’ils ont essayé au lieu de boucler.
+`/build` and `/diagnose` also stop on their own after three failed fixes on the same check, and report what they tried instead of looping.
 
-## Surcharger par projet
+## Override per project
 
-Une commande du kit se surcharge dans le repo, sous la forme que lit la CLI ([matrice](cli/matrice.md)) ; le projet l’emporte.
+Override a kit command in the repo, in the form the CLI reads ([matrix](cli/matrice.md)). The project wins.
 
-Chaque repo fournit son `AGENTS.md`, lu après les couches globales. Pour y redéfinir une préférence, reprendre le même titre que dans `30_USER.md` (« Langue et style », « Mon workflow par défaut ») et écrire la règle du projet. 
+Each repo provides its own `AGENTS.md`, read after the global layers. To redefine a preference there, reuse the same heading as in `30_USER.md` ("Language and style", "My default workflow") and write the project rule.
 
-## Commandes, skills, agents et MCP
+## Commands, skills, agents and MCP
 
-`~/.ai-kit/overrides.json` : sélection des commandes, skills, agents et MCP. Conserver un JSON valide.
+`~/.ai-kit/overrides.json`: selection of commands, skills, agents and MCP. Keep the JSON valid.
 
-**Commandes.** `extra_commands` ajoute des commandes à celles du profil, avec leurs skills ; `disabled_commands` en retire. Un analyste qui veut `/spec` et `/review` :
+**Commands.** `extra_commands` adds commands to the profile's, with their skills; `disabled_commands` removes some. An analyst who wants `/spec` and `/review`:
 
 ```json
 { "extra_commands": ["spec", "review"] }
 ```
 
-**Skills.** Exemple : un analyste ajoute le skill Python/JS (qui s’appuie sur `codebase-design`, ajouté automatiquement) et désactive le playbook de coût BigQuery :
+**Skills.** Example: an analyst adds the Python/JS skill (which relies on `codebase-design`, added automatically) and disables the BigQuery cost playbook:
 
 ```json
 {
@@ -58,15 +58,15 @@ Chaque repo fournit son `AGENTS.md`, lu après les couches globales. Pour y red�
 }
 ```
 
-Les skills ajoutés doivent exister dans `skills/catalog.json`. Un skill requis par un autre (`requires`) ne peut pas être désactivé seul ; `update` le signale. Un ancien nom (`clarify-request`, `debug-systematically`, `verify-change`) est redirigé vers son remplaçant. Appliquer avec `update` depuis le dossier du kit. Voir [workflow](workflow.md) pour le rôle de chaque skill.
+Added skills must exist in `skills/catalog.json`. A skill required by another one (`requires`) cannot be disabled on its own; `update` reports it. An old name (`clarify-request`, `debug-systematically`, `verify-change`) redirects to its replacement. Apply with `update` from the kit folder. See [workflow](workflow.md) for the role of each skill.
 
-Les réglages propres à la CLI restent éditables dans ses propres fichiers ; le kit préserve les clés existantes. Pour changer une valeur par défaut déjà installée, modifier la valeur dans les réglages de la CLI.
+CLI-specific settings stay editable in the CLI's own files; the kit keeps existing keys. To change a default value already installed, change the value in the CLI settings.
 
-Un skill de projet de même nom peut supplanter le skill global ; utiliser des noms explicites. Les trois façons d’ajouter ou de remplacer un skill (pour soi, pour un repo, pour l’organisation) sont dans [ajouter ou remplacer un skill](extending.md). En cas de modification locale d’un skill géré, update s’arrête : sauvegarder votre variante hors du répertoire géré, puis restaurer le fichier de distribution avant de relancer. Pour une variante permanente, utiliser un autre nom et la gérer au bon niveau.
+A project skill with the same name can override the global skill; use explicit names. The three ways to add or replace a skill (for yourself, for a repo, for the organization) are in [add or replace a skill](extending.md). If a managed skill is modified locally, update stops: save your variant outside the managed directory, then restore the distributed file before running it again. For a permanent variant, use another name and manage it at the right level.
 
-## Exemple complet de `overrides.json`
+## Full `overrides.json` example
 
-Une développeuse qui veut `/ask` et `/handoff`, le prototypage, pas de recherche déléguée, l'agent de doute en plus, le garde-fou dbt actif, un projet Code Assist d'entreprise et un modèle fixé :
+A developer who wants `/ask` and `/handoff`, prototyping, no delegated research, the doubter agent added, the dbt guardrail on, an enterprise Code Assist project and a fixed model:
 
 ```json
 {
@@ -78,33 +78,33 @@ Une développeuse qui veut `/ask` et `/handoff`, le prototypage, pas de recherch
   "disabled_agents": [],
   "mcp": {},
   "hooks": { "dbt-prod-guard": true },
-  "code_assist": { "project": "mon-projet-gcp" },
+  "code_assist": { "project": "my-gcp-project" },
   "model": "gemini-2.5-flash",
   "models": { "fast": "gemini-2.5-flash", "deep": "gemini-2.5-pro" },
   "frictions": "propose"
 }
 ```
 
-`frictions` règle ce que fait l’agent sur les cinq signaux de friction : `propose` (par défaut) il propose `/friction` et vous validez ; `auto` il note lui-même, sans demander, et le dit en une ligne ; `off` il ne dit rien. Dans tous les cas, la ligne reste sur votre poste. `models` donne un modèle par capacité d’agent (`fast`, `deep`), voir [agents](agents.md#profils-de-capacité). Puis `update`. Chaque clé est facultative ; une clé absente ne change rien. Un skill ajouté par `extra_commands` l'est avec ses dépendances ; un skill requis par un autre ne se désactive pas seul, `update` le dit.
+`frictions` sets what the agent does on the five friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. `models` sets a model per agent capability (`fast`, `deep`); see [agents](agents.md#capability-profiles). Then `update`. Every key is optional; a missing key changes nothing. A skill added through `extra_commands` comes with its dependencies; a skill required by another one cannot be disabled on its own, and `update` says so.
 
-## Authentification et modèle
+## Authentication and model
 
-Le kit ne choisit ni le mode d’authentification ni le modèle : chaque organisation a le sien. Sans déclaration dans `overrides.json`, le kit ne touche à aucun réglage d’authentification ni de modèle ; la CLI se configure alors comme d’habitude. Les clés ci-dessous concernent les CLI qui passent par Google Cloud ; leur effet exact par CLI est sur sa page ([Gemini CLI](cli/gemini.md#authentification-et-modèle)). `doctor --live` reconnaît les pannes de chaque mode et donne la clé à écrire.
+The kit chooses neither the authentication mode nor the model: each organization has its own. Without a declaration in `overrides.json`, the kit touches no authentication or model setting; you configure the CLI as usual. The keys below apply to CLIs that go through Google Cloud; their exact effect per CLI is on its page ([Gemini CLI](cli/gemini.md#authentication-and-model)). `doctor --live` recognizes the failures of each mode and gives the key to write.
 
-| Votre situation | Dans `overrides.json` | Ce que fait `update` |
+| Your situation | In `overrides.json` | What `update` does |
 | --- | --- | --- |
-| Connexion Google, compte individuel (Gemini Code Assist gratuit) | rien | rien |
-| Connexion Google, licence Code Assist Standard ou Enterprise (« This account requires setting the GOOGLE_CLOUD_PROJECT… ») | `"code_assist": {"project": "<projet-gcp>"}` | `selectedType` sur `oauth-personal`, `GOOGLE_CLOUD_PROJECT` dans `~/.gemini/.env` |
-| Vertex AI avec identifiants applicatifs (`gcloud auth application-default login`) | `"vertex": {"project": "<projet-gcp>", "location": "<région>"}` | `selectedType` sur `vertex-ai`, `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` dans `~/.gemini/.env` |
-| Clé API AI Studio | rien | rien : `GEMINI_API_KEY` reste à vous |
-| Le modèle par défaut boucle (« Model fallback activated ») ou n’est pas disponible sur votre accès | `"model": "<nom du modèle>"` | `model.name` dans `~/.gemini/settings.json` |
+| Google sign-in, individual account (free Gemini Code Assist) | nothing | nothing |
+| Google sign-in, Code Assist Standard or Enterprise license ("This account requires setting the GOOGLE_CLOUD_PROJECT…") | `"code_assist": {"project": "<gcp-project>"}` | `selectedType` set to `oauth-personal`, `GOOGLE_CLOUD_PROJECT` in `~/.gemini/.env` |
+| Vertex AI with application default credentials (`gcloud auth application-default login`) | `"vertex": {"project": "<gcp-project>", "location": "<region>"}` | `selectedType` set to `vertex-ai`, `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` in `~/.gemini/.env` |
+| AI Studio API key | nothing | nothing: `GEMINI_API_KEY` stays yours |
+| The default model loops ("Model fallback activated") or is not available on your access | `"model": "<model name>"` | `model.name` in `~/.gemini/settings.json` |
 
-Côté agy, l’équivalent de Vertex est la variable d’environnement `AGY_ADC_AUTH=1` (voir [agy](cli/agy.md#authentification--compte-ou-projet-google-cloud)) ; le kit ne la règle pas. `vertex` et `code_assist` s’excluent. La région Vertex vaut `us-central1` si elle est omise. Dans `~/.gemini/.env`, vos lignes sont conservées ; celles du kit sont signalées par un commentaire `# ai-kit :` et retirées si vous supprimez la clé de `overrides.json` (`selectedType` reste alors tel quel, à régler avec `/auth` si besoin). Les identifiants eux-mêmes (connexion Google, `gcloud`, clé) ne passent jamais par le kit.
+For agy, the Vertex equivalent is the environment variable `AGY_ADC_AUTH=1` (see [agy](cli/agy.md#authentication-google-account-or-google-cloud-project)); the kit does not set it. `vertex` and `code_assist` are mutually exclusive. The Vertex region defaults to `us-central1` if omitted. In `~/.gemini/.env`, your lines are kept; the kit's lines are marked with a `# ai-kit :` comment and removed if you delete the key from `overrides.json` (`selectedType` then stays as is; change it with `/auth` if needed). Credentials themselves (Google sign-in, `gcloud`, key) never go through the kit.
 
-## Garde-fous
+## Guardrails
 
-Deux hooks déterministes, désactivés par défaut, s’activent dans `overrides.json` sous `hooks`. Voir [garde-fous](hooks.md).
+Two deterministic hooks, off by default, are enabled in `overrides.json` under `hooks`. See [guardrails](hooks.md).
 
-## Identité
+## Identity
 
-Voir [identité](identity.md) : comment le kit détecte la personne connectée, ce qu’il en fait et ce qu’il n’en fait pas.
+See [identity](identity.md): how the kit detects the signed-in person, what it does with that, and what it does not.

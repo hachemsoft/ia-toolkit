@@ -1,22 +1,22 @@
-# Mon contexte
+# My context
 {identity}
-Ce fichier m’appartient : le kit le crée une fois et ne le réécrit jamais. Les instructions du projet courant l’emportent sur ce fichier.
+This file belongs to me: the kit creates it once and never rewrites it. The current project's instructions take precedence over this file.
 
-## Langue et style
-- Répondre en français, avec des explications concises et concrètes.
-- Signaler les hypothèses qui changent le résultat.
+## Language and style
+- Reply in the language I write in, with concise and concrete explanations.
+- Flag the assumptions that change the result.
 
-## Mon niveau et mes domaines
-- Adapter les détails techniques à ma question : expliquer les choix, pas la syntaxe de base.
-- Domaines : à compléter (BigQuery, dbt, Python…).
+## My level and my domains
+- Adapt technical detail to my question: explain the choices, not the basic syntax.
+- Domains: to fill in (for example Java, Kubernetes, dbt, Python).
 
-## Mon workflow par défaut
-- Me challenger avant un plan qui touche un modèle de données ou un KPI.
-- Diagnostiquer avant de corriger ; tests avant le code quand le projet en a.
+## My default workflow
+- Challenge me before a plan that touches a data model, a public contract or a KPI.
+- Diagnose before fixing; tests before code when the project has them.
 
 ## Report
-<Facultatif. Comment je veux les rapports de fin de /build, /test, /diagnose et /review ; le format du repo l’emporte. Exemple : cinq lignes au plus, un tableau des vérifications, les risques en premier.>
+<Optional. How I want the end-of-run reports of /build, /test, /diagnose and /review; the repo's format takes precedence. Example: five lines at most, a table of checks, risks first.>
 
-## Contexte personnel
-- Projets en cours : à compléter.
-- Outils : à compléter.
+## Personal context
+- Current projects: to fill in.
+- Tools: to fill in.

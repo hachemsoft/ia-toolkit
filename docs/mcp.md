@@ -1,10 +1,10 @@
-# Connexions MCP
+# MCP connections
 
-Les définitions du catalogue sont des fiches de préparation, pas des serveurs opérationnels. Le kit configure chaque CLI à partir des surcharges utilisateur, dans la forme qu’elle lit ([matrice](cli/matrice.md)). L’équipe pourra préremplir ces configurations lors d’une version ultérieure.
+Catalog definitions are preparation sheets, not working servers. The kit configures each CLI from the user overrides (overrides.json), in the form the CLI reads ([matrix](cli/matrice.md)). The team may prefill these configurations in a later version.
 
-## Serveur distant approuvé
+## Approved remote server
 
-Dans `~/.ai-kit/overrides.json`, ajouter une entrée avec `enabled: true` et `server`. Exemple illustratif uniquement : remplacer l’URL par votre serveur approuvé avant activation.
+In `~/.ai-kit/overrides.json`, add an entry with `enabled: true` and `server`. Illustrative example only: replace the URL with your approved server before enabling it.
 
 ```json
 {
@@ -21,24 +21,24 @@ Dans `~/.ai-kit/overrides.json`, ajouter une entrée avec `enabled: true` et `se
 }
 ```
 
-Lancer `update`, puis redémarrer la CLI et vérifier ses serveurs MCP avec sa commande (voir sa page). Selon le serveur, suivre son flux d’authentification. Le kit ne gère ni OAuth ni tokens. Pour un transport SSE approuvé, utiliser `url` au lieu de `httpUrl`.
+Run `update`, then restart the CLI and check its MCP servers with its command (see its page). Depending on the server, follow its authentication flow. The kit handles neither OAuth nor tokens. For an approved SSE transport, use `url` instead of `httpUrl`.
 
-## Serveur local approuvé
+## Approved local server
 
-Le champ `server` peut contenir `command`, `args` et les réglages du serveur. Le kit ne télécharge et n’exécute jamais cette commande. Les exécutables requis doivent être disponibles sur le poste ; privilégier un endpoint distant ou un runtime déjà présent. Une commande comportant un chemin propre à Mac devra être adaptée sur Windows.
+The `server` field can contain `command`, `args` and the server settings. The kit never downloads or runs this command. The required executables must be available on the workstation; prefer a remote endpoint or a runtime already present. A command with a Mac-specific path must be adapted on Windows.
 
-Conserver les références de variables d’environnement exigées par le serveur ; ne pas placer de secrets en clair dans les fichiers. Ne pas activer `trust: true` : ce kit le refuse. Les sauvegardes peuvent contenir votre configuration préexistante ; les traiter comme des fichiers personnels sensibles.
+Keep the environment variable references the server requires; do not put secrets in plain text in the files. Do not enable `trust: true`: this kit rejects it. Backups can contain your previous configuration; treat them as sensitive personal files.
 
-## Désactivation
+## Disabling
 
-Passer `enabled` à false ou retirer l’entrée puis lancer `update`. Seule la connexion préfixée `ai-kit-` et précédemment gérée est retirée. Les autres MCP sont conservés. Si un MCP géré a été modifié directement dans les settings, le kit demande de résoudre le conflit.
+Set `enabled` to false or remove the entry, then run `update`. Only the connection prefixed `ai-kit-` that the kit managed before is removed. Other MCP servers are kept. If a managed MCP was edited directly in the settings, the kit asks you to resolve the conflict.
 
-## BigQuery et dbt
+## BigQuery and dbt
 
-- Faire choisir le serveur et le mode d’authentification par l’équipe plateforme.
-- Limiter réellement les droits via IAM et les outils autorisés ; les instructions ne sont pas un contrôle d’accès.
-- Garder les projets GCP, datasets, targets dbt et budgets spécifiques dans le repo propriétaire.
-- Vérifier la compatibilité des outils dbt avec vos versions et votre mode de déploiement.
-- Tester la découverte, la connexion et les opérations permises depuis chaque CLI sur un environnement de développement.
+- Have the platform team choose the server and the authentication mode.
+- Actually limit rights through IAM and the allowed tools; instructions are not access control.
+- Keep specific GCP projects, datasets, dbt targets and budgets in the owning repo.
+- Check that dbt tools are compatible with your versions and your deployment mode.
+- Test discovery, connection and allowed operations from each CLI on a development environment.
 
-`doctor` contrôle la présence de la configuration et de l’exécutable local s’il y en a un. Il ne fait pas de ping, de requête, de validation d’identité ou de test de permissions.
+`doctor` checks that the configuration exists, and the local executable if there is one. It does not ping, query, validate identity or test permissions.

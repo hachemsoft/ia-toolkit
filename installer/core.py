@@ -1,4 +1,4 @@
-"""Briques communes du kit, sans rien de propre à une CLI : chemins du kit, erreurs, JSON, empreintes, blocs gérés, commandes."""
+"""Shared building blocks of the kit, with nothing specific to a CLI: kit paths, errors, JSON, digests, managed blocks, commands."""
 import hashlib
 import json
 import os
@@ -9,7 +9,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-# Contenu du kit : à côté du code dans le dépôt ou l'archive, sous ai_kit/kit/ quand le kit est installé comme paquet (pipx).
+# Kit content: next to the code in the repo or archive, under ai_kit/kit/ when the kit is installed as a package (pipx).
 _PACKAGE_DIR = Path(__file__).resolve().parent
 ROOT = _PACKAGE_DIR/'kit' if (_PACKAGE_DIR/'kit'/'VERSION').is_file() else _PACKAGE_DIR.parent
 START = '<!-- ai-toolkit:start -->'
@@ -28,9 +28,9 @@ def read_json(path, default=None):
     try:
         value = json.loads(path.read_text(encoding='utf-8-sig'))
     except (ValueError, OSError) as exc:
-        raise KitError('JSON illisible : ' + str(path)) from exc
+        raise KitError('Unreadable JSON: ' + str(path)) from exc
     if not isinstance(value, dict):
-        raise KitError('Objet JSON attendu : ' + str(path))
+        raise KitError('JSON object expected: ' + str(path))
     return value
 
 def json_bytes(value):
@@ -41,13 +41,13 @@ def digest(data):
 
 def safe_id(name):
     if not isinstance(name, str) or not re.fullmatch('[a-z0-9][a-z0-9-]*', name):
-        raise KitError('Identifiant invalide : ' + repr(name))
+        raise KitError('Invalid identifier: ' + repr(name))
     return name
 
 def inside(base, relative):
     path = base / relative
     if not path.resolve().is_relative_to(base.resolve()):
-        raise KitError('Chemin hors périmètre : ' + str(path))
+        raise KitError('Path outside the allowed scope: ' + str(path))
     return path
 
 PROJECT_ID = r'[a-z][a-z0-9-]{4,28}[a-z0-9]'
@@ -58,7 +58,7 @@ def merge_defaults(current, defaults):
             current[key] = value
         elif isinstance(value, dict):
             if not isinstance(current[key], dict):
-                raise KitError('Réglage incompatible : ' + key)
+                raise KitError('Incompatible setting: ' + key)
             merge_defaults(current[key], value)
     return current
 
@@ -66,18 +66,18 @@ def quote_path(path):
     return '"'+str(path)+'"' if os.name == 'nt' else shlex.quote(str(path))
 
 def split_block(text, markers, label):
-    """Texte avant, bloc géré (marqueurs compris) et texte après ; erreur si les marqueurs sont abîmés."""
+    """Text before, managed block (markers included) and text after; error if the markers are damaged."""
     start, end = markers
     if start not in text and end not in text:
         return text, None, ''
     if text.count(start) != 1 or text.count(end) != 1 or text.index(start) > text.index(end):
-        raise KitError('Marqueurs du kit abîmés dans '+label+' : remettre le bloc entre les deux marqueurs ai-kit ou le retirer entièrement, puis update.')
+        raise KitError('Kit markers damaged in '+label+': put the block back between the two ai-kit markers or remove it entirely, then update.')
     before, rest = text.split(start, 1)
     block, after = rest.split(end, 1)
     return before, start+block+end, after
 
 def place_block(text, block, position):
-    """Insère le bloc géré (ou le retire si block est None) en laissant le reste du fichier à l'identique."""
+    """Inserts the managed block (or removes it if block is None), leaving the rest of the file unchanged."""
     rest = text.strip('\n')
     if block is None:
         return rest+'\n' if rest else ''
@@ -86,17 +86,17 @@ def place_block(text, block, position):
     return block+'\n\n'+rest+'\n' if position == 'top' else rest+'\n\n'+block+'\n'
 
 def parse_frontmatter(text):
-    """En-tête YAML minimal (clé: valeur, listes [a, b] ou guillemets JSON) et corps, sans dépendance."""
+    """Minimal YAML front matter (key: value, lists [a, b] or JSON quotes) and body, without dependencies."""
     match = re.match(r'---\n(.*?)\n---\n?(.*)$', text, re.S)
     if not match:
-        raise KitError('En-tête --- attendu.')
+        raise KitError('Front matter --- expected.')
     meta = {}
     for line in match.group(1).splitlines():
         if not line.strip() or line.lstrip().startswith('#'):
             continue
         key, sep, value = line.partition(':')
         if not sep or not re.fullmatch(r'[a-z_]+', key.strip()):
-            raise KitError('Ligne d’en-tête illisible : ' + line)
+            raise KitError('Unreadable front matter line: ' + line)
         value = value.strip()
         if value.startswith('[') and value.endswith(']'):
             meta[key.strip()] = [v.strip().strip('"\'') for v in value[1:-1].split(',') if v.strip()]
@@ -111,7 +111,7 @@ def parse_frontmatter(text):
 COMMANDS_DIR = 'commands'
 
 def load_commands():
-    """Commandes du kit, source pivot commands/<nom>.md : en-tête (name, description, category, stage, skills, artifact, order) et prompt ; chaque adaptateur en dérive sa forme."""
+    """Kit commands, from the pivot source commands/<name>.md: front matter (name, description, category, stage, skills, artifact, order) and prompt; each adapter derives its own form."""
     commands = []
     for path in sorted((ROOT/COMMANDS_DIR).glob('*.md')):
         if path.name.upper() == 'README.MD':
@@ -119,16 +119,16 @@ def load_commands():
         meta, body = parse_frontmatter(path.read_text(encoding='utf-8'))
         name = safe_id(str(meta.get('name', '')))
         if name != path.stem:
-            raise KitError('Commande ' + path.name + ' : name doit valoir ' + path.stem)
+            raise KitError('Command ' + path.name + ': name must be ' + path.stem)
         if not isinstance(meta.get('description'), str) or not meta['description'].strip():
-            raise KitError('Commande ' + name + ' : description manquante.')
+            raise KitError('Command ' + name + ': description missing.')
         if meta.get('category') not in ('workflow', 'tool'):
-            raise KitError('Commande ' + name + ' : category doit être workflow ou tool.')
+            raise KitError('Command ' + name + ': category must be workflow or tool.')
         skills = meta.get('skills', [])
         if not isinstance(skills, list) or not all(isinstance(x, str) for x in skills):
-            raise KitError('Commande ' + name + ' : skills doit être une liste.')
+            raise KitError('Command ' + name + ': skills must be a list.')
         if '"""' in body:
-            raise KitError('Commande ' + name + ' : le prompt ne peut pas contenir trois guillemets.')
+            raise KitError('Command ' + name + ': the prompt cannot contain three double quotes.')
         command = {'name': name, 'description': meta['description'], 'category': meta['category'], 'skills': skills, 'prompt': body.strip() + '\n', 'order': int(meta.get('order', 1000))}
         for key in ('stage', 'artifact'):
             if meta.get(key):
@@ -138,14 +138,14 @@ def load_commands():
     return commands
 
 def command_skill_text(command):
-    """Skill de commande, pour les CLI dont les commandes sont des skills : même nom que la commande, prompt sans {{args}}."""
+    """Command skill, for CLIs whose commands are skills: same name as the command, prompt without {{args}}."""
     body = command['prompt'].replace('{{args}}', 'the text the user typed after the command, or the current conversation')
     description = 'Kit command /'+command['name']+'. '+command['description']+'. Use when the user types /'+command['name']+' or explicitly asks for this step; do not activate on your own for unrelated requests.'
     return '---\nname: '+command['name']+'\ndescription: '+json.dumps(description)+'\n---\n\n'+body.strip()+'\n'
 
 def run_timed(command, timeout, **kwargs):
-    """subprocess.run avec délai qui arrête tout le groupe de processus : une CLI qui se relance elle-même
-    (node --max-old-space-size) et le fils survivrait à un simple kill du parent, en orphelin."""
+    """subprocess.run with a timeout that stops the whole process group: a CLI that relaunches itself
+    (node --max-old-space-size) would leave the child running as an orphan after a plain kill of the parent."""
     popen_kwargs = dict(kwargs)
     if os.name == 'nt':
         popen_kwargs['creationflags'] = popen_kwargs.get('creationflags', 0) | subprocess.CREATE_NEW_PROCESS_GROUP
@@ -174,7 +174,7 @@ def _ts(value):
         return 0
 
 def record_auto_friction(home, diagnostic, cli='unknown'):
-    """Une panne vue par doctor --live devient une friction `auth`, notée sans rien demander, localement (même format que /friction)."""
+    """A failure seen by doctor --live becomes an `auth` friction, logged locally without asking (same format as /friction)."""
     if not (home/'.ai-kit/state.json').is_file():
         return
     try:
