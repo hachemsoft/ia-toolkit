@@ -1,5 +1,8 @@
 # Historique
 
+## Prochaine version
+Page « Conformité et gouvernance » (`docs/conformite.md`) : ce que le kit fait, ne fait pas et laisse à l’organisation, en regard de l’AI Act, du NIST AI RMF et de l’ISO/IEC 42001, sans revendiquer de conformité. Badges dans le README : tests, version, Python, systèmes, licence.
+
 ## 0.19.0
 Un seul nom technique, `ai-kit` : le dossier du kit sur le poste devient `~/.ai-kit` (au lieu de `~/.ai-toolkit`), le dossier de clone conseillé `ai-kit`, l’archive `ai-kit-<version>.zip`. Migration au premier `setup` ou `update` : `~/.ai-toolkit` est renommé et l’état reporté ; les déclarations de garde-fous, les règles agy et les blocs Codex sont réécrits ; si les deux dossiers existent, le kit s’arrête et dit quoi faire ; `doctor` signale un ancien dossier. Marqueurs des blocs Codex sans chemin, anciens marqueurs reconnus.
 Crédits et inspirations nommés : workflow tiré du « AI-native SDLC playbook » d’Anthropic, skills du socle de mattpocock/skills (Matt Pocock, MIT), tables d’excuses et agent de doute d’agent-skills (Addy Osmani), pstack, comparaison des packs par Switch Dimension (README, `docs/sources.md`, `skills/upstream.lock.json`).
