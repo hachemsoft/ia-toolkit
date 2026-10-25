@@ -10,13 +10,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import types
 import uuid
 from datetime import datetime, timezone
 
 from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, KitError, read_json, json_bytes, digest,
                    safe_id, inside, quote_path, load_commands, _ts)
 from .adapters import ADAPTERS
+from .interface import ContextHost, DoctorContext, LiveCheck, Plan
 
 def practice_file(practice_id):
     """Fichier source d'une pratique et nom du fichier de contexte produit."""
@@ -189,12 +189,12 @@ AGENT_INSTRUCTION = ('Lire les instructions et le contexte du repo courant. Ne p
 
 def context_locations():
     """Dossiers possibles du contexte, relatifs au dossier personnel : ceux des CLI qui l'hébergent, puis celui du kit."""
-    return [a.HOME_DIR for a in ADAPTERS if hasattr(a, 'context_dir')] + ['.ai-toolkit/context']
+    return [a.HOME_DIR for a in ADAPTERS if isinstance(a, ContextHost)] + ['.ai-toolkit/context']
 
 def context_location(home, active):
     """Dossier des couches et de 30_USER.md : celui d'une CLI active qui ne lit son contexte que chez elle (context_dir),
     sinon ~/.ai-toolkit/context, que les autres CLI incluent ou recopient."""
-    host = next((a for a in active if hasattr(a, 'context_dir')), None)
+    host = next((a for a in active if isinstance(a, ContextHost)), None)
     return host.context_dir(home) if host else home/'.ai-toolkit'/'context'
 
 TARGETS = {'auto': None, 'gemini': ('gemini',), 'agy': ('agy',), 'codex': ('codex',), 'both': ('gemini', 'agy'), 'all': tuple(a.NAME for a in ADAPTERS)}
@@ -313,13 +313,13 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto'):
             raise KitError('MCP : entrée ou enabled invalide.')
         if entry.get('enabled'):
             enabled_mcp['ai-kit-'+name] = validate_server(entry.get('server'))
-    p = types.SimpleNamespace(
+    p = Plan(
         home=home, kit=kit, state=state, old_files=old_files, overrides=overrides, profile_id=profile_id, profile=profile,
         catalog=catalog, selected=selected, skill_sources=skill_sources, commands=commands, context_names=context_names,
         kit_text=kit_text, practice_names=practice_names, practice_texts=practice_texts, user_file=context_dir/USER_CONTEXT, context_dir=context_dir,
         user_context_text=user_context_text(identity), agents=agents, models=models, hooks_dir=hooks_dir,
         hook_manifest=hook_manifest, enabled_hooks=enabled_hooks, enabled_mcp=enabled_mcp, writes=writes, deletes=deletes,
-        managed_write=managed_write, agent_markdown={}, blocks={}, migrated_prefs=False,
+        managed_write=managed_write, 
         agent_body=lambda definition: practices+'\n'+AGENT_INSTRUCTION+'\n'+definition['instructions']+'\n')
     # Scripts partagés par toutes les CLI : frictions et garde-fous activés.
     managed_write(kit/'bin'/'friction.py', (ROOT/'runtime/friction.py').read_bytes(), 'Script du kit')
@@ -454,7 +454,7 @@ def doctor(home):
         identity = state.get('user', {})
         print('Identité enregistrée : '+(identity.get('email') or identity.get('name') or 'aucune')+(' (source '+identity['source']+')' if identity.get('source') else ''))
         profile = read_json(ROOT/'profiles'/(safe_id(state['profile'])+'.json'))
-        ctx = types.SimpleNamespace(profile=profile, load_commands=load_commands, managed_context_names=managed_context_names,
+        ctx = DoctorContext(profile=profile, load_commands=load_commands, managed_context_names=managed_context_names,
                                     allowed_domains=allowed_domains, domain_allowed=domain_allowed)
         context = state.get('context_dir', '.gemini')
         status((home/context/USER_CONTEXT).is_file(),'Contexte personnel présent : '+context+'/'+USER_CONTEXT)
@@ -481,7 +481,7 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
     if not state:
         raise KitError('Kit absent : lancer setup.')
     catalog = read_json(ROOT/'skills/catalog.json')
-    installed = state.get('installed') or next(a for a in ADAPTERS if hasattr(a, 'installed_from_files')).installed_from_files(state)
+    installed = state.get('installed') or next(a for a in ADAPTERS if isinstance(a, ContextHost)).installed_from_files(state)
     installed_skills, installed_commands, installed_agents = (sorted(installed.get(k, [])) for k in ('skills', 'commands', 'agents'))
     cutoff = datetime.now(timezone.utc).timestamp() - since_days*86400
     commands, skills, agents = Counter(), Counter(), Counter()
@@ -580,7 +580,7 @@ def live_checks(home, announce=False):
     """Appel réel au modèle par chaque CLI installée qui sait le faire (live) ; 1 si l'une ne répond pas."""
     code = 0
     for adapter in ADAPTERS:
-        if hasattr(adapter, 'live') and shutil.which(adapter.COMMAND):
+        if isinstance(adapter, LiveCheck) and shutil.which(adapter.COMMAND):
             if announce:
                 print('Vérification par un appel réel au modèle, '+adapter.LABEL+' (--no-live pour sauter) :')
             code = max(code, adapter.live(home))

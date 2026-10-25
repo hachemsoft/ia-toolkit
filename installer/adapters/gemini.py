@@ -7,6 +7,9 @@ import shutil
 import subprocess
 import tempfile
 
+from typing import Optional
+
+from ..interface import DoctorContext, Plan, Status
 from ..core import (ROOT, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, PROJECT_ID, KitError, read_json, json_bytes,
                     digest, merge_defaults, run_timed,
                     record_auto_friction, _ts)
@@ -201,7 +204,7 @@ def is_managed(rel):
 def active_account(home):
     return gemini_active_account(home)
 
-def install(p):
+def install(p: Plan) -> None:
     """Skills, commandes TOML et agents dans ~/.gemini ; les couches y sont déjà, écrites par l'orchestrateur."""
     gemini = p.home/'.gemini'
     # Bloc hérité des versions 0.0.x dans GEMINI.md : retiré s'il est intact.
@@ -235,7 +238,7 @@ def install(p):
         p.managed_write(gemini/'agents'/(name+'.md'), data, 'Agent')
         p.agent_markdown[name] = data
 
-def finalize(p, active=True):
+def finalize(p: Plan, active: bool = True) -> None:
     """Réglages ~/.gemini/settings.json (défauts, authentification déclarée, couches, garde-fous, MCP) et ~/.gemini/.env."""
     if not active:
         return
@@ -317,7 +320,7 @@ def finalize(p, active=True):
         settings['mcpServers'] = servers
     p.writes[settings_file] = json_bytes(settings)
 
-def summary(p):
+def summary(p: Plan) -> Optional[str]:
     return None
 
 def skill_description_weight(home, skill_names):
@@ -335,7 +338,7 @@ def installed_skills(home, state):
     names = sorted({rel.split('/')[2] for rel in state.get('files',{}) if rel.startswith('.gemini/skills/')})
     return [s for s in names if (home/'.gemini/skills'/s/'SKILL.md').is_file()]
 
-def doctor(home, state, status, ctx):
+def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     """Contrôles propres à Gemini : exécutable, compte actif, contexte personnel, commandes, skills masqués, réglages."""
     status(bool(shutil.which(COMMAND)),'Gemini CLI dans le PATH. Si absent : suivre la procédure IT approuvée.')
     active = gemini_active_account(home)

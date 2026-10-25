@@ -11,7 +11,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from installer.adapters import ADAPTERS, agy, codex, gemini
 from installer.cli import apply, prune_empty_dirs
+from installer.interface import Adapter, ContextHost, LiveCheck
 from installer.core import ROOT
 
 IDENTITY = {'email': 'test@example.org', 'source': 'test'}
@@ -95,6 +97,16 @@ class InvariantTests(unittest.TestCase):
                 if 'merge request' in line:
                     continue  # la règle de traduction elle-même (00_KIT.md)
                 self.assertNotRegex(line, r'(?i:pull request)|\bPRs?\b', f'{path.relative_to(ROOT)}:{number}')
+
+    def test_adapters_respect_the_contract(self):
+        """Chaque adaptateur fournit toute l'interface ; les capacités facultatives sont déclarées par leur présence."""
+        for adapter in ADAPTERS:
+            self.assertIsInstance(adapter, Adapter, adapter.__name__)
+        self.assertEqual(len({a.NAME for a in ADAPTERS}), len(ADAPTERS))
+        self.assertIsInstance(gemini, ContextHost)
+        self.assertIsInstance(gemini, LiveCheck)
+        self.assertNotIsInstance(agy, ContextHost)
+        self.assertNotIsInstance(codex, ContextHost)
 
 if __name__ == '__main__':
     unittest.main()

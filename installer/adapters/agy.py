@@ -4,6 +4,10 @@ import shutil
 import subprocess
 import sys
 
+from pathlib import Path
+from typing import Optional
+
+from ..interface import DoctorContext, Plan, Status
 from ..core import (ROOT, USER_CONTEXT, json_bytes,
                     quote_path, command_skill_text)
 
@@ -39,7 +43,7 @@ def present(home):
 
 agy_present = present
 
-def install(p):
+def install(p: Plan) -> None:
     """Plugin ai-kit (règles qui incluent les couches par chemin, agents, garde-fous, MCP) et skills de commande."""
     plugin = p.home/AGY_PLUGIN
     manifest_json = {'name': 'ai-kit', 'displayName': 'Kit IA', 'description': 'Contexte, commandes, garde-fous et agents du kit IA Data, partagés avec Gemini CLI.', 'version': (ROOT/'VERSION').read_text().strip()}
@@ -61,13 +65,13 @@ def install(p):
     if p.enabled_mcp:
         p.managed_write(plugin/'mcp_config.json', json_bytes({'mcpServers': p.enabled_mcp}), 'Plugin agy')
 
-def finalize(p, active=True):
+def finalize(p: Plan, active: bool = True) -> None:
     return None
 
-def summary(p):
+def summary(p: Plan) -> Optional[str]:
     return 'Antigravity : plugin ai-kit installé dans ~/'+AGY_PLUGIN+' (redémarrer agy pour le voir).'
 
-def doctor(home, state, status, ctx):
+def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     plugin_dir = home/AGY_PLUGIN
     if not plugin_dir.is_dir():
         return

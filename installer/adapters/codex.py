@@ -4,6 +4,10 @@ import re
 import shutil
 import sys
 
+from pathlib import Path
+from typing import Optional
+
+from ..interface import DoctorContext, Plan, Status
 from ..core import (USER_CONTEXT, KitError, digest, quote_path, split_block, place_block, command_skill_text)
 
 CODEX_DIR = '.codex'
@@ -78,7 +82,7 @@ def present(home):
 
 codex_present = present
 
-def install(p):
+def install(p: Plan) -> None:
     """Skills (avec « sur commande seulement » natif), skills de commande et rôles d'agents."""
     codex = p.home/CODEX_DIR
     for skill, source in p.skill_sources:
@@ -93,14 +97,14 @@ def install(p):
             continue  # un skill du même nom sert de commande
         p.managed_write(codex/'skills'/command['name']/'SKILL.md', command_skill_text(command).encode('utf-8'), 'Skill de commande Codex')
         p.managed_write(codex/'skills'/command['name']/'agents'/'openai.yaml', CODEX_EXPLICIT_ONLY.encode('utf-8'), 'Skill de commande Codex')
-    p.codex_agents = {}
+    agents = p.adapter_data.setdefault(NAME, {}).setdefault('agents', {})
     for agent, definition in p.agents:
         name = 'ai-kit-'+agent
         role_file = codex/'ai-kit'/'agents'/(name+'.toml')
         p.managed_write(role_file, ('# Agent du kit IA, géré par le kit.\ndeveloper_instructions = '+toml_value(p.agent_body(definition))+'\n').encode('utf-8'), 'Agent Codex')
-        p.codex_agents[name] = (definition['description'], str(role_file))
+        agents[name] = (definition['description'], str(role_file))
 
-def finalize(p, active=True):
+def finalize(p: Plan, active: bool = True) -> None:
     """Blocs gérés dans ~/.codex/AGENTS.md et ~/.codex/config.toml ; le reste des deux fichiers ne bouge pas. Inactif : retire les blocs."""
     old_blocks = p.state.get('blocks', {})
     for rel, markers, position, label in ((CODEX_DIR+'/AGENTS.md', CODEX_MD, 'top', '~/.codex/AGENTS.md'), (CODEX_DIR+'/config.toml', CODEX_TOML, 'end', '~/.codex/config.toml')):
@@ -120,7 +124,7 @@ def finalize(p, active=True):
             if re.search(r'^\s*\[\s*(agents|mcp_servers)\.ai-kit-', outside, re.M):
                 raise KitError('~/.codex/config.toml contient déjà des entrées ai-kit- hors du bloc du kit : les retirer, puis update.')
             hook_commands = [quote_path(sys.executable)+' '+quote_path(p.hooks_dir/p.hook_manifest[name]['script']) for name in p.enabled_hooks]
-            block = codex_config_block(getattr(p, 'codex_agents', {}), hook_commands, p.enabled_mcp)
+            block = codex_config_block(p.adapter_data.get(NAME, {}).get('agents', {}), hook_commands, p.enabled_mcp)
         new_text = place_block(outside, block, position)
         if rel.endswith('config.toml') and block is not None:
             try:
@@ -137,10 +141,10 @@ def finalize(p, active=True):
         if new_text != text and (block is not None or old_block is not None):
             p.writes[path] = new_text.encode('utf-8')  # jamais supprimé : le fichier appartient à la personne
 
-def summary(p):
+def summary(p: Plan) -> Optional[str]:
     return 'Codex : skills dans ~/.codex/skills, blocs du kit dans ~/.codex/AGENTS.md et ~/.codex/config.toml ; les commandes s’appellent $intent, $build…'+(' Au premier lancement, Codex demande d’approuver les garde-fous du kit : répondre « Trust », sinon ils ne s’exécutent pas.' if p.enabled_hooks else '')
 
-def doctor(home, state, status, ctx):
+def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     blocks = state.get('blocks', {})
     if not blocks:
         return
