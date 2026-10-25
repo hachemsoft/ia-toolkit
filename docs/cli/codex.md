@@ -8,7 +8,7 @@ Ce que le kit fait pour Codex CLI, et ce qui est propre à cette CLI. Vérifié 
 
 ## Ce que le kit installe
 
-- **Contexte** : un bloc géré en tête de `~/.codex/AGENTS.md`, entre deux marqueurs `ai-kit`, avec les couches du kit et une copie de `30_USER.md` (dans `~/.gemini/` si Gemini est installé, sinon dans `~/.ai-toolkit/context/`). Le reste du fichier vous appartient et n’est jamais modifié. Codex n’incluant pas d’autres fichiers par chemin, la copie de `30_USER.md` est rafraîchie à chaque `update` : après l’avoir modifié, relancer `update` (`doctor` le signale).
+- **Contexte** : un bloc géré en tête de `~/.codex/AGENTS.md`, entre deux marqueurs `ai-kit`, avec les couches du kit et une copie de `30_USER.md` (dans `~/.gemini/` si Gemini est installé, sinon dans `~/.ai-kit/context/`). Le reste du fichier vous appartient et n’est jamais modifié. Codex n’incluant pas d’autres fichiers par chemin, la copie de `30_USER.md` est rafraîchie à chaque `update` : après l’avoir modifié, relancer `update` (`doctor` le signale).
 - **Skills** dans `~/.codex/skills/`. Les skills marqués « sur commande seulement » reçoivent un `agents/openai.yaml` avec `allow_implicit_invocation: false` : Codex respecte cette marque nativement, il ne les active que si on les appelle.
 - **Commandes** : un skill par commande, lui aussi sur commande seulement. Dans Codex, on les appelle par **`$intent`**, `$build`, `$test`… ; `/skills` les liste.
 - **Agents** : un rôle `ai-kit-<nom>` par agent, déclaré sous `[agents.ai-kit-<nom>]` dans le bloc géré de `~/.codex/config.toml`, ses instructions dans `~/.codex/ai-kit/agents/`.

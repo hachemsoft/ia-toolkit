@@ -14,14 +14,14 @@ class CodexAdapterTests(unittest.TestCase):
   self.agents.write_text('# Mes consignes\n- toujours en français\n',encoding='utf-8');self.config.write_text('model = "gpt-x"\n\n[projects."/x"]\ntrust_level = "trusted"\n',encoding='utf-8')
  def run_kit(self,role='data-developer',target='all',overrides=None):
   if overrides is not None:
-   (self.home/'.ai-toolkit').mkdir(exist_ok=True);(self.home/'.ai-toolkit/overrides.json').write_text(json.dumps(overrides),encoding='utf-8')
+   (self.home/'.ai-kit').mkdir(exist_ok=True);(self.home/'.ai-kit/overrides.json').write_text(json.dumps(overrides),encoding='utf-8')
   out=io.StringIO()
   with contextlib.redirect_stdout(out):apply(role,self.home,False,{'email':'t@example.org'},target)
   return out.getvalue()
  def test_codex_only_keeps_gemini_untouched(self):
   self.run_kit(target='codex')
   self.assertFalse((self.home/'.gemini').exists())
-  ctx=self.home/'.ai-toolkit/context'
+  ctx=self.home/'.ai-kit/context'
   self.assertTrue((ctx/'00_KIT.md').is_file());self.assertTrue((ctx/'30_USER.md').is_file())
   self.assertIn((ctx/'00_KIT.md').read_text(encoding='utf-8').strip()[:200],(self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
   out=io.StringIO()
@@ -41,13 +41,13 @@ class CodexAdapterTests(unittest.TestCase):
   mine='# Moi\nPréférence personnelle conservée.\n'
   (self.home/'.gemini/30_USER.md').write_text(mine,encoding='utf-8')
   self.run_kit(target='codex')
-  self.assertEqual((self.home/'.ai-toolkit/context/30_USER.md').read_text(encoding='utf-8'),mine)
+  self.assertEqual((self.home/'.ai-kit/context/30_USER.md').read_text(encoding='utf-8'),mine)
   self.assertEqual((self.home/'.gemini/30_USER.md').read_text(encoding='utf-8'),mine)
   self.assertFalse((self.home/'.gemini/00_KIT.md').exists())
   self.assertIn('Préférence personnelle conservée',(self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
   self.run_kit(target='all')
-  self.assertTrue((self.home/'.gemini/00_KIT.md').is_file());self.assertFalse((self.home/'.ai-toolkit/context/00_KIT.md').exists())
-  self.assertEqual((self.home/'.ai-toolkit/context/30_USER.md').read_text(encoding='utf-8'),mine)
+  self.assertTrue((self.home/'.gemini/00_KIT.md').is_file());self.assertFalse((self.home/'.ai-kit/context/00_KIT.md').exists())
+  self.assertEqual((self.home/'.ai-kit/context/30_USER.md').read_text(encoding='utf-8'),mine)
 
  def test_install_keeps_user_content_and_adds_blocks(self):
   self.run_kit();a=self.agents.read_text(encoding='utf-8');c=self.config.read_text(encoding='utf-8')

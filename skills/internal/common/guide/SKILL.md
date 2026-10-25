@@ -7,7 +7,7 @@ description: "Routeur du kit : quelle commande, quel outil et quel niveau de cé
 
 Répondre dans la langue de la personne, en quelques lignes : le niveau de cérémonie, la commande ou l’outil, l’artefact produit, un exemple de prompt. Ne citer les noms de skills que si on le demande.
 
-Ne proposer que les commandes listées sous « Commandes » dans le contexte du kit (00_KIT.md) : ce sont celles installées pour ce profil. Les tableaux ci-dessous donnent la carte complète ; quand la commande qui conviendrait n’est pas installée (par exemple `/spec`, `/review`, `/explain` pour un analyste), le dire en une ligne avec la façon de l’activer : `extra_commands` dans `~/.ai-toolkit/overrides.json`, puis `update`.
+Ne proposer que les commandes listées sous « Commandes » dans le contexte du kit (00_KIT.md) : ce sont celles installées pour ce profil. Les tableaux ci-dessous donnent la carte complète ; quand la commande qui conviendrait n’est pas installée (par exemple `/spec`, `/review`, `/explain` pour un analyste), le dire en une ligne avec la façon de l’activer : `extra_commands` dans `~/.ai-kit/overrides.json`, puis `update`.
 
 ## Niveau de cérémonie d’abord
 | Enjeu | Quoi faire | Commandes |

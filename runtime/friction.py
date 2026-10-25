@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Note une friction en une ligne dans ~/.ai-toolkit/frictions.jsonl, localement. Installé par le kit, appelé par /friction.
+"""Note une friction en une ligne dans ~/.ai-kit/frictions.jsonl, localement. Installé par le kit, appelé par /friction.
 
-Usage : python3 ~/.ai-toolkit/bin/friction.py --category <command|skill|guardrail|docs|tool|auth|other> [--command <nom>] [--cli gemini|agy] --text "<une phrase>"
+Usage : python3 ~/.ai-kit/bin/friction.py --category <command|skill|guardrail|docs|tool|auth|other> [--command <nom>] [--cli gemini|agy] --text "<une phrase>"
 Le contexte (version du kit, profil, système) est ajouté automatiquement. Rien n'est envoyé ; le relevé d'usage
 compte ces lignes et `usage --json` les exporte pour la revue d'usage.
 """
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 CATEGORIES = ('command', 'skill', 'guardrail', 'docs', 'tool', 'auth', 'other')
 
 def kit_dir():
-    return os.path.join(os.path.expanduser('~'), '.ai-toolkit')
+    return os.path.join(os.path.expanduser('~'), '.ai-kit')
 
 def context():
     """Version du kit et profil lus dans l'état d'installation, système du poste."""

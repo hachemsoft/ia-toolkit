@@ -10,7 +10,7 @@ class InstallationTests(unittest.TestCase):
  def path(self,p):return self.home/p
  def write(self,p,text):
   f=self.path(p);f.parent.mkdir(parents=True,exist_ok=True);f.write_text(text,encoding='utf-8');return f
- def overrides(self,v):self.write('.ai-toolkit/overrides.json',json.dumps(v))
+ def overrides(self,v):self.write('.ai-kit/overrides.json',json.dumps(v))
  def test_idempotence(self):
   self.run_kit();before={str(p):p.read_bytes() for p in self.home.rglob('*') if p.is_file()};self.run_kit();self.assertEqual(before,{str(p):p.read_bytes() for p in self.home.rglob('*') if p.is_file()})
  def test_existing_settings_and_context(self):
@@ -20,7 +20,7 @@ class InstallationTests(unittest.TestCase):
  def test_modified_skill_blocks(self):
   self.run_kit();self.write('.gemini/skills/sql-review/SKILL.md','personnel')
   with self.assertRaises(KitError):self.run_kit('data-developer')
-  self.assertEqual(read_json(self.path('.ai-toolkit/state.json'))['profile'],'data-analyst')
+  self.assertEqual(read_json(self.path('.ai-kit/state.json'))['profile'],'data-analyst')
  def test_existing_skill_blocks(self):
   self.write('.gemini/skills/sql-review/SKILL.md','tiers')
   with self.assertRaises(KitError):self.run_kit()
@@ -30,7 +30,7 @@ class InstallationTests(unittest.TestCase):
  def test_invalid_json(self):
   self.write('.gemini/settings.json','{broken')
   with self.assertRaises(KitError):self.run_kit()
-  self.assertFalse(self.path('.ai-toolkit').exists())
+  self.assertFalse(self.path('.ai-kit').exists())
  def test_mcp_add_remove(self):
   self.overrides({'mcp':{'dbt':{'enabled':True,'server':{'command':'dbt-mcp'}}}});self.run_kit();self.assertIn('ai-kit-dbt',read_json(self.path('.gemini/settings.json'))['mcpServers']);self.overrides({'mcp':{}});self.run_kit();self.assertEqual(read_json(self.path('.gemini/settings.json'))['mcpServers'],{})
  def test_external_mcp_preserved(self):
@@ -42,7 +42,7 @@ class InstallationTests(unittest.TestCase):
   self.write('.gemini/GEMINI.md',START)
   with self.assertRaises(KitError):self.run_kit()
  def test_backup(self):
-  self.write('.gemini/settings.json','{}');self.run_kit();backups=list(self.path('.ai-toolkit/backups').glob('*/.gemini/settings.json'));self.assertEqual(len(backups),1);self.assertEqual(backups[0].read_text(),'{}')
+  self.write('.gemini/settings.json','{}');self.run_kit();backups=list(self.path('.ai-kit/backups').glob('*/.gemini/settings.json'));self.assertEqual(len(backups),1);self.assertEqual(backups[0].read_text(),'{}')
  def test_unknown_skill(self):
   self.overrides({'extra_skills':['unknown']})
   with self.assertRaises(KitError):self.run_kit()

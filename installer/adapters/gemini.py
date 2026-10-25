@@ -80,7 +80,7 @@ def diagnose_live(returncode, output, timed_out, settings):
     """Un diagnostic en une phrase et le remède, à partir de la sortie d'un appel réel à Gemini."""
     if timed_out:
         return ('Gemini ne répond pas dans le délai : le modèle par défaut est probablement indisponible sur votre accès et Gemini boucle sur un repli.',
-                'Fixer un modèle : "model": "gemini-2.5-flash" dans ~/.ai-toolkit/overrides.json puis update (ou model.name dans ~/.gemini/settings.json).')
+                'Fixer un modèle : "model": "gemini-2.5-flash" dans ~/.ai-kit/overrides.json puis update (ou model.name dans ~/.gemini/settings.json).')
     if 'prepayment credits are depleted' in output or ('402' in output and 'credits' in output):
         return ('Crédits AI Studio épuisés : la clé API configurée n’a plus de solde (HTTP 402).',
                 'Recharger le projet AI Studio, ou passer en connexion Google (/auth dans gemini), ou en Vertex AI (selectedType vertex-ai, GOOGLE_GENAI_USE_VERTEXAI=true, GOOGLE_CLOUD_PROJECT).')
@@ -94,10 +94,10 @@ def diagnose_live(returncode, output, timed_out, settings):
                 'gcloud services enable aiplatform.googleapis.com --project ' + project)
     if 'When using Vertex AI, you must specify' in output:
         return ('Authentification Vertex AI sans projet ni région.',
-                'Déclarer le projet dans ~/.ai-toolkit/overrides.json : "vertex": {"project": "<projet>", "location": "<région>"} puis update ; ou exporter GOOGLE_CLOUD_PROJECT et GOOGLE_CLOUD_LOCATION.')
+                'Déclarer le projet dans ~/.ai-kit/overrides.json : "vertex": {"project": "<projet>", "location": "<région>"} puis update ; ou exporter GOOGLE_CLOUD_PROJECT et GOOGLE_CLOUD_LOCATION.')
     if 'requires setting the GOOGLE_CLOUD_PROJECT' in output:
         return ('Votre compte Gemini Code Assist (licence Standard ou Enterprise) exige un projet Google Cloud.',
-                'Déclarer "code_assist": {"project": "<projet>"} dans ~/.ai-toolkit/overrides.json puis update ; ou exporter GOOGLE_CLOUD_PROJECT.')
+                'Déclarer "code_assist": {"project": "<projet>"} dans ~/.ai-kit/overrides.json puis update ; ou exporter GOOGLE_CLOUD_PROJECT.')
     if 'Please set an Auth method' in output:
         return ('Aucune authentification Gemini configurée.',
                 'Lancer gemini puis /auth, ou définir GEMINI_API_KEY, ou GOOGLE_GENAI_USE_VERTEXAI=true avec GOOGLE_CLOUD_PROJECT.')
@@ -214,7 +214,7 @@ def install(p: Plan) -> None:
         before, old_block, after = context_parts(old_context)
         if old_block is not None:
             if p.state.get('context_hash') != digest(old_block.encode()):
-                raise KitError('Bloc du kit modifié ou non reconnu dans GEMINI.md. Déplacer vos changements vers '+str(p.user_file)+' puis retirer le bloc entre les marqueurs ai-toolkit avant update.')
+                raise KitError('Bloc du kit modifié ou non reconnu dans GEMINI.md. Déplacer vos changements vers '+str(p.user_file)+' puis retirer le bloc entre les marqueurs ai-kit avant update.')
             remaining = (before.rstrip('\n')+'\n\n'+after.lstrip('\n')).strip('\n')
             if remaining:
                 p.writes[context_file] = (remaining+'\n').encode('utf-8')

@@ -4,8 +4,8 @@ Objectif : corriger le kit sur des tickets réels avant de l’ouvrir à toute l
 
 ## Jour 1, par personne (quinze minutes)
 
-1. Récupérer le kit : `git clone <url du dépôt> ai-toolkit` dans `Documents` (sans git : « Télécharger ZIP » sur la page du dépôt, puis extraire).
-2. Si l’organisation impose un mode d’authentification (Code Assist avec projet, Vertex AI) ou un modèle, écrire la clé correspondante dans `~/.ai-toolkit/overrides.json` avant l’étape suivante ; voir [personnalisation › Authentification et modèle](customization.md#authentification-et-modèle). Sinon, rien à faire.
+1. Récupérer le kit : `git clone <url du dépôt> ai-kit` dans `Documents` (sans git : « Télécharger ZIP » sur la page du dépôt, puis extraire).
+2. Si l’organisation impose un mode d’authentification (Code Assist avec projet, Vertex AI) ou un modèle, écrire la clé correspondante dans `~/.ai-kit/overrides.json` avant l’étape suivante ; voir [personnalisation › Authentification et modèle](customization.md#authentification-et-modèle). Sinon, rien à faire.
 3. Dans ce dossier : `sh scripts/bootstrap.sh` (Mac) ou `.\scripts\bootstrap.ps1` (Windows). Confirmer l’identité, choisir le profil. L’installation se termine par un appel réel au modèle : si ce n’est pas vert, suivre le remède affiché, ne pas appeler.
 4. Ouvrir son repo habituel, lancer sa CLI (`gemini`, `agy` ou `codex`), taper `/guide je commence par quoi ?` (`$guide` dans Codex).
 5. Première fois dans le repo : « Initialise le contexte du projet », puis `setup-workflow` pour déclarer le gestionnaire de tickets de l’équipe.

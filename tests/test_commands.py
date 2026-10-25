@@ -8,7 +8,7 @@ class CommandTests(unittest.TestCase):
  def run_kit(self,role='data-analyst'):
   with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home)
  def overrides(self,v):
-  p=self.home/'.ai-toolkit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
+  p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
  def cmd(self,name):return self.home/'.gemini/commands'/(name+'.toml')
  def test_manifest_consistent(self):
   catalog=read_json(ROOT/'skills/catalog.json');names=set()
@@ -33,14 +33,14 @@ class CommandTests(unittest.TestCase):
  def test_commands_installed_per_profile(self):
   self.run_kit();self.assertTrue(self.cmd('intent').exists());self.assertTrue(self.cmd('learn').exists());self.assertFalse(self.cmd('ask').exists());self.assertFalse(self.cmd('review').exists());self.assertFalse(self.cmd('spec').exists());self.assertFalse(self.cmd('design').exists());self.assertFalse(self.cmd('triage').exists())
   self.assertEqual(sorted(p.stem for p in (self.home/'.gemini/commands').glob('*.toml')),['build','diagnose','friction','guide','intent','learn','ship','test'])
-  self.assertIn('.gemini/commands/intent.toml',read_json(self.home/'.ai-toolkit/state.json')['files'])
+  self.assertIn('.gemini/commands/intent.toml',read_json(self.home/'.ai-kit/state.json')['files'])
   self.run_kit('data-developer');self.assertTrue(self.cmd('design').exists());self.assertTrue(self.cmd('triage').exists());self.assertTrue(self.cmd('review').exists());self.assertFalse(self.cmd('ask').exists())
  def test_command_removed_when_skill_disabled(self):
   self.run_kit();self.assertTrue(self.cmd('learn').exists());self.overrides({'disabled_skills':['teach']});self.run_kit();self.assertFalse(self.cmd('learn').exists());self.assertTrue(self.cmd('intent').exists())
  def test_personal_command_conflict_blocks(self):
   p=self.cmd('intent');p.parent.mkdir(parents=True);p.write_text('prompt = "mine"\n')
   with self.assertRaises(KitError):self.run_kit()
-  self.assertEqual(p.read_text(),'prompt = "mine"\n');self.assertFalse((self.home/'.ai-toolkit/state.json').exists())
+  self.assertEqual(p.read_text(),'prompt = "mine"\n');self.assertFalse((self.home/'.ai-kit/state.json').exists())
  def test_modified_command_blocks(self):
   self.run_kit();self.cmd('ship').write_text('prompt = "edited"\n')
   with self.assertRaises(KitError):self.run_kit('data-developer')
@@ -51,7 +51,7 @@ class CommandTests(unittest.TestCase):
   self.run_kit();out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
   text=out.getvalue();self.assertEqual([line for line in text.splitlines() if line.startswith('[À vérifier]') and 'PATH' not in line],[],text);self.assertIn('[OK] Commande /intent : skills présents',text);self.assertIn('descriptions de skills injectées',text);self.assertIn('[OK] .gemini/commands/intent.toml',text)
-  (self.home/'.gemini/skills/teach/SKILL.md').unlink();sp=self.home/'.ai-toolkit/state.json';st=read_json(sp);del st['files']['.gemini/skills/teach/SKILL.md'];sp.write_text(json.dumps(st))
+  (self.home/'.gemini/skills/teach/SKILL.md').unlink();sp=self.home/'.ai-kit/state.json';st=read_json(sp);del st['files']['.gemini/skills/teach/SKILL.md'];sp.write_text(json.dumps(st))
   out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
   self.assertIn('[À vérifier] Commande /learn : skills présents (manque teach)',out.getvalue())

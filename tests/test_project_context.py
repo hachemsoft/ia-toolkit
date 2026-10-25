@@ -20,6 +20,6 @@ class ProjectContextTests(unittest.TestCase):
  def test_skill_requires_declared(self):
   e=read_json(ROOT/'skills/catalog.json')['init-project-context'];self.assertEqual(sorted(e['requires']),['domain-modeling','writing-for-agents'])
  def test_kit_writes_only_under_gemini_and_kit_dirs(self):
-  self.run_kit('data-developer');written={p.relative_to(self.home).parts[0] for p in self.home.rglob('*') if p.is_file()};self.assertTrue(written<={'.gemini','.ai-toolkit','.codex'},written)
+  self.run_kit('data-developer');written={p.relative_to(self.home).parts[0] for p in self.home.rglob('*') if p.is_file()};self.assertTrue(written<={'.gemini','.ai-kit','.codex'},written)
   outside=[p for p in self.home.rglob('*') if p.name in ('AGENTS.md','GLOSSARY.md') and '.gemini/skills' not in p.as_posix() and '.gemini/config/plugins/ai-kit' not in p.as_posix() and '.codex/skills' not in p.as_posix() and p.relative_to(self.home).as_posix()!='.codex/AGENTS.md'];self.assertEqual(outside,[])
 if __name__=='__main__':unittest.main()

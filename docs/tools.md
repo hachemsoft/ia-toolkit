@@ -15,7 +15,7 @@ Chaque fiche suit le même gabarit : quand, commande, produit, demande, skill, e
 ## `/learn` — apprendre un périmètre ou un concept
 - **Quand** : nouvel arrivant sur un périmètre, montée en compétence sur un sujet, sur plusieurs sessions. **Pas** pour une question ponctuelle (`/explain`).
 - **Commande** : `/learn <sujet>`.
-- **Produit** : dans le repo, `docs/learn/<sujet>/` avec leçons HTML courtes, quiz, fiches de référence imprimables, composants partagés ; hors repo, `~/.ai-toolkit/learning/<sujet>/` avec mission, notes et journal d’apprentissage. Les termes métier vont dans le `GLOSSARY.md` du repo.
+- **Produit** : dans le repo, `docs/learn/<sujet>/` avec leçons HTML courtes, quiz, fiches de référence imprimables, composants partagés ; hors repo, `~/.ai-kit/learning/<sujet>/` avec mission, notes et journal d’apprentissage. Les termes métier vont dans le `GLOSSARY.md` du repo.
 - **Demande** : accès au repo et à ses docs ; accès web utile pour les sources.
 - **Skill** : `teach`. Playbook `perimeter-brief` pour un périmètre Data quand il est installé.
 - **Exemple** : `/learn le périmètre facturation : sources, modèles, KPI, règles de dates`.
@@ -73,15 +73,15 @@ Chaque fiche suit le même gabarit : quand, commande, produit, demande, skill, e
 ## `/friction` — noter ce qui a coincé
 - **Quand** : quelque chose a ralenti, surpris ou obligé à contourner le kit : une commande qui ne fait pas ce que dit sa description, un skill qui se déclenche pour rien, un garde-fou gênant, une page fausse, un outil manquant. Tout de suite, en une phrase, sans quitter le travail.
 - **Commande** : `/friction <une phrase>` ou `/friction` seul, l’agent demande.
-- **Produit** : une ligne (date, catégorie, commande en cours, phrase, plus la version du kit, le profil, la CLI et le système, ajoutés automatiquement) ajoutée à `~/.ai-toolkit/frictions.jsonl`, sur le poste seulement.
+- **Produit** : une ligne (date, catégorie, commande en cours, phrase, plus la version du kit, le profil, la CLI et le système, ajoutés automatiquement) ajoutée à `~/.ai-kit/frictions.jsonl`, sur le poste seulement.
 - **Ce qui se note sans vous** : un échec de `doctor --live` (authentification, quota, modèle) devient une ligne `auth` d'office ; le relevé d'usage compte aussi, dans les journaux, les commandes inconnues tapées et les demandes répétées dans une même session. L'agent, lui, vous propose `/friction` quand vous le corrigez, quand une vérification est rouge après « c'est fait », quand vous abandonnez ou reposez la même demande, quand il contourne un skill ou un garde-fou, ou quand la cérémonie était disproportionnée ; il n'écrit rien sans vous, sauf si vous avez mis `"frictions": "auto"` dans `overrides.json` (`"off"` coupe ces propositions). `/retro` propose aussi de noter ce qu'il trouve sur le kit. Rien n’est envoyé. Le relevé d’usage les compte ; `usage --json` les exporte quand la personne choisit de partager ; `scripts/usage-aggregate.py` les regroupe pour la [revue d’usage](usage-review.md), qui en fait des tickets.
-- **Demande** : Python (le script `~/.ai-toolkit/bin/friction.py` est installé par le kit) ; dans agy, une permission d’exécution la première fois.
+- **Demande** : Python (le script `~/.ai-kit/bin/friction.py` est installé par le kit) ; dans agy, une permission d’exécution la première fois.
 - **Skill** : aucun ; la commande suffit.
 - **Exemple** : `/friction /test a relancé toute la suite alors que je voulais un seul modèle`.
 
 ## Activer un outil marqué « option »
 
-Une ligne dans `~/.ai-toolkit/overrides.json`, puis `update` : `{"extra_commands": ["handoff", "research"]}`. La commande et ses skills sont installés ; `disabled_commands` fait l’inverse. Voir [personnalisation](customization.md).
+Une ligne dans `~/.ai-kit/overrides.json`, puis `update` : `{"extra_commands": ["handoff", "research"]}`. La commande et ses skills sont installés ; `disabled_commands` fait l’inverse. Voir [personnalisation](customization.md).
 
 ## Ajouter un outil
 Un dossier de skill, une entrée dans `skills/catalog.json` avec `category: tool`, un fichier `commands/<nom>.md` au [format pivot](format.md), une fiche ici, un cas dans `evals/cases/`.

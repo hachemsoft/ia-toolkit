@@ -26,7 +26,7 @@ class PortabilityTests(unittest.TestCase):
 
     def test_native_cli_lifecycle_in_unicode_path(self):
         self.run_cli('setup', '--profile', 'data-analyst')
-        state = self.home / '.ai-toolkit/state.json'
+        state = self.home / '.ai-kit/state.json'
         self.assertEqual(json.loads(state.read_text(encoding='utf-8'))['profile'], 'data-analyst')
         prefs = self.home / '.gemini/30_USER.md'
         self.assertTrue(prefs.exists())
@@ -69,7 +69,7 @@ class PortabilityTests(unittest.TestCase):
                                '--profile','data-analyst','--home',str(self.home),'--no-live'],
                               cwd=self.base,capture_output=True,text=True,encoding='utf-8')
         self.assertEqual(proc.returncode,0,proc.stdout+proc.stderr)
-        self.assertTrue((self.home/'.ai-toolkit/state.json').exists())
+        self.assertTrue((self.home/'.ai-kit/state.json').exists())
 
     @unittest.skipUnless(os.name == 'nt', 'Nécessite un vrai Windows')
     def test_native_windows_launchers(self):
@@ -85,7 +85,7 @@ class PortabilityTests(unittest.TestCase):
                                  'data-developer','--home',str(target),'--no-live'],cwd=self.base,
                                 capture_output=True)
             self.assertEqual(proc.returncode,0,repr(proc.stdout)+repr(proc.stderr))
-            self.assertTrue((target/'.ai-toolkit/state.json').exists())
+            self.assertTrue((target/'.ai-kit/state.json').exists())
             tested.append(engine)
         self.assertTrue(tested,'Aucun PowerShell disponible sur le runner Windows')
 

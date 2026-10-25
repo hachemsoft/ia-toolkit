@@ -7,7 +7,7 @@ Une page pour les personnes qui passent de Gemini CLI à agy. À lire en deux mi
 - **Les commandes** : celles de votre profil ([table des profils](../getting-started.md#3-travailler--une-commande-par-étape)) et votre `extra_commands` restent les mêmes. Mêmes noms, mêmes artefacts (`docs/sdlc/<date>-<slug>/intent.md`, `spec.md`, `plan.md`).
 - **Votre fichier** : `~/.gemini/30_USER.md`. Il est lu par les deux outils.
 - **Les repos** : `AGENTS.md`, `GLOSSARY.md`, `REVIEW.md`, `.agents/skills/`. Rien à migrer.
-- **Les garde-fous et le relevé d’usage** : mêmes réglages dans `~/.ai-toolkit/overrides.json`.
+- **Les garde-fous et le relevé d’usage** : mêmes réglages dans `~/.ai-kit/overrides.json`.
 
 ## Ce qui change
 

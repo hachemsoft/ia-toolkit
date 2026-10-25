@@ -4,7 +4,7 @@ Cette page est pour quelqu’un qui n’a jamais vu le kit. Quinze minutes, dans
 
 ## 1. Installer (une fois)
 
-1. Récupérer le kit dans un dossier durable, par exemple `Documents` : `git clone <url du dépôt> ai-toolkit`. Sans git : bouton « Télécharger ZIP » sur la page du dépôt, puis extraire dans `Documents/ai-toolkit`.
+1. Récupérer le kit dans un dossier durable, par exemple `Documents` : `git clone <url du dépôt> ai-kit`. Sans git : bouton « Télécharger ZIP » sur la page du dépôt, puis extraire dans `Documents/ai-kit`.
 2. Ouvrir un terminal **dans ce dossier**. Mac : clic droit sur le dossier, « Nouveau terminal au dossier ». Windows : dans l’Explorateur, ouvrir le dossier puis taper `powershell` dans la barre d’adresse et Entrée.
 3. Lancer :
    - Mac : `sh scripts/bootstrap.sh`
@@ -17,7 +17,7 @@ Cette page est pour quelqu’un qui n’a jamais vu le kit. Quinze minutes, dans
    - **5. Data Analyst** : vous écrivez surtout du SQL, du dbt, des requêtes BigQuery, des indicateurs.
    - **6. Développeur Data** : les mêmes, plus du code Python ou JavaScript.
 
-   Le profil se change à tout moment en relançant `setup`. Un skill ou un agent d’un autre profil s’ajoute dans `~/.ai-toolkit/overrides.json` (voir [personnalisation](customization.md)).
+   Le profil se change à tout moment en relançant `setup`. Un skill ou un agent d’un autre profil s’ajoute dans `~/.ai-kit/overrides.json` (voir [personnalisation](customization.md)).
 5. **Quelle CLI ?** Rien à choisir dans le cas courant : le kit configure les CLI qu’il trouve sur le poste (Gemini CLI, Antigravity CLI, Codex CLI), et Gemini CLI si aucune n’est encore installée. Pour forcer : ajouter `--target` à la commande, par exemple `sh scripts/bootstrap.sh setup --target codex`.
 
    | `--target` | CLI configurées |
@@ -30,7 +30,7 @@ Cette page est pour quelqu’un qui n’a jamais vu le kit. Quinze minutes, dans
    Une CLI installée plus tard est prise en compte au prochain `update`.
 6. L’installation se termine par un appel réel au modèle. **Vert** : c’est fini. Sinon, le message dit exactement quoi faire (une ligne à ajouter, une commande à lancer) ; le faire puis relancer `doctor --live`.
 
-Si votre organisation impose un projet Google Cloud ou un modèle, c’est une ligne dans `~/.ai-toolkit/overrides.json`, donnée par votre équipe plateforme ; voir [personnalisation](customization.md#authentification-et-modèle). Sinon il n’y a rien à déclarer.
+Si votre organisation impose un projet Google Cloud ou un modèle, c’est une ligne dans `~/.ai-kit/overrides.json`, donnée par votre équipe plateforme ; voir [personnalisation](customization.md#authentification-et-modèle). Sinon il n’y a rien à déclarer.
 
 ## 2. Première session (cinq minutes)
 
@@ -68,7 +68,7 @@ Ce que chaque profil installe :
 | **Développeur Data** (`data-developer`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/triage` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, code-reviewer, verifier, doubter, sql-reviewer, dbt-reviewer |
 <!-- table-profils:fin -->
 
-`/design` façonne une interface ou répond à une question de conception par un prototype jetable ; `/map` découpe un gros chantier en tickets de décision ; `/triage` fait avancer les tickets entrants ; `/research` instruit une question sur des sources primaires ; `/audit` repère les modules à approfondir. `/ask`, `/handoff`, `/research`, `/wizard` et `/audit` s’ajoutent à tout profil qui ne les a pas : `{"extra_commands": ["handoff"]}` dans `~/.ai-toolkit/overrides.json`, puis `update`. Le détail des agents : [agents](agents.md).
+`/design` façonne une interface ou répond à une question de conception par un prototype jetable ; `/map` découpe un gros chantier en tickets de décision ; `/triage` fait avancer les tickets entrants ; `/research` instruit une question sur des sources primaires ; `/audit` repère les modules à approfondir. `/ask`, `/handoff`, `/research`, `/wizard` et `/audit` s’ajoutent à tout profil qui ne les a pas : `{"extra_commands": ["handoff"]}` dans `~/.ai-kit/overrides.json`, puis `update`. Le détail des agents : [agents](agents.md).
 
 La règle qui évite de tout dérouler : **la cérémonie suit les enjeux**. Une retouche se fait sans commande. Une petite fonctionnalité : `/intent` court puis `/build`. Seuls une grande évolution ou un changement en production passent par `/spec` et `/review full`. Chaque commande dit en une ligne le niveau qu’elle a retenu.
 
@@ -88,8 +88,8 @@ La règle qui évite de tout dérouler : **la cérémonie suit les enjeux**. Une
 
 ## 6. Plus tard
 
-- Vos préférences (langue, style, domaines) : `30_USER.md`, créé pour vous et jamais réécrit par le kit. Il est dans `~/.gemini/` si Gemini CLI est installé, sinon dans `~/.ai-toolkit/context/` ; `doctor` affiche son chemin.
-- Ajouter ou retirer des commandes, skills, agents, MCP, garde-fous : `~/.ai-toolkit/overrides.json`, puis `update`. Voir [personnalisation](customization.md).
+- Vos préférences (langue, style, domaines) : `30_USER.md`, créé pour vous et jamais réécrit par le kit. Il est dans `~/.gemini/` si Gemini CLI est installé, sinon dans `~/.ai-kit/context/` ; `doctor` affiche son chemin.
+- Ajouter ou retirer des commandes, skills, agents, MCP, garde-fous : `~/.ai-kit/overrides.json`, puis `update`. Voir [personnalisation](customization.md).
 - Écrire votre propre skill, ou remplacer un skill du kit pour vous, pour un repo ou pour l’équipe : [ajouter ou remplacer un skill](extending.md).
 - Quand l’équipe veut que l’agent lise et crée des tickets : `setup-workflow` dans le repo (demande `glab` ou `gh`).
 - Mise à jour du kit : `git pull` puis `update` depuis son dossier (sans git : retélécharger le ZIP, remplacer le dossier, puis `update`).

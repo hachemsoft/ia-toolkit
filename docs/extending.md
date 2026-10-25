@@ -121,7 +121,7 @@ Le besoin : relire un tableau de bord avant publication. Un skill, une commande,
    }
    ```
 
-5. Vérifier et distribuer : `python3 -m unittest discover -s tests`, `python3 evals/run.py --only dashboard-check-totals`, puis commit, MR et tag ; les postes font `git pull` puis `update`. Qui veut l'outil l'active d'une ligne : `{"extra_commands": ["dashboard-check"]}` dans `~/.ai-toolkit/overrides.json`, puis `update` ; `/dashboard-check` apparaît dans chaque CLI prise en charge.
+5. Vérifier et distribuer : `python3 -m unittest discover -s tests`, `python3 evals/run.py --only dashboard-check-totals`, puis commit, MR et tag ; les postes font `git pull` puis `update`. Qui veut l'outil l'active d'une ligne : `{"extra_commands": ["dashboard-check"]}` dans `~/.ai-kit/overrides.json`, puis `update` ; `/dashboard-check` apparaît dans chaque CLI prise en charge.
 
 ## Remplacer un skill du kit pour l'organisation
 
@@ -132,7 +132,7 @@ Garder le nom et, s'il y en a une, la commande : les autres skills et les docs s
 
 ## Retirer un skill
 
-Pour soi : `"disabled_skills": ["<nom>"]` dans `~/.ai-toolkit/overrides.json`, puis `update`. Un skill requis par un autre ne se désactive pas seul ; `update` le dit. Pour l'organisation : le passer en `optional` dans le catalogue plutôt que de le supprimer, ce qui le laisse accessible d'une ligne.
+Pour soi : `"disabled_skills": ["<nom>"]` dans `~/.ai-kit/overrides.json`, puis `update`. Un skill requis par un autre ne se désactive pas seul ; `update` le dit. Pour l'organisation : le passer en `optional` dans le catalogue plutôt que de le supprimer, ce qui le laisse accessible d'une ligne.
 
 ## Ce qui ne se personnalise pas par un skill
 

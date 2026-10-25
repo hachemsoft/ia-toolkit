@@ -13,7 +13,7 @@ class AgyAdapterTests(unittest.TestCase):
  def run_kit(self,role='data-analyst',target='both'):
   with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home,False,None,target)
  def overrides(self,v):
-  p=self.home/'.ai-toolkit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
+  p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
  def plugin(self):return self.home/AGY_PLUGIN
  def test_agy_settings_and_permissions_never_touched(self):
   st=self.home/'.gemini/antigravity-cli/settings.json';st.parent.mkdir(parents=True);before='{"permissions": {"allow": ["command(ls)"]}}';st.write_text(before)
@@ -25,7 +25,7 @@ class AgyAdapterTests(unittest.TestCase):
   for n in ('00_kit','10_company','20_team','30_user'):self.assertIn('@['+n+'](~/.gemini/'+n.upper()+'.md)',rules)
   self.assertTrue((p/'agents/ai-kit-verifier.md').is_file());self.assertTrue((p/'agents/ai-kit-sql-reviewer.md').is_file())
   hooks=read_json(p/'hooks.json');self.assertEqual(hooks['ai-kit-dbt-prod-guard']['enabled'],False);self.assertEqual(hooks['ai-kit-dbt-prod-guard']['PreToolUse'][0]['matcher'],'run_command')
-  self.assertFalse((p/'mcp_config.json').exists());self.assertIn('.gemini/config/plugins/ai-kit/plugin.json',read_json(self.home/'.ai-toolkit/state.json')['files'])
+  self.assertFalse((p/'mcp_config.json').exists());self.assertIn('.gemini/config/plugins/ai-kit/plugin.json',read_json(self.home/'.ai-kit/state.json')['files'])
  def test_command_skills_only_when_no_homonym(self):
   self.run_kit('data-developer');base=self.home/'.gemini/skills'
   for n in ('intent','build','test','review','ship','diagnose','learn','explain','spec','design','map'):self.assertTrue((base/n/'SKILL.md').is_file(),n)

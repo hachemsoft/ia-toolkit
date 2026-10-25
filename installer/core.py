@@ -175,15 +175,15 @@ def _ts(value):
 
 def record_auto_friction(home, diagnostic, cli='unknown'):
     """Une panne vue par doctor --live devient une friction `auth`, notée sans rien demander, localement (même format que /friction)."""
-    if not (home/'.ai-toolkit/state.json').is_file():
+    if not (home/'.ai-kit/state.json').is_file():
         return
     try:
-        state = read_json(home/'.ai-toolkit/state.json')
+        state = read_json(home/'.ai-kit/state.json')
         system = {'darwin': 'mac', 'win32': 'windows'}.get(sys.platform, sys.platform)
         entry = {'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'category': 'auth', 'command': 'doctor',
                  'text': ' '.join(str(diagnostic).split())[:300], 'cli': cli, 'source': 'doctor',
                  'os': system, 'kit': str(state.get('version', '')), 'profile': str(state.get('profile', ''))}
-        with open(home/'.ai-toolkit/frictions.jsonl', 'a', encoding='utf-8') as handle:
+        with open(home/'.ai-kit/frictions.jsonl', 'a', encoding='utf-8') as handle:
             handle.write(json.dumps(entry, ensure_ascii=False) + '\n')
     except (OSError, KitError, ValueError):
         pass

@@ -1,6 +1,6 @@
 # Garde-fous
 
-Un skill est un contrôle consultatif : il rend une violation rare. Un hook de la CLI est déterministe : il la rend quasi impossible. Le kit en livre deux, désactivés par défaut, à activer dans `~/.ai-toolkit/overrides.json` :
+Un skill est un contrôle consultatif : il rend une violation rare. Un hook de la CLI est déterministe : il la rend quasi impossible. Le kit en livre deux, désactivés par défaut, à activer dans `~/.ai-kit/overrides.json` :
 
 ```json
 {
@@ -11,7 +11,7 @@ Un skill est un contrôle consultatif : il rend une violation rare. Un hook de l
 }
 ```
 
-Puis `update`. Les scripts sont installés une fois, dans `~/.ai-toolkit/hooks/`, et déclarés à chaque CLI dans la forme qu’elle lit ([matrice](cli/matrice.md)) ; vos propres hooks sont conservés. Les mêmes scripts comprennent l’appel d’outil de chaque CLI prise en charge. `doctor` indique les garde-fous actifs. Les hooks s’exécutent avec le Python qui a lancé l’installeur.
+Puis `update`. Les scripts sont installés une fois, dans `~/.ai-kit/hooks/`, et déclarés à chaque CLI dans la forme qu’elle lit ([matrice](cli/matrice.md)) ; vos propres hooks sont conservés. Les mêmes scripts comprennent l’appel d’outil de chaque CLI prise en charge. `doctor` indique les garde-fous actifs. Les hooks s’exécutent avec le Python qui a lancé l’installeur.
 
 ## `dbt-prod-guard`
 

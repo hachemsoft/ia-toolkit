@@ -41,7 +41,7 @@ Ce qui est propre à une CLI est sur sa page : [Gemini CLI](cli/gemini.md#dépan
 
 ## Retour arrière manuel
 
-Fermer la CLI. Chaque installation qui modifie des fichiers crée un dossier daté dans `~/.ai-toolkit/backups`. Il contient les fichiers antérieurs, avec leur chemin relatif au dossier personnel, et un manifeste des fichiers nouvellement créés.
+Fermer la CLI. Chaque installation qui modifie des fichiers crée un dossier daté dans `~/.ai-kit/backups`. Il contient les fichiers antérieurs, avec leur chemin relatif au dossier personnel, et un manifeste des fichiers nouvellement créés.
 
 Copier les fichiers sauvegardés vers les mêmes chemins sous votre dossier personnel. Pour les fichiers listés dans `created`, les retirer uniquement s’ils n’ont pas reçu de changements personnels depuis. Ne jamais supprimer globalement le dossier de la CLI ou ses skills. Le manifeste n’est pas un programme de restauration automatique.
 

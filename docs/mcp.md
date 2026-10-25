@@ -4,7 +4,7 @@ Les définitions du catalogue sont des fiches de préparation, pas des serveurs 
 
 ## Serveur distant approuvé
 
-Dans `~/.ai-toolkit/overrides.json`, ajouter une entrée avec `enabled: true` et `server`. Exemple illustratif uniquement : remplacer l’URL par votre serveur approuvé avant activation.
+Dans `~/.ai-kit/overrides.json`, ajouter une entrée avec `enabled: true` et `server`. Exemple illustratif uniquement : remplacer l’URL par votre serveur approuvé avant activation.
 
 ```json
 {

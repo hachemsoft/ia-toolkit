@@ -17,7 +17,7 @@ Le nom git complète l’email du compte de la CLI quand les deux existent. Les 
 - En interactif, `setup` affiche « Identité détectée : … » et attend Entrée pour confirmer, ou un email pour corriger.
 - En non interactif, `--user votre.email@societe` enregistre l’identité ; sans cette option, rien n’est enregistré et une ligne le signale.
 - `update` conserve l’identité enregistrée, sauf `--user`.
-- L’état (`~/.ai-toolkit/state.json`) garde `user.email`, `user.name`, `user.source`.
+- L’état (`~/.ai-kit/state.json`) garde `user.email`, `user.name`, `user.source`.
 - L’en-tête « Personne : … » est écrit dans `30_USER.md` seulement à sa création. Le corriger à la main ensuite.
 
 ## Profil proposé

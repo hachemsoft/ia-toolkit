@@ -27,9 +27,9 @@ class IdentityTests(unittest.TestCase):
  def test_header_written_once(self):
   self.run_kit(user={'email':'prenom.nom@societe.fr','name':'Prénom Nom','source':'option'})
   u=self.home/'.gemini/30_USER.md';self.assertIn('Personne : Prénom Nom <prenom.nom@societe.fr>',u.read_text(encoding='utf-8'))
-  self.assertEqual(read_json(self.home/'.ai-toolkit/state.json')['user']['email'],'prenom.nom@societe.fr')
+  self.assertEqual(read_json(self.home/'.ai-kit/state.json')['user']['email'],'prenom.nom@societe.fr')
   self.run_kit(user={'email':'autre@societe.fr','source':'option'})
-  self.assertIn('prenom.nom@societe.fr',u.read_text(encoding='utf-8'));self.assertEqual(read_json(self.home/'.ai-toolkit/state.json')['user']['email'],'autre@societe.fr')
+  self.assertIn('prenom.nom@societe.fr',u.read_text(encoding='utf-8'));self.assertEqual(read_json(self.home/'.ai-kit/state.json')['user']['email'],'autre@societe.fr')
  def test_no_identity_no_header(self):
   self.run_kit();text=(self.home/'.gemini/30_USER.md').read_text(encoding='utf-8');self.assertNotIn('Personne :',text);self.assertNotIn('{identity}',text)
  def test_invalid_email_refused(self):
@@ -37,7 +37,7 @@ class IdentityTests(unittest.TestCase):
  def test_cli_user_option_non_interactive(self):
   proc=subprocess.run([sys.executable,'-m','installer','setup','--profile','data-analyst','--user','prenom.nom@societe.fr','--home',str(self.home),'--no-live'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8',stdin=subprocess.DEVNULL,env={**os.environ,'PYTHONIOENCODING':'utf-8'})
   self.assertEqual(proc.returncode,0,proc.stdout+proc.stderr);self.assertIn('Identité : prenom.nom@societe.fr (source option)',proc.stdout)
-  self.assertEqual(read_json(self.home/'.ai-toolkit/state.json')['user']['source'],'option')
+  self.assertEqual(read_json(self.home/'.ai-kit/state.json')['user']['source'],'option')
  def test_directory_suggests_profile(self):
   fake={'emails':{'dev@societe.fr':'data-developer'}}
   real=cli.read_json
@@ -50,7 +50,7 @@ class IdentityTests(unittest.TestCase):
   def patched(path,default=None):return fake if path.name=='directory.json' else real(path,default)
   with mock.patch.object(cli,'read_json',side_effect=patched), mock.patch.object(sys.stdin,'isatty',return_value=False), contextlib.redirect_stdout(io.StringIO()):
    code=cli.main(['setup','--user','dev@societe.fr','--home',str(self.home),'--no-live'])
-  self.assertEqual(code,0);self.assertEqual(read_json(self.home/'.ai-toolkit/state.json')['profile'],'data-developer')
+  self.assertEqual(code,0);self.assertEqual(read_json(self.home/'.ai-kit/state.json')['profile'],'data-developer')
  def test_doctor_domain_and_mismatch_warnings(self):
   self.run_kit(user={'email':'prenom.nom@societe.fr','source':'option'})
   self.write('.gemini/google_accounts.json',json.dumps({'active':'perso@gmail.com','old':[]}))

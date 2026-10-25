@@ -30,7 +30,7 @@ Catégories : `workflow` (une étape du SDLC), `tool` (utilitaire hors flux), `d
 | `handoff` | tool | optional | `/handoff` | Compacter la conversation en document de passation pour un autre agent ou une autre session. |
 | `wait-what` | tool | profile | `/explain` | Reformuler le dernier message qui n’a pas été compris, avec le vocabulaire du glossaire. |
 | `zoom-out` | tool | profile | `/explain` | Prendre de la hauteur : contexte élargi et vue d’ensemble. |
-| `teach` | tool | core | `/learn` | Apprendre un périmètre ou un concept sur plusieurs sessions : leçons, quiz et fiches ; matériel partagé dans `docs/learn/<sujet>/` du repo, progression personnelle dans `~/.ai-toolkit/learning/`. |
+| `teach` | tool | core | `/learn` | Apprendre un périmètre ou un concept sur plusieurs sessions : leçons, quiz et fiches ; matériel partagé dans `docs/learn/<sujet>/` du repo, progression personnelle dans `~/.ai-kit/learning/`. |
 | `improve-codebase-architecture` | tool | optional | `/audit` | Repérer les modules à approfondir, rapport HTML, puis entretien sur ceux retenus. |
 | `wizard` | tool | optional | `/wizard` | Générer un assistant bash interactif pour les étapes que seul un humain peut faire. |
 | `write-a-skill` | tool | optional | — | Créer un skill : structure, divulgation progressive, ressources. |

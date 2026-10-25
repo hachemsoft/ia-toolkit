@@ -194,13 +194,13 @@ AGENT_INSTRUCTION = ('Lire les instructions et le contexte du repo courant. Ne p
 
 def context_locations():
     """Dossiers possibles du contexte, relatifs au dossier personnel : ceux des CLI qui l'hébergent, puis celui du kit."""
-    return [a.HOME_DIR for a in ADAPTERS if isinstance(a, ContextHost)] + ['.ai-toolkit/context']
+    return [a.HOME_DIR for a in ADAPTERS if isinstance(a, ContextHost)] + ['.ai-kit/context']
 
 def context_location(home, active):
     """Dossier des couches et de 30_USER.md : celui d'une CLI active qui ne lit son contexte que chez elle (context_dir),
-    sinon ~/.ai-toolkit/context, que les autres CLI incluent ou recopient."""
+    sinon ~/.ai-kit/context, que les autres CLI incluent ou recopient."""
     host = next((a for a in active if isinstance(a, ContextHost)), None)
-    return host.context_dir(home) if host else home/'.ai-toolkit'/'context'
+    return host.context_dir(home) if host else home/'.ai-kit'/'context'
 
 TARGETS = {'auto': None, 'gemini': ('gemini',), 'agy': ('agy',), 'codex': ('codex',), 'both': ('gemini', 'agy'), 'all': tuple(a.NAME for a in ADAPTERS)}
 
@@ -214,10 +214,36 @@ def selected_adapters(target, home):
         return [a for a in ADAPTERS if a.present(home)] or [ADAPTERS[0]]
     return [a for a in ADAPTERS if a.NAME in wanted]
 
+LEGACY_KIT_DIR = '.ai-toolkit'  # nom du dossier du kit avant la 0.18
+
+def migrate_kit_dir(home, dry_run=False):
+    """Renomme ~/.ai-toolkit en ~/.ai-kit et reporte le nouveau préfixe dans l'état. Les fichiers qui citent l'ancien chemin
+    (déclarations de garde-fous, règles agy, bloc Codex) sont réécrits ensuite par l'installation. Vrai si l'ancien dossier reste à migrer."""
+    old, new = home/LEGACY_KIT_DIR, home/'.ai-kit'
+    if not old.is_dir():
+        return False
+    if new.exists():
+        raise KitError('~/'+LEGACY_KIT_DIR+' et ~/.ai-kit existent tous les deux : garder ~/.ai-kit, y reporter ce qui manque (overrides.json, sauvegardes), retirer ~/'+LEGACY_KIT_DIR+', puis update.')
+    if dry_run:
+        print('Le dossier ~/'+LEGACY_KIT_DIR+' sera renommé en ~/.ai-kit au prochain setup ou update ; --dry-run ne le fait pas.')
+        return True
+    os.replace(old, new)
+    state = read_json(new/'state.json')
+    if state:
+        prefix = LEGACY_KIT_DIR+'/'
+        state['files'] = {('.ai-kit/'+rel[len(prefix):] if rel.startswith(prefix) else rel): value for rel, value in state.get('files', {}).items()}
+        if str(state.get('context_dir', '')).startswith(prefix):
+            state['context_dir'] = '.ai-kit/'+state['context_dir'][len(prefix):]
+        atomic_write(new/'state.json', json_bytes(state))
+    print('Dossier du kit renommé : ~/'+LEGACY_KIT_DIR+' devient ~/.ai-kit.')
+    return False
+
 def apply(profile_id, home, dry_run=False, user=None, target='auto'):
     """Prévalidation complète, plan neutre, adaptateurs, sauvegarde puis écriture atomique fichier par fichier."""
     home = home.resolve()
-    kit = home / '.ai-toolkit'
+    if migrate_kit_dir(home, dry_run):
+        return  # --dry-run : l'ancien dossier n'est pas encore renommé, le plan serait faux
+    kit = home / '.ai-kit'
     active = selected_adapters(target, home)
     context_dir = context_location(home, active)
     profile_id = safe_id(profile_id)
@@ -399,7 +425,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto'):
                 atomic_write(path,data)
             for path in deletes:
                 path.unlink()
-                prune_empty_dirs(path.parent, next((home/d for d in managed_roots(home) if path.is_relative_to(home/d)), home/'.ai-toolkit'))
+                prune_empty_dirs(path.parent, next((home/d for d in managed_roots(home) if path.is_relative_to(home/d)), home/'.ai-kit'))
         except OSError:
             for path,data in originals.items():
                 if data is None:
@@ -419,11 +445,11 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto'):
             print(line)
     print('Ouvrir un projet, lancer la CLI et taper /guide ; vérifications propres à chaque CLI : docs/cli/.')
 
-KIT_MANAGED = ('.ai-toolkit/bin/', '.ai-toolkit/hooks/', '.ai-toolkit/context/')
+KIT_MANAGED = ('.ai-kit/bin/', '.ai-kit/hooks/', '.ai-kit/context/')
 
 def managed_roots(home):
     """Dossiers racines où le kit pose des fichiers : le sien et celui de chaque CLI."""
-    return ['.ai-toolkit'] + sorted({a.HOME_DIR for a in ADAPTERS})
+    return ['.ai-kit'] + sorted({a.HOME_DIR for a in ADAPTERS})
 
 def prune_empty_dirs(directory, stop):
     """Retirer les dossiers vides laissés par une suppression, sans jamais retirer un dossier racine ni ses dossiers structurants."""
@@ -451,7 +477,9 @@ def doctor(home):
         if not ok:
             issues += 1
     status(sys.version_info >= (3,9),'Python 3.9 minimum')
-    state = read_json(home/'.ai-toolkit/state.json')
+    if (home/LEGACY_KIT_DIR).exists():
+        status(False,'Ancien dossier ~/'+LEGACY_KIT_DIR+' présent : lancer update, qui le renomme en ~/.ai-kit')
+    state = read_json(home/'.ai-kit/state.json')
     status(bool(state),'Installation du kit ; lancer setup si absente.')
     hints = []
     if state:
@@ -482,7 +510,9 @@ def doctor(home):
 def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
     """Relevé d'usage pour la revue d'usage (docs/usage-review.md) : commandes tapées, skills activés, agents appelés, depuis les journaux que chaque CLI écrit déjà."""
     from collections import Counter
-    state = read_json(home/'.ai-toolkit/state.json')
+    state = read_json(home/'.ai-kit/state.json')
+    if not state and (home/LEGACY_KIT_DIR).exists():
+        raise KitError('Ancien dossier ~/'+LEGACY_KIT_DIR+' : lancer update, qui le renomme en ~/.ai-kit, puis usage.')
     if not state:
         raise KitError('Kit absent : lancer setup.')
     catalog = read_json(ROOT/'skills/catalog.json')
@@ -544,9 +574,9 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
             if entry.get('tier') == 'core' and s not in required_by_used and entry.get('category') in ('workflow','tool'):
                 out.append(s)
         return out
-    # Frictions notées par /friction : ~/.ai-toolkit/frictions.jsonl, une ligne par friction, sur la fenêtre.
+    # Frictions notées par /friction : ~/.ai-kit/frictions.jsonl, une ligne par friction, sur la fenêtre.
     frictions = []
-    frictions_file = home/'.ai-toolkit/frictions.jsonl'
+    frictions_file = home/'.ai-kit/frictions.jsonl'
     if frictions_file.is_file():
         for line in frictions_file.read_text(encoding='utf-8', errors='replace').splitlines():
             try:
@@ -640,7 +670,9 @@ def main(argv=None):
             return code
         if args.action == 'usage':
             return usage(home, args.since, args.json, args.min_sessions, args.min_prompts)
-        state = read_json(home/'.ai-toolkit/state.json')
+        if not args.dry_run:
+            migrate_kit_dir(home)  # en --dry-run, apply l'annonce sans renommer
+        state = read_json(home/'.ai-kit/state.json') or read_json(home/LEGACY_KIT_DIR/'state.json')
         identity = resolve_identity(args, home, state)
         email = (identity or state.get('user') or {}).get('email')
         role = args.profile or state.get('profile')

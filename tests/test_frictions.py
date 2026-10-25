@@ -8,12 +8,12 @@ class FrictionTests(unittest.TestCase):
  def run_kit(self,role='data-analyst'):
   with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home,False,None,'gemini')
  def test_script_installed_and_command_present(self):
-  self.run_kit();script=self.home/'.ai-toolkit/bin/friction.py';self.assertTrue(script.is_file())
-  self.assertTrue((self.home/'.gemini/commands/friction.toml').is_file());self.assertIn('.ai-toolkit/bin/friction.py',read_json(self.home/'.ai-toolkit/state.json')['files'])
+  self.run_kit();script=self.home/'.ai-kit/bin/friction.py';self.assertTrue(script.is_file())
+  self.assertTrue((self.home/'.gemini/commands/friction.toml').is_file());self.assertIn('.ai-kit/bin/friction.py',read_json(self.home/'.ai-kit/state.json')['files'])
  def test_script_appends_and_usage_counts(self):
-  self.run_kit();script=self.home/'.ai-toolkit/bin/friction.py';env={**os.environ,'HOME':str(self.home),'USERPROFILE':str(self.home)}
+  self.run_kit();script=self.home/'.ai-kit/bin/friction.py';env={**os.environ,'HOME':str(self.home),'USERPROFILE':str(self.home)}
   p=subprocess.run([sys.executable,'-I',str(script),'--category','docs','--command','/intent','--text','La page dit X mais la commande fait Y'],capture_output=True,text=True,env=env)
-  self.assertEqual(p.returncode,0,p.stderr);lines=(self.home/'.ai-toolkit/frictions.jsonl').read_text(encoding='utf-8').splitlines();self.assertEqual(len(lines),1)
+  self.assertEqual(p.returncode,0,p.stderr);lines=(self.home/'.ai-kit/frictions.jsonl').read_text(encoding='utf-8').splitlines();self.assertEqual(len(lines),1)
   e=json.loads(lines[0]);self.assertEqual(e['category'],'docs');self.assertEqual(e['command'],'intent')
   p=subprocess.run([sys.executable,'-I',str(script),'--category','nope','--text','x'],capture_output=True,text=True,env=env);self.assertNotEqual(p.returncode,0)
   out=io.StringIO()
@@ -32,9 +32,9 @@ class FrictionSignalTests(unittest.TestCase):
   with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'gemini')
   self.env={**os.environ,'HOME':str(self.home),'USERPROFILE':str(self.home)}
  def lines(self):
-  return [json.loads(line) for line in (self.home/'.ai-toolkit/frictions.jsonl').read_text(encoding='utf-8').splitlines()]
+  return [json.loads(line) for line in (self.home/'.ai-kit/frictions.jsonl').read_text(encoding='utf-8').splitlines()]
  def test_context_added_automatically(self):
-  subprocess.run([sys.executable,'-I',str(self.home/'.ai-toolkit/bin/friction.py'),'--category','skill','--cli','agy','--text','x y z'],capture_output=True,text=True,env=self.env,check=True)
+  subprocess.run([sys.executable,'-I',str(self.home/'.ai-kit/bin/friction.py'),'--category','skill','--cli','agy','--text','x y z'],capture_output=True,text=True,env=self.env,check=True)
   e=self.lines()[0];self.assertEqual(e['profile'],'data-analyst');self.assertEqual(e['kit'],read_json(ROOT/'profiles/data-analyst.json') and (ROOT/'VERSION').read_text().strip());self.assertEqual(e['cli'],'agy');self.assertIn(e['os'],('mac','windows','linux'));self.assertEqual(e['source'],'person')
  def test_doctor_failure_recorded_without_asking(self):
   from installer.core import record_auto_friction
@@ -51,7 +51,7 @@ class FrictionSignalTests(unittest.TestCase):
  def test_friction_mode_option(self):
   kit=lambda:(self.home/'.gemini/00_KIT.md').read_text(encoding='utf-8')
   self.assertIn('Proposer en une ligne de noter `/friction`',kit())
-  ov=self.home/'.ai-toolkit/overrides.json'
+  ov=self.home/'.ai-kit/overrides.json'
   for mode,needle,absent in (('auto','Noter toi-même la friction, sans demander','Proposer en une ligne'),('off',None,'## Frictions')):
    d=read_json(ov);d['frictions']=mode;ov.write_text(json.dumps(d),encoding='utf-8')
    with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'gemini')

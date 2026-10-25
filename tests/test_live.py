@@ -27,7 +27,7 @@ class VertexConfigTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def overrides(self,v):
-  p=self.home/'.ai-toolkit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
+  p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
  def run_kit(self):
   with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home)
  def test_vertex_configured_end_to_end(self):

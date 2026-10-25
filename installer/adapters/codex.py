@@ -11,8 +11,14 @@ from ..interface import DoctorContext, Plan, Status
 from ..core import (USER_CONTEXT, KitError, digest, quote_path, split_block, place_block, command_skill_text)
 
 CODEX_DIR = '.codex'
-CODEX_MD = ('<!-- ai-kit:début : bloc géré par le kit IA ; modifier ~/.gemini/30_USER.md ou ~/.ai-toolkit/overrides.json, puis update -->', '<!-- ai-kit:fin -->')
-CODEX_TOML = ('# >>> ai-kit : bloc géré par le kit IA ; modifier ~/.ai-toolkit/overrides.json, puis update >>>', '# <<< ai-kit <<<')
+# Marqueurs des blocs gérés : sans chemin, pour ne jamais changer quand un dossier est renommé.
+CODEX_MD = ('<!-- ai-kit:début : bloc géré par le Kit IA ; ne pas le modifier ici (30_USER.md, overrides.json, puis update) -->', '<!-- ai-kit:fin -->')
+CODEX_TOML = ('# >>> ai-kit : bloc géré par le Kit IA ; ne pas le modifier ici (overrides.json, puis update) >>>', '# <<< ai-kit <<<')
+# Marqueurs de début écrits avant la 0.18 : reconnus pour reprendre le bloc, puis remplacés.
+LEGACY_STARTS = {
+    CODEX_MD[0]: ('<!-- ai-kit:début : bloc géré par le kit IA ; modifier ~/.gemini/30_USER.md ou ~/.ai-toolkit/overrides.json, puis update -->',),
+    CODEX_TOML[0]: ('# >>> ai-kit : bloc géré par le kit IA ; modifier ~/.ai-toolkit/overrides.json, puis update >>>',),
+}
 CODEX_EXPLICIT_ONLY = 'policy:\n  allow_implicit_invocation: false\n'
 
 def explicit_only(skill_text):
@@ -41,7 +47,7 @@ def codex_context_block(kit_text, practice_texts, user_text):
              '', kit_text.strip(), '']
     lines += [t.strip()+'\n' for t in practice_texts]
     if user_text.strip():
-        lines += ['<!-- Copie de ~/.gemini/30_USER.md, mise à jour par update. -->', user_text.strip(), '']
+        lines += ['<!-- Copie de 30_USER.md, mise à jour par update. -->', user_text.strip(), '']
     lines.append(CODEX_MD[1])
     return '\n'.join(lines)
 
@@ -112,9 +118,13 @@ def finalize(p: Plan, active: bool = True) -> None:
     old_blocks = p.state.get('blocks', {})
     for rel, markers, position, label in ((CODEX_DIR+'/AGENTS.md', CODEX_MD, 'top', '~/.codex/AGENTS.md'), (CODEX_DIR+'/config.toml', CODEX_TOML, 'end', '~/.codex/config.toml')):
         path = p.home/rel
-        text = path.read_text(encoding='utf-8') if path.exists() else ''
+        text = original = path.read_text(encoding='utf-8') if path.exists() else ''
+        legacy = next((old for old in LEGACY_STARTS[markers[0]] if old in text), None)
+        if legacy:
+            text = text.replace(legacy, markers[0], 1)
         before, old_block, after = split_block(text, markers, label)
-        if old_block is not None and old_blocks.get(rel) != digest(normalize_newlines(old_block).encode('utf-8')):
+        written = old_block.replace(markers[0], legacy, 1) if old_block is not None and legacy else old_block  # le bloc tel qu'il a été écrit et enregistré
+        if old_block is not None and old_blocks.get(rel) != digest(normalize_newlines(written).encode('utf-8')):
             raise KitError('Bloc du kit modifié à la main dans '+label+' : reporter vos changements hors du bloc (ou dans overrides.json), retirer le bloc, puis update.')
         outside = before.rstrip('\n')+('\n' if before.strip() and after.strip() else '')+after.lstrip('\n')
         block = None
@@ -144,7 +154,7 @@ def finalize(p: Plan, active: bool = True) -> None:
                     raise KitError('~/.codex/config.toml deviendrait invalide avec le bloc du kit ('+str(exc)+') ; rien n’est écrit.')
         if block is not None:
             p.blocks[rel] = digest(block.encode('utf-8'))
-        if new_text != text and (block is not None or old_block is not None):
+        if new_text != original and (block is not None or old_block is not None):
             p.writes[path] = new_text.encode('utf-8')  # jamais supprimé : le fichier appartient à la personne
 
 def summary(p: Plan) -> Optional[str]:

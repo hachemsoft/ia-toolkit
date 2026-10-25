@@ -17,9 +17,9 @@ class GeneralProfileTests(unittest.TestCase):
   kit=(self.home/'.gemini/00_KIT.md').read_text(encoding='utf-8');self.assertIn('Aucun playbook',kit);self.assertTrue((self.home/'.gemini/20_TEAM.md').exists())
  def test_renamed_layer_is_retired_from_settings(self):
   # Une installation antérieure gérait 20_DATA.md : après update, le fichier et son nom disparaissent, 20_TEAM.md les remplace.
-  self.run_kit('data-analyst');state=read_json(self.home/'.ai-toolkit/state.json')
+  self.run_kit('data-analyst');state=read_json(self.home/'.ai-kit/state.json')
   old=self.home/'.gemini/20_DATA.md';old.write_text('ancien',encoding='utf-8');import hashlib;state['files']['.gemini/20_DATA.md']=hashlib.sha256(b'ancien').hexdigest()
-  (self.home/'.ai-toolkit/state.json').write_text(json.dumps(state),encoding='utf-8')
+  (self.home/'.ai-kit/state.json').write_text(json.dumps(state),encoding='utf-8')
   settings=read_json(self.home/'.gemini/settings.json');settings['context']['fileName'].insert(2,'20_DATA.md');(self.home/'.gemini/settings.json').write_text(json.dumps(settings),encoding='utf-8')
   self.run_kit('data-analyst');names=read_json(self.home/'.gemini/settings.json')['context']['fileName']
   self.assertFalse(old.exists());self.assertNotIn('20_DATA.md',names);self.assertIn('20_TEAM.md',names)

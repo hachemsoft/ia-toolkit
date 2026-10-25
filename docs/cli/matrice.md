@@ -37,7 +37,7 @@ Une CLI sans adaptateur peut déjà lire les fichiers de repo du kit (`AGENTS.md
 | Authentification réglée par le kit | sur déclaration : `vertex`, `code_assist`, `model` dans `overrides.json` | jamais ; voir [la page agy](agy.md#authentification--compte-ou-projet-google-cloud) | jamais (`codex login`) |
 | Page détaillée | [Gemini CLI](gemini.md) | [Antigravity CLI](agy.md) | [Codex CLI](codex.md) |
 
-**Où vivent les couches et `30_USER.md`.** Gemini n'importe que des fichiers situés dans `~/.gemini` (vérifié sur la 0.65). Quand Gemini est installé, les couches et `30_USER.md` sont donc dans `~/.gemini/`, et agy et Codex les lisent depuis là. Sans Gemini (`--target codex`, `--target agy`, ou un poste où seule une autre CLI est détectée), ils sont dans `~/.ai-toolkit/context/`, et aucun dossier `~/.gemini` n'est créé pour Codex. Si l'emplacement change, `30_USER.md` est recopié au nouvel endroit s'il y manque ; l'ancien n'est jamais supprimé. `doctor` indique le fichier en vigueur.
+**Où vivent les couches et `30_USER.md`.** Gemini n'importe que des fichiers situés dans `~/.gemini` (vérifié sur la 0.65). Quand Gemini est installé, les couches et `30_USER.md` sont donc dans `~/.gemini/`, et agy et Codex les lisent depuis là. Sans Gemini (`--target codex`, `--target agy`, ou un poste où seule une autre CLI est détectée), ils sont dans `~/.ai-kit/context/`, et aucun dossier `~/.gemini` n'est créé pour Codex. Si l'emplacement change, `30_USER.md` est recopié au nouvel endroit s'il y manque ; l'ancien n'est jamais supprimé. `doctor` indique le fichier en vigueur.
 
 ## Ajouter une CLI
 

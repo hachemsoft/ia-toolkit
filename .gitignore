@@ -1,6 +1,6 @@
 __pycache__/
 *.pyc
-.ai-toolkit/
+.ai-kit/
 .env
 .DS_Store
 .claude/

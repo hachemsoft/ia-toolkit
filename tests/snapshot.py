@@ -28,14 +28,14 @@ def capture(profile, target, overrides=None):
     with tempfile.TemporaryDirectory() as tmp:
         home = Path(tmp)
         if overrides is not None:
-            (home / '.ai-toolkit').mkdir()
-            (home / '.ai-toolkit' / 'overrides.json').write_text(json.dumps(overrides), encoding='utf-8')
+            (home / '.ai-kit').mkdir()
+            (home / '.ai-kit' / 'overrides.json').write_text(json.dumps(overrides), encoding='utf-8')
         with contextlib.redirect_stdout(io.StringIO()):
             apply(profile, home, False, IDENTITY, target)
         out = {}
         for path in sorted(home.rglob('*')):
             rel = path.relative_to(home).as_posix()
-            if not path.is_file() or rel.startswith('.ai-toolkit/backups/') or rel == '.ai-toolkit/state.json':
+            if not path.is_file() or rel.startswith('.ai-kit/backups/') or rel == '.ai-kit/state.json':
                 continue
             data = path.read_text(encoding='utf-8', errors='replace')
             for real in sorted({str(home), str(home.resolve())}, key=len, reverse=True):

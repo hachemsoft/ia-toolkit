@@ -51,15 +51,15 @@ class HookScriptTests(unittest.TestCase):
  def test_old_hook_location_migrated(self):
   import hashlib
   with tempfile.TemporaryDirectory() as tmp:
-   home=Path(tmp);(home/'.ai-toolkit').mkdir();(home/'.ai-toolkit/overrides.json').write_text(json.dumps({'hooks':{'dbt-prod-guard':True}}),encoding='utf-8')
+   home=Path(tmp);(home/'.ai-kit').mkdir();(home/'.ai-kit/overrides.json').write_text(json.dumps({'hooks':{'dbt-prod-guard':True}}),encoding='utf-8')
    with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',home,False,None,'gemini')
    # Simuler une installation 0.16 : script à l'ancien emplacement, suivi par l'état.
    old=home/'.gemini/hooks/ai-kit/dbt-prod-guard.py';old.parent.mkdir(parents=True);old.write_bytes((H/'dbt-prod-guard.py').read_bytes())
-   state=read_json(home/'.ai-toolkit/state.json');state['files']['.gemini/hooks/ai-kit/dbt-prod-guard.py']=hashlib.sha256(old.read_bytes()).hexdigest()
-   (home/'.ai-toolkit/state.json').write_text(json.dumps(state),encoding='utf-8')
+   state=read_json(home/'.ai-kit/state.json');state['files']['.gemini/hooks/ai-kit/dbt-prod-guard.py']=hashlib.sha256(old.read_bytes()).hexdigest()
+   (home/'.ai-kit/state.json').write_text(json.dumps(state),encoding='utf-8')
    with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',home,False,None,'gemini')
-   self.assertFalse(old.exists());self.assertFalse((home/'.gemini/hooks/ai-kit').exists());self.assertTrue((home/'.ai-toolkit/hooks/dbt-prod-guard.py').is_file())
-   command=read_json(home/'.gemini/settings.json')['hooks']['BeforeTool'][0]['hooks'][0]['command'];self.assertIn('.ai-toolkit',command)
+   self.assertFalse(old.exists());self.assertFalse((home/'.gemini/hooks/ai-kit').exists());self.assertTrue((home/'.ai-kit/hooks/dbt-prod-guard.py').is_file())
+   command=read_json(home/'.gemini/settings.json')['hooks']['BeforeTool'][0]['hooks'][0]['command'];self.assertIn('.ai-kit',command)
  def test_malformed_input_never_breaks(self):
   for s in ('dbt-prod-guard.py','protected-paths.py'):
    proc=subprocess.run([sys.executable,'-I',str(H/s)],input='not json',capture_output=True,text=True);self.assertEqual(proc.returncode,0);self.assertEqual(proc.stdout.strip(),'{}')
@@ -70,16 +70,16 @@ class HookInstallTests(unittest.TestCase):
  def run_kit(self,role='data-analyst'):
   with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home)
  def overrides(self,v):
-  p=self.home/'.ai-toolkit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
+  p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
  def settings(self):return read_json(self.home/'.gemini/settings.json')
  def test_disabled_by_default(self):
-  self.run_kit();self.assertNotIn('hooks',self.settings());self.assertFalse((self.home/'.gemini/hooks').exists());self.assertEqual(read_json(self.home/'.ai-toolkit/state.json')['hooks'],{})
+  self.run_kit();self.assertNotIn('hooks',self.settings());self.assertFalse((self.home/'.gemini/hooks').exists());self.assertEqual(read_json(self.home/'.ai-kit/state.json')['hooks'],{})
  def test_enable_then_disable(self):
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':True}});self.run_kit()
   groups=self.settings()['hooks']['BeforeTool'];self.assertEqual(len(groups),2);names={g['hooks'][0]['name'] for g in groups};self.assertEqual(names,{'ai-kit-dbt-prod-guard','ai-kit-protected-paths'})
-  self.assertEqual(groups[0]['matcher'],'run_shell_command');self.assertTrue((self.home/'.ai-toolkit/hooks/dbt-prod-guard.py').is_file());self.assertIn(str(self.home),groups[0]['hooks'][0]['command'])
+  self.assertEqual(groups[0]['matcher'],'run_shell_command');self.assertTrue((self.home/'.ai-kit/hooks/dbt-prod-guard.py').is_file());self.assertIn(str(self.home),groups[0]['hooks'][0]['command'])
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':False}});self.run_kit()
-  groups=self.settings()['hooks']['BeforeTool'];self.assertEqual(len(groups),1);self.assertFalse((self.home/'.ai-toolkit/hooks/protected-paths.py').exists())
+  groups=self.settings()['hooks']['BeforeTool'];self.assertEqual(len(groups),1);self.assertFalse((self.home/'.ai-kit/hooks/protected-paths.py').exists())
   self.overrides({'hooks':{}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertFalse((self.home/'.gemini/hooks/ai-kit').exists())
  def test_user_hooks_preserved(self):
   s=self.home/'.gemini/settings.json';s.parent.mkdir(parents=True);s.write_text(json.dumps({'hooks':{'BeforeTool':[{'matcher':'*','hooks':[{'name':'mine','type':'command','command':'echo'}]}],'SessionStart':[{'hooks':[{'type':'command','command':'x'}]}]}}))

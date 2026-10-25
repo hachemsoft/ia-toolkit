@@ -1,6 +1,6 @@
 # Antigravity CLI (agy)
 
-Le kit vise Gemini CLI et Antigravity CLI avec une seule source. Quand `agy` est présent sur le poste (ou le dossier `~/.gemini/config/`), `setup` et `update` installent aussi la sortie Antigravity ; `--target gemini` l’empêche, `--target both` la force avec Gemini, `--target agy` l’installe seule (les couches vont alors dans `~/.ai-toolkit/context/`).
+Le kit vise Gemini CLI et Antigravity CLI avec une seule source. Quand `agy` est présent sur le poste (ou le dossier `~/.gemini/config/`), `setup` et `update` installent aussi la sortie Antigravity ; `--target gemini` l’empêche, `--target both` la force avec Gemini, `--target agy` l’installe seule (les couches vont alors dans `~/.ai-kit/context/`).
 
 ## Ce qui est partagé sans rien faire
 
@@ -15,7 +15,7 @@ Un plugin `~/.gemini/config/plugins/ai-kit/`, validé par `agy plugin validate` 
 | Fichier | Rôle |
 | --- | --- |
 | `plugin.json` | nom, description, version du kit |
-| `rules/AGENTS.md` | règles toujours actives qui incluent les quatre couches par chemin (`@[00_kit](~/.gemini/00_KIT.md)`, …, `@[30_user](~/.gemini/30_USER.md)`, ou `~/.ai-toolkit/context/` sans Gemini) : une seule source, aucune copie |
+| `rules/AGENTS.md` | règles toujours actives qui incluent les quatre couches par chemin (`@[00_kit](~/.gemini/00_KIT.md)`, …, `@[30_user](~/.gemini/30_USER.md)`, ou `~/.ai-kit/context/` sans Gemini) : une seule source, aucune copie |
 | `agents/ai-kit-*.md` | les mêmes agents que Gemini (vérificateur, revue adverse, revue SQL, dbt, code) ; visibles dans agy |
 | `hooks.json` | les deux garde-fous, `enabled` suivant `overrides.json`, charge utile agy (`toolCall.args.CommandLine`) comprise par les scripts |
 | `mcp_config.json` | les MCP activés dans `overrides.json`, quand il y en a |

@@ -6,7 +6,7 @@ Ce que le kit fait pour Gemini CLI, et ce qui est propre à cette CLI. Comportem
 
 - **Contexte** : `00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md` et `30_USER.md` dans `~/.gemini/`, déclarés dans `context.fileName` de `~/.gemini/settings.json`, suivis de `GEMINI.md` et `AGENTS.md` pour les repos. Les noms personnels déjà présents dans `context.fileName` sont conservés.
 - **Skills** dans `~/.gemini/skills/`, **commandes** dans `~/.gemini/commands/*.toml`, **agents** dans `~/.gemini/agents/ai-kit-*.md`.
-- **Garde-fous** activés : scripts dans `~/.ai-toolkit/hooks/` (partagés par toutes les CLI), déclarés sous `hooks.BeforeTool` dans des groupes nommés `ai-kit-<nom>`. Vos propres hooks sont conservés.
+- **Garde-fous** activés : scripts dans `~/.ai-kit/hooks/` (partagés par toutes les CLI), déclarés sous `hooks.BeforeTool` dans des groupes nommés `ai-kit-<nom>`. Vos propres hooks sont conservés.
 - **MCP** activés dans `overrides.json` : entrées `ai-kit-<nom>` sous `mcpServers`.
 - **Réglage par défaut** : `skills.enabled`, seulement s'il manque.
 
@@ -39,7 +39,7 @@ Les lignes du kit dans `.env` portent le commentaire `# ai-kit :` et disparaisse
 - **Gemini absent** : le kit prépare les fichiers mais n'installe pas Gemini ; utiliser la procédure IT, puis se connecter.
 - **Contexte non chargé** : `/memory show` dans un repo ; si les couches manquent, vérifier `context.fileName` et une éventuelle politique administrée.
 - **Variables Vertex ignorées** : `selectedType` vaut encore `gemini-api-key` ; déclarer `vertex` dans `overrides.json` puis `update`, ou `/auth`.
-- **Bloc hérité dans `GEMINI.md`** (installations 0.0.x) : copier vos ajouts dans `~/.gemini/30_USER.md`, retirer le bloc entre les marqueurs `ai-toolkit` de `~/.gemini/GEMINI.md`, puis `update`.
+- **Bloc hérité dans `GEMINI.md`** (installations 0.0.x) : copier vos ajouts dans `~/.gemini/30_USER.md`, retirer le bloc entre les marqueurs `ai-kit` de `~/.gemini/GEMINI.md`, puis `update`.
 - **Skill installé hors du kit** (par exemple `gemini skills install`) : le retirer, ou l'ajouter à `disabled_skills`.
 
 Passer à agy : [ce qui change, ce qui ne change pas](gemini-vers-agy.md).

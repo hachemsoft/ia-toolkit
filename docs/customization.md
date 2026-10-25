@@ -4,7 +4,7 @@ Le dossier utilisateur est celui de Windows ou macOS, pas celui du projet.
 
 ## Les couches de contexte
 
-Le kit installe des fichiers courts, chargés par l’agent dans tous vos projets, dans cet ordre. Ils sont dans `~/.gemini/` si Gemini CLI est installé (il ne lit que son dossier), sinon dans `~/.ai-toolkit/context/` ; détail par CLI : [matrice](cli/matrice.md#ajouter-une-cli).
+Le kit installe des fichiers courts, chargés par l’agent dans tous vos projets, dans cet ordre. Ils sont dans `~/.gemini/` si Gemini CLI est installé (il ne lit que son dossier), sinon dans `~/.ai-kit/context/` ; détail par CLI : [matrice](cli/matrice.md#ajouter-une-cli).
 
 | Fichier | Propriétaire | Contenu |
 | --- | --- | --- |
@@ -40,7 +40,7 @@ Chaque repo fournit son `AGENTS.md`, lu après les couches globales. Pour y red�
 
 ## Commandes, skills, agents et MCP
 
-`~/.ai-toolkit/overrides.json` : sélection des commandes, skills, agents et MCP. Conserver un JSON valide.
+`~/.ai-kit/overrides.json` : sélection des commandes, skills, agents et MCP. Conserver un JSON valide.
 
 **Commandes.** `extra_commands` ajoute des commandes à celles du profil, avec leurs skills ; `disabled_commands` en retire. Un analyste qui veut `/spec` et `/review` :
 

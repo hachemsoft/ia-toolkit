@@ -219,7 +219,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/teach",
-    "description": "Apprendre un périmètre ou un concept sur plusieurs sessions : leçons, quiz et fiches ; matériel partagé dans docs/learn/<sujet>/ du repo, progression personnelle dans ~/.ai-toolkit/learning/.",
+    "description": "Apprendre un périmètre ou un concept sur plusieurs sessions : leçons, quiz et fiches ; matériel partagé dans docs/learn/<sujet>/ du repo, progression personnelle dans ~/.ai-kit/learning/.",
     "category": "tool",
     "tier": "core"
   },

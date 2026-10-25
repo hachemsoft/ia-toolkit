@@ -13,7 +13,7 @@ Répondre dans la langue de la personne. Les titres de sections des artefacts (i
 
 ## Commandes
 La cérémonie suit les enjeux : une retouche se fait sans artefact, une fonctionnalité passe par les étapes, la production exige la revue complète. `/guide` aide à choisir.
-Seules les commandes ci-dessous sont installées pour ce profil. Ne jamais en proposer une autre ; si une commande absente conviendrait, dire qu’elle s’active d’une ligne (`extra_commands` dans `~/.ai-toolkit/overrides.json`, puis `update`).
+Seules les commandes ci-dessous sont installées pour ce profil. Ne jamais en proposer une autre ; si une commande absente conviendrait, dire qu’elle s’active d’une ligne (`extra_commands` dans `~/.ai-kit/overrides.json`, puis `update`).
 {commands}
 
 ## Playbooks métier

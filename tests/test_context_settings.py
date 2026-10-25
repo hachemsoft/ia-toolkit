@@ -38,4 +38,4 @@ class ContextSettingsTests(unittest.TestCase):
    home=Path(tmp);settings=home/'.gemini/settings.json';settings.parent.mkdir()
    original=b'{"context":{"fileName":42},"ui":{"theme":"mine"}}';settings.write_bytes(original)
    with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(KitError):apply('data-developer',home)
-   self.assertEqual(settings.read_bytes(),original);self.assertFalse((home/'.ai-toolkit').exists())
+   self.assertEqual(settings.read_bytes(),original);self.assertFalse((home/'.ai-kit').exists())

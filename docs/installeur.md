@@ -6,7 +6,7 @@ Page de référence pour qui déploie ou maintient le kit. Pour installer : [dé
 
 - Ne choisit ni le mode d’authentification ni le modèle : connexion Google, Code Assist sous licence (`code_assist`), Vertex AI (`vertex`) ou clé API, et `model` seulement si vous le déclarez dans `overrides.json`. Voir [personnalisation](customization.md#authentification-et-modèle).
 - Détecte une identité déclarative (compte actif de la CLI, git, session OS), la fait confirmer et l’écrit en tête de `30_USER.md` à sa création. Voir [identité](identity.md).
-- Stocke profil, identité, surcharges, empreintes et sauvegardes dans `~/.ai-toolkit`.
+- Stocke profil, identité, surcharges, empreintes et sauvegardes dans `~/.ai-kit`.
 - Refuse d’écraser les couches, skills, agents ou MCP gérés qui ont été modifiés à la main.
 - Retire les anciens fichiers gérés lors d’un changement de profil ou de version s’ils sont intacts.
 - Prévalide les conflits, sauvegarde, puis écrit les fichiers ; tente une restauration en cas d’erreur d’écriture.
@@ -14,7 +14,9 @@ Page de référence pour qui déploie ou maintient le kit. Pour installer : [dé
 
 Les réglages existants doivent être du JSON strict. Un fichier JSON invalide ou contenant des commentaires est refusé sans modification. Les liens symboliques sur les chemins gérés ne sont pas pris en charge.
 
-Les couches de contexte et `30_USER.md` sont écrits dans `~/.gemini/` quand Gemini CLI est installé (il ne lit que son dossier), sinon dans `~/.ai-toolkit/context/`, que les autres CLI incluent ou recopient. Les scripts des garde-fous sont dans `~/.ai-toolkit/hooks/`.
+Les couches de contexte et `30_USER.md` sont écrits dans `~/.gemini/` quand Gemini CLI est installé (il ne lit que son dossier), sinon dans `~/.ai-kit/context/`, que les autres CLI incluent ou recopient. Les scripts des garde-fous sont dans `~/.ai-kit/hooks/`.
+
+Avant la 0.18, le dossier du kit s’appelait `~/.ai-toolkit`. Le premier `setup` ou `update` le renomme en `~/.ai-kit`, avec `overrides.json`, l’état et les sauvegardes, puis réécrit les fichiers qui citaient l’ancien chemin. Si les deux dossiers existent, le kit s’arrête sans rien toucher : garder `~/.ai-kit`, y reporter ce qui manque, retirer `~/.ai-toolkit`, puis `update`.
 
 ## Commandes
 

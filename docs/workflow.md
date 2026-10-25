@@ -16,7 +16,7 @@ Chaque commande annonce en une ligne le niveau qu’elle a retenu. `/review` acc
 
 ## Les étapes
 
-Les commandes installées dépendent du profil : voir la [table des profils](getting-started.md#3-travailler--une-commande-par-étape). Une commande absente s’ajoute d’une ligne, `extra_commands` dans `~/.ai-toolkit/overrides.json`, puis `update`.
+Les commandes installées dépendent du profil : voir la [table des profils](getting-started.md#3-travailler--une-commande-par-étape). Une commande absente s’ajoute d’une ligne, `extra_commands` dans `~/.ai-kit/overrides.json`, puis `update`.
 
 | Étape | Commande | Artefact | Ce que fait la commande |
 | --- | --- | --- | --- |

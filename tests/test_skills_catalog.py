@@ -11,7 +11,7 @@ class SkillCatalogTests(unittest.TestCase):
   with contextlib.redirect_stdout(out):apply(role,self.home)
   return out.getvalue()
  def overrides(self,v):
-  p=self.home/'.ai-toolkit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
+  p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
  def test_requires_resolved_transitively(self):
   self.assertEqual(resolve_skills({'skills':['a']},{},FAKE,log=lambda m:None),['a','b'])
  def test_disabled_dependency_refused(self):
@@ -42,7 +42,7 @@ class SkillCatalogTests(unittest.TestCase):
   self.assertIn('Skill remplacé : clarify-request → grilling',out);self.assertTrue((self.home/'.gemini/skills/grilling/SKILL.md').exists());self.assertFalse((self.home/'.gemini/skills/clarify-request').exists())
  def test_legacy_installed_skill_removed_on_update(self):
   self.run_kit();old=self.home/'.gemini/skills/clarify-request/SKILL.md';old.parent.mkdir();old.write_text('ancien')
-  sp=self.home/'.ai-toolkit/state.json';st=read_json(sp);st['files']['.gemini/skills/clarify-request/SKILL.md']=__import__('installer.cli',fromlist=['digest']).digest(b'ancien');sp.write_text(json.dumps(st))
+  sp=self.home/'.ai-kit/state.json';st=read_json(sp);st['files']['.gemini/skills/clarify-request/SKILL.md']=__import__('installer.cli',fromlist=['digest']).digest(b'ancien');sp.write_text(json.dumps(st))
   self.run_kit();self.assertFalse(old.exists());self.assertFalse(old.parent.exists());self.assertTrue((self.home/'.gemini/skills').is_dir())
  def test_kit_layer_lists_commands_and_playbooks(self):
   self.run_kit();text=(self.home/'.gemini/00_KIT.md').read_text(encoding='utf-8')

@@ -33,7 +33,7 @@ L’agent peut aussi choisir une délégation d’après la description. Ces ins
 
 ## Profils de capacité
 
-Un agent ne nomme jamais un modèle : il déclare, au plus, ce qu’il attend (`"capability": "fast"` pour le vérificateur, qui lance des tests et doit répondre vite ; `"deep"` pour l’agent de doute, qui doit raisonner). L’organisation donne la correspondance, si elle le souhaite, dans `~/.ai-toolkit/overrides.json` :
+Un agent ne nomme jamais un modèle : il déclare, au plus, ce qu’il attend (`"capability": "fast"` pour le vérificateur, qui lance des tests et doit répondre vite ; `"deep"` pour l’agent de doute, qui doit raisonner). L’organisation donne la correspondance, si elle le souhaite, dans `~/.ai-kit/overrides.json` :
 
 ```json
 { "models": { "fast": "gemini-2.5-flash", "deep": "gemini-2.5-pro" } }
@@ -61,7 +61,7 @@ L’accès ultérieur à un MCP devra utiliser des outils explicitement autoris�
 
 L’installateur génère les fichiers, les versionne dans son état, protège les modifications locales et retire les anciennes sorties intactes quand le profil change.
 
-Personnalisation dans `~/.ai-toolkit/overrides.json` : ajouter `extra_agents` et `disabled_agents` comme listes de noms du catalogue (sans préfixe ai-kit). Conserver les autres clés du fichier.
+Personnalisation dans `~/.ai-kit/overrides.json` : ajouter `extra_agents` et `disabled_agents` comme listes de noms du catalogue (sans préfixe ai-kit). Conserver les autres clés du fichier.
 
 Les agents propres à un repo restent dans ce repo (`.agents/`). Les mêmes agents sont installés dans le plugin Antigravity ; voir [agy](cli/agy.md).
 

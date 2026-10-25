@@ -1,9 +1,9 @@
 #!/bin/sh
-# Construit l'archive de distribution du kit : dist/ai-toolkit-<version>.zip, sans caches ni fichiers locaux.
+# Construit l'archive de distribution du kit : dist/ai-kit-<version>.zip, sans caches ni fichiers locaux.
 set -eu
 KIT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 VERSION=$(tr -d '[:space:]' < "$KIT_DIR/VERSION")
-OUT="$KIT_DIR/dist/ai-toolkit-$VERSION.zip"
+OUT="$KIT_DIR/dist/ai-kit-$VERSION.zip"
 mkdir -p "$KIT_DIR/dist"
 rm -f "$OUT"
 cd "$KIT_DIR/.."

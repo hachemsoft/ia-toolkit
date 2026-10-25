@@ -15,9 +15,9 @@ class ContextLayerTests(unittest.TestCase):
   for name in ('00_KIT.md','10_COMPANY.md','20_TEAM.md','30_USER.md'):self.assertTrue(self.path('.gemini/'+name).is_file(),name)
   self.assertIn('Profil : data-analyst',self.path('.gemini/00_KIT.md').read_text())
   self.assertIn('Pratiques d’équipe',self.path('.gemini/20_TEAM.md').read_text())
-  state=read_json(self.path('.ai-toolkit/state.json'));self.assertEqual(state['schema_version'],2);self.assertNotIn('context_hash',state)
+  state=read_json(self.path('.ai-kit/state.json'));self.assertEqual(state['schema_version'],2);self.assertNotIn('context_hash',state)
   self.assertIn('.gemini/00_KIT.md',state['files']);self.assertNotIn('.gemini/30_USER.md',state['files'])
-  self.assertFalse(self.path('.gemini/GEMINI.md').exists());self.assertFalse(self.path('.ai-toolkit/preferences.md').exists())
+  self.assertFalse(self.path('.gemini/GEMINI.md').exists());self.assertFalse(self.path('.ai-kit/preferences.md').exists())
  def test_user_layer_never_rewritten(self):
   self.run_kit();u=self.path('.gemini/30_USER.md');u.write_text('Personnel');self.run_kit('data-developer');self.assertEqual(u.read_text(),'Personnel')
   doctor_out=io.StringIO()
@@ -26,37 +26,37 @@ class ContextLayerTests(unittest.TestCase):
  def test_modified_kit_layer_blocks(self):
   self.run_kit();self.write('.gemini/10_COMPANY.md','modifié')
   with self.assertRaises(KitError):self.run_kit('data-developer')
-  self.assertEqual(read_json(self.path('.ai-toolkit/state.json'))['profile'],'data-analyst')
+  self.assertEqual(read_json(self.path('.ai-kit/state.json'))['profile'],'data-analyst')
  def test_existing_unmanaged_layer_blocks(self):
   self.write('.gemini/00_KIT.md','tiers')
   with self.assertRaises(KitError):self.run_kit()
-  self.assertFalse(self.path('.ai-toolkit/state.json').exists())
+  self.assertFalse(self.path('.ai-kit/state.json').exists())
  def legacy_state(self,block_text):
   block=START+'\n'+block_text+'\n'+END
   self.write('.gemini/GEMINI.md','Mes notes\n\n'+block+'\n')
-  self.write('.ai-toolkit/preferences.md','# Mes préférences\n- Anglais\n')
-  self.write('.ai-toolkit/state.json',json.dumps({'schema_version':1,'version':'0.0.4','profile':'data-analyst','files':{},'context_hash':digest(block.encode()),'mcp':{}}))
+  self.write('.ai-kit/preferences.md','# Mes préférences\n- Anglais\n')
+  self.write('.ai-kit/state.json',json.dumps({'schema_version':1,'version':'0.0.4','profile':'data-analyst','files':{},'context_hash':digest(block.encode()),'mcp':{}}))
  def test_migration_from_legacy_block(self):
   self.legacy_state('ancien bloc');self.run_kit()
   self.assertEqual(self.path('.gemini/GEMINI.md').read_text(),'Mes notes\n')
   self.assertEqual(self.path('.gemini/30_USER.md').read_text(),'# Mes préférences\n- Anglais\n')
-  self.assertFalse(self.path('.ai-toolkit/preferences.md').exists());self.assertTrue(self.path('.ai-toolkit/preferences.md.migrated').exists())
-  self.assertEqual(read_json(self.path('.ai-toolkit/state.json'))['schema_version'],2)
+  self.assertFalse(self.path('.ai-kit/preferences.md').exists());self.assertTrue(self.path('.ai-kit/preferences.md.migrated').exists())
+  self.assertEqual(read_json(self.path('.ai-kit/state.json'))['schema_version'],2)
   self.run_kit();self.assertEqual(self.path('.gemini/GEMINI.md').read_text(),'Mes notes\n')
  def test_migration_removes_empty_gemini_md(self):
   block=START+'\nbloc\n'+END;self.write('.gemini/GEMINI.md',block+'\n')
-  self.write('.ai-toolkit/state.json',json.dumps({'schema_version':1,'version':'0.0.4','profile':'data-analyst','files':{},'context_hash':digest(block.encode()),'mcp':{}}))
+  self.write('.ai-kit/state.json',json.dumps({'schema_version':1,'version':'0.0.4','profile':'data-analyst','files':{},'context_hash':digest(block.encode()),'mcp':{}}))
   self.run_kit();self.assertFalse(self.path('.gemini/GEMINI.md').exists())
  def test_migration_refused_when_block_modified(self):
   self.legacy_state('ancien bloc');g=self.path('.gemini/GEMINI.md');g.write_text(g.read_text().replace('ancien bloc','bloc édité'))
   with self.assertRaises(KitError):self.run_kit()
-  self.assertFalse(self.path('.gemini/00_KIT.md').exists());self.assertTrue(self.path('.ai-toolkit/preferences.md').exists())
+  self.assertFalse(self.path('.gemini/00_KIT.md').exists());self.assertTrue(self.path('.ai-kit/preferences.md').exists())
  def test_obsolete_managed_layer_removed(self):
-  self.run_kit();old=self.write('.gemini/15_OLD.md','ancienne couche');state_path=self.path('.ai-toolkit/state.json');state=read_json(state_path)
+  self.run_kit();old=self.write('.gemini/15_OLD.md','ancienne couche');state_path=self.path('.ai-kit/state.json');state=read_json(state_path)
   state['files']['.gemini/15_OLD.md']=digest(old.read_bytes());state_path.write_text(json.dumps(state))
   self.run_kit();self.assertFalse(old.exists())
  def test_state_never_deletes_user_layer(self):
-  self.run_kit();state_path=self.path('.ai-toolkit/state.json');state=read_json(state_path)
+  self.run_kit();state_path=self.path('.ai-kit/state.json');state=read_json(state_path)
   state['files']['.gemini/30_USER.md']=digest(self.path('.gemini/30_USER.md').read_bytes());state_path.write_text(json.dumps(state))
   with self.assertRaises(KitError):self.run_kit()
   self.assertTrue(self.path('.gemini/30_USER.md').exists())

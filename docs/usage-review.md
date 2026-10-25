@@ -37,7 +37,7 @@ Le relevé lit, localement et sans rien envoyer, les journaux de session que cha
 - les skills activés par le modèle, quand la CLI les enregistre (voir sa page) ;
 - les agents du kit appelés ;
 - les erreurs ;
-- les frictions notées avec `/friction` (`~/.ai-toolkit/frictions.jsonl` : date, catégorie, commande, une phrase), comptées par catégorie ;
+- les frictions notées avec `/friction` (`~/.ai-kit/frictions.jsonl` : date, catégorie, commande, une phrase), comptées par catégorie ;
 - puis, par différence, les commandes, skills et agents installés qui n’ont jamais servi.
 
 Il ne contient ni le texte des prompts, ni les noms de fichiers des repos, ni l’identité de la personne. Le JSON peut être partagé tel quel.
