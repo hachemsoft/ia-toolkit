@@ -16,3 +16,5 @@ Critères de recette : installation sans édition obligatoire, conservation de `
 Quand une version corrige des frictions remontées, le `CHANGELOG` le dit en une ligne, avec le nombre de signalements.
 
 Règle de support : un ticket ne se règle jamais deux fois à l’oral. Chaque ticket devient un contrôle de `doctor` (avec son remède), une ligne de `docs/ca-coince.md`, ou un cas d’évaluation dans `evals/cases/`. Le kit est corrigé sur les tickets réels, pas sur des suppositions.
+
+Avant une MR : `python3 -m unittest discover -s tests` et `ruff check .` (installé par `pip install -e '.[dev]'`, ou sans installation avec `uvx ruff check .`). La CI lance les deux.

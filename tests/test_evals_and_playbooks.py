@@ -1,4 +1,4 @@
-import contextlib, io, json, subprocess, sys, tempfile, unittest
+import contextlib, io, sys, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply
 from installer.core import read_json, load_commands, ROOT

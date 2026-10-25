@@ -14,7 +14,7 @@ import types
 import uuid
 from datetime import datetime, timezone
 
-from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, CONTEXT_NAME, EMAIL, KitError, read_json, json_bytes, digest,
+from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, KitError, read_json, json_bytes, digest,
                    safe_id, inside, quote_path, load_commands, _ts)
 from .adapters import ADAPTERS
 

@@ -1,4 +1,4 @@
-import json, re, unittest
+import re, unittest
 from pathlib import Path
 from installer.cli import allowed_commands
 from installer.core import ROOT, read_json, load_commands, parse_frontmatter
@@ -42,11 +42,11 @@ class ConsistencyTests(unittest.TestCase):
   bad=[]
   for f in general:
    fence=False
-   for i,l in enumerate((ROOT/f).read_text(encoding='utf-8').splitlines(),1):
-    if l.strip().startswith('```'):fence=not fence;continue
-    if fence or l.lstrip().startswith('|'):continue
+   for i,line in enumerate((ROOT/f).read_text(encoding='utf-8').splitlines(),1):
+    if line.strip().startswith('```'):fence=not fence;continue
+    if fence or line.lstrip().startswith('|'):continue
     for word in ('gemini','antigravity','codex'):
-     if word in l.lower() and not allowed.search(l):bad.append(f+':'+str(i))
+     if word in line.lower() and not allowed.search(line):bad.append(f+':'+str(i))
   self.assertEqual(bad,[],'nommer la CLI dans docs/cli/ ou dans un tableau')
  def test_python_39_imports(self):
   for f in list((ROOT/'installer').glob('*.py'))+list((ROOT/'tests').glob('*.py'))+[ROOT/'evals/run.py']+list((ROOT/'runtime/hooks').glob('*.py')):
@@ -71,7 +71,7 @@ class ConsistencyTests(unittest.TestCase):
  def test_docs_links_resolve(self):
   for md in list(ROOT.glob('*.md'))+list((ROOT/'docs').glob('*.md')):
    for m in re.finditer(r'\]\(([^)#\s]+)(#[^)]*)?\)',md.read_text(encoding='utf-8')):
-    l=m.group(1)
-    if l.startswith(('http','mailto','~')) or ('.' not in l and '/' not in l):continue
-    self.assertTrue((md.parent/l).exists(),str(md)+' → '+l)
+    link=m.group(1)
+    if link.startswith(('http','mailto','~')) or ('.' not in link and '/' not in link):continue
+    self.assertTrue((md.parent/link).exists(),str(md)+' → '+link)
 if __name__=='__main__':unittest.main()

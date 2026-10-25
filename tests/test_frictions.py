@@ -32,7 +32,7 @@ class FrictionSignalTests(unittest.TestCase):
   with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'gemini')
   self.env={**os.environ,'HOME':str(self.home),'USERPROFILE':str(self.home)}
  def lines(self):
-  return [json.loads(l) for l in (self.home/'.ai-toolkit/frictions.jsonl').read_text(encoding='utf-8').splitlines()]
+  return [json.loads(line) for line in (self.home/'.ai-toolkit/frictions.jsonl').read_text(encoding='utf-8').splitlines()]
  def test_context_added_automatically(self):
   subprocess.run([sys.executable,'-I',str(self.home/'.ai-toolkit/bin/friction.py'),'--category','skill','--cli','agy','--text','x y z'],capture_output=True,text=True,env=self.env,check=True)
   e=self.lines()[0];self.assertEqual(e['profile'],'data-analyst');self.assertEqual(e['kit'],read_json(ROOT/'profiles/data-analyst.json') and (ROOT/'VERSION').read_text().strip());self.assertEqual(e['cli'],'agy');self.assertIn(e['os'],('mac','windows','linux'));self.assertEqual(e['source'],'person')

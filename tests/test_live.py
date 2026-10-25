@@ -1,5 +1,8 @@
-import unittest
+import contextlib, io, json, tempfile, unittest
+from pathlib import Path
 from installer.adapters.gemini import diagnose_live
+from installer.cli import apply
+from installer.core import KitError, read_json
 S_KEY={'security':{'auth':{'selectedType':'gemini-api-key'}}}
 class LiveDiagnosisTests(unittest.TestCase):
  def test_ok(self):
@@ -20,10 +23,6 @@ class LiveDiagnosisTests(unittest.TestCase):
   d,r=diagnose_live(1,'something odd',False,S_KEY);self.assertIn('pas comme attendu',d)
 if __name__=='__main__':unittest.main()
 
-import contextlib, io, json, tempfile
-from pathlib import Path
-from installer.cli import apply
-from installer.core import KitError, read_json
 class VertexConfigTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)

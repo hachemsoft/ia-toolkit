@@ -1,8 +1,7 @@
 import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply, doctor, selected_commands
-from installer.core import load_commands, KitError, read_json, digest, ROOT
-from installer.adapters.gemini import gemini_command_toml
+from installer.core import load_commands, KitError, read_json, ROOT
 class CommandTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
@@ -51,7 +50,7 @@ class CommandTests(unittest.TestCase):
  def test_doctor_reports_commands_and_weight(self):
   self.run_kit();out=io.StringIO()
   with contextlib.redirect_stdout(out):code=doctor(self.home)
-  text=out.getvalue();self.assertIn('[OK] Commande /intent : skills présents',text);self.assertIn('descriptions de skills injectées',text);self.assertIn('[OK] .gemini/commands/intent.toml',text)
+  text=out.getvalue();self.assertEqual(code,0,text);self.assertIn('[OK] Commande /intent : skills présents',text);self.assertIn('descriptions de skills injectées',text);self.assertIn('[OK] .gemini/commands/intent.toml',text)
   (self.home/'.gemini/skills/teach/SKILL.md').unlink();sp=self.home/'.ai-toolkit/state.json';st=read_json(sp);del st['files']['.gemini/skills/teach/SKILL.md'];sp.write_text(json.dumps(st))
   out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)

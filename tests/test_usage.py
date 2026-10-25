@@ -2,7 +2,7 @@ import contextlib, io, json, tempfile, unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from installer.cli import apply, usage
-from installer.core import KitError, read_json
+from installer.core import KitError
 def msg(kind, ts, **extra):
  return {'id':'x','timestamp':ts.strftime('%Y-%m-%dT%H:%M:%S.000Z'),'type':kind,**extra}
 

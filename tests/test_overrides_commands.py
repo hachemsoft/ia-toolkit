@@ -1,7 +1,7 @@
 import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply
-from installer.core import KitError, read_json
+from installer.core import KitError
 class ExtraCommandsTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)

@@ -5,11 +5,10 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 
-from ..core import (ROOT, START, END, EMAIL, KIT_CONTEXT, USER_CONTEXT, CONTEXT_NAME, PROJECT_ID, KitError, read_json, json_bytes,
-                    digest, safe_id, inside, merge_defaults, quote_path, split_block, place_block, command_skill_text, run_timed,
+from ..core import (ROOT, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, PROJECT_ID, KitError, read_json, json_bytes,
+                    digest, merge_defaults, run_timed,
                     record_auto_friction, _ts)
 
 PROJECT_CONTEXT = ('GEMINI.md', 'AGENTS.md')  # fichiers de contexte de repo que Gemini doit lire
@@ -21,7 +20,7 @@ ENV_KEYS = ('GOOGLE_GENAI_USE_VERTEXAI', 'GOOGLE_CLOUD_PROJECT', 'GOOGLE_CLOUD_L
 def env_text(env_file, managed):
     """Contenu de ~/.gemini/.env : les lignes de l'utilisateur sont conservées, les lignes du kit (marqueur + variables gérées) remplacées ou retirées."""
     lines = env_file.read_text(encoding='utf-8').splitlines() if env_file.exists() else []
-    kept = [l for l in lines if l.split('=',1)[0].strip() not in ENV_KEYS and not l.strip().startswith(ENV_MARKER)]
+    kept = [line for line in lines if line.split('=',1)[0].strip() not in ENV_KEYS and not line.strip().startswith(ENV_MARKER)]
     if managed is not None:
         label, variables = managed
         kept += [ENV_MARKER + label + ' (géré par le kit, modifier overrides.json)'] + [k+'='+v for k,v in variables.items()]
@@ -76,7 +75,6 @@ LIVE_PROMPT = 'Réponds uniquement OK.'
 
 def diagnose_live(returncode, output, timed_out, settings):
     """Un diagnostic en une phrase et le remède, à partir de la sortie d'un appel réel à Gemini."""
-    auth = (settings.get('security') or {}).get('auth', {}).get('selectedType')
     if timed_out:
         return ('Gemini ne répond pas dans le délai : le modèle par défaut est probablement indisponible sur votre accès et Gemini boucle sur un repli.',
                 'Fixer un modèle : "model": "gemini-2.5-flash" dans ~/.ai-toolkit/overrides.json puis update (ou model.name dans ~/.gemini/settings.json).')

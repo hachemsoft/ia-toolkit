@@ -42,3 +42,14 @@ sources = { "installer" = "ai_kit" }
 
 [tool.hatch.build.targets.sdist]
 include = ["LICENSE", "installer", "runtime", "agents", "commands", "mcp", "practices", "profiles", "skills", "templates", "scripts", "docs", "evals", "tests", "VERSION", "README.md", "CHANGELOG.md", "pyproject.toml"]
+
+[project.optional-dependencies]
+dev = ["ruff"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 140
+
+[tool.ruff.lint.per-file-ignores]
+# Tests écrits en lignes denses (plusieurs instructions par ligne) : reformatage décidé à part.
+"tests/*" = ["E701", "E702", "E401", "E731"]

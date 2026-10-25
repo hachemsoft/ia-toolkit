@@ -1,16 +1,11 @@
 """Adaptateur Antigravity CLI (agy) : plugin ~/.gemini/config/plugins/ai-kit (règles, agents, garde-fous, MCP) et skills de commande."""
 import json
-import os
-from pathlib import Path
-import re
 import shutil
 import subprocess
 import sys
-import tempfile
 
-from ..core import (ROOT, START, END, KIT_CONTEXT, USER_CONTEXT, CONTEXT_NAME, PROJECT_ID, KitError, read_json, json_bytes,
-                    digest, safe_id, inside, merge_defaults, quote_path, split_block, place_block, command_skill_text, run_timed,
-                    record_auto_friction, _ts)
+from ..core import (ROOT, USER_CONTEXT, json_bytes,
+                    quote_path, command_skill_text)
 
 AGY_PLUGIN = '.gemini/config/plugins/ai-kit'
 

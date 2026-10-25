@@ -1,16 +1,10 @@
 """Adaptateur Codex CLI : skills dans ~/.codex/skills, blocs gérés dans ~/.codex/AGENTS.md et ~/.codex/config.toml."""
 import json
-import os
-from pathlib import Path
 import re
 import shutil
-import subprocess
 import sys
-import tempfile
 
-from ..core import (ROOT, START, END, KIT_CONTEXT, USER_CONTEXT, CONTEXT_NAME, PROJECT_ID, KitError, read_json, json_bytes,
-                    digest, safe_id, inside, merge_defaults, quote_path, split_block, place_block, command_skill_text, run_timed,
-                    record_auto_friction, _ts)
+from ..core import (USER_CONTEXT, KitError, digest, quote_path, split_block, place_block, command_skill_text)
 
 CODEX_DIR = '.codex'
 CODEX_MD = ('<!-- ai-kit:début : bloc géré par le kit IA ; modifier ~/.gemini/30_USER.md ou ~/.ai-toolkit/overrides.json, puis update -->', '<!-- ai-kit:fin -->')

@@ -1,4 +1,4 @@
-import contextlib, io, json, os, subprocess, sys, tempfile, unittest
+import contextlib, io, json, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply, doctor
 from installer.core import KitError, read_json, ROOT
