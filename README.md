@@ -48,7 +48,7 @@ Versions vérifiées, où chaque fichier est posé et ce qui diffère d’une CL
 
 ## Documentation
 
-- **Utiliser** : [démarrer](docs/getting-started.md), [workflow](docs/workflow.md), [outils](docs/tools.md), [agents](docs/agents.md), [couche projet](docs/project-context.md), [Ça coince ?](docs/ca-coince.md), [dépannage](docs/troubleshooting.md).
+- **Utiliser** : [démarrer](docs/getting-started.md), [workflow](docs/workflow.md), [outils](docs/tools.md), [agents](docs/agents.md), [couche projet](docs/project-context.md), [Ça coince ?](docs/ca-coince.md).
 - **Personnaliser** : [personnalisation](docs/customization.md), [ajouter ou remplacer un skill](docs/extending.md), [garde-fous](docs/hooks.md), [MCP](docs/mcp.md), [identité](docs/identity.md).
 - **Par CLI** : [matrice](docs/cli/matrice.md), [Gemini CLI](docs/cli/gemini.md), [Antigravity CLI](docs/cli/agy.md), [Codex CLI](docs/cli/codex.md), [passer de Gemini à agy](docs/cli/gemini-vers-agy.md).
 - **Déployer et maintenir** : [l’installeur](docs/installeur.md), [contribution](docs/contributing.md), [format des commandes](docs/format.md), [référence des skills](docs/skills-reference.md), [évaluations](docs/evals.md), [revue d’usage](docs/usage-review.md), [pilote](docs/pilote.md), [sources](docs/sources.md), [historique](CHANGELOG.md).

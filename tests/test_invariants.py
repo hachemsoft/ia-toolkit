@@ -133,5 +133,24 @@ class InvariantTests(unittest.TestCase):
         text = module.PAGE.read_text(encoding='utf-8')
         self.assertEqual(text, module.page_with_table(text), 'lancer python3 scripts/profile_table.py --write')
 
+    def test_doc_links_and_anchors_resolve(self):
+        """Chaque lien relatif de la doc mène à un fichier qui existe, et chaque ancre à un titre de ce fichier (règle des ancres GitHub)."""
+        def slug(heading):
+            return re.sub(r'[^\w\- ]', '', heading.strip().lower()).replace(' ', '-')
+        pages = [ROOT/'README.md', ROOT/'CHANGELOG.md'] + list((ROOT/'docs').rglob('*.md'))
+        for page in pages:
+            if page.name.startswith('plan-') or page.name in ('roadmap.md', 'portability-report.md'):
+                continue
+            for match in re.finditer(r'\]\(([^)\s]+)\)', page.read_text(encoding='utf-8')):
+                link = match.group(1)
+                if link.startswith(('http', 'mailto', '~')):
+                    continue
+                path, _, anchor = link.partition('#')
+                target = (page.parent/path) if path else page
+                self.assertTrue(target.exists(), f'{page.relative_to(ROOT)} → {link}')
+                if anchor and target.suffix == '.md':
+                    headings = {slug(h) for h in re.findall(r'^#+ (.+)$', target.read_text(encoding='utf-8'), re.M)}
+                    self.assertIn(anchor, headings, f'{page.relative_to(ROOT)} → {link}')
+
 if __name__ == '__main__':
     unittest.main()

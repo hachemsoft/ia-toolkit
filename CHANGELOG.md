@@ -1,6 +1,8 @@
 # Historique
 
 ## 0.18.0
+Correctif : `--target agy` installe maintenant les skills du profil et les agents quand Gemini n’est pas installé (test : chaque CLI seule reçoit tout le profil). Doc relue en entier avant publication : README devenu page d’accueil (profils, CLI prises en charge, index par public), détail de l’installeur dans `docs/installeur.md`, choix de `--target` et table profils × commandes × agents générée dans « Démarrer », ajout d’un profil et d’une CLI dans la contribution, vocabulaire métier générique, « Dépannage » fusionné dans « Ça coince ? », feuille de route et rapport de portabilité retirés du dépôt public, test des liens et des ancres.
+
 Kit générique, pour tous les métiers du développement. Trois nouveaux profils : **Développeur Java** (playbook `java-change`), **DevOps** (playbook `infra-change` : preuve en lecture seule avant tout changement, jamais d’`apply` ni de déploiement lancé par l’agent, retour arrière écrit) et **Architecte** (playbook `architecture-decision` : ADR, options comparées, réversibilité). Trois nouveaux agents : `security-reviewer`, `infra-reviewer`, `architecture-reviewer`. Le menu de `setup` propose d’abord **Général**, puis les profils métier. `code-reviewer` n’est plus présenté comme limité à Python et JavaScript ; les dernières mentions « kit IA Data » sont retirées.
 
 ## 0.17.0
