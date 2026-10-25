@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-kit"
-version = "0.18.0"
+version = "0.19.0"
 description = "Kit IA : contexte en couches, workflow en six étapes, playbooks métier et agents de revue pour Gemini CLI, Antigravity CLI et Codex CLI, sur Mac et Windows."
 readme = "README.md"
 requires-python = ">=3.9"

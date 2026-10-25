@@ -16,7 +16,7 @@ Les réglages existants doivent être du JSON strict. Un fichier JSON invalide o
 
 Les couches de contexte et `30_USER.md` sont écrits dans `~/.gemini/` quand Gemini CLI est installé (il ne lit que son dossier), sinon dans `~/.ai-kit/context/`, que les autres CLI incluent ou recopient. Les scripts des garde-fous sont dans `~/.ai-kit/hooks/`.
 
-Avant la 0.18, le dossier du kit s’appelait `~/.ai-toolkit`. Le premier `setup` ou `update` le renomme en `~/.ai-kit`, avec `overrides.json`, l’état et les sauvegardes, puis réécrit les fichiers qui citaient l’ancien chemin. Si les deux dossiers existent, le kit s’arrête sans rien toucher : garder `~/.ai-kit`, y reporter ce qui manque, retirer `~/.ai-toolkit`, puis `update`.
+Avant la 0.19, le dossier du kit s’appelait `~/.ai-toolkit`. Le premier `setup` ou `update` le renomme en `~/.ai-kit`, avec `overrides.json`, l’état et les sauvegardes, puis réécrit les fichiers qui citaient l’ancien chemin. Si les deux dossiers existent, le kit s’arrête sans rien toucher : garder `~/.ai-kit`, y reporter ce qui manque, retirer `~/.ai-toolkit`, puis `update`.
 
 ## Commandes
 

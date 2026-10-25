@@ -214,7 +214,7 @@ def selected_adapters(target, home):
         return [a for a in ADAPTERS if a.present(home)] or [ADAPTERS[0]]
     return [a for a in ADAPTERS if a.NAME in wanted]
 
-LEGACY_KIT_DIR = '.ai-toolkit'  # nom du dossier du kit avant la 0.18
+LEGACY_KIT_DIR = '.ai-toolkit'  # nom du dossier du kit avant la 0.19
 
 def migrate_kit_dir(home, dry_run=False):
     """Renomme ~/.ai-toolkit en ~/.ai-kit et reporte le nouveau préfixe dans l'état. Les fichiers qui citent l'ancien chemin

@@ -154,7 +154,7 @@ class InvariantTests(unittest.TestCase):
                     self.assertIn(anchor, headings, f'{page.relative_to(ROOT)} → {link}')
 
     def test_legacy_kit_dir_migrated(self):
-        """Une installation d'avant la 0.18 (~/.ai-toolkit) est renommée en ~/.ai-kit au premier update, sans rien perdre."""
+        """Une installation d'avant la 0.19 (~/.ai-toolkit) est renommée en ~/.ai-kit au premier update, sans rien perdre."""
         install(self.home, overrides={'hooks': {'dbt-prod-guard': True}})
         kit = self.home/'.ai-kit'
         # Simuler l'ancienne installation : dossier renommé, préfixes de l'état et chemins des déclarations en .ai-toolkit.
