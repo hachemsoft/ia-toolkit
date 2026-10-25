@@ -9,7 +9,7 @@ Un socle pour travailler avec un agent de code en équipe, sur Mac et Windows. I
 3. **Utiliser** : ouvrir votre repo (`cd` dedans), lancer votre CLI (`gemini`, `agy` ou `codex`), taper `/guide je dois …` (`$guide` dans Codex) : il dit quelle commande taper. La première fois dans un repo : « Initialise le contexte du projet ».
 4. **Quand ça coince** : `sh scripts/bootstrap.sh doctor --live` (Mac) ou `.\scripts\bootstrap.ps1 doctor --live` (Windows), puis la page [Ça coince ?](docs/ca-coince.md).
 
-Prérequis : Python 3.9 ou plus récent. Le kit n’installe aucune dépendance. La CLI et son authentification viennent de la procédure de votre organisation ; si elle impose un projet cloud ou un modèle, c’est une ligne dans `~/.ai-toolkit/overrides.json`. Le pas-à-pas complet : [démarrer](docs/getting-started.md).
+Prérequis : Python 3.11 ou plus récent recommandé ; 3.9 minimum, ce qui permet d’utiliser le Python fourni avec macOS. Le kit n’installe aucune dépendance. La CLI et son authentification viennent de la procédure de votre organisation ; si elle impose un projet cloud ou un modèle, c’est une ligne dans `~/.ai-toolkit/overrides.json`. Le pas-à-pas complet : [démarrer](docs/getting-started.md).
 
 Mise à jour : `git pull` dans le dossier du kit, puis `sh scripts/bootstrap.sh update` (Windows : `.\scripts\bootstrap.ps1 update`).
 

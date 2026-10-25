@@ -615,7 +615,7 @@ def resolve_identity(args, home, state):
 
 def main(argv=None):
     if sys.version_info < (3,9):
-        print('Python 3.9 minimum requis.',file=sys.stderr)
+        print('Python 3.9 minimum requis (3.11 ou plus récent recommandé).',file=sys.stderr)
         return 2
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='Kit IA — '+', '.join(a.LABEL for a in ADAPTERS)+' ; Mac et Windows')
     parser.add_argument('action',choices=['setup','update','doctor','usage'])

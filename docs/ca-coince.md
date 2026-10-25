@@ -24,7 +24,7 @@ Premier réflexe, toujours : `sh scripts/bootstrap.sh doctor --live` (Mac) ou `.
 
 Ce qui est propre à une CLI est sur sa page : [Gemini CLI](cli/gemini.md#dépannage-propre-à-gemini), [Antigravity CLI](cli/agy.md#dépannage), [Codex CLI](cli/codex.md).
 
-- **Python introuvable** : vérifier `python3 --version` sur Mac, `py -3 --version` ou `python --version` sur Windows. Ne pas modifier les politiques entreprise ; demander le support IT si nécessaire.
+- **Python introuvable ou trop ancien** : vérifier `python3 --version` sur Mac, `py -3 --version` ou `python --version` sur Windows. Version 3.11 ou plus récente recommandée, 3.9 au minimum. Ne pas modifier les politiques entreprise ; demander le support IT si nécessaire.
 - **Scripts PowerShell bloqués** : utiliser `py -3 -m installer setup` dans le dossier du kit. Ne pas contourner la politique.
 - **Settings illisibles** : corriger le JSON existant avec une sauvegarde préalable. Le kit n’accepte pas le JSON avec commentaires (JSONC).
 - **Skill du kit masqué** : une copie personnelle de même nom, dans un dossier que la CLI lit en priorité, cache le skill du kit. `doctor` liste les skills masqués. Retirer ou renommer la copie personnelle.
