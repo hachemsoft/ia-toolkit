@@ -5,15 +5,19 @@ build-backend = "hatchling.build"
 [project]
 name = "ai-kit"
 version = "0.18.0"
-description = "Kit IA : contexte en couches, workflow en six étapes, outils et playbooks pour Gemini CLI et Antigravity CLI, Mac et Windows."
+description = "Kit IA : contexte en couches, workflow en six étapes, playbooks métier et agents de revue pour Gemini CLI, Antigravity CLI et Codex CLI, sur Mac et Windows."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
 license-files = ["LICENSE", "skills/LICENSE-UPSTREAM-MIT"]
 dependencies = []
-keywords = ["gemini-cli", "antigravity", "agents", "skills", "sdlc"]
+keywords = ["gemini-cli", "antigravity", "codex", "agents", "skills", "sdlc"]
 classifiers = [
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Operating System :: MacOS",
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX :: Linux",
