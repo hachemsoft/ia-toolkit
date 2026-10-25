@@ -20,7 +20,14 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Native unit and integration tests
-        run: python -m unittest discover -s tests -v
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests -v 2>&1 | tee test-output.txt
+      - name: Failed tests as annotations
+        if: failure()
+        shell: bash
+        run: python scripts/ci_annotations.py test-output.txt
   lint:
     name: Lint (ruff)
     runs-on: ubuntu-latest
