@@ -75,7 +75,16 @@ def target_paths(tool, args):
         return found
     return []
 
+def use_utf8():
+    """Les CLI envoient et lisent de l'UTF-8 ; sous Windows, la console vaut cp1252 par défaut : la forcer pour l'entrée et la sortie."""
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding='utf-8')
+        except (AttributeError, ValueError):
+            pass
+
 def main():
+    use_utf8()
     try:
         payload = json.load(sys.stdin)
     except Exception:

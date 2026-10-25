@@ -56,7 +56,16 @@ def as_text(value):
 
 SHELL_TOOLS = ('run_shell_command', 'run_command', 'shell', 'local_shell', 'exec_command', 'unified_exec', 'container.exec', 'Bash')
 
+def use_utf8():
+    """Les CLI envoient et lisent de l'UTF-8 ; sous Windows, la console vaut cp1252 par défaut : la forcer pour l'entrée et la sortie."""
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding='utf-8')
+        except (AttributeError, ValueError):
+            pass
+
 def main():
+    use_utf8()
     try:
         payload = json.load(sys.stdin)
     except Exception:

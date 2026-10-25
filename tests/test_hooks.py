@@ -10,6 +10,12 @@ class HookScriptTests(unittest.TestCase):
  def test_dbt_prod_denied(self):
   for cmd in ('dbt run --target prod','dbt build -t prd','cd x && dbt test --target=production','DBT_TARGET=prod dbt run',"dbt run --target 'prod'",'dbt run --target="prod"','dbt run -tprod','./dbt run -t prod','/usr/local/bin/dbt run --target prod','DBT run -t prod','dbt.exe run -t prod'):
    self.assertEqual(run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}).get('decision'),'deny',cmd)
+ def test_hook_output_is_utf8_whatever_the_console(self):
+  # Console Windows (cp1252) : le refus, accentué, doit arriver en UTF-8, ce que lisent les CLI.
+  for script,payload in (('dbt-prod-guard.py',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt run --target prod'}}}),('dbt-prod-guard.py',{'hook_event_name':'PreToolUse','tool_name':'shell','tool_input':{'command':['bash','-lc','dbt run -t prod']}})):
+   # Sans -I, pour que PYTHONIOENCODING simule la console Windows.
+   proc=subprocess.run([sys.executable,str(H/script)],input=json.dumps(payload).encode('utf-8'),capture_output=True,env={**os.environ,'PYTHONIOENCODING':'cp1252'})
+   text=proc.stdout.decode('utf-8');self.assertIn('Refusé',text,proc.stderr)
  def test_dbt_dev_allowed_and_non_dbt_ignored(self):
   for cmd in ('dbt test -t dev','dbt run','ls prod','python prod.py --target prod','dbt run -t prod-like','dbt run --target production_dev','mydbt run -t prod'):
    self.assertNotIn('decision',run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}),cmd)

@@ -27,6 +27,7 @@ def escape(value):
 
 
 if __name__ == '__main__':
+    sys.stdout.reconfigure(encoding='utf-8')  # console Windows en cp1252 : les traces contiennent des accents
     with open(sys.argv[1], encoding='utf-8', errors='replace') as handle:
         output = handle.read()
     for title, detail in failures(output):

@@ -48,7 +48,7 @@ class ContextLayerTests(unittest.TestCase):
   self.write('.ai-kit/state.json',json.dumps({'schema_version':1,'version':'0.0.4','profile':'data-analyst','files':{},'context_hash':digest(block.encode()),'mcp':{}}))
   self.run_kit();self.assertFalse(self.path('.gemini/GEMINI.md').exists())
  def test_migration_refused_when_block_modified(self):
-  self.legacy_state('ancien bloc');g=self.path('.gemini/GEMINI.md');g.write_text(g.read_text().replace('ancien bloc','bloc édité'))
+  self.legacy_state('ancien bloc');g=self.path('.gemini/GEMINI.md');g.write_text(g.read_text(encoding='utf-8').replace('ancien bloc','bloc édité'),encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()
   self.assertFalse(self.path('.gemini/00_KIT.md').exists());self.assertTrue(self.path('.ai-kit/preferences.md').exists())
  def test_obsolete_managed_layer_removed(self):
