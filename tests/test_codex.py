@@ -60,8 +60,8 @@ class CodexAdapterTests(unittest.TestCase):
  def test_skills_and_explicit_only_policy(self):
   self.run_kit();sk=self.home/'.codex/skills'
   self.assertTrue((sk/'grilling/SKILL.md').is_file());self.assertTrue((sk/'intent/SKILL.md').is_file())
-  self.assertIn('allow_implicit_invocation: false',(sk/'intent/agents/openai.yaml').read_text())
-  self.assertIn('allow_implicit_invocation: false',(sk/'to-spec/agents/openai.yaml').read_text())
+  self.assertIn('allow_implicit_invocation: false',(sk/'intent/agents/openai.yaml').read_text(encoding='utf-8'))
+  self.assertIn('allow_implicit_invocation: false',(sk/'to-spec/agents/openai.yaml').read_text(encoding='utf-8'))
   self.assertFalse((sk/'grilling/agents/openai.yaml').exists())
  def test_idempotent_and_removed_cleanly_when_target_changes(self):
   self.run_kit();self.assertIn('Déjà à jour',self.run_kit())

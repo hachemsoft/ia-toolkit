@@ -14,7 +14,7 @@ class InstallationTests(unittest.TestCase):
  def test_idempotence(self):
   self.run_kit();before={str(p):p.read_bytes() for p in self.home.rglob('*') if p.is_file()};self.run_kit();self.assertEqual(before,{str(p):p.read_bytes() for p in self.home.rglob('*') if p.is_file()})
  def test_existing_settings_and_context(self):
-  self.write('.gemini/settings.json','{"theme":"custom","skills":{"enabled":false}}');p=self.write('.gemini/GEMINI.md','Mes instructions\n');self.run_kit();self.assertEqual(p.read_text(),'Mes instructions\n');self.assertNotIn(START,p.read_text());u=self.path('.gemini/30_USER.md');self.assertTrue(u.exists());u.write_text('Anglais');self.run_kit();self.assertEqual(u.read_text(),'Anglais');self.assertFalse(read_json(self.path('.gemini/settings.json'))['skills']['enabled'])
+  self.write('.gemini/settings.json','{"theme":"custom","skills":{"enabled":false}}');p=self.write('.gemini/GEMINI.md','Mes instructions\n');self.run_kit();self.assertEqual(p.read_text(encoding='utf-8'),'Mes instructions\n');self.assertNotIn(START,p.read_text(encoding='utf-8'));u=self.path('.gemini/30_USER.md');self.assertTrue(u.exists());u.write_text('Anglais',encoding='utf-8');self.run_kit();self.assertEqual(u.read_text(encoding='utf-8'),'Anglais');self.assertFalse(read_json(self.path('.gemini/settings.json'))['skills']['enabled'])
  def test_switch(self):
   self.run_kit('data-developer');note=self.write('.gemini/skills/python-js-change/notes.txt','personnel');self.run_kit();self.assertTrue(note.exists());self.assertFalse((note.parent/'SKILL.md').exists());self.assertTrue(self.path('.gemini/skills/sql-review/SKILL.md').exists())
  def test_modified_skill_blocks(self):
@@ -36,13 +36,13 @@ class InstallationTests(unittest.TestCase):
  def test_external_mcp_preserved(self):
   self.write('.gemini/settings.json','{"mcpServers":{"existing":{"command":"x"}}}');self.run_kit();self.assertIn('existing',read_json(self.path('.gemini/settings.json'))['mcpServers'])
  def test_mcp_conflict(self):
-  self.overrides({'mcp':{'dbt':{'enabled':True,'server':{'command':'dbt-mcp'}}}});self.run_kit();p=self.path('.gemini/settings.json');v=read_json(p);v['mcpServers']['ai-kit-dbt']['command']='custom';p.write_text(json.dumps(v))
+  self.overrides({'mcp':{'dbt':{'enabled':True,'server':{'command':'dbt-mcp'}}}});self.run_kit();p=self.path('.gemini/settings.json');v=read_json(p);v['mcpServers']['ai-kit-dbt']['command']='custom';p.write_text(json.dumps(v),encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()
  def test_malformed_context(self):
   self.write('.gemini/GEMINI.md',START)
   with self.assertRaises(KitError):self.run_kit()
  def test_backup(self):
-  self.write('.gemini/settings.json','{}');self.run_kit();backups=list(self.path('.ai-kit/backups').glob('*/.gemini/settings.json'));self.assertEqual(len(backups),1);self.assertEqual(backups[0].read_text(),'{}')
+  self.write('.gemini/settings.json','{}');self.run_kit();backups=list(self.path('.ai-kit/backups').glob('*/.gemini/settings.json'));self.assertEqual(len(backups),1);self.assertEqual(backups[0].read_text(encoding='utf-8'),'{}')
  def test_unknown_skill(self):
   self.overrides({'extra_skills':['unknown']})
   with self.assertRaises(KitError):self.run_kit()

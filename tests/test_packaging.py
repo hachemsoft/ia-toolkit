@@ -5,7 +5,7 @@ class PackagingTests(unittest.TestCase):
  def setUp(self):
   self.text=(ROOT/'pyproject.toml').read_text(encoding='utf-8')
  def test_version_matches_VERSION(self):
-  self.assertEqual(re.search(r'^version = "([^"]+)"',self.text,re.M).group(1),(ROOT/'VERSION').read_text().strip())
+  self.assertEqual(re.search(r'^version = "([^"]+)"',self.text,re.M).group(1),(ROOT/'VERSION').read_text(encoding='utf-8').strip())
  def test_no_runtime_dependency_and_python39(self):
   self.assertIn('dependencies = []',self.text);self.assertIn('requires-python = ">=3.9"',self.text)
  def test_console_command(self):

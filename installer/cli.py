@@ -385,7 +385,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto'):
             deletes.append(target_path)
     for adapter in ADAPTERS:
         adapter.finalize(p, active=adapter in active)  # inactif : retire ce qu'une installation précédente avait posé
-    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text().strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),
+    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),
                  'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active]}}
     writes[kit/'state.json'] = json_bytes(new_state)
     writes = {path:b for path,b in writes.items() if not path.exists() or path.read_bytes()!=b}
@@ -644,6 +644,11 @@ def resolve_identity(args, home, state):
     return {'email': answer, 'source': 'saisie'}
 
 def main(argv=None):
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors='replace')  # console qui ne connaît pas un caractère : le remplacer plutôt que planter
+        except (AttributeError, ValueError):
+            pass
     if sys.version_info < (3,9):
         print('Python 3.9 minimum requis (3.11 ou plus récent recommandé).',file=sys.stderr)
         return 2

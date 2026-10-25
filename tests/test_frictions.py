@@ -22,7 +22,7 @@ class FrictionTests(unittest.TestCase):
  def test_aggregate_script(self):
   a={'sessions':3,'prompts':10,'errors':0,'commands':{'intent':2},'skills':{'tdd':1},'agents':{},'unused_skills':['grilling','retro'],'frictions':[{'ts':'2026-10-25T00:00:00Z','category':'docs','command':'intent','text':'x'}],'frictions_by_category':{'docs':1}}
   b={'sessions':2,'prompts':5,'errors':1,'commands':{'intent':1,'test':1},'skills':{},'agents':{'ai-kit-verifier':1},'unused_skills':['grilling'],'frictions':[],'frictions_by_category':{}}
-  (self.home/'a.json').write_text(json.dumps(a));(self.home/'b.json').write_text(json.dumps(b))
+  (self.home/'a.json').write_text(json.dumps(a),encoding='utf-8');(self.home/'b.json').write_text(json.dumps(b),encoding='utf-8')
   p=subprocess.run([sys.executable,'-I',str(ROOT/'scripts/usage-aggregate.py'),str(self.home/'a.json'),str(self.home/'b.json')],capture_output=True,text=True)
   self.assertEqual(p.returncode,0,p.stderr);self.assertIn('2 postes | 5 sessions | 15 prompts | 1 erreurs',p.stdout);self.assertIn('| `intent` | 3 |',p.stdout);self.assertIn('`grilling`',p.stdout);self.assertNotIn('`retro`',p.stdout);self.assertIn('| docs | /intent | x |',p.stdout)
 
@@ -35,7 +35,7 @@ class FrictionSignalTests(unittest.TestCase):
   return [json.loads(line) for line in (self.home/'.ai-kit/frictions.jsonl').read_text(encoding='utf-8').splitlines()]
  def test_context_added_automatically(self):
   subprocess.run([sys.executable,'-I',str(self.home/'.ai-kit/bin/friction.py'),'--category','skill','--cli','agy','--text','x y z'],capture_output=True,text=True,env=self.env,check=True)
-  e=self.lines()[0];self.assertEqual(e['profile'],'data-analyst');self.assertEqual(e['kit'],read_json(ROOT/'profiles/data-analyst.json') and (ROOT/'VERSION').read_text().strip());self.assertEqual(e['cli'],'agy');self.assertIn(e['os'],('mac','windows','linux'));self.assertEqual(e['source'],'person')
+  e=self.lines()[0];self.assertEqual(e['profile'],'data-analyst');self.assertEqual(e['kit'],read_json(ROOT/'profiles/data-analyst.json') and (ROOT/'VERSION').read_text(encoding='utf-8').strip());self.assertEqual(e['cli'],'agy');self.assertIn(e['os'],('mac','windows','linux'));self.assertEqual(e['source'],'person')
  def test_doctor_failure_recorded_without_asking(self):
   from installer.core import record_auto_friction
   record_auto_friction(self.home,'Quota dépassé (HTTP 429).')
@@ -61,7 +61,7 @@ class FrictionSignalTests(unittest.TestCase):
   with self.assertRaises(KitError),contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'gemini')
  def test_aggregate_groups_and_flags_two_or_more(self):
   f=lambda c,m:{'ts':'2026-10-25T00:00:00Z','category':c,'command':m,'text':'t','cli':'gemini','os':'mac','kit':'0.15','profile':'data-analyst','source':'person'}
-  (self.home/'a.json').write_text(json.dumps({'sessions':1,'prompts':1,'frictions':[f('command','test'),f('command','test'),f('docs','intent')],'unknown_commands':{'spec':2},'repeated_prompts':3}))
+  (self.home/'a.json').write_text(json.dumps({'sessions':1,'prompts':1,'frictions':[f('command','test'),f('command','test'),f('docs','intent')],'unknown_commands':{'spec':2},'repeated_prompts':3}),encoding='utf-8')
   p=subprocess.run([sys.executable,'-I',str(ROOT/'scripts/usage-aggregate.py'),str(self.home/'a.json')],capture_output=True,text=True,check=True)
   self.assertIn('| command | /test | 2 |',p.stdout);self.assertNotIn('| docs | /intent | 1 |',p.stdout);self.assertIn('/spec ×2',p.stdout);self.assertIn('session : 3',p.stdout);self.assertIn('gemini mac 0.15 data-analyst',p.stdout)
 if __name__=='__main__':unittest.main()

@@ -47,7 +47,7 @@ agy_present = present
 def install(p: Plan) -> None:
     """Plugin ai-kit (règles qui incluent les couches par chemin, agents, garde-fous, MCP) et skills de commande."""
     plugin = p.home/AGY_PLUGIN
-    manifest_json = {'name': 'ai-kit', 'displayName': 'Kit IA', 'description': 'Contexte, commandes, garde-fous et agents du Kit IA, partagés avec les autres CLI.', 'version': (ROOT/'VERSION').read_text().strip()}
+    manifest_json = {'name': 'ai-kit', 'displayName': 'Kit IA', 'description': 'Contexte, commandes, garde-fous et agents du Kit IA, partagés avec les autres CLI.', 'version': (ROOT/'VERSION').read_text(encoding='utf-8').strip()}
     p.managed_write(plugin/'plugin.json', json_bytes(manifest_json), 'Plugin agy')
     p.managed_write(plugin/'rules'/'AGENTS.md', agy_rules_text(p.context_names, p.context_dir.relative_to(p.home).as_posix()).encode('utf-8'), 'Plugin agy')
     if gemini.NAME not in p.active:

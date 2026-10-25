@@ -31,11 +31,11 @@ class VertexConfigTests(unittest.TestCase):
  def run_kit(self):
   with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home)
  def test_vertex_configured_end_to_end(self):
-  e=self.home/'.gemini/.env';e.parent.mkdir(parents=True);e.write_text('PERSO=1\nGOOGLE_CLOUD_PROJECT=ancien\n')
+  e=self.home/'.gemini/.env';e.parent.mkdir(parents=True);e.write_text('PERSO=1\nGOOGLE_CLOUD_PROJECT=ancien\n',encoding='utf-8')
   self.overrides({'vertex':{'project':'demo-project-01','location':'europe-west1'}});self.run_kit()
   self.assertEqual(read_json(self.home/'.gemini/settings.json')['security']['auth']['selectedType'],'vertex-ai')
-  text=e.read_text();self.assertIn('PERSO=1',text);self.assertIn('GOOGLE_CLOUD_PROJECT=demo-project-01',text);self.assertNotIn('ancien',text);self.assertIn('GOOGLE_GENAI_USE_VERTEXAI=true',text);self.assertIn('GOOGLE_CLOUD_LOCATION=europe-west1',text)
-  self.run_kit();self.assertEqual(e.read_text().count('GOOGLE_CLOUD_PROJECT'),1)
+  text=e.read_text(encoding='utf-8');self.assertIn('PERSO=1',text);self.assertIn('GOOGLE_CLOUD_PROJECT=demo-project-01',text);self.assertNotIn('ancien',text);self.assertIn('GOOGLE_GENAI_USE_VERTEXAI=true',text);self.assertIn('GOOGLE_CLOUD_LOCATION=europe-west1',text)
+  self.run_kit();self.assertEqual(e.read_text(encoding='utf-8').count('GOOGLE_CLOUD_PROJECT'),1)
  def test_no_vertex_leaves_auth_alone(self):
   self.run_kit();self.assertNotIn('security',read_json(self.home/'.gemini/settings.json'));self.assertFalse((self.home/'.gemini/.env').exists())
  def test_invalid_vertex_refused(self):
@@ -52,16 +52,16 @@ class VertexConfigTests(unittest.TestCase):
  def test_code_assist_project(self):
   self.overrides({'code_assist':{'project':'demo-project-01'}});self.run_kit()
   self.assertEqual(read_json(self.home/'.gemini/settings.json')['security']['auth']['selectedType'],'oauth-personal')
-  text=(self.home/'.gemini/.env').read_text();self.assertIn('GOOGLE_CLOUD_PROJECT=demo-project-01',text);self.assertNotIn('VERTEXAI',text)
+  text=(self.home/'.gemini/.env').read_text(encoding='utf-8');self.assertIn('GOOGLE_CLOUD_PROJECT=demo-project-01',text);self.assertNotIn('VERTEXAI',text)
  def test_vertex_and_code_assist_exclusive(self):
   self.overrides({'vertex':{'project':'demo-project-01'},'code_assist':{'project':'demo-project-01'}})
   with self.assertRaises(KitError):self.run_kit()
  def test_switching_auth_replaces_kit_lines_only(self):
-  e=self.home/'.gemini/.env';e.parent.mkdir(parents=True);e.write_text('PERSO=1\n')
+  e=self.home/'.gemini/.env';e.parent.mkdir(parents=True);e.write_text('PERSO=1\n',encoding='utf-8')
   self.overrides({'vertex':{'project':'demo-project-01'}});self.run_kit()
   self.overrides({'code_assist':{'project':'demo-project-02'}});self.run_kit()
-  text=e.read_text();self.assertIn('PERSO=1',text);self.assertNotIn('VERTEXAI',text);self.assertNotIn('demo-project-01',text);self.assertEqual(text.count('# ai-kit'),1)
-  self.overrides({});self.run_kit();self.assertEqual(e.read_text(),'PERSO=1\n')
+  text=e.read_text(encoding='utf-8');self.assertIn('PERSO=1',text);self.assertNotIn('VERTEXAI',text);self.assertNotIn('demo-project-01',text);self.assertEqual(text.count('# ai-kit'),1)
+  self.overrides({});self.run_kit();self.assertEqual(e.read_text(encoding='utf-8'),'PERSO=1\n')
  def test_code_assist_project_required_diagnosis(self):
   d,r=diagnose_live(1,'This account requires setting the GOOGLE_CLOUD_PROJECT or GOOGLE_CLOUD_PROJECT_ID env var.',False,{});self.assertIn('Code Assist',d);self.assertIn('code_assist',r)
  def test_vertex_missing_project_diagnosis(self):

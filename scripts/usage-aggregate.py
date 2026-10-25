@@ -20,6 +20,11 @@ def table(title, counter, unit='×'):
     return '\n'.join(lines) if counter else '### ' + title + '\n\nAucun.'
 
 def main(argv=None):
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors='replace')  # console qui ne connaît pas un caractère : le remplacer plutôt que planter
+        except (AttributeError, ValueError):
+            pass
     parser = argparse.ArgumentParser(description='Agréger des relevés d’usage.')
     parser.add_argument('files', nargs='+')
     parser.add_argument('--catalog', default=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'skills', 'catalog.json'))

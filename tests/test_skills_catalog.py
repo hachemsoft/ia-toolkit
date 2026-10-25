@@ -41,8 +41,8 @@ class SkillCatalogTests(unittest.TestCase):
   self.overrides({'extra_skills':['clarify-request'],'disabled_skills':['debug-systematically']});out=self.run_kit()
   self.assertIn('Skill remplacé : clarify-request → grilling',out);self.assertTrue((self.home/'.gemini/skills/grilling/SKILL.md').exists());self.assertFalse((self.home/'.gemini/skills/clarify-request').exists())
  def test_legacy_installed_skill_removed_on_update(self):
-  self.run_kit();old=self.home/'.gemini/skills/clarify-request/SKILL.md';old.parent.mkdir();old.write_text('ancien')
-  sp=self.home/'.ai-kit/state.json';st=read_json(sp);st['files']['.gemini/skills/clarify-request/SKILL.md']=__import__('installer.cli',fromlist=['digest']).digest(b'ancien');sp.write_text(json.dumps(st))
+  self.run_kit();old=self.home/'.gemini/skills/clarify-request/SKILL.md';old.parent.mkdir();old.write_text('ancien',encoding='utf-8')
+  sp=self.home/'.ai-kit/state.json';st=read_json(sp);st['files']['.gemini/skills/clarify-request/SKILL.md']=__import__('installer.cli',fromlist=['digest']).digest(b'ancien');sp.write_text(json.dumps(st),encoding='utf-8')
   self.run_kit();self.assertFalse(old.exists());self.assertFalse(old.parent.exists());self.assertTrue((self.home/'.gemini/skills').is_dir())
  def test_kit_layer_lists_commands_and_playbooks(self):
   self.run_kit();text=(self.home/'.gemini/00_KIT.md').read_text(encoding='utf-8')
@@ -54,7 +54,7 @@ class SkillCatalogTests(unittest.TestCase):
   self.assertTrue((base/'tdd/mocking.md').exists());self.assertTrue((base/'domain-modeling/ADR-FORMAT.md').exists());self.assertFalse((base/'tdd/agents').exists())
   self.assertIn('MR body',(base/'mr/SKILL.md').read_text(encoding='utf-8'))
  def test_doctor_lists_needs_agents_when_disabled(self):
-  self.overrides({'extra_skills':['research']});self.run_kit('data-developer');s=self.home/'.gemini/settings.json';v=read_json(s);v['experimental']={'enableAgents':False};s.write_text(json.dumps(v))
+  self.overrides({'extra_skills':['research']});self.run_kit('data-developer');s=self.home/'.gemini/settings.json';v=read_json(s);v['experimental']={'enableAgents':False};s.write_text(json.dumps(v),encoding='utf-8')
   out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
   self.assertIn('dégradés sans eux : research',out.getvalue())

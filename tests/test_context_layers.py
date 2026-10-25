@@ -13,13 +13,13 @@ class ContextLayerTests(unittest.TestCase):
  def test_fresh_install_layers(self):
   self.run_kit()
   for name in ('00_KIT.md','10_COMPANY.md','20_TEAM.md','30_USER.md'):self.assertTrue(self.path('.gemini/'+name).is_file(),name)
-  self.assertIn('Profil : data-analyst',self.path('.gemini/00_KIT.md').read_text())
-  self.assertIn('Pratiques d’équipe',self.path('.gemini/20_TEAM.md').read_text())
+  self.assertIn('Profil : data-analyst',self.path('.gemini/00_KIT.md').read_text(encoding='utf-8'))
+  self.assertIn('Pratiques d’équipe',self.path('.gemini/20_TEAM.md').read_text(encoding='utf-8'))
   state=read_json(self.path('.ai-kit/state.json'));self.assertEqual(state['schema_version'],2);self.assertNotIn('context_hash',state)
   self.assertIn('.gemini/00_KIT.md',state['files']);self.assertNotIn('.gemini/30_USER.md',state['files'])
   self.assertFalse(self.path('.gemini/GEMINI.md').exists());self.assertFalse(self.path('.ai-kit/preferences.md').exists())
  def test_user_layer_never_rewritten(self):
-  self.run_kit();u=self.path('.gemini/30_USER.md');u.write_text('Personnel');self.run_kit('data-developer');self.assertEqual(u.read_text(),'Personnel')
+  self.run_kit();u=self.path('.gemini/30_USER.md');u.write_text('Personnel',encoding='utf-8');self.run_kit('data-developer');self.assertEqual(u.read_text(encoding='utf-8'),'Personnel')
   doctor_out=io.StringIO()
   with contextlib.redirect_stdout(doctor_out):doctor(self.home)
   self.assertEqual([line for line in doctor_out.getvalue().splitlines() if line.startswith('[À vérifier]') and 'PATH' not in line],[],doctor_out.getvalue());self.assertIn('[OK] Contexte personnel présent',doctor_out.getvalue())
@@ -38,11 +38,11 @@ class ContextLayerTests(unittest.TestCase):
   self.write('.ai-kit/state.json',json.dumps({'schema_version':1,'version':'0.0.4','profile':'data-analyst','files':{},'context_hash':digest(block.encode()),'mcp':{}}))
  def test_migration_from_legacy_block(self):
   self.legacy_state('ancien bloc');self.run_kit()
-  self.assertEqual(self.path('.gemini/GEMINI.md').read_text(),'Mes notes\n')
-  self.assertEqual(self.path('.gemini/30_USER.md').read_text(),'# Mes préférences\n- Anglais\n')
+  self.assertEqual(self.path('.gemini/GEMINI.md').read_text(encoding='utf-8'),'Mes notes\n')
+  self.assertEqual(self.path('.gemini/30_USER.md').read_text(encoding='utf-8'),'# Mes préférences\n- Anglais\n')
   self.assertFalse(self.path('.ai-kit/preferences.md').exists());self.assertTrue(self.path('.ai-kit/preferences.md.migrated').exists())
   self.assertEqual(read_json(self.path('.ai-kit/state.json'))['schema_version'],2)
-  self.run_kit();self.assertEqual(self.path('.gemini/GEMINI.md').read_text(),'Mes notes\n')
+  self.run_kit();self.assertEqual(self.path('.gemini/GEMINI.md').read_text(encoding='utf-8'),'Mes notes\n')
  def test_migration_removes_empty_gemini_md(self):
   block=START+'\nbloc\n'+END;self.write('.gemini/GEMINI.md',block+'\n')
   self.write('.ai-kit/state.json',json.dumps({'schema_version':1,'version':'0.0.4','profile':'data-analyst','files':{},'context_hash':digest(block.encode()),'mcp':{}}))
@@ -53,11 +53,11 @@ class ContextLayerTests(unittest.TestCase):
   self.assertFalse(self.path('.gemini/00_KIT.md').exists());self.assertTrue(self.path('.ai-kit/preferences.md').exists())
  def test_obsolete_managed_layer_removed(self):
   self.run_kit();old=self.write('.gemini/15_OLD.md','ancienne couche');state_path=self.path('.ai-kit/state.json');state=read_json(state_path)
-  state['files']['.gemini/15_OLD.md']=digest(old.read_bytes());state_path.write_text(json.dumps(state))
+  state['files']['.gemini/15_OLD.md']=digest(old.read_bytes());state_path.write_text(json.dumps(state),encoding='utf-8')
   self.run_kit();self.assertFalse(old.exists())
  def test_state_never_deletes_user_layer(self):
   self.run_kit();state_path=self.path('.ai-kit/state.json');state=read_json(state_path)
-  state['files']['.gemini/30_USER.md']=digest(self.path('.gemini/30_USER.md').read_bytes());state_path.write_text(json.dumps(state))
+  state['files']['.gemini/30_USER.md']=digest(self.path('.gemini/30_USER.md').read_bytes());state_path.write_text(json.dumps(state),encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()
   self.assertTrue(self.path('.gemini/30_USER.md').exists())
  def test_doctor_detects_missing_layer_and_legacy_block(self):

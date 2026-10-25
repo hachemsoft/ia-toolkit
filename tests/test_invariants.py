@@ -187,5 +187,23 @@ class InvariantTests(unittest.TestCase):
         with self.assertRaises(KitError):
             install(self.home)
 
+    def test_files_always_opened_with_an_encoding(self):
+        """Sous Windows, un fichier lu ou écrit sans encodage passe en cp1252 : toujours préciser encoding='utf-8'."""
+        import ast
+        sources = [p for d in ('installer', 'runtime', 'scripts', 'evals', 'tests') for p in (ROOT/d).rglob('*.py')]
+        missing = []
+        for source in sources:
+            for node in ast.walk(ast.parse(source.read_text(encoding='utf-8'))):
+                if not isinstance(node, ast.Call) or any(k.arg == 'encoding' for k in node.keywords):
+                    continue
+                func = node.func
+                if isinstance(func, ast.Attribute) and func.attr in ('read_text', 'write_text'):
+                    missing.append(f'{source.relative_to(ROOT)}:{node.lineno}')
+                elif isinstance(func, ast.Name) and func.id == 'open':
+                    mode = node.args[1].value if len(node.args) > 1 and isinstance(node.args[1], ast.Constant) else 'r'
+                    if 'b' not in str(mode):
+                        missing.append(f'{source.relative_to(ROOT)}:{node.lineno}')
+        self.assertEqual(missing, [])
+
 if __name__ == '__main__':
     unittest.main()

@@ -38,11 +38,11 @@ class CommandTests(unittest.TestCase):
  def test_command_removed_when_skill_disabled(self):
   self.run_kit();self.assertTrue(self.cmd('learn').exists());self.overrides({'disabled_skills':['teach']});self.run_kit();self.assertFalse(self.cmd('learn').exists());self.assertTrue(self.cmd('intent').exists())
  def test_personal_command_conflict_blocks(self):
-  p=self.cmd('intent');p.parent.mkdir(parents=True);p.write_text('prompt = "mine"\n')
+  p=self.cmd('intent');p.parent.mkdir(parents=True);p.write_text('prompt = "mine"\n',encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()
-  self.assertEqual(p.read_text(),'prompt = "mine"\n');self.assertFalse((self.home/'.ai-kit/state.json').exists())
+  self.assertEqual(p.read_text(encoding='utf-8'),'prompt = "mine"\n');self.assertFalse((self.home/'.ai-kit/state.json').exists())
  def test_modified_command_blocks(self):
-  self.run_kit();self.cmd('ship').write_text('prompt = "edited"\n')
+  self.run_kit();self.cmd('ship').write_text('prompt = "edited"\n',encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit('data-developer')
  def test_selected_commands_requires_all_skills(self):
   m=[{'name':'x','category':'tool','skills':['a','b']},{'name':'y','category':'tool','skills':['a']},{'name':'z','category':'tool','skills':['a']}]
@@ -51,12 +51,12 @@ class CommandTests(unittest.TestCase):
   self.run_kit();out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
   text=out.getvalue();self.assertEqual([line for line in text.splitlines() if line.startswith('[À vérifier]') and 'PATH' not in line],[],text);self.assertIn('[OK] Commande /intent : skills présents',text);self.assertIn('descriptions de skills injectées',text);self.assertIn('[OK] .gemini/commands/intent.toml',text)
-  (self.home/'.gemini/skills/teach/SKILL.md').unlink();sp=self.home/'.ai-kit/state.json';st=read_json(sp);del st['files']['.gemini/skills/teach/SKILL.md'];sp.write_text(json.dumps(st))
+  (self.home/'.gemini/skills/teach/SKILL.md').unlink();sp=self.home/'.ai-kit/state.json';st=read_json(sp);del st['files']['.gemini/skills/teach/SKILL.md'];sp.write_text(json.dumps(st),encoding='utf-8')
   out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
   self.assertIn('[À vérifier] Commande /learn : skills présents (manque teach)',out.getvalue())
  def test_doctor_detects_agents_alias_shadowing(self):
-  self.run_kit();(self.home/'.agents/skills/tdd').mkdir(parents=True);(self.home/'.agents/skills/tdd/SKILL.md').write_text('---\nname: tdd\ndescription: mine\n---\n')
+  self.run_kit();(self.home/'.agents/skills/tdd').mkdir(parents=True);(self.home/'.agents/skills/tdd/SKILL.md').write_text('---\nname: tdd\ndescription: mine\n---\n',encoding='utf-8')
   out=io.StringIO()
   with contextlib.redirect_stdout(out):code=doctor(self.home)
   self.assertEqual(code,1);self.assertIn('[À vérifier] Aucun skill du kit masqué par une copie dans ~/.agents/skills (masqués : tdd)',out.getvalue())

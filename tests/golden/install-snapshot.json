@@ -1,6 +1,6 @@
 {
  "architect/all": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/overrides.json": "9e9e670013cf2407",
   ".codex/AGENTS.md": "10d1f457788f79ef",
   ".codex/ai-kit/agents/ai-kit-architecture-reviewer.toml": "3e0787cd6640d4af",
@@ -197,7 +197,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "data-analyst/agy": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/context/00_KIT.md": "f4b671bcfebebe60",
   ".ai-kit/context/10_COMPANY.md": "1cdd17c25fb17012",
   ".ai-kit/context/20_TEAM.md": "b9895cf1ca2b2c68",
@@ -261,7 +261,7 @@
   ".gemini/skills/writing-for-agents/SKILL.md": "551adca942227b44"
  },
  "data-analyst/all": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/overrides.json": "9e9e670013cf2407",
   ".codex/AGENTS.md": "fc7a78b24c2d1cd8",
   ".codex/ai-kit/agents/ai-kit-dbt-reviewer.toml": "1db21ccdd8402a61",
@@ -404,7 +404,7 @@
   ".gemini/skills/writing-for-agents/SKILL.md": "551adca942227b44"
  },
  "data-analyst/both": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/overrides.json": "9e9e670013cf2407",
   ".gemini/00_KIT.md": "f4b671bcfebebe60",
   ".gemini/10_COMPANY.md": "1cdd17c25fb17012",
@@ -481,7 +481,7 @@
   ".gemini/skills/writing-for-agents/SKILL.md": "551adca942227b44"
  },
  "data-analyst/gemini": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/overrides.json": "9e9e670013cf2407",
   ".gemini/00_KIT.md": "f4b671bcfebebe60",
   ".gemini/10_COMPANY.md": "1cdd17c25fb17012",
@@ -544,7 +544,7 @@
   ".gemini/skills/writing-for-agents/SKILL.md": "551adca942227b44"
  },
  "data-developer/all": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/overrides.json": "9e9e670013cf2407",
   ".codex/AGENTS.md": "3993b80b859fc736",
   ".codex/ai-kit/agents/ai-kit-code-reviewer.toml": "3a745697daeb2800",
@@ -754,7 +754,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "data-developer/all/overrides": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/hooks/dbt-prod-guard.py": "2bab8fbe35de6b78",
   ".ai-kit/hooks/protected-paths.py": "25fd9efbe3171183",
   ".ai-kit/overrides.json": "914076edc45b50a9",
@@ -978,7 +978,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "data-developer/both": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/overrides.json": "9e9e670013cf2407",
   ".gemini/00_KIT.md": "61fdb9a75cce4406",
   ".gemini/10_COMPANY.md": "1cdd17c25fb17012",
@@ -1087,7 +1087,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "data-developer/both/overrides": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/hooks/dbt-prod-guard.py": "2bab8fbe35de6b78",
   ".ai-kit/hooks/protected-paths.py": "25fd9efbe3171183",
   ".ai-kit/overrides.json": "914076edc45b50a9",
@@ -1204,7 +1204,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "data-developer/codex": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/context/00_KIT.md": "61fdb9a75cce4406",
   ".ai-kit/context/10_COMPANY.md": "1cdd17c25fb17012",
   ".ai-kit/context/20_TEAM.md": "b9895cf1ca2b2c68",
@@ -1313,7 +1313,7 @@
   ".codex/skills/zoom-out/agents/openai.yaml": "a1499d95abd84475"
  },
  "data-developer/gemini": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/overrides.json": "9e9e670013cf2407",
   ".gemini/00_KIT.md": "61fdb9a75cce4406",
   ".gemini/10_COMPANY.md": "1cdd17c25fb17012",
@@ -1401,7 +1401,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "devops/all": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/overrides.json": "9e9e670013cf2407",
   ".codex/AGENTS.md": "42b11d1dfdffd9aa",
   ".codex/ai-kit/agents/ai-kit-doubter.toml": "fd9d1a195793e860",
@@ -1578,7 +1578,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "general/all": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/overrides.json": "9e9e670013cf2407",
   ".codex/AGENTS.md": "8ed56149d29bc39d",
   ".codex/ai-kit/agents/ai-kit-code-reviewer.toml": "3a745697daeb2800",
@@ -1732,7 +1732,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "general/both": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/overrides.json": "9e9e670013cf2407",
   ".gemini/00_KIT.md": "c41df7b2bf144562",
   ".gemini/10_COMPANY.md": "1cdd17c25fb17012",
@@ -1813,7 +1813,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "general/gemini": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/overrides.json": "9e9e670013cf2407",
   ".gemini/00_KIT.md": "c41df7b2bf144562",
   ".gemini/10_COMPANY.md": "1cdd17c25fb17012",
@@ -1877,7 +1877,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "java-developer/all": {
-  ".ai-kit/bin/friction.py": "2c85192c97b07c80",
+  ".ai-kit/bin/friction.py": "649032fbeffdda88",
   ".ai-kit/overrides.json": "9e9e670013cf2407",
   ".codex/AGENTS.md": "ffd4a03d743387e5",
   ".codex/ai-kit/agents/ai-kit-code-reviewer.toml": "3a745697daeb2800",

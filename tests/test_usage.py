@@ -42,6 +42,6 @@ class UsageTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as tmp:
    with self.assertRaises(KitError):usage(Path(tmp))
  def test_malformed_log_ignored(self):
-  p=self.home/'.gemini/tmp/proj/chats/bad.json';p.parent.mkdir(parents=True);p.write_text('{broken')
+  p=self.home/'.gemini/tmp/proj/chats/bad.json';p.parent.mkdir(parents=True);p.write_text('{broken',encoding='utf-8')
   text,rep=self.run_usage();self.assertEqual(rep['sessions'],0)
 if __name__=='__main__':unittest.main()

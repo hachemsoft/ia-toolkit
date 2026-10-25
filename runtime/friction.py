@@ -41,6 +41,11 @@ def record(category, text, command='none', cli='unknown', source='person'):
     return path, entry
 
 def main(argv=None):
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors='replace')  # console qui ne connaît pas un caractère : le remplacer plutôt que planter
+        except (AttributeError, ValueError):
+            pass
     parser = argparse.ArgumentParser(description='Noter une friction, localement.')
     parser.add_argument('--category', required=True, choices=CATEGORIES)
     parser.add_argument('--command', default='none', help='commande du kit en cours, ou none')

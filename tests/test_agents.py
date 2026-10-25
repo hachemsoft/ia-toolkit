@@ -27,11 +27,11 @@ class AgentTests(unittest.TestCase):
  def test_extra_and_disable(self):
   self.overrides({'extra_agents':['code-reviewer'],'disabled_agents':['dbt-reviewer']});self.run_kit();self.assertTrue(self.agent('code-reviewer').exists());self.assertFalse(self.agent('dbt-reviewer').exists())
  def test_modified_agent_blocks(self):
-  self.run_kit();self.agent('sql-reviewer').write_text('personnel')
+  self.run_kit();self.agent('sql-reviewer').write_text('personnel',encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit('data-developer')
   self.assertEqual(read_json(self.home/'.ai-kit/state.json')['profile'],'data-analyst')
  def test_existing_agent_blocks(self):
-  p=self.agent('sql-reviewer');p.parent.mkdir(parents=True);p.write_text('tiers')
+  p=self.agent('sql-reviewer');p.parent.mkdir(parents=True);p.write_text('tiers',encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()
   self.assertFalse((self.home/'.ai-kit/state.json').exists())
  def test_unknown_agent(self):
@@ -46,4 +46,4 @@ class AgentTests(unittest.TestCase):
    if rel.startswith('.gemini/agents/'):
     (self.home/rel).unlink();del state['files'][rel]
   state['version']='0.0.2';state_path.write_text(json.dumps(state),encoding='utf-8')
-  self.run_kit();self.assertTrue(self.agent('sql-reviewer').exists());self.assertEqual(read_json(state_path)['version'],(ROOT/'VERSION').read_text().strip())
+  self.run_kit();self.assertTrue(self.agent('sql-reviewer').exists());self.assertEqual(read_json(state_path)['version'],(ROOT/'VERSION').read_text(encoding='utf-8').strip())

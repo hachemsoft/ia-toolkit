@@ -16,8 +16,8 @@ class AgyAdapterTests(unittest.TestCase):
   p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
  def plugin(self):return self.home/AGY_PLUGIN
  def test_agy_settings_and_permissions_never_touched(self):
-  st=self.home/'.gemini/antigravity-cli/settings.json';st.parent.mkdir(parents=True);before='{"permissions": {"allow": ["command(ls)"]}}';st.write_text(before)
-  self.run_kit();self.assertEqual(st.read_text(),before)
+  st=self.home/'.gemini/antigravity-cli/settings.json';st.parent.mkdir(parents=True);before='{"permissions": {"allow": ["command(ls)"]}}';st.write_text(before,encoding='utf-8')
+  self.run_kit();self.assertEqual(st.read_text(encoding='utf-8'),before)
   other=self.home/'.gemini/antigravity-cli';self.assertEqual(sorted(x.name for x in other.iterdir()),['settings.json'])
  def test_plugin_generated(self):
   self.run_kit();p=self.plugin()
@@ -41,13 +41,13 @@ class AgyAdapterTests(unittest.TestCase):
   self.overrides({'hooks':{'dbt-prod-guard':True},'mcp':{'dbt':{'enabled':True,'server':{'command':'dbt-mcp'}}}});self.run_kit()
   self.assertTrue(read_json(self.plugin()/'hooks.json')['ai-kit-dbt-prod-guard']['enabled']);self.assertIn('ai-kit-dbt',read_json(self.plugin()/'mcp_config.json')['mcpServers'])
  def test_modified_plugin_file_blocks(self):
-  self.run_kit();(self.plugin()/'rules/AGENTS.md').write_text('mine')
+  self.run_kit();(self.plugin()/'rules/AGENTS.md').write_text('mine',encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit('data-developer')
  def test_hook_scripts_accept_agy_payload(self):
   self.assertEqual(run_hook('dbt-prod-guard.py',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt run --target prod'}},'workspacePaths':['/x']}).get('decision'),'deny')
   self.assertNotIn('decision',run_hook('dbt-prod-guard.py',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt test -t dev'}}}))
   with tempfile.TemporaryDirectory() as tmp:
-   (Path(tmp)/'.gemini').mkdir();(Path(tmp)/'.gemini/protected-paths').write_text('target/**\n')
+   (Path(tmp)/'.gemini').mkdir();(Path(tmp)/'.gemini/protected-paths').write_text('target/**\n',encoding='utf-8')
    self.assertEqual(run_hook('protected-paths.py',{'toolCall':{'name':'write_to_file','args':{'TargetFile':tmp+'/target/a.sql'}},'workspacePaths':[tmp]}).get('decision'),'deny')
    self.assertIsNone(run_hook('protected-paths.py',{'toolCall':{'name':'write_to_file','args':{'TargetFile':tmp+'/models/a.sql'}},'workspacePaths':[tmp]}).get('decision'))
  def test_command_skill_text_valid_frontmatter(self):
