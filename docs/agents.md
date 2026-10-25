@@ -2,14 +2,17 @@
 
 Un skill décrit une procédure. Un agent reçoit une mission délimitée dans un contexte séparé et renvoie ses constats au parent. Le kit utilise les sous-agents natifs de chaque CLI ; il n’impose pas un workflow de délégation ou d’agents parallèles.
 
-| Agent | Profil par défaut | Mission |
+| Agent | Profils par défaut | Mission |
 | --- | --- | --- |
-| `ai-kit-repo-investigator` | Les deux | Comprendre les flux et dépendances du repo |
-| `ai-kit-code-reviewer` | Développeur Data | Revue Python/JS, contrats et régressions |
-| `ai-kit-sql-reviewer` | Les deux | Grain, jointures, agrégations, dates et NULL |
-| `ai-kit-dbt-reviewer` | Les deux | Modèles, incrémental, tests et documentation dbt |
-| `ai-kit-verifier` | Les deux | Exécuter les vérifications déclarées par le repo et rapporter, sans corriger |
-| `ai-kit-doubter` | Développeur Data (avec `/review full`) | Revue adverse en lecture seule : douter de chaque affirmation du changement, chercher preuve ou contre-exemple |
+| `ai-kit-repo-investigator` | tous | Comprendre les flux et dépendances du repo |
+| `ai-kit-verifier` | tous | Exécuter les vérifications déclarées par le repo et rapporter, sans corriger |
+| `ai-kit-doubter` | tous sauf Data Analyst (avec `/review full`) | Revue adverse en lecture seule : douter de chaque affirmation du changement, chercher preuve ou contre-exemple |
+| `ai-kit-code-reviewer` | Général, Développeur Java, Architecte, Développeur Data | Revue de code : contrats, exceptions, compatibilité et régressions |
+| `ai-kit-security-reviewer` | Développeur Java, DevOps | Secrets, injections, contrôle d’accès, droits et exposition, dépendances |
+| `ai-kit-infra-reviewer` | DevOps | Rayon d’impact d’un changement d’infrastructure ou de pipeline : destructions, droits, versions, retour arrière |
+| `ai-kit-architecture-reviewer` | Architecte | Proposition d’architecture ou ADR : options, critères, conséquences, cohérence avec les décisions existantes |
+| `ai-kit-sql-reviewer` | Data Analyst, Développeur Data | Grain, jointures, agrégations, dates et NULL |
+| `ai-kit-dbt-reviewer` | Data Analyst, Développeur Data | Modèles, incrémental, tests et documentation dbt |
 
 ## Utilisation
 

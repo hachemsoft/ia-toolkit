@@ -10,9 +10,14 @@ Cette page est pour quelqu’un qui n’a jamais vu le kit. Quinze minutes, dans
    - Mac : `sh scripts/bootstrap.sh`
    - Windows : `.\scripts\bootstrap.ps1` (si les scripts sont bloqués : `py -3 -m installer setup`)
 4. Confirmer l’identité détectée (votre email professionnel), puis choisir le profil :
-   - **1. Data Analyst** : vous écrivez surtout du SQL, du dbt, des requêtes BigQuery, des indicateurs.
-   - **2. Développeur Data** : les mêmes, plus du code Python ou JavaScript.
-   - **3. Général** : tout autre métier ; le workflow et les outils, sans playbook métier.
+   - **1. Général** : le workflow et les outils, sans playbook métier ; le bon choix en cas de doute.
+   - **2. Développeur Java** : Maven ou Gradle, Spring, JUnit ; revue de code et de sécurité.
+   - **3. DevOps** : Terraform, Kubernetes, Helm, pipelines CI/CD ; revue d’infrastructure et de sécurité.
+   - **4. Architecte** : décisions d’architecture (ADR), conception, revue de design.
+   - **5. Data Analyst** : vous écrivez surtout du SQL, du dbt, des requêtes BigQuery, des indicateurs.
+   - **6. Développeur Data** : les mêmes, plus du code Python ou JavaScript.
+
+   Le profil se change à tout moment en relançant `setup`. Un skill ou un agent d’un autre profil s’ajoute dans `~/.ai-toolkit/overrides.json` (voir [personnalisation](customization.md)).
 5. L’installation se termine par un appel réel au modèle. **Vert** : c’est fini. Sinon, le message dit exactement quoi faire (une ligne à ajouter, une commande à lancer) ; le faire puis relancer `doctor --live`.
 
 Si votre organisation impose un projet Google Cloud ou un modèle, c’est une ligne dans `~/.ai-toolkit/overrides.json`, donnée par votre équipe plateforme ; voir [personnalisation](customization.md#authentification-et-modèle). Sinon il n’y a rien à déclarer.

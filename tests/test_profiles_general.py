@@ -9,7 +9,7 @@ class GeneralProfileTests(unittest.TestCase):
  def run_kit(self,role):
   with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home,False,None,'gemini')
  def test_profiles_listed(self):
-  self.assertEqual(profile_ids(),['data-analyst','data-developer','general'])
+  self.assertEqual(profile_ids(),['architect','data-analyst','data-developer','devops','general','java-developer'])
  def test_general_has_workflow_without_domain_playbooks(self):
   self.run_kit('general')
   for c in ('intent','spec','build','test','review','ship','diagnose','learn','explain','retro','guide'):self.assertTrue((self.home/'.gemini/commands'/(c+'.toml')).exists(),c)

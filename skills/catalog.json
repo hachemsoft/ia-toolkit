@@ -363,5 +363,26 @@
       "mr"
     ],
     "description": "Remplacé en 0.2.0 par tdd et mr."
+  },
+  "java-change": {
+    "path": "skills/internal/development/java-change",
+    "origin": "internal",
+    "description": "Développer ou revoir une fonctionnalité Java dans un repo existant (Maven ou Gradle, Spring ou autre).",
+    "category": "domain",
+    "tier": "profile"
+  },
+  "infra-change": {
+    "path": "skills/internal/operations/infra-change",
+    "origin": "internal",
+    "description": "Préparer ou revoir un changement d’infrastructure ou de livraison : Terraform, Kubernetes, Helm, pipeline CI/CD, Dockerfile, configuration cloud.",
+    "category": "domain",
+    "tier": "profile"
+  },
+  "architecture-decision": {
+    "path": "skills/internal/architecture/architecture-decision",
+    "origin": "internal",
+    "description": "Instruire et documenter une décision d’architecture (ADR) : options, critères, conséquences, réversibilité.",
+    "category": "domain",
+    "tier": "profile"
   }
 }

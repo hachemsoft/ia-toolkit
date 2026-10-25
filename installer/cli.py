@@ -27,7 +27,12 @@ def practice_file(practice_id):
     source = matches[0]
     return source, source.stem[:2]+'_'+practice_id.upper().replace('-','_')+'.md'
 
-PROFILE_MENU = [('data-analyst', 'Data Analyst : SQL, dbt, BigQuery, indicateurs'), ('data-developer', 'Développeur Data : les mêmes, plus Python et JavaScript'), ('general', 'Général : le workflow et les outils, sans playbook métier')]
+PROFILE_MENU = [('general', 'Général : le workflow et les outils, sans playbook métier'),
+                ('java-developer', 'Développeur Java : Maven ou Gradle, Spring, JUnit'),
+                ('devops', 'DevOps : Terraform, Kubernetes, Helm, pipelines CI/CD'),
+                ('architect', 'Architecte : décisions d’architecture (ADR), conception, revue de design'),
+                ('data-analyst', 'Data Analyst : SQL, dbt, BigQuery, indicateurs'),
+                ('data-developer', 'Développeur Data : SQL, dbt et BigQuery, plus Python et JavaScript')]
 
 def profile_ids():
     return sorted(p.stem for p in (ROOT/'profiles').glob('*.json') if p.stem != 'directory')

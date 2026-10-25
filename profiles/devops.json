@@ -1,0 +1,42 @@
+{
+  "id": "devops",
+  "practices": [
+    "company",
+    "team"
+  ],
+  "skills": [
+    "guide",
+    "grilling",
+    "grill-with-docs",
+    "domain-modeling",
+    "to-spec",
+    "implement",
+    "tdd",
+    "code-review",
+    "mr",
+    "diagnosing-bugs",
+    "retro",
+    "wait-what",
+    "zoom-out",
+    "teach",
+    "writing-for-agents",
+    "setup-workflow",
+    "init-project-context",
+    "to-tickets",
+    "triage",
+    "wayfinder",
+    "infra-change"
+  ],
+  "mcp": {
+    "recommended": [
+      "documentation"
+    ]
+  },
+  "agents": [
+    "repo-investigator",
+    "verifier",
+    "doubter",
+    "infra-reviewer",
+    "security-reviewer"
+  ]
+}

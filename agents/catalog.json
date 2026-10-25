@@ -22,5 +22,17 @@
   "doubter": {
     "path": "agents/internal/common/doubter.json",
     "origin": "internal"
+  },
+  "security-reviewer": {
+    "path": "agents/internal/common/security-reviewer.json",
+    "origin": "internal"
+  },
+  "infra-reviewer": {
+    "path": "agents/internal/operations/infra-reviewer.json",
+    "origin": "internal"
+  },
+  "architecture-reviewer": {
+    "path": "agents/internal/architecture/architecture-reviewer.json",
+    "origin": "internal"
   }
 }
