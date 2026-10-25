@@ -39,6 +39,9 @@ Catégories : `workflow` (une étape du SDLC), `tool` (utilitaire hors flux), `d
 | `workflow-guide` | tool | optional | — | Quel skill ou quel flux pour la situation présente : routeur sur l’ensemble des skills. |
 | `init-project-context` | setup | core | — | Poser le contexte agent d’un repo, avec confirmation à chaque fichier : AGENTS.md court, GLOSSARY.md pré-rempli, REVIEW.md, règle git des artefacts ; ne copie pas les gabarits, ne crée pas d’ADR vide. |
 | `python-js-change` | domain | profile | — | Développer ou revoir une fonctionnalité Python ou JavaScript dans un repo existant. |
+| `java-change` | domain | profile | — | Développer ou revoir une fonctionnalité Java dans un repo existant (Maven ou Gradle, Spring ou autre). |
+| `infra-change` | domain | profile | — | Préparer ou revoir un changement d’infrastructure ou de livraison : Terraform, Kubernetes, Helm, pipeline CI/CD, Dockerfile, configuration cloud. |
+| `architecture-decision` | domain | profile | — | Instruire et documenter une décision d’architecture (ADR) : options, critères, conséquences, réversibilité. |
 | `sql-review` | domain | profile | — | Revoir du SQL BigQuery ou dbt et investiguer des agrégations, doublons ou résultats métier suspects. |
 | `dbt-model-change` | domain | profile | — | Créer, modifier, tester ou documenter un modèle dbt sur BigQuery. |
 | `bigquery-query-review` | domain | profile | — | Optimiser une requête BigQuery lente ou coûteuse et vérifier scans, partitions, jointures et plan. |

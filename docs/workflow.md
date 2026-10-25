@@ -50,9 +50,12 @@ Skills métier en français, activés par le modèle quand la tâche s’y prêt
 | `bigquery-query-review` | `/build`, `/diagnose` | sémantique conservée, partitions, plan d’exécution |
 | `bigquery-cost-review` | `/build`, `/diagnose` | octets, slots, fréquence, coût mensuel, budget avant exécution |
 | `perimeter-brief` | `/learn` | fiche HTML d’un périmètre, quiz, termes candidats au glossaire |
-| `python-js-change` | `/build` (développeurs) | conventions du repo, TDD, interface avant implémentation |
+| `python-js-change` | `/build` (Développeur Data) | conventions du repo, TDD, interface avant implémentation |
+| `java-change` | `/build` (Développeur Java) | conventions du repo et du build Maven ou Gradle, JUnit, contrats publics |
+| `infra-change` | `/build`, `/diagnose` (DevOps) | rayon d’impact, preuve en lecture seule (plan, diff), jamais d’apply ni de déploiement, retour arrière |
+| `architecture-decision` | `/spec` (Architecte) | options comparées, critères, conséquences, réversibilité, ADR |
 
-Les playbooks sont dans les deux profils, sauf `python-js-change` (développeurs). Les tables d’excuses, les déclencheurs des descriptions et les sections « Interdits » sont ce qui fait qu’un playbook s’active au bon moment.
+Les playbooks Data sont dans les deux profils Data ; `python-js-change`, `java-change`, `infra-change` et `architecture-decision` sont chacun dans le profil indiqué. Un playbook d’un autre profil s’ajoute par `extra_skills` dans `overrides.json`. Les tables d’excuses, les déclencheurs des descriptions et les sections « Interdits » sont ce qui fait qu’un playbook s’active au bon moment.
 
 Chaque playbook se termine par une table « Excuses entendues et réponses » : les raisons qu’un agent invoque pour sauter une étape, et ce qu’on lui répond. Quand l’agent trouve une nouvelle excuse, elle entre dans la table.
 
