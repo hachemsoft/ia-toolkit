@@ -16,7 +16,7 @@ Un skill décrit une procédure. Un agent reçoit une mission délimitée dans u
 
 ## Utilisation
 
-Après setup ou update, redémarrer la CLI, puis lister les agents avec sa commande (voir sa page : [Gemini CLI](cli/gemini.md), [Antigravity CLI](cli/agy.md)).
+Après setup ou update, redémarrer la CLI, puis lister les agents avec sa commande (voir sa page : [Gemini CLI](cli/gemini.md), [Antigravity CLI](cli/agy.md), [Codex CLI](cli/codex.md)).
 
 Exemples :
 
@@ -25,6 +25,8 @@ Exemples :
 @ai-kit-code-reviewer Revois cette modification ; voici le diff et les critères attendus : ...
 @ai-kit-sql-reviewer Revois models/marts/ventes.sql et son grain.
 @ai-kit-dbt-reviewer Examine les risques de rejeu de ce modèle incrémental.
+@ai-kit-infra-reviewer Revois ce plan Terraform : destructions, droits, retour arrière.
+@ai-kit-architecture-reviewer Relis cet ADR et ses options.
 ```
 
 L’agent peut aussi choisir une délégation d’après la description. Ces instructions guident le modèle ; elles ne garantissent pas une invocation. La disponibilité dépend de la version de la CLI et des politiques entreprise. Le kit ne force aucun paramètre d’activation des sous-agents ; `doctor` signale une désactivation.
@@ -41,11 +43,11 @@ Un agent ne nomme jamais un modèle : il déclare, au plus, ce qu’il attend (`
 
 ## Outils et limites
 
-Les agents de revue disposent exclusivement de `read_file` et `grep_search`. `ai-kit-verifier` est l’exception : il a aussi `list_directory` et `run_shell_command`, parce que son rôle est de lancer les commandes de vérification déclarées dans `AGENTS.md` (build, tests, lint, `dbt test` sur le target de développement) et de rapporter leur sortie réelle à la fin d’un `/build`. Il ne corrige rien ; le garde-fou `dbt-prod-guard` s’applique aussi à lui. Ils ne peuvent pas modifier les fichiers, exécuter le shell, dbt ou BigQuery, ni appeler les MCP via leur propre liste d’outils. Ils proposent les validations à l’agent principal. Le parent doit fournir le diff ou les résultats pertinents quand ils ne sont pas accessibles.
+Les agents de revue sont en lecture seule : ils lisent et cherchent dans les fichiers, sans rien modifier ni exécuter. `ai-kit-verifier` est l’exception : il peut aussi lister les dossiers et lancer des commandes, parce que son rôle est de lancer les commandes de vérification déclarées dans `AGENTS.md` (build, tests, lint, `dbt test` sur le target de développement) et de rapporter leur sortie réelle à la fin d’un `/build`. Il ne corrige rien ; le garde-fou `dbt-prod-guard` s’applique aussi à lui. Ils ne peuvent pas modifier les fichiers, exécuter le shell, dbt ou BigQuery, ni appeler les MCP via leur propre liste d’outils. Ils proposent les validations à l’agent principal. Le parent doit fournir le diff ou les résultats pertinents quand ils ne sont pas accessibles.
 
-Les pratiques entreprise et Data sont incluses dans leur prompt lors de l’installation : on ne suppose pas qu’un agent isolé reçoive le contexte complet du parent. Le contexte personnel (`30_USER.md`) n’y est pas copié : il règle la forme des réponses du parent, pas la mission déléguée. Les instructions de projet doivent être lues et les faits manquants signalés. Les skills ne sont pas supposés automatiquement disponibles dans les sous-agents. Quand un skill du socle parle de « sub-agent » ou de « background agent », `00_KIT.md` indique au modèle d’utiliser ces agents `ai-kit-*`, ou de faire le travail lui-même s’ils sont absents.
+Les pratiques entreprise et d’équipe sont incluses dans leur prompt lors de l’installation : on ne suppose pas qu’un agent isolé reçoive le contexte complet du parent. Le contexte personnel (`30_USER.md`) n’y est pas copié : il règle la forme des réponses du parent, pas la mission déléguée. Les instructions de projet doivent être lues et les faits manquants signalés. Les skills ne sont pas supposés automatiquement disponibles dans les sous-agents. Quand un skill du socle parle de « sub-agent » ou de « background agent », `00_KIT.md` indique au modèle d’utiliser ces agents `ai-kit-*`, ou de faire le travail lui-même s’ils sont absents.
 
-Le modèle est hérité du parent, sans nom de modèle figé. Chaque agent dispose d’une limite de 12 tours et 5 minutes, sauf le vérificateur (15 tours, 10 minutes) qui doit laisser le temps aux tests de tourner. Une délégation ajoute des appels modèle et peut augmenter latence et consommation : la réserver aux missions qui bénéficient de cette séparation.
+Sans correspondance de capacités (voir plus haut), le modèle est hérité du parent. Chaque agent dispose d’une limite de 12 tours et 5 minutes, sauf le vérificateur (15 tours, 10 minutes) qui doit laisser le temps aux tests de tourner. Une délégation ajoute des appels modèle et peut augmenter latence et consommation : la réserver aux missions qui bénéficient de cette séparation.
 
 L’accès ultérieur à un MCP devra utiliser des outils explicitement autorisés et être validé pour chaque agent. Ne pas élargir à `*` pour résoudre un problème de configuration.
 
@@ -55,9 +57,9 @@ L’accès ultérieur à un MCP devra utiliser des outils explicitement autoris�
 - `agents/internal/<catégorie>/<nom>.json` : rôle et instructions indépendants de toute CLI.
 - `agents/defaults.json` : outils et paramètres par défaut, partagés par toutes les CLI.
 - `profiles/*.json` : agents sélectionnés par rôle.
-- Sortie : un fichier `ai-kit-<nom>.md` par agent, à l’endroit que lit chaque CLI ([matrice](cli/matrice.md)).
+- Sortie : un fichier par agent, au format et à l’endroit que lit chaque CLI : `ai-kit-<nom>.md` pour Gemini et agy, `~/.codex/ai-kit/agents/<nom>.toml` déclaré dans `config.toml` pour Codex ([matrice](cli/matrice.md)).
 
-L’installateur génère les fichiers, les versionne dans son état, protège les modifications locales et retire les anciennes sorties intactes quand le profil change. La mise à jour depuis la V0.0.2 est prise en charge.
+L’installateur génère les fichiers, les versionne dans son état, protège les modifications locales et retire les anciennes sorties intactes quand le profil change.
 
 Personnalisation dans `~/.ai-toolkit/overrides.json` : ajouter `extra_agents` et `disabled_agents` comme listes de noms du catalogue (sans préfixe ai-kit). Conserver les autres clés du fichier.
 

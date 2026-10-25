@@ -1,14 +1,20 @@
 # Références
 
-Vérifiées le 23 octobre 2026. Les versions de Gemini CLI et ses politiques administrées peuvent affecter le fonctionnement ; recette sur la version entreprise requise.
+Documentation des CLI prises en charge, à relire quand une version change. Les versions vérifiées sont dans la [matrice des CLI](cli/matrice.md) ; les politiques administrées d’une organisation peuvent changer le comportement, d’où une recette sur la version utilisée en interne.
 
-- Skills Gemini : https://geminicli.com/docs/cli/using-agent-skills/
-- Contexte Gemini : https://geminicli.com/docs/cli/gemini-md/
-- Configuration Gemini : https://geminicli.com/docs/reference/configuration/
-- MCP Gemini : https://geminicli.com/docs/tools/mcp-server/
-- Catalogue tiers à évaluer : https://github.com/dbt-labs/dbt-agent-skills
-- Catalogue tiers à évaluer : https://github.com/google/skills
+**Gemini CLI**
+- Contexte (`GEMINI.md`, `context.fileName`) : https://geminicli.com/docs/cli/gemini-md/
+- Skills : https://geminicli.com/docs/cli/skills/
+- Sous-agents : https://geminicli.com/docs/core/subagents/
+- Configuration : https://geminicli.com/docs/reference/configuration/
+- MCP : https://geminicli.com/docs/tools/mcp-server/
 
-Cette distribution fournit uniquement des skills internes rédigés pour cette V0. Elle ne redistribue pas le code ou les skills de ces dépôts.
-- Sous-agents Gemini : https://geminicli.com/docs/core/subagents/
-- Skills Gemini : https://geminicli.com/docs/cli/skills/
+**Antigravity CLI** : documentation intégrée (`agy --help`, `agy plugin validate`) ; ce que le kit en utilise est décrit dans [Antigravity CLI](cli/agy.md).
+
+**Codex CLI** : https://developers.openai.com/codex/ (contexte `AGENTS.md`, `config.toml`, skills, hooks) ; ce que le kit en utilise est décrit dans [Codex CLI](cli/codex.md).
+
+**Skills du socle** : repris d’un dépôt amont sous licence MIT, adaptés et redistribués avec leur licence (`skills/LICENSE-UPSTREAM-MIT`) ; provenance dans `skills/upstream.lock.json`. Les playbooks métier sont propres au kit.
+
+**Catalogues tiers à évaluer**, non redistribués :
+- https://github.com/dbt-labs/dbt-agent-skills
+- https://github.com/google/skills

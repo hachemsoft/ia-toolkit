@@ -4,7 +4,7 @@ Le dossier utilisateur est celui de Windows ou macOS, pas celui du projet.
 
 ## Les couches de contexte
 
-Le kit installe dans le dossier de la CLI des fichiers courts, chargés par l’agent dans tous vos projets, dans cet ordre (emplacement exact par CLI : [matrice](cli/matrice.md)) :
+Le kit installe des fichiers courts, chargés par l’agent dans tous vos projets, dans cet ordre. Ils sont dans `~/.gemini/` si Gemini CLI est installé (il ne lit que son dossier), sinon dans `~/.ai-toolkit/context/` ; détail par CLI : [matrice](cli/matrice.md#ajouter-une-cli).
 
 | Fichier | Propriétaire | Contenu |
 | --- | --- | --- |

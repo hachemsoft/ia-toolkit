@@ -16,7 +16,7 @@ Chaque commande annonce en une ligne le niveau qu’elle a retenu. `/review` acc
 
 ## Les étapes
 
-Profil analyste : `/guide`, `/intent`, `/build`, `/test`, `/ship`, `/diagnose` et l’outil `/learn`. Profil développeur : ces sept plus `/spec`, `/review`, `/design`, `/map`, `/triage`, `/explain`, `/retro`. Les outils `/ask`, `/handoff`, `/research`, `/wizard`, `/audit` sont en option pour tous. Une commande absente s’ajoute d’une ligne dans `~/.ai-toolkit/overrides.json`, `{"extra_commands": ["spec", "review"]}`, puis `update` : la commande et ses skills sont installés. `00_KIT.md` liste les commandes installées et `/guide` ne propose que celles-là.
+Les commandes installées dépendent du profil : voir la [table des profils](getting-started.md#3-travailler--une-commande-par-étape). Une commande absente s’ajoute d’une ligne, `extra_commands` dans `~/.ai-toolkit/overrides.json`, puis `update`.
 
 | Étape | Commande | Artefact | Ce que fait la commande |
 | --- | --- | --- | --- |
@@ -37,7 +37,7 @@ Les gabarits d’`intent.md`, `spec.md`, `plan.md`, `REVIEW.md` et `AGENTS.md` s
 
 **Langue.** Les titres de sections des artefacts restent en anglais, comme dans les gabarits : ils sont stables et cherchables. Le contenu est dans la langue de l’équipe ; les réponses de l’agent sont dans la langue de la personne. Les descriptions de commandes affichées par `/help` sont en anglais.
 
-## Playbooks Data
+## Playbooks métier
 
 Skills métier en français, activés par le modèle quand la tâche s’y prête et enchaînés par les commandes :
 
@@ -65,7 +65,7 @@ Chaque playbook se termine par une table « Excuses entendues et réponses » : 
 
 ## Mise en place d’un repo
 
-1. « Initialise le contexte du projet » : `AGENTS.md` d’une page (Commands, Verifying your work, Conventions, Architecture, Things the agent gets wrong), `GLOSSARY.md` pré-rempli avec le vocabulaire Data, `REVIEW.md`, et les lignes de `.gitignore` pour les notes locales. Pas d’ADR vide, pas de copie des gabarits.
+1. « Initialise le contexte du projet » : `AGENTS.md` d’une page (Commands, Verifying your work, Conventions, Architecture, Things the agent gets wrong), `GLOSSARY.md` pré-rempli avec le vocabulaire du repo, `REVIEW.md`, et les lignes de `.gitignore` pour les notes locales. Pas d’ADR vide, pas de copie des gabarits.
 2. Plus tard, seulement si l’équipe veut que l’agent lise et crée des tickets (`/map`, `/triage`, `to-tickets`) : `setup-workflow`, qui demande `glab` (GitLab) ou `gh` (GitHub) installé et connecté, ou choisit le mode markdown local. Il écrit `docs/agents/issue-tracker.md` et un bloc dans `AGENTS.md`.
 
 Un repo peut surcharger une commande, sous la forme que lit la CLI ([matrice](cli/matrice.md)).

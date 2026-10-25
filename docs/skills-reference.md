@@ -2,7 +2,7 @@
 
 Liste complète du catalogue (`skills/catalog.json`). Les utilisateurs n’ont pas à connaître ces noms : ils passent par les commandes. Cette page sert à qui veut voir ce qu’il y a dessous ou étendre le kit.
 
-Catégories : `workflow` (une étape du SDLC), `tool` (utilitaire hors flux), `domain` (playbook Data), `reference` (vocabulaire consulté par les autres skills), `setup` (mise en place d’un repo). Tiers : `core` installé dans tous les profils (vérifié par un test), `profile` selon le profil, `optional` via `extra_skills` ou `extra_commands`.
+Catégories : `workflow` (une étape du SDLC), `tool` (utilitaire hors flux), `domain` (playbook métier : Java, infrastructure, architecture, Data…), `reference` (vocabulaire consulté par les autres skills), `setup` (mise en place d’un repo). Tiers : `core` installé dans tous les profils (vérifié par un test), `profile` selon le profil, `optional` via `extra_skills` ou `extra_commands`.
 
 | Skill | Catégorie | Tier | Commandes | Description |
 | --- | --- | --- | --- | --- |

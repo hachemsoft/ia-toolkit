@@ -24,13 +24,13 @@ description: "Relire un tableau de bord avant publication : filtres, périodes, 
 
 ## Pour vous seul
 
-Créer `<nom>/SKILL.md` dans le dossier des skills de votre CLI ([matrice](cli/matrice.md)), avec un **nom qui n'existe pas dans le kit**. La CLI le lit au prochain lancement ; `update` le laisse tel quel. Pour vérifier : `/skills list` dans Gemini, `/help` dans agy.
+Créer `<nom>/SKILL.md` dans le dossier des skills de votre CLI ([matrice](cli/matrice.md)), avec un **nom qui n'existe pas dans le kit**. La CLI le lit au prochain lancement ; `update` le laisse tel quel. Pour vérifier, lister les skills dans la CLI (la commande est sur sa page, voir la [matrice](cli/matrice.md)).
 
 Deux pièges. Un dossier de même nom qu'un skill du kit dans ce dossier bloque `update` (« existant non géré par le kit ») : le kit refuse d'écraser ce qu'il n'a pas posé. Et certaines CLI lisent un second dossier de skills qui l'emporte à nom égal et masque le skill du kit (voir la page de votre CLI) ; `doctor` liste les skills ainsi masqués. Pour remplacer un skill du kit sans ces effets, passer par un repo ou par le kit, ci-dessous.
 
 ## Pour un repo
 
-Créer `<repo>/.agents/skills/<nom>/SKILL.md` et le versionner. Dans un monorepo, préfixer le nom par la zone (`finance-cloture-mensuelle`) : les skills de repo valent pour toutes les équipes. Les deux CLI le lisent dans ce repo, et un skill de repo **l'emporte sur un skill du kit de même nom**, vérifié sur les CLI prises en charge ([matrice](cli/matrice.md)) : c'est la façon propre de remplacer, pour un projet, un playbook livré (`sql-review` adapté aux conventions du repo, par exemple). `AGENTS.md` peut le mentionner en une ligne pour que les humains le trouvent aussi.
+Créer `<repo>/.agents/skills/<nom>/SKILL.md` et le versionner. Dans un monorepo, préfixer le nom par la zone (`finance-cloture-mensuelle`) : les skills de repo valent pour toutes les équipes. Les CLI qui lisent `.agents/skills/` le trouvent dans ce repo, et un skill de repo **l'emporte sur un skill du kit de même nom**, vérifié sur les CLI prises en charge ([matrice](cli/matrice.md)) : c'est la façon propre de remplacer, pour un projet, un playbook livré (`sql-review` adapté aux conventions du repo, par exemple). `AGENTS.md` peut le mentionner en une ligne pour que les humains le trouvent aussi.
 
 Une commande du kit se surcharge de la même façon, sous la forme que lit la CLI ([matrice](cli/matrice.md)).
 
@@ -39,7 +39,7 @@ Une commande du kit se surcharge de la même façon, sous la forme que lit la CL
 Deux dossiers, deux niveaux d'engagement. `skills/internal/` : livré et maintenu par les mainteneurs du kit, dans les profils. `skills/contrib/` : proposé par une personne ou une équipe qui en reste propriétaire, jamais installé par défaut (`tier: optional`, `origin: contrib`, `owner` dans le catalogue), activable d'une ligne par qui le veut. Un skill contribué qui sert largement passe sous `internal` à une revue d'usage ; un skill sans propriétaire joignable en sort. Les règles sont dans `skills/contrib/README.md` et vérifiées par les tests. La marche ci-dessous vaut pour les deux, seuls le dossier et les champs `origin`, `owner`, `tier` changent.
 
 
-1. **Le dossier** : `skills/internal/<catégorie>/<nom>/SKILL.md` (catégories existantes : `common` pour le workflow et les outils, `analytics`, `development`), ou `skills/contrib/<nom>/SKILL.md` pour une contribution. Le nom du dossier et le `name` de l'en-tête sont identiques.
+1. **Le dossier** : `skills/internal/<catégorie>/<nom>/SKILL.md` (catégories existantes : `common` pour le workflow et les outils, puis une par métier : `development`, `operations`, `architecture`, `analytics`), ou `skills/contrib/<nom>/SKILL.md` pour une contribution. Le nom du dossier et le `name` de l'en-tête sont identiques.
 2. **Le catalogue** `skills/catalog.json`, une entrée par skill :
    ```json
    "revue-dashboard": {
@@ -55,11 +55,11 @@ Deux dossiers, deux niveaux d'engagement. `skills/internal/` : livré et mainten
 3. **Les profils** `profiles/*.json` : l'ajouter aux profils qui doivent l'avoir, ou le laisser `optional`. Un playbook métier n'est jamais dans le profil `general`.
 4. **Une commande, si c'est une étape ou un outil** : un fichier `commands/<nom>.md`, en-tête (`name`, `description` en anglais, `category`, `stage` pour un workflow, `skills`, `order`) et prompt avec `{{args}}` ; voir [le format pivot](format.md). Chaque adaptateur en fait la commande de sa CLI. Une fiche dans `docs/tools.md` pour un outil.
 5. **Un cas d'évaluation** `evals/cases/NN-<nom>.json` avec le prompt qui doit déclencher le skill et un critère observable, puis `python3 -m unittest discover -s tests` et `python3 evals/run.py`.
-6. **Distribuer** : `sh scripts/package.sh`, puis `update` sur les postes.
+6. **Distribuer** : commit, MR, tag ; les postes font `git pull` puis `update`.
 
 ## Exemple complet : un outil `/dashboard-check` en vingt minutes
 
-Le besoin : relire un tableau de bord avant publication. Un skill, une commande, un cas d'évaluation, et il existe dans les deux CLI.
+Le besoin : relire un tableau de bord avant publication. Un skill, une commande, un cas d'évaluation, et il existe dans chaque CLI prise en charge.
 
 1. Le skill, `skills/contrib/dashboard-check/SKILL.md` (contribution d'une analyste qui en reste propriétaire) :
 
@@ -121,7 +121,7 @@ Le besoin : relire un tableau de bord avant publication. Un skill, une commande,
    }
    ```
 
-5. Vérifier et distribuer : `python3 -m unittest discover -s tests`, `python3 evals/run.py --only dashboard-check-totals`, puis `sh scripts/package.sh`. Qui veut l'outil l'active d'une ligne : `{"extra_commands": ["dashboard-check"]}` dans `~/.ai-toolkit/overrides.json`, puis `update` ; `/dashboard-check` apparaît dans chaque CLI prise en charge.
+5. Vérifier et distribuer : `python3 -m unittest discover -s tests`, `python3 evals/run.py --only dashboard-check-totals`, puis commit, MR et tag ; les postes font `git pull` puis `update`. Qui veut l'outil l'active d'une ligne : `{"extra_commands": ["dashboard-check"]}` dans `~/.ai-toolkit/overrides.json`, puis `update` ; `/dashboard-check` apparaît dans chaque CLI prise en charge.
 
 ## Remplacer un skill du kit pour l'organisation
 

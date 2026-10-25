@@ -20,7 +20,7 @@ Un cas par incident ou par erreur répétée : quand l’agent se trompe, le pro
 
 ## En CI
 
-`.github/workflows/agent-evals.yml` installe le kit dans un dossier temporaire, puis lance la suite à chaque modification de `practices/`, `skills/`, `adapters/`, `agents/` ou `evals/`, et chaque lundi. Il attend un secret `GEMINI_API_KEY`. Le workflow est fourni, pas exécuté dans cette livraison.
+`.github/workflows/agent-evals.yml` installe le kit dans un dossier temporaire, puis lance la suite sur Gemini CLI à chaque MR qui touche `practices/`, `skills/`, `templates/`, `runtime/`, `commands/`, `installer/`, `agents/` ou `evals/`, et chaque lundi. Il attend un secret `GEMINI_API_KEY` ; sans lui, la suite ne peut pas tourner. agy et Codex s’évaluent sur un poste authentifié, avec `--cli agy` ou `--cli codex`.
 
 ## Limites
 

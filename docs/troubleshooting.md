@@ -1,10 +1,10 @@
 # Dépannage
 
-Ce qui est propre à une CLI est sur sa page : [Gemini CLI](cli/gemini.md#dépannage-propre-à-gemini), [Antigravity CLI](cli/agy.md#dépannage).
+Ce qui est propre à une CLI est sur sa page : [Gemini CLI](cli/gemini.md#dépannage-propre-à-gemini), [Antigravity CLI](cli/agy.md#dépannage), [Codex CLI](cli/codex.md).
 
 - **Python introuvable** : vérifier `python3 --version` sur Mac, `py -3 --version` ou `python --version` sur Windows. Ne pas modifier les politiques entreprise ; demander le support IT si nécessaire.
 - **Scripts PowerShell bloqués** : utiliser `py -3 -m installer setup` dans le dossier du kit. Ne pas contourner la politique.
-- **Settings illisibles** : corriger le JSON existant avec une sauvegarde préalable. La V0 n’accepte pas JSONC.
+- **Settings illisibles** : corriger le JSON existant avec une sauvegarde préalable. Le kit n’accepte pas le JSON avec commentaires (JSONC).
 - **Skill du kit masqué** : une copie personnelle de même nom, dans un dossier que la CLI lit en priorité, cache le skill du kit. `doctor` liste les skills masqués. Retirer ou renommer la copie personnelle.
 - **Évaluations en erreur d’infrastructure** : `evals/run.py` distingue une réponse d’API indisponible (401, 402 crédits épuisés, 403, 429) d’un échec de comportement ; régler l’authentification ou la facturation de la CLI avant de conclure sur un skill.
 - **Skill existant non géré par le kit** : un skill du même nom a été installé hors du kit (par une commande de la CLI, par exemple). Soit le retirer pour laisser le kit fournir le sien, soit l’ajouter à `disabled_skills` dans overrides.json. Le kit n’écrase jamais un fichier qu’il ne gère pas.
@@ -14,7 +14,7 @@ Ce qui est propre à une CLI est sur sa page : [Gemini CLI](cli/gemini.md#dépan
 - **Identité détectée erronée** : relancer `setup --user votre.email@societe` ; l’en-tête de `30_USER.md` se corrige à la main. L’identité ne donne aucun droit.
 - **Doctor signale un compte hors domaine** : la CLI est connectée avec un compte qui n’est pas dans `allowed_domains`. Se reconnecter avec le compte professionnel avant de travailler sur des données d’entreprise.
 - **Skills non visibles** : les lister avec la commande de la CLI, vérifier leur activation et les politiques administrées. La présence des fichiers ne garantit pas leur activation.
-- **MCP non configuré** : c’est normal dans la V0 ; voir mcp.md. Un MCP facultatif absent ne fait pas échouer doctor.
+- **MCP non configuré** : c’est normal, aucun serveur n’est activé par défaut ; voir [MCP](mcp.md). Un MCP facultatif absent ne fait pas échouer doctor.
 - **Doctor retourne 1** : au moins un contrôle local nécessite une action ; 2 indique une erreur de configuration. Les actions setup/update retournent 0 en cas de succès, 2 en cas d’erreur.
 
 ## Retour arrière manuel

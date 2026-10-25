@@ -39,4 +39,6 @@ Une CLI sans adaptateur peut déjà lire les fichiers de repo du kit (`AGENTS.md
 
 **Où vivent les couches et `30_USER.md`.** Gemini n'importe que des fichiers situés dans `~/.gemini` (vérifié sur la 0.65). Quand Gemini est installé, les couches et `30_USER.md` sont donc dans `~/.gemini/`, et agy et Codex les lisent depuis là. Sans Gemini (`--target codex`, `--target agy`, ou un poste où seule une autre CLI est détectée), ils sont dans `~/.ai-toolkit/context/`, et aucun dossier `~/.gemini` n'est créé pour Codex. Si l'emplacement change, `30_USER.md` est recopié au nouvel endroit s'il y manque ; l'ancien n'est jamais supprimé. `doctor` indique le fichier en vigueur.
 
+## Ajouter une CLI
+
 Une nouvelle CLI, c'est un module dans `installer/adapters/`, ajouté à la liste `ADAPTERS`, qui respecte le contrat `Adapter` de `installer/interface.py`, sa colonne dans le tableau ci-dessus et ses scénarios dans `tests/snapshot.py`. Ce que cet adaptateur doit savoir faire : où écrire chaque ligne ci-dessus, comment la CLI charge un contexte global sans copier `30_USER.md`, sous quelle forme elle reçoit une commande, et comment elle passe un appel d'outil à un script de garde-fou (le JSON qu'elle envoie et la réponse qu'elle attend).

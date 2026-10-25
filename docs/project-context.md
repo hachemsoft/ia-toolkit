@@ -26,7 +26,7 @@ Un repo partagé par plusieurs équipes (par exemple un projet dbt commun à la 
 
 | Où | Quoi | Propriétaire |
 | --- | --- | --- |
-| racine | `AGENTS.md` commun (dont « Verifying your work »), `REVIEW.md`, `.ai-kit/protected-paths`, `GLOSSARY.md` commun ou `GLOSSARY-MAP.md` | l’équipe qui tient la plateforme Data |
+| racine | `AGENTS.md` commun (dont « Verifying your work »), `REVIEW.md`, `.ai-kit/protected-paths`, `GLOSSARY.md` commun ou `GLOSSARY-MAP.md` | l’équipe qui tient la plateforme |
 | `<zone>/` | `AGENTS.md` de la zone, son glossaire si elle en a un, ses artefacts dans `<zone>/docs/sdlc/` | l’équipe de la zone |
 
 - **Lancer l’agent depuis le dossier de sa zone** (`cd finance` puis la CLI). Il lit alors l’`AGENTS.md` de la racine et celui de la zone. Lancé à la racine, il demande dans quelle zone on travaille.
@@ -35,15 +35,15 @@ Un repo partagé par plusieurs équipes (par exemple un projet dbt commun à la 
 - **Un indicateur partagé** a une seule définition, dans le glossaire commun, avec un propriétaire nommé ; les glossaires de zone y renvoient.
 - **Les skills de repo** vivent dans `.agents/skills/` à la racine et valent pour tout le monde : les préfixer par la zone (`finance-cloture-mensuelle`) et dire dans leur description à quoi ils s’appliquent.
 - **Trop de contexte** : lancé à la racine, l’agent peut lire aussi les `AGENTS.md` des sous-dossiers ; chaque CLI a son moyen de limiter ce qu’il parcourt (voir sa page).
-- **Qui relit quoi** : un fichier `CODEOWNERS` le fait respecter par GitLab.
+- **Qui relit quoi** : un fichier `CODEOWNERS` le fait respecter par GitLab ou GitHub.
 
 ```
 # CODEOWNERS
-/AGENTS.md            @data/plateforme
-/REVIEW.md            @data/plateforme
-/.ai-kit/             @data/plateforme
-/finance/             @data/finance
-/marketing/           @data/marketing
+/AGENTS.md            @equipe/plateforme
+/REVIEW.md            @equipe/plateforme
+/.ai-kit/             @equipe/plateforme
+/finance/             @equipe/finance
+/marketing/           @equipe/marketing
 ```
 
 ## Surcharger les préférences

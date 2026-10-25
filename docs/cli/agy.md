@@ -4,7 +4,7 @@ Le kit vise Gemini CLI et Antigravity CLI avec une seule source. Quand `agy` est
 
 ## Ce qui est partagé sans rien faire
 
-- **Les skills** : agy lit `~/.gemini/skills/`, donc les skills du kit, les playbooks Data et les skills de repo (`.agents/skills/`) sont visibles des deux côtés.
+- **Les skills** : agy lit `~/.gemini/skills/`, donc les skills du kit, les playbooks métier et les skills de repo (`.agents/skills/`) sont visibles des deux côtés.
 - **Le contexte du repo** : `AGENTS.md`, `GEMINI.md`, `GLOSSARY.md`, `REVIEW.md`, les `.agents/rules/`.
 - **`30_USER.md`** et les couches du kit, via le plugin ci-dessous.
 

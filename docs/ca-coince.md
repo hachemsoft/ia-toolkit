@@ -13,8 +13,8 @@ Premier réflexe, toujours : `sh scripts/bootstrap.sh doctor --live` (Mac) ou `.
 | Les variables Vertex sont ignorées | `selectedType` vaut encore `gemini-api-key` | `update` avec `vertex` dans `overrides.json` le règle ; sinon `/auth` dans Gemini |
 | « Skill conflict detected » au démarrage, la commande ne fait pas ce que dit la doc | une copie personnelle dans `~/.agents/skills` ou `.agents/skills` du repo masque le kit | `doctor` liste les masqués ; retirer ou renommer la copie |
 | agy demande une permission à chaque commande shell | fonctionnement normal : les permissions agy sont à chaque personne | répondre ; « toujours autoriser » enregistre la règle dans vos réglages agy, le kit n’y touche pas |
-| « Il ne voit pas mon glossaire » | Gemini lancé hors du repo | `cd` dans l’app, puis `gemini` ; le kit est global, le repo ne l’est pas |
-| `/spec`, `/review` ou `/explain` introuvable pour un analyste | commande hors du profil analyste | `"extra_commands": ["spec"]` dans `overrides.json`, puis `update` ; `00_KIT.md` liste les commandes installées |
+| « Il ne voit pas mon glossaire » | CLI lancée hors du repo | `cd` dans le repo, puis la CLI ; le kit est global, le repo ne l’est pas |
+| une commande de la doc est introuvable | commande hors de votre profil ([table des profils](getting-started.md#3-travailler--une-commande-par-étape)) | `"extra_commands": ["spec"]` dans `overrides.json`, puis `update` ; `00_KIT.md` liste les commandes installées |
 | `/intent` ou `/build` introuvable | commande non installée, ou skill désactivé | `doctor` ; vérifier `disabled_skills` et `disabled_commands` dans `overrides.json` |
 | « Skill existant non géré par le kit » à l’`update` | un skill homonyme installé hors du kit | le retirer, ou l’ajouter à `disabled_skills` |
 | dbt refuse de tourner : « Refusé par le kit : target de production » | garde-fou actif | utiliser le target de développement ; une personne autorisée exporte `AI_KIT_ALLOW_PROD=1` |
