@@ -42,4 +42,4 @@ Les lignes du kit dans `.env` portent le commentaire `# ai-kit :` et disparaisse
 - **Bloc hérité dans `GEMINI.md`** (installations 0.0.x) : copier vos ajouts dans `~/.gemini/30_USER.md`, retirer le bloc entre les marqueurs `ai-kit` de `~/.gemini/GEMINI.md`, puis `update`.
 - **Skill installé hors du kit** (par exemple `gemini skills install`) : le retirer, ou l'ajouter à `disabled_skills`.
 
-Passer à agy : [ce qui change, ce qui ne change pas](gemini-vers-agy.md).
+Passer à agy : [ce qui change, ce qui ne change pas](gemini-to-agy.md).

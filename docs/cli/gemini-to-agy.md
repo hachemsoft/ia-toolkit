@@ -19,7 +19,7 @@ Une page pour les personnes qui passent de Gemini CLI à agy. À lire en deux mi
 ## Si ça coince
 
 1. `sh scripts/bootstrap.sh doctor --live` (Mac) ou `.\scripts\bootstrap.ps1 doctor --live` (Windows) : il dit quoi faire.
-2. La page [Ça coince ?](../ca-coince.md).
+2. La page [Ça coince ?](../troubleshooting.md).
 3. Sinon, un ticket : il deviendra un contrôle `doctor`, une ligne de la page, ou un cas d’évaluation, jamais une explication orale répétée.
 
 ## Pour installer ou mettre à jour

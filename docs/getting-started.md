@@ -83,8 +83,8 @@ La règle qui évite de tout dérouler : **la cérémonie suit les enjeux**. Une
 ## 5. Quand ça coince
 
 1. Depuis le dossier du kit : `sh scripts/bootstrap.sh doctor --live` (Mac) ou `.\scripts\bootstrap.ps1 doctor --live` (Windows). Il dit quoi faire.
-2. La page [Ça coince ?](ca-coince.md) : un symptôme, une cause, une commande.
-3. Sinon un ticket, avec le gabarit de la page [pilote](pilote.md). Et à chaud, `/friction <une phrase>` : la revue d’usage la reprendra. Il deviendra un contrôle, une ligne de la page ou un cas d’évaluation, jamais une explication orale répétée.
+2. La page [Ça coince ?](troubleshooting.md) : un symptôme, une cause, une commande.
+3. Sinon un ticket, avec le gabarit de la page [pilote](pilot.md). Et à chaud, `/friction <une phrase>` : la revue d’usage la reprendra. Il deviendra un contrôle, une ligne de la page ou un cas d’évaluation, jamais une explication orale répétée.
 
 ## 6. Plus tard
 

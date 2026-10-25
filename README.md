@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/hachemsoft/ia-toolkit/actions/workflows/portability.yml/badge.svg)](https://github.com/hachemsoft/ia-toolkit/actions/workflows/portability.yml)
 [![Version](https://img.shields.io/github/v/tag/hachemsoft/ia-toolkit?label=version)](CHANGELOG.md)
-[![Python](https://img.shields.io/badge/python-3.9%20%E2%80%93%203.14-blue)](docs/installeur.md)
+[![Python](https://img.shields.io/badge/python-3.9%20%E2%80%93%203.14-blue)](docs/installer.md)
 [![Systèmes](https://img.shields.io/badge/syst%C3%A8mes-Mac%20%7C%20Windows%20%7C%20Linux-informational)](docs/getting-started.md)
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-green)](LICENSE)
 
@@ -13,7 +13,7 @@ Un socle pour travailler avec un agent de code en équipe, sur Mac et Windows. I
 1. **Installer** : `git clone <url du dépôt> ai-kit` (sans git : « Télécharger ZIP » sur la page du dépôt, puis extraire). Ouvrir un terminal dans ce dossier, puis lancer `sh scripts/bootstrap.sh` (Mac) ou `.\scripts\bootstrap.ps1` (Windows). Confirmer l’identité, puis choisir le profil le plus proche de votre métier ; en cas de doute, **Général**.
 2. **Vérifier** : l’installation se termine par un appel réel au modèle. Vert, c’est fini. Sinon, le message dit quoi faire.
 3. **Utiliser** : ouvrir votre repo (`cd` dedans), lancer votre CLI (`gemini`, `agy` ou `codex`), taper `/guide je dois …` (`$guide` dans Codex) : il dit quelle commande taper. La première fois dans un repo : « Initialise le contexte du projet ».
-4. **Quand ça coince** : `sh scripts/bootstrap.sh doctor --live` (Mac) ou `.\scripts\bootstrap.ps1 doctor --live` (Windows), puis la page [Ça coince ?](docs/ca-coince.md).
+4. **Quand ça coince** : `sh scripts/bootstrap.sh doctor --live` (Mac) ou `.\scripts\bootstrap.ps1 doctor --live` (Windows), puis la page [Ça coince ?](docs/troubleshooting.md).
 
 Prérequis : Python 3.11 ou plus récent recommandé ; 3.9 minimum, ce qui permet d’utiliser le Python fourni avec macOS. Le kit n’installe aucune dépendance. La CLI et son authentification viennent de la procédure de votre organisation ; si elle impose un projet cloud ou un modèle, c’est une ligne dans `~/.ai-kit/overrides.json`. Le pas-à-pas complet : [démarrer](docs/getting-started.md).
 
@@ -54,10 +54,10 @@ Versions vérifiées, où chaque fichier est posé et ce qui diffère d’une CL
 
 ## Documentation
 
-- **Utiliser** : [démarrer](docs/getting-started.md), [workflow](docs/workflow.md), [outils](docs/tools.md), [agents](docs/agents.md), [couche projet](docs/project-context.md), [Ça coince ?](docs/ca-coince.md).
+- **Utiliser** : [démarrer](docs/getting-started.md), [workflow](docs/workflow.md), [outils](docs/tools.md), [agents](docs/agents.md), [couche projet](docs/project-context.md), [Ça coince ?](docs/troubleshooting.md).
 - **Personnaliser** : [personnalisation](docs/customization.md), [ajouter ou remplacer un skill](docs/extending.md), [garde-fous](docs/hooks.md), [MCP](docs/mcp.md), [identité](docs/identity.md).
-- **Par CLI** : [matrice](docs/cli/matrice.md), [Gemini CLI](docs/cli/gemini.md), [Antigravity CLI](docs/cli/agy.md), [Codex CLI](docs/cli/codex.md), [passer de Gemini à agy](docs/cli/gemini-vers-agy.md).
-- **Déployer et maintenir** : [l’installeur](docs/installeur.md), [conformité et gouvernance](docs/conformite.md), [contribution](docs/contributing.md), [format des commandes](docs/format.md), [référence des skills](docs/skills-reference.md), [évaluations](docs/evals.md), [revue d’usage](docs/usage-review.md), [pilote](docs/pilote.md), [sources](docs/sources.md), [historique](CHANGELOG.md).
+- **Par CLI** : [matrice](docs/cli/matrice.md), [Gemini CLI](docs/cli/gemini.md), [Antigravity CLI](docs/cli/agy.md), [Codex CLI](docs/cli/codex.md), [passer de Gemini à agy](docs/cli/gemini-to-agy.md).
+- **Déployer et maintenir** : [l’installeur](docs/installer.md), [conformité et gouvernance](docs/compliance.md), [contribution](docs/contributing.md), [format des commandes](docs/format.md), [référence des skills](docs/skills-reference.md), [évaluations](docs/evals.md), [revue d’usage](docs/usage-review.md), [pilote](docs/pilot.md), [sources](docs/sources.md), [historique](CHANGELOG.md).
 
 ## Crédits et inspirations
 
