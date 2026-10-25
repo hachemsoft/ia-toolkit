@@ -28,6 +28,14 @@ class CodexAdapterTests(unittest.TestCase):
   with contextlib.redirect_stdout(out):code=doctor(self.home)
   self.assertEqual(code,0,out.getvalue())
 
+ def test_crlf_user_context_keeps_block_stable(self):
+  # 30_USER.md édité sous Windows (CRLF), puis bascule vers Codex seul et update : le bloc ne doit pas paraître modifié à la main.
+  self.run_kit(target='all')
+  (self.home/'.gemini/30_USER.md').write_bytes(b'# Moi\r\nPreference Windows.\r\n')
+  self.run_kit(target='codex');self.run_kit(target='codex')
+  self.assertIn('Preference Windows.',(self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
+  self.assertNotIn(b'\r',(self.home/'.codex/AGENTS.md').read_bytes().split(CODEX_MD[1].encode())[0])
+
  def test_user_context_follows_location_without_deleting(self):
   self.run_kit(target='all')
   mine='# Moi\nPréférence personnelle conservée.\n'

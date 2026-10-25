@@ -1,0 +1,3 @@
+# Fins de ligne : texte normalisé dans le dépôt ; les scripts shell restent en LF sur tous les systèmes.
+* text=auto
+*.sh text eol=lf

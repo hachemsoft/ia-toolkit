@@ -20,6 +20,9 @@ def explicit_only(skill_text):
     head = skill_text.split('\n---', 1)[0] if skill_text.startswith('---') else ''
     return bool(re.search(r'^disable-model-invocation:\s*true\s*$', head, re.M))
 
+def normalize_newlines(text):
+    return text.replace('\r\n', '\n').replace('\r', '\n')
+
 def toml_value(value):
     """Chaîne, liste ou table en ligne TOML ; une chaîne JSON est une chaîne TOML valide."""
     if isinstance(value, dict):
@@ -111,7 +114,7 @@ def finalize(p: Plan, active: bool = True) -> None:
         path = p.home/rel
         text = path.read_text(encoding='utf-8') if path.exists() else ''
         before, old_block, after = split_block(text, markers, label)
-        if old_block is not None and old_blocks.get(rel) != digest(old_block.encode('utf-8')):
+        if old_block is not None and old_blocks.get(rel) != digest(normalize_newlines(old_block).encode('utf-8')):
             raise KitError('Bloc du kit modifié à la main dans '+label+' : reporter vos changements hors du bloc (ou dans overrides.json), retirer le bloc, puis update.')
         outside = before.rstrip('\n')+('\n' if before.strip() and after.strip() else '')+after.lstrip('\n')
         block = None
@@ -125,6 +128,9 @@ def finalize(p: Plan, active: bool = True) -> None:
                 raise KitError('~/.codex/config.toml contient déjà des entrées ai-kit- hors du bloc du kit : les retirer, puis update.')
             hook_commands = [quote_path(sys.executable)+' '+quote_path(p.hooks_dir/p.hook_manifest[name]['script']) for name in p.enabled_hooks]
             block = codex_config_block(p.adapter_data.get(NAME, {}).get('agents', {}), hook_commands, p.enabled_mcp)
+        if block is not None:
+            # Fins de ligne normalisées : un 30_USER.md édité sous Windows (CRLF) ne doit pas changer l'empreinte du bloc relu.
+            block = normalize_newlines(block)
         new_text = place_block(outside, block, position)
         if rel.endswith('config.toml') and block is not None:
             try:
