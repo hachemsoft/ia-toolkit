@@ -1,0 +1,14 @@
+{
+  "documentation": {
+    "definition": "definitions/documentation.json",
+    "status": "requires-company-configuration"
+  },
+  "bigquery": {
+    "definition": "definitions/bigquery.json",
+    "status": "requires-company-configuration"
+  },
+  "dbt": {
+    "definition": "definitions/dbt.json",
+    "status": "requires-company-configuration"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "explain-uses-glossary",
+  "prompt": "/explain le modèle stg_commandes",
+  "cwd": "dbt-mini",
+  "expect": {
+    "regex": [
+      "(commande|stg_commandes)",
+      "(shop\\.orders|source)"
+    ]
+  },
+  "timeout": 480
+}

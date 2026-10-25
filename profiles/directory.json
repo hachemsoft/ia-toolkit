@@ -1,0 +1,5 @@
+{
+  "_doc": "Annuaire facultatif de l'organisation : allowed_domains = domaines d'email attendus (doctor signale un compte actif hors de ces domaines ; liste vide = aucun contrôle) ; emails = email -> profil proposé par défaut au setup. Garder ces listes minimales.",
+  "allowed_domains": [],
+  "emails": {}
+}

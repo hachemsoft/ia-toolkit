@@ -1,0 +1,7 @@
+{
+  "id": "bigquery",
+  "description": "Accès aux schémas et requêtes BigQuery selon IAM",
+  "enabled_by_default": false,
+  "server": null,
+  "note": "Renseigner un serveur approuvé ; aucune URL ou commande fictive activée."
+}

@@ -1,0 +1,52 @@
+{
+  "id": "data-analyst",
+  "practices": [
+    "company",
+    "team"
+  ],
+  "skills": [
+    "guide",
+    "grilling",
+    "grill-with-docs",
+    "domain-modeling",
+    "implement",
+    "tdd",
+    "code-review",
+    "mr",
+    "diagnosing-bugs",
+    "teach",
+    "writing-for-agents",
+    "setup-workflow",
+    "init-project-context",
+    "sql-review",
+    "dbt-model-change",
+    "bigquery-query-review",
+    "kpi-definition",
+    "incremental-replay",
+    "bigquery-cost-review",
+    "perimeter-brief"
+  ],
+  "mcp": {
+    "recommended": [
+      "documentation",
+      "bigquery",
+      "dbt"
+    ]
+  },
+  "agents": [
+    "repo-investigator",
+    "sql-reviewer",
+    "dbt-reviewer",
+    "verifier"
+  ],
+  "commands": [
+    "guide",
+    "intent",
+    "build",
+    "test",
+    "ship",
+    "diagnose",
+    "learn",
+    "friction"
+  ]
+}

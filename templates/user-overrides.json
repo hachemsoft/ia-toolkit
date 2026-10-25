@@ -1,0 +1,12 @@
+{
+  "extra_commands": [],
+  "disabled_commands": [],
+  "extra_skills": [],
+  "disabled_skills": [],
+  "mcp": {},
+  "extra_agents": [],
+  "disabled_agents": [],
+  "hooks": {},
+  "models": {},
+  "frictions": "propose"
+}

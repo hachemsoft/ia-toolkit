@@ -1,0 +1,14 @@
+{
+  "name": "intent-asks-before-writing",
+  "prompt": "/intent les analystes ne savent pas quels clients compter comme actifs dans le tableau de bord ventes",
+  "cwd": "dbt-mini",
+  "expect": {
+    "regex": [
+      "\\?",
+      "(clients? actifs?|active customers?)"
+    ],
+    "files_absent": [
+      "intent.md"
+    ]
+  }
+}

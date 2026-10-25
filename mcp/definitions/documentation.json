@@ -1,0 +1,7 @@
+{
+  "id": "documentation",
+  "description": "Documentation autorisée par votre entreprise",
+  "enabled_by_default": false,
+  "server": null,
+  "note": "Renseigner un serveur approuvé ; aucune URL ou commande fictive activée."
+}

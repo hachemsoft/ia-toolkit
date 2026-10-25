@@ -1,0 +1,9 @@
+{
+  "kind": "local",
+  "tools": [
+    "read_file",
+    "grep_search"
+  ],
+  "max_turns": 12,
+  "timeout_mins": 5
+}

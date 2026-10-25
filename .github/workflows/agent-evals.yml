@@ -1,0 +1,31 @@
+name: Agent evals
+on:
+  pull_request:
+    paths: ['practices/**', 'skills/**', 'templates/**', 'runtime/**', 'commands/**', 'installer/**', 'agents/**', 'evals/**']
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 1'
+permissions:
+  contents: read
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    # Le secret est vide sur une PR venant d'un fork : la suite ne peut pas tourner.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install -g @google/gemini-cli
+      - name: Install the kit into a temporary home
+        run: python3 -m installer setup --profile data-analyst --home "$RUNNER_TEMP/home" --user evals@example.org --no-live
+      - name: Run evals
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python3 evals/run.py --home "$RUNNER_TEMP/home" --report "$RUNNER_TEMP/evals.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evals-report
+          path: ${{ runner.temp }}/evals.json

@@ -1,0 +1,51 @@
+{
+  "id": "general",
+  "practices": [
+    "company",
+    "team"
+  ],
+  "skills": [
+    "guide",
+    "grilling",
+    "grill-with-docs",
+    "domain-modeling",
+    "to-spec",
+    "implement",
+    "tdd",
+    "code-review",
+    "mr",
+    "diagnosing-bugs",
+    "retro",
+    "wait-what",
+    "zoom-out",
+    "teach",
+    "writing-for-agents",
+    "setup-workflow",
+    "init-project-context"
+  ],
+  "mcp": {
+    "recommended": [
+      "documentation"
+    ]
+  },
+  "agents": [
+    "repo-investigator",
+    "code-reviewer",
+    "verifier",
+    "doubter"
+  ],
+  "commands": [
+    "guide",
+    "intent",
+    "spec",
+    "build",
+    "test",
+    "review",
+    "ship",
+    "diagnose",
+    "learn",
+    "explain",
+    "retro",
+    "friction"
+  ]
+}

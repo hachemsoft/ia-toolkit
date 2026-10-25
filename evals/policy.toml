@@ -1,0 +1,21 @@
+# Politique Gemini pour les évaluations : activer les skills sans confirmation, refuser toute écriture et tout shell.
+[[rules]]
+name = "Allow skill activation"
+description = "Les évaluations mesurent les skills ; leur activation ne doit pas attendre une confirmation."
+action = "allow"
+toolName = "activate_skill"
+
+[[rules]]
+name = "Deny shell"
+action = "deny"
+toolName = "run_shell_command"
+
+[[rules]]
+name = "Deny write_file"
+action = "deny"
+toolName = "write_file"
+
+[[rules]]
+name = "Deny replace"
+action = "deny"
+toolName = "replace"

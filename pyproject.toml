@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-kit"
+version = "0.17.0"
+description = "Kit IA : contexte en couches, workflow en six étapes, outils et playbooks pour Gemini CLI et Antigravity CLI, Mac et Windows."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE", "skills/LICENSE-UPSTREAM-MIT"]
+dependencies = []
+keywords = ["gemini-cli", "antigravity", "agents", "skills", "sdlc"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Environment :: Console",
+]
+
+[project.scripts]
+ai-kit = "ai_kit.cli:main"
+
+# Le code vit dans installer/ (python3 -m installer depuis le dossier du kit) ; le paquet publié l'appelle ai_kit
+# pour ne pas entrer en conflit avec le paquet PyPI « installer ». Le contenu du kit voyage sous ai_kit/kit/.
+[tool.hatch.build.targets.wheel]
+only-include = ["installer"]
+sources = { "installer" = "ai_kit" }
+
+[tool.hatch.build.targets.wheel.force-include]
+"VERSION" = "ai_kit/kit/VERSION"
+"runtime" = "ai_kit/kit/runtime"
+"agents" = "ai_kit/kit/agents"
+"commands" = "ai_kit/kit/commands"
+"mcp" = "ai_kit/kit/mcp"
+"practices" = "ai_kit/kit/practices"
+"profiles" = "ai_kit/kit/profiles"
+"skills" = "ai_kit/kit/skills"
+"templates" = "ai_kit/kit/templates"
+
+[tool.hatch.build.targets.sdist]
+include = ["LICENSE", "installer", "runtime", "agents", "commands", "mcp", "practices", "profiles", "skills", "templates", "scripts", "docs", "evals", "tests", "VERSION", "README.md", "CHANGELOG.md", "pyproject.toml"]

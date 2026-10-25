@@ -1,0 +1,67 @@
+# Démarrer
+
+Cette page est pour quelqu’un qui n’a jamais vu le kit. Quinze minutes, dans l’ordre.
+
+## 1. Installer (une fois)
+
+1. Récupérer le kit dans un dossier durable, par exemple `Documents` : `git clone <url du dépôt> ai-toolkit`. Sans git : bouton « Télécharger ZIP » sur la page du dépôt, puis extraire dans `Documents/ai-toolkit`.
+2. Ouvrir un terminal **dans ce dossier**. Mac : clic droit sur le dossier, « Nouveau terminal au dossier ». Windows : dans l’Explorateur, ouvrir le dossier puis taper `powershell` dans la barre d’adresse et Entrée.
+3. Lancer :
+   - Mac : `sh scripts/bootstrap.sh`
+   - Windows : `.\scripts\bootstrap.ps1` (si les scripts sont bloqués : `py -3 -m installer setup`)
+4. Confirmer l’identité détectée (votre email professionnel), puis choisir le profil :
+   - **1. Data Analyst** : vous écrivez surtout du SQL, du dbt, des requêtes BigQuery, des indicateurs.
+   - **2. Développeur Data** : les mêmes, plus du code Python ou JavaScript.
+   - **3. Général** : tout autre métier ; le workflow et les outils, sans playbook métier.
+5. L’installation se termine par un appel réel au modèle. **Vert** : c’est fini. Sinon, le message dit exactement quoi faire (une ligne à ajouter, une commande à lancer) ; le faire puis relancer `doctor --live`.
+
+Si votre organisation impose un projet Google Cloud ou un modèle, c’est une ligne dans `~/.ai-toolkit/overrides.json`, donnée par votre équipe plateforme ; voir [personnalisation](customization.md#authentification-et-modèle). Sinon il n’y a rien à déclarer.
+
+## 2. Première session (cinq minutes)
+
+1. Aller dans votre repo : `cd <dossier du repo>`. Sans cela, l’agent ne voit pas le contexte du projet.
+2. Lancer votre CLI : `gemini`, `agy` ou `codex`. Selon la CLI, les commandes s’écrivent avec `/` ou avec `$` (voir sa page dans la [matrice](cli/matrice.md#notion-par-notion)).
+3. Taper : **« Initialise le contexte du projet »**. L’agent propose, fichier par fichier et avec votre accord, `AGENTS.md` (une page sur le repo), `GLOSSARY.md` (les mots du métier), `REVIEW.md` (ce qu’une revue vérifie) et deux lignes de `.gitignore` pour les notes de travail. Si quelqu’un l’a déjà fait dans ce repo, passer.
+4. Taper : `/guide je dois …` avec votre besoin du jour. Il répond : quel niveau de cérémonie, quelle commande, ce qu’elle produit, un exemple de prompt.
+
+## 3. Travailler : une commande par étape
+
+| Vous voulez | Tapez | Vous obtenez |
+| --- | --- | --- |
+| cadrer une idée, un ticket, un incident | `/intent <ce que vous voulez>` | un entretien, puis `intent.md` (note locale) |
+| transformer l’intent en contrat | `/spec` | `spec.md`, relu dans la MR |
+| réaliser | `/build <ticket ou spec>` | `plan.md` à accepter, puis code et tests, une tranche à la fois |
+| vérifier | `/test` | la sortie réelle des vérifications du repo |
+| faire relire avant de fusionner | `/review main` (`full` pour la production) | constats classés par passe et gravité |
+| décrire la merge request | `/ship` | la description, preuves incluses ; rien n’est poussé |
+| comprendre un bug ou un chiffre faux | `/diagnose <symptôme>` | cause prouvée, correctif, test de non-régression |
+| apprendre un périmètre | `/learn <sujet>` | leçons, quiz, fiches dans `docs/learn/<sujet>/` |
+| comprendre une zone ou la dernière réponse | `/explain <zone>` ou `/explain` | une carte en termes du glossaire, ou une reformulation |
+| améliorer l’environnement de l’agent | `/retro` | des propositions pour `AGENTS.md`, les checks, les skills |
+| noter ce qui a coincé, sans s’arrêter | `/friction <une phrase>` | une ligne locale, reprise à la revue d’usage ; rien n’est envoyé |
+
+Un analyste a `/guide`, `/intent`, `/build`, `/test`, `/ship`, `/diagnose`, `/learn` et `/friction` ; un développeur ou le profil général a aussi `/spec`, `/review`, `/explain`, `/retro` (et `/design`, `/map`, `/triage` pour le développeur). Une commande en plus : `{"extra_commands": ["spec"]}` dans `~/.ai-toolkit/overrides.json`, puis `update`.
+
+La règle qui évite de tout dérouler : **la cérémonie suit les enjeux**. Une retouche se fait sans commande. Une petite fonctionnalité : `/intent` court puis `/build`. Seuls une grande évolution ou un changement en production passent par `/spec` et `/review full`. Chaque commande dit en une ligne le niveau qu’elle a retenu.
+
+## 4. Ce que vous verrez, et ce qui est normal
+
+- `/help` liste les commandes avec une description en anglais ; l’agent vous répond dans votre langue. Les artefacts gardent des titres anglais, leur contenu est dans la langue de l’équipe.
+- `intent.md` et `plan.md` sont des notes locales, ignorées par git ; `spec.md` et `REVIEW.md` sont versionnés. L’agent ne commite jamais sans votre accord.
+- Les playbooks métier (SQL, dbt, BigQuery, KPI) s’activent seuls quand la tâche s’y prête ; vous n’avez pas à les nommer.
+- Dans agy, une demande de permission avant une commande shell est normale : répondre ; « toujours autoriser » retient votre choix dans vos réglages agy, le kit n’y touche pas.
+- Sans MCP connecté, l’agent ne lit pas vos données réelles : donner le SQL et les schémas autorisés, ou faire configurer la connexion par l’équipe plateforme.
+
+## 5. Quand ça coince
+
+1. Depuis le dossier du kit : `sh scripts/bootstrap.sh doctor --live` (Mac) ou `.\scripts\bootstrap.ps1 doctor --live` (Windows). Il dit quoi faire.
+2. La page [Ça coince ?](ca-coince.md) : un symptôme, une cause, une commande.
+3. Sinon un ticket, avec le gabarit de la page [pilote](pilote.md). Et à chaud, `/friction <une phrase>` : la revue d’usage la reprendra. Il deviendra un contrôle, une ligne de la page ou un cas d’évaluation, jamais une explication orale répétée.
+
+## 6. Plus tard
+
+- Vos préférences (langue, style, domaines) : `30_USER.md` dans le dossier de votre CLI (voir la [matrice](cli/matrice.md)), créé pour vous, jamais réécrit par le kit.
+- Ajouter ou retirer des commandes, skills, agents, MCP, garde-fous : `~/.ai-toolkit/overrides.json`, puis `update`. Voir [personnalisation](customization.md).
+- Écrire votre propre skill, ou remplacer un skill du kit pour vous, pour un repo ou pour l’équipe : [ajouter ou remplacer un skill](extending.md).
+- Quand l’équipe veut que l’agent lise et crée des tickets : `setup-workflow` dans le repo (demande `glab` ou `gh`).
+- Mise à jour du kit : `git pull` puis `update` depuis son dossier (sans git : retélécharger le ZIP, remplacer le dossier, puis `update`).

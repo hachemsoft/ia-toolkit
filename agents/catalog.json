@@ -1,0 +1,26 @@
+{
+  "repo-investigator": {
+    "path": "agents/internal/common/repo-investigator.json",
+    "origin": "internal"
+  },
+  "code-reviewer": {
+    "path": "agents/internal/development/code-reviewer.json",
+    "origin": "internal"
+  },
+  "sql-reviewer": {
+    "path": "agents/internal/analytics/sql-reviewer.json",
+    "origin": "internal"
+  },
+  "dbt-reviewer": {
+    "path": "agents/internal/analytics/dbt-reviewer.json",
+    "origin": "internal"
+  },
+  "verifier": {
+    "path": "agents/internal/common/verifier.json",
+    "origin": "internal"
+  },
+  "doubter": {
+    "path": "agents/internal/common/doubter.json",
+    "origin": "internal"
+  }
+}

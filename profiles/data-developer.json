@@ -1,0 +1,53 @@
+{
+  "id": "data-developer",
+  "practices": [
+    "company",
+    "team"
+  ],
+  "skills": [
+    "grilling",
+    "domain-modeling",
+    "tdd",
+    "diagnosing-bugs",
+    "writing-for-agents",
+    "mr",
+    "guide",
+    "grill-with-docs",
+    "to-spec",
+    "to-tickets",
+    "implement",
+    "code-review",
+    "retro",
+    "wait-what",
+    "zoom-out",
+    "teach",
+    "setup-workflow",
+    "init-project-context",
+    "prototype",
+    "codebase-design",
+    "triage",
+    "wayfinder",
+    "python-js-change",
+    "incremental-replay",
+    "bigquery-cost-review",
+    "perimeter-brief",
+    "sql-review",
+    "dbt-model-change",
+    "bigquery-query-review",
+    "kpi-definition"
+  ],
+  "mcp": {
+    "recommended": [
+      "documentation",
+      "bigquery"
+    ]
+  },
+  "agents": [
+    "repo-investigator",
+    "code-reviewer",
+    "verifier",
+    "doubter",
+    "sql-reviewer",
+    "dbt-reviewer"
+  ]
+}

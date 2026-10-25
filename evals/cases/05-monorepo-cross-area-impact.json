@@ -1,0 +1,10 @@
+{
+  "name": "monorepo-cross-area-impact",
+  "prompt": "/test Ne lance rien. J'ai modifié finance/models/marge_mensuelle.sql : indique les commandes de vérification que tu exécuterais, sur quel target, et quelles autres zones du repo sont touchées.",
+  "cwd": "monorepo-mini",
+  "subdir": "finance",
+  "expect": {
+    "regex": ["marketing", "dbt (build|test)", "(--target dev|-t dev|target dev|target de développement)"],
+    "not_contains": ["--target prod", "-t prod"]
+  }
+}
