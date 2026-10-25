@@ -2,6 +2,7 @@
 
 ## 0.20.0
 Everything in English: documentation, installer and script messages, domain playbooks, practices, context templates, agent instructions, eval cases and tests. Agents still reply in the person's language; the default `30_USER.md` now says "reply in the language I write in" (existing files are never rewritten). Docs renamed: `troubleshooting.md`, `compliance.md`, `installer.md`, `pilot.md`, `cli/gemini-to-agy.md`. Codex managed blocks get English markers; the previous markers are recognized and replaced on `update`. Doctor prefixes: `[Check]`, `[Optional]`.
+Eval patterns accept English and French answers, since agents reply in the person's language. Evals on this version: Gemini 5/5 (the intent and dbt cases replayed twice), agy 5/5, Codex 5/5.
 "Compliance and governance" page (`docs/compliance.md`): what the kit does, does not do and leaves to the organization, against the AI Act, the NIST AI RMF and ISO/IEC 42001, without claiming compliance. Badges in the README: tests, version, Python, operating systems, licence.
 
 ## 0.19.0

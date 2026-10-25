@@ -5,10 +5,11 @@
   "expect": {
     "regex": [
       "\\?",
-      "(active (customers?|clients?)|customers?[^.\\n]{0,40}\\bactive)"
+      "(active (customers?|clients?)|customers?[^.\\n]{0,40}\\bactive|clients? actifs?)"
     ],
     "files_absent": [
       "intent.md"
     ]
-  }
+  },
+  "_doc": "Patterns accept English and French answers: agents reply in the person's language."
 }

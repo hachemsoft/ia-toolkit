@@ -4,9 +4,10 @@
   "cwd": "dbt-mini",
   "expect": {
     "regex": [
-      "(orders?\\b|stg_commandes)",
+      "(orders?\\b|commandes?\\b|stg_commandes)",
       "(shop\\.orders|source)"
     ]
   },
-  "timeout": 480
+  "timeout": 480,
+  "_doc": "Patterns accept English and French answers: agents reply in the person's language."
 }

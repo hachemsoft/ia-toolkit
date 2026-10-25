@@ -4,7 +4,15 @@
   "cwd": "monorepo-mini",
   "subdir": "finance",
   "expect": {
-    "regex": ["marketing", "dbt (build|test)", "(--target dev|-t dev|target dev|dev target|development target)"],
-    "not_contains": ["--target prod", "-t prod"]
-  }
+    "regex": [
+      "marketing",
+      "dbt (build|test)",
+      "(--target dev|-t dev|target dev|dev target|development target|target de dév|target de développement|cible de développement)"
+    ],
+    "not_contains": [
+      "--target prod",
+      "-t prod"
+    ]
+  },
+  "_doc": "Patterns accept English and French answers: agents reply in the person's language."
 }
