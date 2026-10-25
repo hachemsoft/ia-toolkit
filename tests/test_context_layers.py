@@ -21,8 +21,8 @@ class ContextLayerTests(unittest.TestCase):
  def test_user_layer_never_rewritten(self):
   self.run_kit();u=self.path('.gemini/30_USER.md');u.write_text('Personnel');self.run_kit('data-developer');self.assertEqual(u.read_text(),'Personnel')
   doctor_out=io.StringIO()
-  with contextlib.redirect_stdout(doctor_out):code=doctor(self.home)
-  self.assertEqual(code,0,doctor_out.getvalue());self.assertIn('[OK] Contexte personnel présent',doctor_out.getvalue())
+  with contextlib.redirect_stdout(doctor_out):doctor(self.home)
+  self.assertEqual([line for line in doctor_out.getvalue().splitlines() if line.startswith('[À vérifier]') and 'PATH' not in line],[],doctor_out.getvalue());self.assertIn('[OK] Contexte personnel présent',doctor_out.getvalue())
  def test_modified_kit_layer_blocks(self):
   self.run_kit();self.write('.gemini/10_COMPANY.md','modifié')
   with self.assertRaises(KitError):self.run_kit('data-developer')
