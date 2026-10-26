@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.24.0
 `organization.json` at the root of the kit replaces `profiles/directory.json` and the organization use of `templates/user-overrides.json`: expected domains, each person's profile and team, and organization defaults. The defaults are always merged with the person's `overrides.json` (lists add up, objects combine, the person wins for a single value): a personal file no longer drops the organization's authentication, model or guardrails. `doctor` lists the defaults a person changed. Teams are their own dimension: `practices/20-<team>.md`, chosen by `setup --team`, by `organization.json` or by a question at setup, installed as `20_<TEAM>.md` whatever the profile. `update` through the launcher fetches the new version itself (`git pull --ff-only` in a clean git clone, never blocking); `doctor` reports an installed version behind the folder and `doctor --live` a newer published version. `organization.json` and `CHANGELOG.md` are now in the pipx package.
 Profiles are discovered from the `profiles/` folder: each file carries its menu `label` and `order`, so adding a profile is adding one file (no code, no test to edit; the tests and the snapshot pick it up).
 
