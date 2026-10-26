@@ -2,11 +2,11 @@
 name: research
 description: "Research a question against primary sources and record it in the repo"
 category: tool
-skills: [research]
+skills: [investigation]
 order: 170
 ---
 
-Activate the research skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+Activate the investigation skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
 
 Question: {{args}}
 

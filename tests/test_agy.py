@@ -27,12 +27,16 @@ class AgyAdapterTests(unittest.TestCase):
   hooks=read_json(p/'hooks.json');self.assertEqual(hooks['ai-kit-dbt-prod-guard']['enabled'],False);self.assertEqual(hooks['ai-kit-dbt-prod-guard']['PreToolUse'][0]['matcher'],'run_command')
   self.assertFalse((p/'mcp_config.json').exists());self.assertIn('.gemini/config/plugins/ai-kit/plugin.json',read_json(self.home/'.ai-kit/state.json')['files'])
  def test_command_skills_only_when_no_homonym(self):
-  self.run_kit('data-developer');base=self.home/'.gemini/skills'
+  self.run_kit('data-developer');base=self.plugin()/'skills'
   for n in ('intent','build','test','review','ship','diagnose','learn','explain','spec','design','map'):self.assertTrue((base/n/'SKILL.md').is_file(),n)
   text=(base/'intent/SKILL.md').read_text(encoding='utf-8');self.assertTrue(text.startswith('---\nname: intent\ndescription: "Kit command /intent.'));self.assertNotIn('{{args}}',text);self.assertIn('grill-with-docs',text)
-  self.assertIn('Grill the user',(base/'guide/SKILL.md').read_text(encoding='utf-8') if False else 'Grill the user');self.assertNotIn('Kit command',(base/'retro/SKILL.md').read_text(encoding='utf-8'));self.assertNotIn('Kit command',(base/'triage/SKILL.md').read_text(encoding='utf-8'))
+  # No skill shares a command's name any more: /retro and /triage are kit commands, their skills have their own names.
+  self.assertIn('Kit command /retro',(base/'retro/SKILL.md').read_text(encoding='utf-8'));self.assertIn('Kit command /triage',(base/'triage/SKILL.md').read_text(encoding='utf-8'))
+  shared=self.home/'.gemini/skills';self.assertTrue((shared/'retrospective/SKILL.md').is_file());self.assertTrue((shared/'ticket-sorting/SKILL.md').is_file())
+  # Gemini reads the shared folder: no command skill there, or it would show every command twice.
+  self.assertFalse((shared/'intent').exists());self.assertFalse((shared/'retro').exists())
  def test_analyst_gets_only_its_commands_as_skills(self):
-  self.run_kit();base=self.home/'.gemini/skills';self.assertTrue((base/'intent/SKILL.md').is_file());self.assertFalse((base/'review').exists());self.assertFalse((base/'spec').exists())
+  self.run_kit();base=self.plugin()/'skills';self.assertTrue((base/'intent/SKILL.md').is_file());self.assertFalse((base/'review').exists());self.assertFalse((base/'spec').exists())
  def test_gemini_only_target(self):
   self.run_kit(target='gemini');self.assertFalse(self.plugin().exists());self.assertFalse((self.home/'.gemini/skills/intent').exists())
  def test_switch_target_removes_plugin(self):

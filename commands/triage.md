@@ -3,12 +3,12 @@ name: triage
 description: "Maintain: move incoming issues through triage until they are agent-ready"
 category: workflow
 stage: Maintain
-skills: [triage]
+skills: [ticket-sorting]
 artifact: "agent-ready issues"
 order: 100
 ---
 
-Activate the triage skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+Activate the ticket-sorting skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
 
 Input: {{args}} (optional: an issue id or a filter).
 

@@ -2,11 +2,11 @@
 name: retro
 description: "Retrospective of this session: improve the agent's environment, not the code"
 category: tool
-skills: [retro]
+skills: [retrospective]
 order: 140
 ---
 
-Activate the retro skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+Activate the retrospective skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
 
 Input: {{args}} (optional: a session log path when the session was cleared).
 

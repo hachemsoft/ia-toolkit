@@ -32,6 +32,8 @@ The `protected-paths` guardrail always blocks agent writes to `~/.gemini/setting
 
 ## Specifics
 
+- Gemini CLI 0.65 turns every skill of `~/.gemini/skills/` into a `/<skill>` command. Two commands with the same name are both renamed (`/user.guide`, `/guide1`), so no kit skill shares a command's name, and agy's command skills live in its plugin, where Gemini does not look.
+
 - **`~/.agents/skills` alias**: Gemini reads it too, and it wins over `~/.gemini/skills` when names match ("Skill conflict detected" at startup). `doctor` lists the kit skills hidden this way.
 - **Subfolder context**: when launched at the root of a repository, Gemini also reads the `AGENTS.md` and `GEMINI.md` of subfolders; a `.geminiignore` limits what it walks.
 - **Non-interactive mode (`gemini -p`)**: the skill activation tool is not exposed; the kit commands say what to do without it. `plan` mode also blocks skills.

@@ -16,7 +16,7 @@ Documentation for the supported CLIs, to reread when a version changes. The veri
 ## Inspirations
 
 - **Workflow**: ["The AI-native SDLC playbook"](https://claude.com/resources/articles/the-ai-native-sdlc-playbook), Anthropic. Six steps (Plan, Design, Build, Test, Deploy, Maintain), each closed by a versioned artifact that the next step reads: `intent.md`, `spec.md`, `plan.md`, the diff and its tests, the merge request (MR) and its review findings, the incident report that becomes an `intent.md` again.
-- **Core skills**: [mattpocock/skills](https://github.com/mattpocock/skills), Matt Pocock, MIT licence. Taken and adapted (in English, `pr` becomes `mr`, two skills renamed), redistributed with their licence (`skills/LICENSE-UPSTREAM-MIT`); provenance in `skills/upstream.lock.json`. From them comes the upfront effort: interview, glossary, ADR, small composable skills.
+- **Core skills**: [mattpocock/skills](https://github.com/mattpocock/skills), Matt Pocock, MIT licence. Taken and adapted (in English, `pr` becomes `mr`, several skills renamed), redistributed with their licence (`skills/LICENSE-UPSTREAM-MIT`); provenance in `skills/upstream.lock.json`. From them comes the upfront effort: interview, glossary, ADR, small composable skills.
 - **Skill discipline**: [agent-skills](https://github.com/addyosmani/agent-skills), Addy Osmani. Rationalization tables (anti-rationalization) in each playbook, adversarial review by a doubter agent (`/review full`), one verb per step.
 - **pstack**: [cursor/plugins › pstack](https://github.com/cursor/plugins/tree/main/pstack).
 - **Comparison of skill packs** by Switch Dimension: ceremony matches the stakes, and each installed skill has a context cost, hence the usage review.

@@ -157,6 +157,10 @@ def profile_practices(profile, team):
         raise KitError('Unknown team: '+team+'. Teams with practices: '+(', '.join(team_ids()) or 'none (practices/20-<team>.md)'))
     return [team if p == 'team' and team else p for p in profile['practices']]
 
+# 0.26: skills renamed so that no skill shares a command's name (Gemini CLI turns every skill into a /command).
+RENAMED_SKILLS = {'guide': 'routing', 'handoff': 'handover', 'research': 'investigation', 'retro': 'retrospective',
+                  'triage': 'ticket-sorting', 'wizard': 'manual-steps'}
+
 def resolve_skills(profile, overrides, catalog, log=print):
     """Final selection: profile + extra, replacements followed, dependencies added, disabled skills respected."""
     disabled = set(overrides.get('disabled_skills', []))
@@ -309,6 +313,12 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
             if name not in command_names:
                 raise KitError(key+': unknown command '+name+'. Kit commands: '+', '.join(command_names))
     # A command added in one line (extra_commands) also installs its skills.
+    # Skills renamed in 0.26 (a skill no longer shares a command's name): an old name in overrides.json still works.
+    for key in ('extra_skills', 'disabled_skills'):
+        renamed = [name for name in overrides.get(key, []) if name in RENAMED_SKILLS]
+        if renamed:
+            print('[Info] overrides.json '+key+': '+', '.join(n+' is now '+RENAMED_SKILLS[n] for n in renamed)+'; update the name when convenient.')
+            overrides[key] = [RENAMED_SKILLS.get(name, name) for name in overrides[key]]
     extra_command_skills = [s for c in manifest if c['name'] in overrides.get('extra_commands', []) for s in c['skills']]
     selected = resolve_skills({**profile, 'skills': list(profile['skills']) + extra_command_skills}, overrides, catalog)
     allowed = allowed_commands(profile.get('commands'), overrides, command_names)

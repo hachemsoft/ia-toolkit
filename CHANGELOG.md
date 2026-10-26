@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.26.0
+No skill shares a command's name any more: Gemini CLI 0.65 turns every skill into a `/command`, so `/guide` and the `guide` skill were both renamed (`/user.guide`, `/guide1`). Skills renamed: `guide` → `routing`, `handoff` → `handover`, `research` → `investigation`, `retro` → `retrospective`, `triage` → `ticket-sorting`, `wizard` → `manual-steps`; the commands keep their names and, in agy and Codex, now get their own command skill with the kit's instructions. Old names still work in `overrides.json` (with a notice); `update` removes the old skill folders. A test forbids a skill named like a command.
+With agy installed, its command skills (`intent`, `build`, `test`…) move from the shared `~/.gemini/skills/` to the agy plugin (`~/.gemini/config/plugins/ai-kit/skills/`): Gemini CLI, which reads the shared folder, showed every kit command twice and renamed them. Verified: agy counts plugin skills, Gemini does not see them. `update` removes the old copies.
 JSON Schemas for `overrides.json` and `organization.json` (`schemas/`): editors complete the keys, show their description and flag a typo or a wrong value as you type. The personal file created by `setup` and `organization.json` point to them. `doctor` reports unknown keys; the CI checks the shipped JSON files against the schemas, so a merge request that breaks `organization.json` fails before reaching workstations.
 
 ## 0.25.1

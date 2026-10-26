@@ -13,9 +13,9 @@ Categories: `workflow` (an SDLC step), `tool` (utility outside the flow), `domai
 | `tdd` | workflow | core | `/test` | Test-first development: red, green, refactor; integration tests preferred. |
 | `diagnosing-bugs` | workflow | core | `/diagnose` | Diagnosis loop for hard bugs and performance regressions: reproduce, minimize, hypothesize, instrument, fix. |
 | `writing-for-agents` | reference | core | — | Write documents meant for agents: skills, AGENTS.md, repository docs. |
-| `research` | tool | optional | `/research` | Research on primary sources, recorded in a Markdown file in the repository, delegated to a background agent. |
+| `investigation` | tool | optional | `/research` | Research on primary sources, recorded in a Markdown file in the repository, delegated to a background agent. |
 | `mr` | workflow | core | `/ship` | Write a merge request (MR) description: visual summary, evidence, merge risk. |
-| `guide` | tool | core | `/guide` | Which command, which tool and which level of ceremony for the situation: the kit router. |
+| `routing` | tool | core | `/guide` | Which command, which tool and which level of ceremony for the situation: the kit router. |
 | `grill-me` | workflow | optional | — | Tight interview to sharpen a plan, with no repository or written record. |
 | `grill-with-docs` | workflow | core | `/intent` | Tight interview that feeds GLOSSARY.md and the ADRs as answers come in; entry point of the main flow. |
 | `to-questionnaire` | tool | optional | `/ask` | Turn a decision you cannot make alone into a questionnaire for someone else. |
@@ -25,14 +25,14 @@ Categories: `workflow` (an SDLC step), `tool` (utility outside the flow), `domai
 | `implement` | workflow | core | `/build` | Implement a ticket or a spec, with TDD, then review. |
 | `implement-spec` | workflow | optional | — | Implement a whole spec: tickets read as a graph, subagents in parallel, integration branch. |
 | `code-review` | workflow | core | `/review` | Review a diff from a fixed point on two axes: repository standards and compliance with the spec. |
-| `triage` | workflow | optional | `/triage` | Move incoming tickets through a triage state machine until they are ready for an agent. |
-| `retro` | tool | profile | `/retro` | Retrospective of a work session: improve the agent's environment, not the code. |
-| `handoff` | tool | optional | `/handoff` | Compact the conversation into a handoff document for another agent or session. |
+| `ticket-sorting` | workflow | optional | `/triage` | Move incoming tickets through a triage state machine until they are ready for an agent. |
+| `retrospective` | tool | profile | `/retro` | Retrospective of a work session: improve the agent's environment, not the code. |
+| `handover` | tool | optional | `/handoff` | Compact the conversation into a handoff document for another agent or session. |
 | `wait-what` | tool | profile | `/explain` | Rephrase the last message that was not understood, using the glossary vocabulary. |
 | `zoom-out` | tool | profile | `/explain` | Step back: wider context and overview. |
 | `teach` | tool | core | `/learn` | Learn a scope or concept over several sessions: lessons, quizzes and cards; shared material in the repository's `docs/learn/<topic>/`, personal progress in `~/.ai-kit/learning/`. |
 | `improve-codebase-architecture` | tool | optional | `/audit` | Spot modules to deepen, HTML report, then an interview on the selected ones. |
-| `wizard` | tool | optional | `/wizard` | Generate an interactive bash wizard for steps only a human can perform. |
+| `manual-steps` | tool | optional | `/wizard` | Generate an interactive bash wizard for steps only a human can perform. |
 | `write-a-skill` | tool | optional | — | Create a skill: structure, progressive disclosure, resources. |
 | `writing-great-skills` | reference | optional | — | Reference for writing and reviewing predictable skills. |
 | `setup-workflow` | setup | core | — | Configure a repository for the flow: ticket tracker (GitHub, GitLab, local), triage labels, location of the glossary and ADRs. Run once per repository. |
@@ -55,4 +55,4 @@ Categories: `workflow` (an SDLC step), `tool` (utility outside the flow), `domai
 
 ## Origin
 
-Skills with `origin: upstream` come from [mattpocock/skills](https://github.com/mattpocock/skills) (Matt Pocock, MIT licence) (`skills/LICENSE-UPSTREAM-MIT`), in English. Three adaptations: `pr` becomes `mr`, and the two upstream skills whose name carried their author's name become `setup-workflow` and `workflow-guide`. Skills with `origin: contrib` (under `skills/contrib/`) are proposed by people in the organization who remain their owners; they are always optional. Skills with `origin: internal` are written for the kit, in French. See [workflow](workflow.md) and [tools](tools.md) for usage.
+Skills with `origin: upstream` come from [mattpocock/skills](https://github.com/mattpocock/skills) (Matt Pocock, MIT licence) (`skills/LICENSE-UPSTREAM-MIT`), in English. Adaptations: `pr` becomes `mr`; the two upstream skills whose name carried their author's name become `setup-workflow` and `workflow-guide`; and since a CLI may turn every skill into a `/command` ([matrix](cli/matrice.md)), no skill shares a command's name: `handoff`, `research`, `retro`, `triage` and `wizard` become `handover`, `investigation`, `retrospective`, `ticket-sorting` and `manual-steps` (old names still accepted in `overrides.json`). Skills with `origin: contrib` (under `skills/contrib/`) are proposed by people in the organization who remain their owners; they are always optional. Skills with `origin: internal` are written for the kit. See [workflow](workflow.md) and [tools](tools.md) for usage.

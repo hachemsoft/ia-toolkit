@@ -2,11 +2,11 @@
 name: guide
 description: "Which command, tool and level of ceremony fits the situation"
 category: tool
-skills: [guide]
+skills: [routing]
 order: 110
 ---
 
-Activate the guide skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+Activate the routing skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
 
 Question: {{args}}
 

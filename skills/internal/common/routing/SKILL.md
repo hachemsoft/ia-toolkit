@@ -1,10 +1,9 @@
 ---
-name: guide
+name: routing
 description: "Kit router: which command, which tool and what level of ceremony for the situation described. Triggers: which skill for, where do I start, how do we do this here, guide, help with the workflow."
 ---
 
-# guide
-
+# routing
 Reply in the person's language, in a few lines: the level of ceremony, the command or tool, the artifact produced, an example prompt. Mention skill names only if asked.
 
 Propose only the commands listed under "Commands" in the kit context (00_KIT.md): those are the ones installed for this profile. The tables below give the full map; when the command that would fit is not installed (for example `/spec`, `/review`, `/explain` for an analyst), say so in one line with how to enable it: `extra_commands` in `~/.ai-kit/overrides.json`, then `update`.

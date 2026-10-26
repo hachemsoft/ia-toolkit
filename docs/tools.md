@@ -9,7 +9,7 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 - **Command**: `/guide <question>`.
 - **Output**: a short answer in the person's language, with an example prompt.
 - **Needs**: nothing.
-- **Skill**: `guide` (internal). `workflow-guide` as an option for the full map of the upstream flow.
+- **Skill**: `routing` (internal). `workflow-guide` as an option for the full map of the upstream flow.
 - **Example**: `/guide I need to change a KPI definition, where do I start?`
 
 ## `/learn` — learn an area or a concept
@@ -41,27 +41,27 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 - **Command**: `/retro` or `/retro <log path>` after a `/clear`.
 - **Output**: proposals to accept one at a time: lines for `AGENTS.md`, checks to automate, standards for `REVIEW.md`, skills to add or remove, missing commands.
 - **Needs**: the current session.
-- **Skill**: `retro`.
+- **Skill**: `retrospective`.
 - **Example**: `/retro`.
 
 ## `/handoff` — handover (option)
 - **When**: switching session, folder or person, or delegating a side task.
 - **Command**: `/handoff [destination]`.
 - **Output**: a handover file, `docs/sdlc/handoff-<date>.md` or the location the repo reserves for these notes (local note, not committed unless requested): goal, state, decisions and reasons, open questions, exact next steps.
-- **Skill**: `handoff`.
+- **Skill**: `handover`.
 
 ## `/research` — primary sources (option)
 - **When**: a documentation or API fact to establish, long reading to delegate.
 - **Command**: `/research <question>`.
 - **Output**: `docs/research/<topic>.md` with every claim sourced.
 - **Needs**: sub-agents preferably, web access.
-- **Skill**: `research`.
+- **Skill**: `investigation`.
 
 ## `/wizard` — human steps (option)
 - **When**: credentials, third-party consoles, approvals, one-off migration. **Not** if the agent can do the step itself.
 - **Command**: `/wizard <procedure>`.
 - **Output**: an interactive bash script. On Windows, the kit asks the model to give the PowerShell equivalent or the manual steps.
-- **Skill**: `wizard`.
+- **Skill**: `manual-steps`.
 
 ## `/audit` — code health (option, developers)
 - **When**: spare time to make the code easier for an agent to work with.

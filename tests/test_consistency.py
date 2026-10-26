@@ -22,7 +22,7 @@ class ConsistencyTests(unittest.TestCase):
     for s,tail in re.findall(r'follow (?:the )?([a-z0-9-]+)(?: skill)?([^;.]*)',text):
      if s in self.cat and 'if installed' not in tail:self.assertIn(s,p['skills'],'/'+c['name']+' cites '+s+' which is missing from profile '+pid)
  def test_commands_cited_by_guide_exist(self):
-  text=(ROOT/'skills/internal/common/guide/SKILL.md').read_text(encoding='utf-8');names={c['name'] for c in self.cmds}
+  text=(ROOT/'skills/internal/common/routing/SKILL.md').read_text(encoding='utf-8');names={c['name'] for c in self.cmds}
   for m in set(re.findall(r'`/([a-z]+)',text)):self.assertIn(m,names,'/'+m)
  def test_contrib_skills_rules(self):
   for n,e in self.cat.items():

@@ -58,7 +58,8 @@ def install(p: Plan) -> None:
     for command in p.commands:
         if command['name'] in skill_names:
             continue  # a skill with the same name already exists: it serves as the command in agy
-        p.managed_write(p.home/'.gemini'/'skills'/command['name']/'SKILL.md', command_skill_text(command).encode('utf-8'), 'Command skill')
+        # In the plugin, not in the shared ~/.gemini/skills: Gemini CLI would turn it into a second /<command> next to its own.
+        p.managed_write(plugin/'skills'/command['name']/'SKILL.md', command_skill_text(command).encode('utf-8'), 'Command skill')
     for agent_name, agent_bytes in p.agent_markdown.items():
         p.managed_write(plugin/'agents'/(agent_name+'.md'), agent_bytes, 'Plugin agy')
     agy_hooks = {}

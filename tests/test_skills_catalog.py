@@ -57,5 +57,5 @@ class SkillCatalogTests(unittest.TestCase):
   self.overrides({'extra_skills':['research']});self.run_kit('data-developer');s=self.home/'.gemini/settings.json';v=read_json(s);v['experimental']={'enableAgents':False};s.write_text(json.dumps(v),encoding='utf-8')
   out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
-  self.assertIn('degraded without them: research',out.getvalue())
+  self.assertIn('degraded without them: investigation',out.getvalue())  # extra_skills 'research' (old name) still works
 if __name__=='__main__':unittest.main()

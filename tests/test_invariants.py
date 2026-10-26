@@ -221,5 +221,11 @@ class InvariantTests(unittest.TestCase):
         self.assertIn('replaces kit skills: .agents/skills/code-review', out.getvalue())
         self.assertNotIn('team-only', out.getvalue())
 
+    def test_no_skill_shares_a_command_name(self):
+        """Gemini CLI turns every skill into a /command: a skill with a command's name makes both get renamed (/guide1, /user.guide)."""
+        from installer.core import load_commands
+        catalog = json.loads((ROOT/'skills/catalog.json').read_text(encoding='utf-8'))
+        self.assertEqual(sorted(set(catalog) & {c['name'] for c in load_commands()}), [])
+
 if __name__ == '__main__':
     unittest.main()

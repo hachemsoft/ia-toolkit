@@ -55,8 +55,8 @@
     "category": "reference",
     "tier": "core"
   },
-  "research": {
-    "path": "skills/internal/common/research",
+  "investigation": {
+    "path": "skills/internal/common/investigation",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "needs_agents": true,
@@ -72,8 +72,8 @@
     "category": "workflow",
     "tier": "core"
   },
-  "guide": {
-    "path": "skills/internal/common/guide",
+  "routing": {
+    "path": "skills/internal/common/routing",
     "origin": "internal",
     "description": "Which command, which tool and what level of ceremony for the situation: kit router.",
     "category": "tool",
@@ -172,10 +172,10 @@
     "category": "workflow",
     "tier": "core"
   },
-  "triage": {
+  "ticket-sorting": {
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
-    "path": "skills/internal/common/triage",
+    "path": "skills/internal/common/ticket-sorting",
     "requires": [
       "grilling"
     ],
@@ -183,18 +183,18 @@
     "category": "workflow",
     "tier": "optional"
   },
-  "retro": {
+  "retrospective": {
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
-    "path": "skills/internal/common/retro",
+    "path": "skills/internal/common/retrospective",
     "description": "Retrospective of a work session: improve the agent's environment, not the code.",
     "category": "tool",
     "tier": "profile"
   },
-  "handoff": {
+  "handover": {
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
-    "path": "skills/internal/common/handoff",
+    "path": "skills/internal/common/handover",
     "description": "Compact the conversation into a handover document for another agent or another session.",
     "category": "tool",
     "tier": "optional"
@@ -235,10 +235,10 @@
     "category": "tool",
     "tier": "optional"
   },
-  "wizard": {
+  "manual-steps": {
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
-    "path": "skills/internal/common/wizard",
+    "path": "skills/internal/common/manual-steps",
     "description": "Generate an interactive bash wizard for the steps only a human can perform.",
     "category": "tool",
     "tier": "optional"

@@ -38,7 +38,7 @@ The body is the prompt. `{{args}}` receives what the person types after the comm
 | Target | Output | Details |
 | --- | --- | --- |
 | Gemini CLI | `~/.gemini/commands/<name>.toml` | `description` and `prompt`, `{{args}}` kept |
-| Antigravity CLI | `~/.gemini/skills/<name>/SKILL.md` when no skill already has that name | description prefixed with "Kit command /<name>", `{{args}}` replaced by a sentence, activation reserved for the command |
+| Antigravity CLI | `~/.gemini/config/plugins/ai-kit/skills/<name>/SKILL.md` (in the plugin, where Gemini CLI does not look) | description prefixed with "Kit command /<name>", `{{args}}` replaced by a sentence, activation reserved for the command |
 | Codex CLI | `~/.codex/skills/<name>/SKILL.md` and `agents/openai.yaml` when no skill already has that name | same text as for agy; `openai.yaml` reserves activation for `$<name>` |
 
 The header is parsed without dependencies: one key per line, a simple value, a JSON-quoted string or a list `[a, b]`. `python3 -m unittest tests.test_commands tests.test_consistency` checks each file: name, description, category, existing skills, `{{args}}` present, valid generated TOML.

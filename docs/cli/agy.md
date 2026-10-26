@@ -20,7 +20,7 @@ A plugin `~/.gemini/config/plugins/ai-kit/`, validated by `agy plugin validate` 
 | `hooks.json` | the two guardrails, `enabled` following `overrides.json`; the scripts understand the agy payload (`toolCall.args.CommandLine`) |
 | `mcp_config.json` | the MCP servers enabled in `overrides.json`, when there are any |
 
-And **command skills** in `~/.gemini/skills/`: agy has no command files, but every skill is a `/<name>` command. For each profile command without a skill of the same name (`intent`, `spec`, `build`, `test`, `review`, `ship`, `diagnose`, `design`, `map`, `learn`, `explain`, `ask`, `audit`), the kit generates a skill of the same name whose body is the command prompt. `/guide`, `/retro`, `/triage`, `/research`, `/handoff`, `/wizard` already exist as skills. In Gemini, these command skills are also visible: their description says to activate only on the command or an explicit request.
+And **command skills** in the plugin (`~/.gemini/config/plugins/ai-kit/skills/`): agy has no command files, but every skill is a `/<name>` command. For each profile command, the kit generates a skill of the same name whose body is the command prompt. They live in the plugin, not in the shared `~/.gemini/skills/`, because Gemini CLI turns every skill it finds there into a `/command` and would show each kit command twice.
 
 After installation, restart agy: it discovers a new plugin only at startup.
 

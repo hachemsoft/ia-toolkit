@@ -7,7 +7,7 @@
     "team"
   ],
   "skills": [
-    "guide",
+    "routing",
     "grilling",
     "grill-with-docs",
     "domain-modeling",
@@ -17,7 +17,7 @@
     "code-review",
     "mr",
     "diagnosing-bugs",
-    "retro",
+    "retrospective",
     "wait-what",
     "zoom-out",
     "teach",
@@ -25,7 +25,7 @@
     "setup-workflow",
     "init-project-context",
     "to-tickets",
-    "triage",
+    "ticket-sorting",
     "wayfinder",
     "infra-change"
   ],

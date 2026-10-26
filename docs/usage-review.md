@@ -78,7 +78,7 @@ $ python3 scripts/usage-aggregate.py releves/*.json
 | `test` | 29 |
 ...
 ### Core candidates never activated on any workstation
-`retro`
+`retrospective`
 
 ### Frictions (7)
 | Category | Command | Friction |
@@ -90,7 +90,7 @@ $ python3 scripts/usage-aggregate.py releves/*.json
 By category: command ×4, docs ×2, guardrail ×1
 ```
 
-Reading: two frictions on `/test` say the same thing, so that is a ticket; `retro`, never activated on six workstations, is a candidate to move to optional, unless someone explains in one line why it stays.
+Reading: two frictions on `/test` say the same thing, so that is a ticket; `retrospective`, never activated on six workstations, is a candidate to move to optional, unless someone explains in one line why it stays.
 
 ## When to hold it
 
