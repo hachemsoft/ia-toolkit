@@ -1,4 +1,5 @@
 {
+  "$schema": "./schemas/organization.schema.json",
   "_doc": "What the organization decides, in one file: expected email domains and defaults. Edit it in the kit repository (merge request), then each workstation runs update. See docs/customization.md.",
   "allowed_domains": [],
   "defaults": {

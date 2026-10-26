@@ -2,7 +2,7 @@
  "architect/all": {
   ".ai-kit/bin/friction.py": "8c6264e8554a47ca",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".codex/AGENTS.md": "fccf9decf016c34d",
   ".codex/ai-kit/agents/ai-kit-architecture-reviewer.toml": "d2fd8bc891190f13",
   ".codex/ai-kit/agents/ai-kit-code-reviewer.toml": "224aa435dafc37da",
@@ -204,7 +204,7 @@
   ".ai-kit/context/20_TEAM.md": "1100597e3fd7312b",
   ".ai-kit/context/30_USER.md": "2447f3ce3c98a9d1",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-dbt-reviewer.md": "7547fe73f1d8cc36",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-repo-investigator.md": "924d2327b50e8afb",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-sql-reviewer.md": "ed58abb4a7831274",
@@ -265,7 +265,7 @@
  "data-analyst/all": {
   ".ai-kit/bin/friction.py": "8c6264e8554a47ca",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".codex/AGENTS.md": "552ceebb7661440c",
   ".codex/ai-kit/agents/ai-kit-dbt-reviewer.toml": "642bd0949c08ad7a",
   ".codex/ai-kit/agents/ai-kit-repo-investigator.toml": "543d686f4c563099",
@@ -409,7 +409,7 @@
  "data-analyst/both": {
   ".ai-kit/bin/friction.py": "8c6264e8554a47ca",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".gemini/00_KIT.md": "db7f6c8a05c79165",
   ".gemini/10_COMPANY.md": "9e06f1e73212c0a3",
   ".gemini/20_TEAM.md": "1100597e3fd7312b",
@@ -487,7 +487,7 @@
  "data-analyst/gemini": {
   ".ai-kit/bin/friction.py": "8c6264e8554a47ca",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".gemini/00_KIT.md": "db7f6c8a05c79165",
   ".gemini/10_COMPANY.md": "9e06f1e73212c0a3",
   ".gemini/20_TEAM.md": "1100597e3fd7312b",
@@ -551,7 +551,7 @@
  "data-developer/all": {
   ".ai-kit/bin/friction.py": "8c6264e8554a47ca",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".codex/AGENTS.md": "3ee9b7690e5b67b7",
   ".codex/ai-kit/agents/ai-kit-code-reviewer.toml": "224aa435dafc37da",
   ".codex/ai-kit/agents/ai-kit-dbt-reviewer.toml": "642bd0949c08ad7a",
@@ -986,7 +986,7 @@
  "data-developer/both": {
   ".ai-kit/bin/friction.py": "8c6264e8554a47ca",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".gemini/00_KIT.md": "21d4b2d2ee52e582",
   ".gemini/10_COMPANY.md": "9e06f1e73212c0a3",
   ".gemini/20_TEAM.md": "1100597e3fd7312b",
@@ -1217,7 +1217,7 @@
   ".ai-kit/context/20_TEAM.md": "1100597e3fd7312b",
   ".ai-kit/context/30_USER.md": "2447f3ce3c98a9d1",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".codex/AGENTS.md": "3ee9b7690e5b67b7",
   ".codex/ai-kit/agents/ai-kit-code-reviewer.toml": "224aa435dafc37da",
   ".codex/ai-kit/agents/ai-kit-dbt-reviewer.toml": "642bd0949c08ad7a",
@@ -1323,7 +1323,7 @@
  "data-developer/gemini": {
   ".ai-kit/bin/friction.py": "8c6264e8554a47ca",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".gemini/00_KIT.md": "21d4b2d2ee52e582",
   ".gemini/10_COMPANY.md": "9e06f1e73212c0a3",
   ".gemini/20_TEAM.md": "1100597e3fd7312b",
@@ -1412,7 +1412,7 @@
  "devops/all": {
   ".ai-kit/bin/friction.py": "8c6264e8554a47ca",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".codex/AGENTS.md": "89d815fe69c959ea",
   ".codex/ai-kit/agents/ai-kit-doubter.toml": "19e20dda58a985a8",
   ".codex/ai-kit/agents/ai-kit-infra-reviewer.toml": "7d660407b04ae4de",
@@ -1590,7 +1590,7 @@
  "general/all": {
   ".ai-kit/bin/friction.py": "8c6264e8554a47ca",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".codex/AGENTS.md": "23e27a264fae7c27",
   ".codex/ai-kit/agents/ai-kit-code-reviewer.toml": "224aa435dafc37da",
   ".codex/ai-kit/agents/ai-kit-doubter.toml": "19e20dda58a985a8",
@@ -1745,7 +1745,7 @@
  "general/both": {
   ".ai-kit/bin/friction.py": "8c6264e8554a47ca",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".gemini/00_KIT.md": "ee92c0dd27bd5154",
   ".gemini/10_COMPANY.md": "9e06f1e73212c0a3",
   ".gemini/20_TEAM.md": "1100597e3fd7312b",
@@ -1827,7 +1827,7 @@
  "general/gemini": {
   ".ai-kit/bin/friction.py": "8c6264e8554a47ca",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".gemini/00_KIT.md": "ee92c0dd27bd5154",
   ".gemini/10_COMPANY.md": "9e06f1e73212c0a3",
   ".gemini/20_TEAM.md": "1100597e3fd7312b",
@@ -1892,7 +1892,7 @@
  "java-developer/all": {
   ".ai-kit/bin/friction.py": "8c6264e8554a47ca",
   ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
-  ".ai-kit/overrides.json": "ce03e5a1d8a228a2",
+  ".ai-kit/overrides.json": "b8864a508ead833f",
   ".codex/AGENTS.md": "ac65fb897b75ba42",
   ".codex/ai-kit/agents/ai-kit-code-reviewer.toml": "224aa435dafc37da",
   ".codex/ai-kit/agents/ai-kit-doubter.toml": "19e20dda58a985a8",

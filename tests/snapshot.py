@@ -41,6 +41,7 @@ def capture(profile, target, overrides=None):
             for real in sorted({str(home), str(home.resolve())}, key=len, reverse=True):
                 data = data.replace(real, '<HOME>')
             data = data.replace(sys.executable, '<PYTHON>')
+            data = data.replace(ROOT.resolve().as_uri(), '<KIT_URI>').replace(str(ROOT.resolve()), '<KIT>')
             out[rel] = hashlib.sha256(data.encode('utf-8')).hexdigest()[:16]
         return out
 

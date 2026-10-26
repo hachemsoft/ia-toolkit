@@ -16,6 +16,8 @@ Two files, combined at every `setup` and `update`:
 }
 ```
 
+Both files have a JSON Schema in `schemas/`: an editor that knows the `"$schema"` key (VS Code and most others) completes the keys, shows each key's description and flags a typo or a wrong value as you type. `organization.json` points to its schema; the personal file created by `setup` points to the kit's copy. For a personal file created before 0.26, add this first line, with the path of your kit folder: `"$schema": "file:///<kit folder>/schemas/overrides.schema.json",`. `doctor` also reports an unknown key (usually a typo), and the CI checks the shipped files against the schemas.
+
 JSON allows no comments: keys starting with `_` (`_doc`) are documentation and are ignored. A mistake in either file is reported with its line, its column, the line itself and the usual cause (missing comma, comma left before `}`, single quotes, backslash in a Windows path).
 
 ## Teams

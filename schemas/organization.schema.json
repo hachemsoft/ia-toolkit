@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Kit: organization settings (organization.json)",
+  "description": "What the organization decides, in the kit repository. Changed by merge request; each workstation then runs update.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "allowed_domains": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^@?[a-z0-9.-]+\\.[a-z]+$"
+      },
+      "uniqueItems": true,
+      "description": "Expected email domains; doctor warns when a CLI is signed in with another account (a personal one, for example). Empty: no check."
+    },
+    "defaults": {
+      "$ref": "overrides.schema.json",
+      "description": "Organization defaults, same keys as overrides.json; each person's overrides.json is applied on top."
+    }
+  },
+  "patternProperties": {
+    "^_": {
+      "description": "Explanation, ignored by the kit."
+    }
+  },
+  "additionalProperties": false
+}

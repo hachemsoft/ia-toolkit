@@ -38,3 +38,9 @@ jobs:
           python-version: '3.12'
       - name: ruff check
         run: pip install ruff==0.6.9 && ruff check .
+      - name: JSON files follow their schemas
+        run: |
+          pip install check-jsonschema==0.29.4
+          check-jsonschema --check-metaschema schemas/overrides.schema.json schemas/organization.schema.json
+          check-jsonschema --schemafile schemas/organization.schema.json organization.json
+          check-jsonschema --schemafile schemas/overrides.schema.json templates/user-overrides.json

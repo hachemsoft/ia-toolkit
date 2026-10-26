@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+JSON Schemas for `overrides.json` and `organization.json` (`schemas/`): editors complete the keys, show their description and flag a typo or a wrong value as you type. The personal file created by `setup` and `organization.json` point to them. `doctor` reports unknown keys; the CI checks the shipped JSON files against the schemas, so a merge request that breaks `organization.json` fails before reaching workstations.
+
 ## 0.25.1
 JSON error messages: Python 3.13 and later word a trailing comma differently ("Illegal trailing comma"); it now gets the same plain explanation. A test checks that every usual JSON mistake is explained, on every Python version of the CI.
 

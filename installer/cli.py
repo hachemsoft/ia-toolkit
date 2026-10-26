@@ -107,10 +107,10 @@ def organization():
 
 def merge_settings(base, extra):
     """Organization defaults, then the person's overrides on top: lists add up, objects combine, a single value is replaced.
-    Keys starting with _ are documentation."""
-    merged = {k: v for k, v in base.items() if not str(k).startswith('_')}
+    Keys starting with _ are documentation, $schema is for editors."""
+    merged = {k: v for k, v in base.items() if not str(k).startswith(('_', '$'))}
     for key, value in extra.items():
-        if str(key).startswith('_'):
+        if str(key).startswith(('_', '$')):
             continue
         current = merged.get(key)
         if isinstance(current, dict) and isinstance(value, dict):
@@ -121,11 +121,16 @@ def merge_settings(base, extra):
             merged[key] = value
     return merged
 
+def unknown_keys(settings):
+    """Keys of an overrides.json (or organization defaults) the kit does not know: usually a typo. The schema is the list."""
+    known = set(read_json(ROOT/'schemas'/'overrides.schema.json').get('properties', {}))
+    return sorted(k for k in settings if not str(k).startswith(('_', '$')) and k not in known)
+
 def setting_differences(base, effective, prefix=''):
     """Single values the person's overrides change compared with the organization defaults (for doctor)."""
     changed = []
     for key, value in base.items():
-        if str(key).startswith('_') or key not in effective:
+        if str(key).startswith(('_', '$')) or key not in effective:
             continue
         if isinstance(value, dict) and isinstance(effective[key], dict):
             changed += setting_differences(value, effective[key], prefix+key+'.')
@@ -309,7 +314,9 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     allowed = allowed_commands(profile.get('commands'), overrides, command_names)
     writes, deletes = {}, []
     if not (kit/'overrides.json').exists():
-        writes[kit/'overrides.json'] = (ROOT/'templates/user-overrides.json').read_bytes()
+        # Created once, pointing to the kit's schema so that editors complete and check the keys.
+        starter = {'$schema': (ROOT/'schemas'/'overrides.schema.json').resolve().as_uri(), **read_json(ROOT/'templates/user-overrides.json')}
+        writes[kit/'overrides.json'] = json_bytes(starter)
     identity = dict(user) if user else dict(state.get('user', {}))
     if identity.get('email') and not EMAIL.fullmatch(identity['email']):
         raise KitError('Invalid email: '+identity['email'])
@@ -602,6 +609,10 @@ def doctor(home, cwd=None):
         folder_version = (ROOT/'VERSION').read_text(encoding='utf-8').strip()
         status(state.get('version') == folder_version, 'Installed version '+str(state.get('version'))+' matches the kit folder'+('' if state.get('version') == folder_version else ' ('+folder_version+'): run update'))
         org_defaults = organization().get('defaults', {})
+        personal = read_json(home/'.ai-kit/overrides.json', {})
+        for label, settings in (('~/.ai-kit/overrides.json', personal), ('organization.json defaults', org_defaults)):
+            unknown = unknown_keys(settings)
+            status(not unknown, label+': only known keys'+(' (unknown: '+', '.join(unknown)+'; a typo? keys are listed in schemas/overrides.schema.json)' if unknown else ''))
         changed = setting_differences(org_defaults, merge_settings(org_defaults, read_json(home/'.ai-kit/overrides.json', {})))
         if changed:
             print('[Info] Your overrides.json changes organization defaults: '+', '.join(changed))

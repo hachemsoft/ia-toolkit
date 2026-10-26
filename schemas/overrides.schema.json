@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Kit: personal settings (~/.ai-kit/overrides.json)",
+  "description": "Applied on top of the organization defaults (organization.json): lists add up, objects combine, a single value is replaced. Run update after a change. Keys starting with _ are explanations.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "extra_skills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "uniqueItems": true,
+      "description": "Skills to add, by catalog name (docs/skills-reference.md)."
+    },
+    "disabled_skills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "uniqueItems": true,
+      "description": "Skills to remove, by catalog name."
+    },
+    "extra_commands": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "uniqueItems": true,
+      "description": "Kit commands to add, for example handoff, research, ask."
+    },
+    "disabled_commands": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "uniqueItems": true,
+      "description": "Kit commands to remove."
+    },
+    "extra_agents": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "uniqueItems": true,
+      "description": "Review agents to add, by name without the ai-kit- prefix."
+    },
+    "disabled_agents": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "uniqueItems": true,
+      "description": "Review agents to remove."
+    },
+    "hooks": {
+      "type": "object",
+      "description": "Guardrails: true turns one on, false turns it off. protected-paths is on by default.",
+      "properties": {
+        "dbt-prod-guard": {
+          "type": "boolean"
+        },
+        "protected-paths": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "mcp": {
+      "type": "object",
+      "description": "MCP servers approved by the organization, by name.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "server": {
+            "type": "object",
+            "description": "How the CLIs start the server: a single transport (command, url or httpUrl).",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "Executable that starts a local server."
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Arguments of the command."
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Environment variables for the command."
+              },
+              "cwd": {
+                "type": "string",
+                "description": "Working folder of the command."
+              },
+              "url": {
+                "type": "string",
+                "pattern": "^https://",
+                "description": "Remote server (SSE), HTTPS only."
+              },
+              "httpUrl": {
+                "type": "string",
+                "pattern": "^https://",
+                "description": "Remote server (streamable HTTP), HTTPS only."
+              },
+              "headers": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "HTTP headers of a remote server."
+              },
+              "trust": {
+                "const": false,
+                "description": "Automatic trust is refused by the kit."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "models": {
+      "type": "object",
+      "description": "Model per agent capability; without it, agents use the main model.",
+      "properties": {
+        "fast": {
+          "type": "string"
+        },
+        "deep": {
+          "type": "string"
+        },
+        "default": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "frictions": {
+      "enum": [
+        "propose",
+        "auto",
+        "off"
+      ],
+      "description": "On a friction signal: propose /friction (default), log it automatically, or say nothing."
+    },
+    "code_assist": {
+      "type": "object",
+      "description": "Gemini Code Assist licence: its Google Cloud project. Not with vertex.",
+      "properties": {
+        "project": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "project"
+      ],
+      "additionalProperties": false
+    },
+    "vertex": {
+      "type": "object",
+      "description": "Gemini through Vertex AI: project and region. Not with code_assist.",
+      "properties": {
+        "project": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "project"
+      ],
+      "additionalProperties": false
+    },
+    "model": {
+      "type": "string",
+      "description": "Main model imposed on the CLI, for example gemini-2.5-flash."
+    }
+  },
+  "patternProperties": {
+    "^_": {
+      "description": "Explanation, ignored by the kit."
+    }
+  },
+  "additionalProperties": false,
+  "not": {
+    "required": [
+      "code_assist",
+      "vertex"
+    ]
+  }
+}

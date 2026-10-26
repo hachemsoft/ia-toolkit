@@ -103,6 +103,36 @@ class OrganizationTests(unittest.TestCase):
             first = str(ctx.exception).splitlines()[0]
             self.assertTrue(any(h in first for h in plain), text + ' -> ' + first)
 
+    def test_schema_lists_exactly_the_keys_the_installer_reads(self):
+        import re
+        code = ''.join(f.read_text(encoding='utf-8') for f in (ROOT/'installer').rglob('*.py'))
+        read = set(re.findall(r"overrides(?:\.get\(|\[)'([a-z_]+)'", code))
+        schema = read_json(ROOT/'schemas/overrides.schema.json')
+        declared = {k for k in schema['properties'] if not k.startswith('$')}
+        self.assertEqual(read, declared)
+        self.assertEqual(set(schema['properties']['hooks']['properties']), set(read_json(ROOT/'runtime/hooks/hooks.json')['hooks']))
+
+    def test_shipped_files_follow_the_schemas(self):
+        org = read_json(ROOT/'organization.json')
+        self.assertTrue((ROOT/org['$schema']).is_file())
+        known = set(read_json(ROOT/'schemas/organization.schema.json')['properties'])
+        self.assertEqual([k for k in org if not k.startswith('_') and k not in known], [])
+        self.assertEqual(cli.unknown_keys(org.get('defaults', {})), [])
+        self.assertEqual(cli.unknown_keys(read_json(ROOT/'templates/user-overrides.json')), [])
+
+    def test_personal_file_points_to_the_schema_and_typos_are_reported(self):
+        self.install()
+        personal = read_json(self.home/'.ai-kit/overrides.json')
+        from urllib.parse import urlparse, unquote
+        target = Path(unquote(urlparse(personal['$schema']).path.lstrip('/') if os.name == 'nt' else unquote(urlparse(personal['$schema']).path)))
+        self.assertTrue(target.is_file(), personal['$schema'])
+        self.personal({**personal, 'extra_skill': ['teach']})
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            doctor(self.home)
+        self.assertIn('unknown: extra_skill', out.getvalue())
+        self.assertEqual(merge_settings({}, {'$schema': 'x', 'model': 'm'}), {'model': 'm'})
+
 @unittest.skipIf(os.name == 'nt' or not shutil.which('git'), 'POSIX launcher and git required')
 class UpdatePullsTests(unittest.TestCase):
     def git(self, *args, cwd):
