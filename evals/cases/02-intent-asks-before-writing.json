@@ -5,7 +5,7 @@
   "expect": {
     "regex": [
       "\\?",
-      "(active (customers?|clients?)|customers?[^.\\n]{0,40}\\bactive|clients? actifs?)"
+      "(active\\W{0,4}(customers?|clients?)|customers?[^.\\n]{0,40}\\bactive|clients?\\W{0,4}actifs?)"
     ],
     "files_absent": [
       "intent.md"
