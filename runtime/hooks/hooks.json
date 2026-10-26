@@ -8,9 +8,10 @@
     },
     "protected-paths": {
       "event": "BeforeTool",
-      "matcher": "write_file|replace",
+      "matcher": "write_file|replace|run_shell_command",
       "script": "protected-paths.py",
-      "description": "Blocks writes under the patterns listed in <repo>/.ai-kit/protected-paths."
+      "default": true,
+      "description": "Always blocks agent writes to the configuration of the kit and of the CLIs (also through simple shell commands); also blocks writes under the patterns listed in <repo>/.ai-kit/protected-paths. On by default."
     }
   }
 }

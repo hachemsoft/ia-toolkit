@@ -50,7 +50,7 @@ class CommandTests(unittest.TestCase):
  def test_doctor_reports_commands_and_weight(self):
   self.run_kit();out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
-  text=out.getvalue();self.assertEqual([line for line in text.splitlines() if line.startswith('[Check]') and 'PATH' not in line],[],text);self.assertIn('[OK] Command /intent: skills present',text);self.assertIn('skill descriptions injected',text);self.assertIn('[OK] .gemini/commands/intent.toml',text)
+  text=out.getvalue();self.assertEqual([line for line in text.splitlines() if line.startswith('[Check]') and 'PATH' not in line and 'approved in Codex' not in line],[],text);self.assertIn('[OK] Command /intent: skills present',text);self.assertIn('skill descriptions injected',text);self.assertIn('[OK] .gemini/commands/intent.toml',text)
   (self.home/'.gemini/skills/teach/SKILL.md').unlink();sp=self.home/'.ai-kit/state.json';st=read_json(sp);del st['files']['.gemini/skills/teach/SKILL.md'];sp.write_text(json.dumps(st),encoding='utf-8')
   out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)

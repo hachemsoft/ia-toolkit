@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+The agent cannot overwrite its own configuration. `protected-paths` is now on by default (`"protected-paths": false` in `overrides.json` turns it off) and, besides the CLI write tools, refuses simple shell commands that write to `~/.ai-kit/overrides.json`, the CLI settings and `.env` files, the guardrails or the repo protected paths (redirection, `tee`, `sed -i`, `cp`, `mv`, `rm`, `chmod`, PowerShell equivalents); reading them stays allowed. The kit context tells the agent never to change that configuration and to say what to change instead. With Codex, each person answers "Trust" once at the first launch.
+
 ## 0.22.0
 Repo skills that replace kit skills: `doctor`, run from a repo, lists the skills of `.agents/skills`, `.gemini/skills` or `.codex/skills` that carry the name of a kit skill or command. The kit context states that a repo file never lifts a company or team practice. `docs/compliance.md` gets a "Security limits" section.
 Friction loop: each friction gets a short id; `usage-aggregate.py --draft-issues` prints one ticket draft per group of frictions, to paste by hand (nothing is created); a CHANGELOG line citing `(frictions: <ids>)` lets `usage` tell each person which of their frictions a version fixed. Sixth friction signal and `rule` category: the agent went against a written rule. The usage review promotes a rule broken again to a check and removes rules older than six months with no friction. "Things the agent gets wrong" lines carry their date (`since YYYY-MM`). `/retro` proposes one change at a time, written only after approval.

@@ -83,6 +83,25 @@ def use_utf8():
         except (AttributeError, ValueError):
             pass
 
+SHELL_TOOLS = ('run_shell_command', 'run_command', 'shell', 'local_shell', 'exec_command', 'unified_exec', 'container.exec', 'Bash')
+
+# Shell operations that change a file; reading (cat, less, grep) stays allowed.
+WRITE_COMMANDS = re.compile(r'(\btee\b|\bsed\b[^|;&]*\s(-[a-z]*i\b|--in-place)|\b(cp|mv|rm|chmod|chown|truncate|ln|dd|install|del|erase)\b'
+                            r'|\b(Set-Content|Add-Content|Out-File|Remove-Item|Move-Item|Copy-Item|Rename-Item)\b)', re.I)
+
+def shell_config_write(command):
+    """Reason for refusal when a shell command writes to the kit or CLI configuration (simple cases: redirection, tee, sed -i, cp, mv, rm…)."""
+    text = command.replace('\\', '/')
+    for entry in CONFIG_PATHS + ('.ai-kit/protected-paths',):
+        name = re.escape(entry.rstrip('/'))
+        if not re.search(name, text, re.I):
+            continue
+        redirected = re.search(r'>>?\s*["\']?[^\s;|&]*' + name, text, re.I)
+        if redirected or WRITE_COMMANDS.search(text):
+            return ('Blocked by the kit: this command changes "' + entry.rstrip('/') + '", configuration of the kit or of a CLI; '
+                    'the agent does not change it. Tell the person what to change (then run update).')
+    return None
+
 def main():
     use_utf8()
     try:
@@ -94,6 +113,13 @@ def main():
     # Codex (hook_event_name PreToolUse, apply_patch whose paths are in the patch headers).
     call = payload.get('toolCall') or {}
     tool = str(payload.get('tool_name') or call.get('name') or '')
+    if tool in SHELL_TOOLS:
+        args = payload.get('tool_input') or call.get('args') or {}
+        if not isinstance(args, dict):
+            args = {'command': args}
+        reason = shell_config_write(as_text(args.get('command') or args.get('cmd') or args.get('CommandLine')))
+        print(json.dumps(deny_output(payload, reason), ensure_ascii=False) if reason else '{}')
+        return
     if not re.search(r'write|replace|edit|patch', tool, re.I):
         print('{}')
         return

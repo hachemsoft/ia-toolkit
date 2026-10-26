@@ -103,7 +103,7 @@ For agy, the Vertex equivalent is the environment variable `AGY_ADC_AUTH=1` (see
 
 ## Guardrails
 
-Two deterministic hooks, off by default, are enabled in `overrides.json` under `hooks`. See [guardrails](hooks.md).
+Two deterministic hooks, set in `overrides.json` under `hooks`: `protected-paths` is on by default (it protects the configuration of the kit and of the CLIs; `"protected-paths": false` turns it off), `dbt-prod-guard` is off by default. See [guardrails](hooks.md).
 
 ## Identity
 

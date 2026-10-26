@@ -35,7 +35,7 @@ If your organization requires a Google Cloud project or a model, that is one lin
 ## 2. First session (five minutes)
 
 1. Go to your repo: `cd <repo folder>`. Without this, the agent does not see the project context.
-2. Start your CLI: `gemini`, `agy` or `codex`. In Gemini and agy, commands are written `/guide`; in Codex, `$guide`. This page writes them with `/`.
+2. Start your CLI: `gemini`, `agy` or `codex`. In Gemini and agy, commands are written `/guide`; in Codex, `$guide`. This page writes them with `/`. The first time, Codex asks you to review the kit's hooks: answer "Trust all and continue" (they keep the agent from changing its own configuration).
 3. Type: **"Initialize the project context"**. The agent proposes, file by file and with your approval, `AGENTS.md` (one page about the repo), `GLOSSARY.md` (the domain terms), `REVIEW.md` (what a review checks) and two `.gitignore` lines for working notes. If someone has already done this in the repo, skip it.
 4. Type: `/guide I need to …` with today's need. It answers: which level of ceremony, which command, what it produces, an example prompt.
 

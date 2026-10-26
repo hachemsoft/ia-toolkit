@@ -22,7 +22,7 @@ class ContextLayerTests(unittest.TestCase):
   self.run_kit();u=self.path('.gemini/30_USER.md');u.write_text('Personal',encoding='utf-8');self.run_kit('data-developer');self.assertEqual(u.read_text(encoding='utf-8'),'Personal')
   doctor_out=io.StringIO()
   with contextlib.redirect_stdout(doctor_out):doctor(self.home)
-  self.assertEqual([line for line in doctor_out.getvalue().splitlines() if line.startswith('[Check]') and 'PATH' not in line],[],doctor_out.getvalue());self.assertIn('[OK] Personal context present',doctor_out.getvalue())
+  self.assertEqual([line for line in doctor_out.getvalue().splitlines() if line.startswith('[Check]') and 'PATH' not in line and 'approved in Codex' not in line],[],doctor_out.getvalue());self.assertIn('[OK] Personal context present',doctor_out.getvalue())
  def test_modified_kit_layer_blocks(self):
   self.run_kit();self.write('.gemini/10_COMPANY.md','modified')
   with self.assertRaises(KitError):self.run_kit('data-developer')

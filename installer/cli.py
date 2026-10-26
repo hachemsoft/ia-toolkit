@@ -326,6 +326,8 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto'):
     if not isinstance(wanted_hooks, dict) or not all(isinstance(v, bool) for v in wanted_hooks.values()):
         raise KitError('hooks must be an object name → true/false.')
     enabled_hooks = {}
+    # A guardrail marked "default" in the manifest is on unless overrides.json sets it to false.
+    wanted_hooks = {**{n: True for n, spec in hook_manifest.items() if spec.get('default')}, **wanted_hooks}
     for name, flag in wanted_hooks.items():
         safe_id(name)
         if name not in hook_manifest:

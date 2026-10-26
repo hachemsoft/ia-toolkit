@@ -1,6 +1,6 @@
 # Guardrails
 
-A skill is an advisory control: it makes a violation rare. A CLI hook is deterministic: it makes it nearly impossible. The kit ships two, off by default, to enable in `~/.ai-kit/overrides.json`:
+A skill is an advisory control: it makes a violation rare. A CLI hook is deterministic: it makes it nearly impossible. The kit ships two. `protected-paths` is on by default: it keeps the agent from changing the configuration of the kit and of the CLIs. `dbt-prod-guard` is off by default. Both are set in `~/.ai-kit/overrides.json` (`false` turns one off):
 
 ```json
 {
@@ -35,7 +35,7 @@ dbt_project.yml
 
 Without this file, only the configuration below is protected. The old location `<repo>/.gemini/protected-paths` is still read as well; `.ai-kit/` is neutral and valid for all CLIs. Version the file with the repo; it is where the paths that `AGENTS.md` declares under "Things the agent gets wrong: never edit …" belong. The guardrail reads the file in the folder where the agent starts and in each parent folder up to the repo root, each relative to its own folder: in a monorepo, the root's protected paths also apply from a zone. Matching ignores case (`TARGET/x.sql` is protected by `target/**`) and respects folder boundaries (`targets/x.sql` is not). On Windows, a file on a different drive from the repo is outside the patterns, so it is allowed.
 
-Whatever the repo declares, the guardrail always blocks writes to the configuration of the kit and of the CLIs, so that an agent cannot switch off its own guardrails: `~/.ai-kit/overrides.json`, `state.json`, `hooks/`, `bin/`, `backups/` and the kit layers in `~/.ai-kit/context/`; the settings, `.env`, plugin and configuration files the kit manages for each CLI (listed on each CLI's page, see the [matrix](cli/matrice.md)); and the repo's own `.ai-kit/protected-paths`. Your `30_USER.md` and `~/.ai-kit/learn/` stay writable. Symbolic links are resolved: a link to a protected folder is that folder.
+Whatever the repo declares, the guardrail always blocks writes to the configuration of the kit and of the CLIs, so that an agent cannot switch off its own guardrails. It sees the CLI's write tools and simple shell commands that write to those files (redirection `>`, `tee`, `sed -i`, `cp`, `mv`, `rm`, `chmod`, and their PowerShell equivalents); reading them (`cat`, `grep`) stays allowed. The protected files: `~/.ai-kit/overrides.json`, `state.json`, `hooks/`, `bin/`, `backups/` and the kit layers in `~/.ai-kit/context/`; the settings, `.env`, plugin and configuration files the kit manages for each CLI (listed on each CLI's page, see the [matrix](cli/matrice.md)); and the repo's own `.ai-kit/protected-paths`. Your `30_USER.md` and `~/.ai-kit/learn/` stay writable. Symbolic links are resolved: a link to a protected folder is that folder.
 
 ## Checking that guardrails run
 

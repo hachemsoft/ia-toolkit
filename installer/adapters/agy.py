@@ -64,7 +64,9 @@ def install(p: Plan) -> None:
     agy_hooks = {}
     for name, spec in p.hook_manifest.items():
         script = p.hooks_dir/spec['script']
-        matcher = 'run_command' if spec['matcher'] == 'run_shell_command' else '.*(write|replace|edit).*'
+        # agy tool names: run_command for the shell, *write*/*replace*/*edit* for file writes.
+        parts = spec['matcher'].split('|')
+        matcher = '|'.join((['.*(write|replace|edit).*'] if any(p != 'run_shell_command' for p in parts) else []) + (['run_command'] if 'run_shell_command' in parts else []))
         agy_hooks['ai-kit-'+name] = {'enabled': name in p.enabled_hooks, 'PreToolUse': [{'matcher': matcher, 'hooks': [{'type': 'command', 'command': hook_command(script), 'timeout': 20}]}]}
     p.managed_write(plugin/'hooks.json', json_bytes(agy_hooks), 'Plugin agy')
     if p.enabled_mcp:
