@@ -98,19 +98,27 @@ class UpdatePullsTests(unittest.TestCase):
     def test_update_fetches_the_new_version_and_respects_local_changes(self):
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
-            self.git('clone', '--quiet', '--bare', str(ROOT), str(base/'remote.git'), cwd=base)
-            self.git('clone', '--quiet', str(base/'remote.git'), str(base/'dev'), cwd=base)
-            self.git('config', 'user.email', 'test@example.org', cwd=base/'dev')
-            self.git('config', 'user.name', 'Test', cwd=base/'dev')
-            # The launcher under test is the current one, committed or not: publish it first.
-            shutil.copy(ROOT/'scripts/bootstrap.sh', base/'dev/scripts/bootstrap.sh')
-            self.git('commit', '--quiet', '--allow-empty', '-am', 'current launcher', cwd=base/'dev')
-            self.git('push', '--quiet', 'origin', 'HEAD', cwd=base/'dev')
+            # A fresh repository built from the current files: independent of how CI checked the kit out
+            # (a tag gives a detached HEAD with a single commit, which cannot be pushed as is).
+            dev = base/'dev'
+            files = subprocess.run(['git', 'ls-files'], cwd=ROOT, capture_output=True, text=True, check=True).stdout.splitlines()
+            for rel in files:
+                if (ROOT/rel).is_file():
+                    (dev/rel).parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT/rel, dev/rel)
+            self.git('init', '--quiet', '-b', 'main', cwd=dev)
+            self.git('config', 'user.email', 'test@example.org', cwd=dev)
+            self.git('config', 'user.name', 'Test', cwd=dev)
+            self.git('add', '-A', cwd=dev)
+            self.git('commit', '--quiet', '-m', 'kit', cwd=dev)
+            self.git('init', '--quiet', '--bare', '-b', 'main', str(base/'remote.git'), cwd=base)
+            self.git('remote', 'add', 'origin', str(base/'remote.git'), cwd=dev)
+            self.git('push', '--quiet', 'origin', 'main', cwd=dev)
             self.git('clone', '--quiet', str(base/'remote.git'), str(base/'kit'), cwd=base)
             (base/'dev/NEW_FILE.md').write_text('new\n', encoding='utf-8')
             self.git('add', 'NEW_FILE.md', cwd=base/'dev')
             self.git('commit', '--quiet', '-m', 'new', cwd=base/'dev')
-            self.git('push', '--quiet', 'origin', 'HEAD', cwd=base/'dev')
+            self.git('push', '--quiet', 'origin', 'main', cwd=base/'dev')
             home = base/'home'
             run = lambda action, *extra: subprocess.run(['sh', str(base/'kit/scripts/bootstrap.sh'), action, *extra, '--home', str(home), '--no-live'],
                                                         capture_output=True, text=True, encoding='utf-8', cwd=base)
