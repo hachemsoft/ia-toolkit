@@ -23,11 +23,11 @@ Before 0.19, the kit folder was called `~/.ai-toolkit`. The first `setup` or `up
 | Action | Mac | Windows PowerShell |
 | --- | --- | --- |
 | Install / change profile | `sh scripts/bootstrap.sh setup` | `.\scripts\bootstrap.ps1 setup` |
-| Apply a new version (after `git pull`) | `sh scripts/bootstrap.sh update` | `.\scripts\bootstrap.ps1 update` |
+| Fetch and apply a new version (does `git pull` first in a git clone without local changes) | `sh scripts/bootstrap.sh update` | `.\scripts\bootstrap.ps1 update` |
 | Diagnose | `sh scripts/bootstrap.sh doctor --live` | `.\scripts\bootstrap.ps1 doctor --live` |
 | Usage review | `sh scripts/bootstrap.sh usage` | `.\scripts\bootstrap.ps1 usage` |
 
-Options for `setup` and `update`: `--profile <id>`, `--user <email>`, `--target auto|gemini|agy|codex|both|all` (see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--no-live`. Non-interactive example: `python3 -m installer setup --profile general --user first.last@company.com`. If company policy blocks PowerShell scripts: `py -3 -m installer setup`, without changing the policy.
+Options for `setup` and `update`: `--profile <id>`, `--user <email>`, `--team <team>`, `--target auto|gemini|agy|codex|both|all` (see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--no-live`. Non-interactive example: `python3 -m installer setup --profile general --user first.last@company.com`. If company policy blocks PowerShell scripts: `py -3 -m installer setup`, without changing the policy.
 
 ## Try it without touching your account
 

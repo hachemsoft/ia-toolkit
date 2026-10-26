@@ -10,7 +10,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from installer.cli import PROFILE_MENU, allowed_commands, resolve_skills, selected_commands  # noqa: E402
+from installer.cli import allowed_commands, profile_menu, resolve_skills, selected_commands  # noqa: E402
 from installer.core import load_commands, read_json  # noqa: E402
 
 PAGE = ROOT/'docs/getting-started.md'
@@ -22,7 +22,7 @@ def table():
     commands = load_commands()
     catalog = read_json(ROOT/'skills/catalog.json')
     rows = ['| Profile | Workflow steps | Other commands | Agents |', '| --- | --- | --- | --- |']
-    for pid, label in PROFILE_MENU:
+    for pid, label in profile_menu():
         profile = read_json(ROOT/'profiles'/(pid+'.json'))
         resolved = resolve_skills(profile, {}, catalog, log=lambda *a: None)
         skills = resolved[0] if isinstance(resolved, tuple) else resolved

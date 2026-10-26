@@ -12,8 +12,8 @@ class PackagingTests(unittest.TestCase):
   self.assertIn('ai-kit = "ai_kit.cli:main"',self.text)
  def test_every_content_dir_read_by_installer_is_packaged(self):
   code=(ROOT/'installer/cli.py').read_text(encoding='utf-8')
-  read=set(re.findall(r"ROOT/'([a-z]+)",code))|{'commands'}
-  packaged=set(re.findall(r'^"([a-zA-Z]+)" = "ai_kit/kit/',self.text,re.M))
+  read=set(re.findall(r"ROOT/'([A-Za-z][\w.-]*)",code))|{'commands'}
+  packaged=set(re.findall(r'^"([\w.-]+)" = "ai_kit/kit/',self.text,re.M))
   self.assertTrue(read<=packaged,read-packaged);self.assertIn('VERSION',packaged)
   for d in packaged:self.assertTrue((ROOT/d).exists(),d)
 if __name__=='__main__':unittest.main()

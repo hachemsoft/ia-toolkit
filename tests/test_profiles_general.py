@@ -1,15 +1,21 @@
 import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply, profile_ids
-from installer.core import read_json
+from installer.core import ROOT, read_json
 from installer.adapters.gemini import merge_context_filenames
 class GeneralProfileTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def run_kit(self,role):
   with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home,False,None,'gemini')
- def test_profiles_listed(self):
-  self.assertEqual(profile_ids(),['architect','data-analyst','data-developer','devops','general','java-developer'])
+ def test_every_profile_file_is_complete(self):
+  # Profiles are discovered from the folder: each file needs its id (= file name), a menu label and an order.
+  from installer.cli import profile_menu
+  ids=profile_ids();self.assertIn('general',ids)
+  for pid in ids:
+   p=read_json(ROOT/'profiles'/(pid+'.json'))
+   self.assertEqual(p['id'],pid);self.assertTrue(p.get('label'),pid);self.assertIsInstance(p.get('order'),int,pid)
+  self.assertEqual(sorted(i for i,_ in profile_menu()),ids)
  def test_general_has_workflow_without_domain_playbooks(self):
   self.run_kit('general')
   for c in ('intent','spec','build','test','review','ship','diagnose','learn','explain','retro','guide'):self.assertTrue((self.home/'.gemini/commands'/(c+'.toml')).exists(),c)

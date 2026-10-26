@@ -1,5 +1,7 @@
 {
   "id": "devops",
+  "label": "DevOps: Terraform, Kubernetes, Helm, CI/CD pipelines",
+  "order": 30,
   "practices": [
     "company",
     "team"

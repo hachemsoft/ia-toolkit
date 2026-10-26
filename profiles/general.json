@@ -1,5 +1,7 @@
 {
   "id": "general",
+  "label": "General: the workflow and the tools, no domain playbook",
+  "order": 10,
   "practices": [
     "company",
     "team"

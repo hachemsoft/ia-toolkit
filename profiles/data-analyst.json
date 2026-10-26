@@ -1,5 +1,7 @@
 {
   "id": "data-analyst",
+  "label": "Data Analyst: SQL, dbt, BigQuery, metrics",
+  "order": 50,
   "practices": [
     "company",
     "team"

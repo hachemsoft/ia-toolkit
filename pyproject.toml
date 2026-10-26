@@ -35,6 +35,8 @@ sources = { "installer" = "ai_kit" }
 
 [tool.hatch.build.targets.wheel.force-include]
 "VERSION" = "ai_kit/kit/VERSION"
+"organization.json" = "ai_kit/kit/organization.json"
+"CHANGELOG.md" = "ai_kit/kit/CHANGELOG.md"
 "runtime" = "ai_kit/kit/runtime"
 "agents" = "ai_kit/kit/agents"
 "commands" = "ai_kit/kit/commands"
@@ -45,7 +47,7 @@ sources = { "installer" = "ai_kit" }
 "templates" = "ai_kit/kit/templates"
 
 [tool.hatch.build.targets.sdist]
-include = ["LICENSE", "installer", "runtime", "agents", "commands", "mcp", "practices", "profiles", "skills", "templates", "scripts", "docs", "evals", "tests", "VERSION", "README.md", "CHANGELOG.md", "pyproject.toml"]
+include = ["LICENSE", "installer", "runtime", "agents", "commands", "mcp", "practices", "profiles", "skills", "templates", "scripts", "docs", "evals", "tests", "VERSION", "organization.json", "README.md", "CHANGELOG.md", "pyproject.toml"]
 
 [project.optional-dependencies]
 dev = ["ruff"]

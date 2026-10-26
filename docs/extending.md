@@ -55,7 +55,7 @@ Two folders, two levels of commitment. `skills/internal/`: shipped and maintaine
 3. **The profiles** `profiles/*.json`: add it to the profiles that need it, or leave it `optional`. A domain playbook is never in the `general` profile.
 4. **A command, if it is a step or a tool**: a `commands/<name>.md` file, with a header (`name`, `description` in English, `category`, `stage` for a workflow, `skills`, `order`) and a prompt with `{{args}}`; see [the pivot format](format.md). Each adapter turns it into its CLI's command. Add an entry in `docs/tools.md` for a tool.
 5. **An eval case** `evals/cases/NN-<name>.json` with the prompt that must trigger the skill and an observable criterion, then `python3 -m unittest discover -s tests` and `python3 evals/run.py`.
-6. **Distribute**: commit, merge request (MR), tag; workstations run `git pull` then `update`.
+6. **Distribute**: commit, merge request (MR), tag; workstations run `update`, which fetches it.
 
 ## Full example: a `/dashboard-check` tool in twenty minutes
 
@@ -121,7 +121,7 @@ The need: review a dashboard before publishing. One skill, one command, one eval
    }
    ```
 
-5. Check and distribute: `python3 -m unittest discover -s tests`, `python3 evals/run.py --only dashboard-check-totals`, then commit, merge request (MR) and tag; workstations run `git pull` then `update`. Anyone who wants the tool enables it with one line: `{"extra_commands": ["dashboard-check"]}` in `~/.ai-kit/overrides.json`, then `update`; `/dashboard-check` appears in every supported CLI.
+5. Check and distribute: `python3 -m unittest discover -s tests`, `python3 evals/run.py --only dashboard-check-totals`, then commit, merge request (MR) and tag; workstations run `update`, which fetches it. Anyone who wants the tool enables it with one line: `{"extra_commands": ["dashboard-check"]}` in `~/.ai-kit/overrides.json`, then `update`; `/dashboard-check` appears in every supported CLI.
 
 ## Replace a kit skill for the organization
 

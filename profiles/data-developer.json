@@ -1,5 +1,7 @@
 {
   "id": "data-developer",
+  "label": "Data Developer: SQL, dbt and BigQuery, plus Python and JavaScript",
+  "order": 60,
   "practices": [
     "company",
     "team"

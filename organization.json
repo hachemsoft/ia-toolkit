@@ -1,0 +1,10 @@
+{
+  "_doc": "Everything the organization decides, in one file. Edit it in the kit repository (merge request), then each workstation runs update. See docs/customization.md.",
+  "allowed_domains": [],
+  "people": {},
+  "_people_doc": "email -> {\"profile\": \"<profile id>\", \"team\": \"<team id>\"}: suggested by setup; the team selects practices/20-<team>.md. Keep the list minimal.",
+  "defaults": {
+    "frictions": "propose"
+  },
+  "_defaults_doc": "Organization defaults (same keys as ~/.ai-kit/overrides.json: code_assist, vertex, model, models, hooks, mcp, extra_skills, disabled_commands, frictions...). Each person's overrides.json is applied on top: lists add up, objects combine, the person's value wins for a single value."
+}

@@ -22,13 +22,13 @@ The git name completes the CLI account's email when both exist. OAuth tokens are
 
 ## Proposed profile
 
-`profiles/directory.json` maps emails to a profile. If the detected email is listed, that profile is proposed by default at the prompt, or selected in non-interactive mode when `--profile` is absent. `--profile` always wins. Keep this file minimal: it ships with the kit.
+`organization.json` (`people`) maps emails to a profile and a team. If the detected email is listed, that profile is proposed by default at the prompt, or selected in non-interactive mode when `--profile` is absent. `--profile` always wins. Keep this list minimal: it ships with the kit.
 
 ## Doctor checks
 
 - Saved identity and its source.
 - Mismatch between the CLI's active account and the saved email.
-- CLI active account outside the domains listed in `profiles/directory.json` (`allowed_domains`). Empty list: no check.
+- CLI active account outside the domains listed in `organization.json` (`allowed_domains`). Empty list: no check.
 
 ## Out of scope
 

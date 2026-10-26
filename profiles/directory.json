@@ -1,5 +1,0 @@
-{
-  "_doc": "Optional organization directory: allowed_domains = expected email domains (doctor flags an active account outside these domains; empty list = no check); emails = email -> profile suggested by default at setup. Keep these lists minimal.",
-  "allowed_domains": [],
-  "emails": {}
-}

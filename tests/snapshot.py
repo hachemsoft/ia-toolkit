@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from installer.cli import apply  # noqa: E402
+from installer.cli import apply, profile_ids  # noqa: E402
 
 GOLDEN = ROOT / 'tests' / 'golden' / 'install-snapshot.json'
 IDENTITY = {'email': 'test@example.org', 'name': 'Test', 'source': 'option'}
@@ -19,7 +19,7 @@ FULL_OVERRIDES = {
     'models': {'fast': 'gemini-2.5-flash', 'deep': 'gemini-2.5-pro'}, 'frictions': 'auto',
     'vertex': {'project': 'demo-project-01', 'location': 'europe-west1'}, 'model': 'gemini-2.5-flash',
 }
-SCENARIOS = [(p, t, None) for p in ('data-analyst', 'data-developer', 'general') for t in ('gemini', 'both', 'all')] + [('data-developer', 'both', FULL_OVERRIDES), ('data-developer', 'all', FULL_OVERRIDES)] + [('data-developer', 'codex', None), ('data-analyst', 'agy', None)] + [(p, 'all', None) for p in ('java-developer', 'devops', 'architect')]
+SCENARIOS = [(p, t, None) for p in ('data-analyst', 'data-developer', 'general') for t in ('gemini', 'both', 'all')] + [('data-developer', 'both', FULL_OVERRIDES), ('data-developer', 'all', FULL_OVERRIDES)] + [('data-developer', 'codex', None), ('data-analyst', 'agy', None)] + [(p, 'all', None) for p in profile_ids() if p not in ('data-analyst', 'data-developer', 'general')]
 
 def scenario_name(profile, target, overrides):
     return profile + '/' + target + ('/overrides' if overrides else '')

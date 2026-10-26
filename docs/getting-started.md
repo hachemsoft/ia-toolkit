@@ -92,4 +92,4 @@ The rule that avoids running everything: **ceremony matches the stakes**. A smal
 - Add or remove commands, skills, agents, MCP servers, guardrails: `~/.ai-kit/overrides.json`, then `update`. See [customization](customization.md).
 - Write your own skill, or replace a kit skill for yourself, a repo or the team: [add or replace a skill](extending.md).
 - When the team wants the agent to read and create tickets: `setup-workflow` in the repo (requires `glab` or `gh`).
-- Kit update: `git pull`, then `update` from its folder (without git: download the ZIP again, replace the folder, then `update`).
+- Kit update: `update` from its folder; it fetches the new version itself (without git: download the ZIP again, replace the folder, then `update`). `doctor` says when the installed version is behind the folder, and `doctor --live` when a newer version is published.

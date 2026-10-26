@@ -17,7 +17,7 @@ A foundation for working with a coding agent as a team, on Mac and Windows. It c
 
 Requirements: Python 3.11 or later recommended; 3.9 minimum, which lets you use the Python shipped with macOS. The kit installs no dependencies. The CLI and its authentication come from your organization's procedure; if it requires a cloud project or a model, that is one line in `~/.ai-kit/overrides.json`. The full step-by-step guide: [getting started](docs/getting-started.md).
 
-Update: `git pull` in the kit folder, then `sh scripts/bootstrap.sh update` (Windows: `.\scripts\bootstrap.ps1 update`).
+Update: `sh scripts/bootstrap.sh update` (Windows: `.\scripts\bootstrap.ps1 update`) from the kit folder; it fetches the new version itself when the folder is a git clone.
 
 ## Profiles
 

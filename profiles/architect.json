@@ -1,5 +1,7 @@
 {
   "id": "architect",
+  "label": "Architect: architecture decisions (ADR), design, design review",
+  "order": 40,
   "practices": [
     "company",
     "team"

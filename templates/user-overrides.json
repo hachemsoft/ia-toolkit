@@ -1,12 +1,3 @@
 {
-  "extra_commands": [],
-  "disabled_commands": [],
-  "extra_skills": [],
-  "disabled_skills": [],
-  "mcp": {},
-  "extra_agents": [],
-  "disabled_agents": [],
-  "hooks": {},
-  "models": {},
-  "frictions": "propose"
+  "_doc": "Your own settings, applied on top of the organization defaults (organization.json in the kit folder): lists add up, objects combine, your value wins for a single value. Run update after a change. See docs/customization.md."
 }

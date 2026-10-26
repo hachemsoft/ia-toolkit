@@ -28,15 +28,13 @@ def practice_file(practice_id):
     source = matches[0]
     return source, source.stem[:2]+'_'+practice_id.upper().replace('-','_')+'.md'
 
-PROFILE_MENU = [('general', 'General: the workflow and the tools, no domain playbook'),
-                ('java-developer', 'Java Developer: Maven or Gradle, Spring, JUnit'),
-                ('devops', 'DevOps: Terraform, Kubernetes, Helm, CI/CD pipelines'),
-                ('architect', 'Architect: architecture decisions (ADR), design, design review'),
-                ('data-analyst', 'Data Analyst: SQL, dbt, BigQuery, metrics'),
-                ('data-developer', 'Data Developer: SQL, dbt and BigQuery, plus Python and JavaScript')]
+def profile_menu():
+    """(id, label) of every profile in profiles/, sorted by its "order": adding a profile is adding one file."""
+    profiles = [read_json(p) for p in sorted((ROOT/'profiles').glob('*.json'))]
+    return [(p['id'], p.get('label') or p['id']) for p in sorted(profiles, key=lambda p: (p.get('order', 1000), p['id']))]
 
 def profile_ids():
-    return sorted(p.stem for p in (ROOT/'profiles').glob('*.json') if p.stem != 'directory')
+    return sorted(p.stem for p in (ROOT/'profiles').glob('*.json'))
 
 def managed_context_names(profile):
     names = [KIT_CONTEXT] + [practice_file(p)[1] for p in profile['practices']]
@@ -100,24 +98,72 @@ def detect_identity(home):
         return {}
     return {'name': login, 'source': 'os'} if login else {}
 
+def organization():
+    """organization.json at the root of the kit: what the organization decides (domains, people, defaults)."""
+    org = read_json(ROOT/'organization.json', {})
+    if not isinstance(org.get('people', {}), dict) or not isinstance(org.get('defaults', {}), dict):
+        raise KitError('organization.json: people and defaults must be objects.')
+    return org
+
+def merge_settings(base, extra):
+    """Organization defaults, then the person's overrides on top: lists add up, objects combine, a single value is replaced.
+    Keys starting with _ are documentation."""
+    merged = {k: v for k, v in base.items() if not str(k).startswith('_')}
+    for key, value in extra.items():
+        if str(key).startswith('_'):
+            continue
+        current = merged.get(key)
+        if isinstance(current, dict) and isinstance(value, dict):
+            merged[key] = merge_settings(current, value)
+        elif isinstance(current, list) and isinstance(value, list):
+            merged[key] = current + [v for v in value if v not in current]
+        else:
+            merged[key] = value
+    return merged
+
+def setting_differences(base, effective, prefix=''):
+    """Single values the person's overrides change compared with the organization defaults (for doctor)."""
+    changed = []
+    for key, value in base.items():
+        if str(key).startswith('_') or key not in effective:
+            continue
+        if isinstance(value, dict) and isinstance(effective[key], dict):
+            changed += setting_differences(value, effective[key], prefix+key+'.')
+        elif not isinstance(value, list) and effective[key] != value:
+            changed.append(prefix+key)
+    return changed
+
 def allowed_domains():
-    value = read_json(ROOT/'profiles/directory.json').get('allowed_domains', [])
+    value = organization().get('allowed_domains', [])
     if not isinstance(value, list) or not all(isinstance(x,str) and x for x in value):
-        raise KitError('directory.json: allowed_domains must be a list of domains.')
+        raise KitError('organization.json: allowed_domains must be a list of domains.')
     return [x.lower().lstrip('@') for x in value]
 
 def domain_allowed(email, domains):
     return not domains or email.rsplit('@',1)[-1].lower() in domains
 
-def directory_profile(email):
-    """Profile suggested by the optional directory, or None."""
+def directory_entry(email):
+    """{profile, team} that organization.json gives for this email (a plain string is a profile), or {}."""
     if not email:
-        return None
-    entries = read_json(ROOT/'profiles/directory.json').get('emails', {})
-    if not isinstance(entries, dict):
-        raise KitError('directory.json: emails must be an object.')
-    profile = entries.get(email.lower())
-    return safe_id(profile) if profile else None
+        return {}
+    people = {str(k).lower(): v for k, v in organization().get('people', {}).items()}
+    entry = people.get(email.lower())
+    entry = {'profile': entry} if isinstance(entry, str) else (entry if isinstance(entry, dict) else {})
+    return {k: safe_id(v) for k, v in entry.items() if k in ('profile', 'team') and v}
+
+def directory_profile(email):
+    """Profile suggested by organization.json, or None."""
+    return directory_entry(email).get('profile')
+
+def team_ids():
+    """Teams that have their own practices: practices/20-<team>.md, besides the shared 20-team.md."""
+    return sorted(p.stem[3:] for p in (ROOT/'practices').glob('20-*.md') if p.stem != '20-team')
+
+def profile_practices(profile, team):
+    """The profile's practices, with the shared team practice replaced by the person's team when it has its own file."""
+    if team and team not in team_ids():
+        raise KitError('Unknown team: '+team+'. Teams with practices: '+(', '.join(team_ids()) or 'none (practices/20-<team>.md)'))
+    return [team if p == 'team' and team else p for p in profile['practices']]
 
 def resolve_skills(profile, overrides, catalog, log=print):
     """Final selection: profile + extra, replacements followed, dependencies added, disabled skills respected."""
@@ -239,7 +285,7 @@ def migrate_kit_dir(home, dry_run=False):
     print('Kit folder renamed: ~/'+LEGACY_KIT_DIR+' becomes ~/.ai-kit.')
     return False
 
-def apply(profile_id, home, dry_run=False, user=None, target='auto'):
+def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     """Full prevalidation, neutral plan, adapters, backup, then atomic write file by file."""
     home = home.resolve()
     if migrate_kit_dir(home, dry_run):
@@ -253,7 +299,8 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto'):
         raise KitError('Unknown profile: '+profile_id)
     profile = read_json(profile_path)
     state = read_json(kit/'state.json')
-    overrides = read_json(kit/'overrides.json', read_json(ROOT/'templates/user-overrides.json'))
+    # Organization defaults, then the person's own overrides on top (never replaced wholesale).
+    overrides = merge_settings(organization().get('defaults', {}), read_json(kit/'overrides.json', {}))
     if overrides.get('frictions', 'propose') not in ('propose', 'auto', 'off'):
         raise KitError('frictions must be propose (default), auto or off.')
     models = overrides.get('models', {})
@@ -279,6 +326,9 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto'):
     identity = dict(user) if user else dict(state.get('user', {}))
     if identity.get('email') and not EMAIL.fullmatch(identity['email']):
         raise KitError('Invalid email: '+identity['email'])
+    # Team: chosen at setup (--team), then kept; otherwise the one organization.json gives for this email.
+    team = safe_id(team) if team else (state.get('team') or directory_entry(identity.get('email')).get('team'))
+    profile = {**profile, 'practices': profile_practices(profile, team)}
     files = {}
     old_files = state.get('files',{})
     def managed_write(target, data, label):
@@ -388,7 +438,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto'):
             deletes.append(target_path)
     for adapter in ADAPTERS:
         adapter.finalize(p, active=adapter in active)  # inactive: removes what a previous installation had put in place
-    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),
+    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'practices':profile['practices'],
                  'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active]}}
     writes[kit/'state.json'] = json_bytes(new_state)
     writes = {path:b for path,b in writes.items() if not path.exists() or path.read_bytes()!=b}
@@ -399,7 +449,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto'):
                 break
             if part.is_symlink():
                 raise KitError('Symbolic link in a managed path: '+str(part))
-    print('Profile: '+profile_id+' | '+str(len(selected))+' skills | '+str(len(agents))+' agents | '+str(len(enabled_mcp))+' MCP enabled | '+str(len(enabled_hooks))+' guardrails')
+    print('Profile: '+profile_id+(' | team '+team if team else '')+' | '+str(len(selected))+' skills | '+str(len(agents))+' agents | '+str(len(enabled_mcp))+' MCP enabled | '+str(len(enabled_hooks))+' guardrails')
     if identity.get('email'):
         print('Identity: '+identity['email']+' (source '+identity.get('source','?')+')')
     if dry_run:
@@ -553,6 +603,7 @@ def doctor(home, cwd=None):
         identity = state.get('user', {})
         print('Recorded identity: '+(identity.get('email') or identity.get('name') or 'none')+(' (source '+identity['source']+')' if identity.get('source') else ''))
         profile = read_json(ROOT/'profiles'/(safe_id(state['profile'])+'.json'))
+        profile = {**profile, 'practices': state.get('practices') or profile['practices']}  # with the person's team
         ctx = DoctorContext(profile=profile, load_commands=load_commands, managed_context_names=managed_context_names,
                                     allowed_domains=allowed_domains, domain_allowed=domain_allowed)
         context = state.get('context_dir', '.gemini')
@@ -561,6 +612,14 @@ def doctor(home, cwd=None):
             path = inside(home,rel)
             status(path.is_file() and digest(path.read_bytes())==expected,rel)
         guardrail_checks(home, state, status)
+        folder_version = (ROOT/'VERSION').read_text(encoding='utf-8').strip()
+        status(state.get('version') == folder_version, 'Installed version '+str(state.get('version'))+' matches the kit folder'+('' if state.get('version') == folder_version else ' ('+folder_version+'): run update'))
+        org_defaults = organization().get('defaults', {})
+        changed = setting_differences(org_defaults, merge_settings(org_defaults, read_json(home/'.ai-kit/overrides.json', {})))
+        if changed:
+            print('[Info] Your overrides.json changes organization defaults: '+', '.join(changed))
+        if state.get('team'):
+            print('[Info] Team: '+state['team']+' (practices/20-'+state['team']+'.md)')
         root, overrides = repo_skill_overrides(state, cwd or os.getcwd())
         if overrides:
             print('[Info] This repo ('+root.name+') replaces kit skills: '+', '.join(path for _, path in overrides)
@@ -694,6 +753,21 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
         as_json.write_text(json_bytes(report).decode('utf-8'), encoding='utf-8')
     return 0
 
+def release_check():
+    """doctor --live: a newer published version of the kit (git tags of the kit folder's remote), without blocking anything."""
+    if not (ROOT/'.git').exists() or not shutil.which('git'):
+        return
+    try:
+        subprocess.run(['git', '-C', str(ROOT), 'fetch', '--tags', '--quiet'], capture_output=True, timeout=20)
+        tags = subprocess.run(['git', '-C', str(ROOT), 'tag', '--list', 'v*', '--sort=-v:refname'], capture_output=True, text=True, timeout=10).stdout.split()
+    except (OSError, subprocess.SubprocessError):
+        return
+    current = (ROOT/'VERSION').read_text(encoding='utf-8').strip()
+    def key(version):
+        return tuple(int(x) for x in re.findall(r'\d+', version)[:3])
+    if tags and key(tags[0]) > key(current):
+        print('[Info] AI Kit '+tags[0].lstrip('v')+' is published (this folder: '+current+'): run update, which fetches it.')
+
 def live_checks(home, announce=False):
     """Real call to the model by each installed CLI that supports it (live); 1 if one does not answer."""
     code = 0
@@ -745,6 +819,7 @@ def main(argv=None):
     parser.add_argument('--user',help='Work email to record, without interactive confirmation')
     parser.add_argument('--home',type=Path,default=Path.home(),help='Alternative home folder for an isolated trial')
     parser.add_argument('--dry-run',action='store_true',help='Show the plan without writing')
+    parser.add_argument('--team',help='setup: your team, when it has its own practices (practices/20-<team>.md); kept for update')
     parser.add_argument('--target',choices=list(TARGETS),default='auto',help='auto: the CLIs present on the machine (Gemini if none); gemini, agy, codex: that CLI only; both: Gemini and agy; all: every supported CLI')
     parser.add_argument('--live',action='store_true',help='doctor: make a real call to the model and diagnose')
     parser.add_argument('--no-live',action='store_true',help='setup/update: do not check with a real call to the model')
@@ -754,6 +829,7 @@ def main(argv=None):
         if args.action == 'doctor':
             code = doctor(home)
             if args.live:
+                release_check()
                 code = max(code, live_checks(home))
             return code
         if args.action == 'usage':
@@ -774,14 +850,22 @@ def main(argv=None):
             elif not sys.stdin.isatty():
                 raise KitError('Specify --profile among: '+', '.join(profile_ids())+'.')
             else:
-                choices = PROFILE_MENU
+                choices = profile_menu()
                 default = next((str(i+1) for i,(pid,_) in enumerate(choices) if pid == suggested), None)
                 print('Welcome to the AI Kit\n'+'\n'.join(str(i+1)+'. '+label for i,(_,label) in enumerate(choices)))
                 answer = input('Your profile [1-'+str(len(choices))+']'+(' (Enter = '+default+', suggested by the directory)' if default else '')+': ').strip() or default
                 if answer not in [str(i+1) for i in range(len(choices))]:
                     raise KitError('Choose a number between 1 and '+str(len(choices))+'.')
                 role = choices[int(answer)-1][0]
-        apply(role,home,args.dry_run,identity,args.target)
+        team = args.team or state.get('team') or directory_entry(email).get('team')
+        if not team and args.action == 'setup' and team_ids() and sys.stdin.isatty():
+            teams = team_ids()
+            print('Teams with their own practices:\n'+'\n'.join(str(i+1)+'. '+t for i, t in enumerate(teams))+'\n'+str(len(teams)+1)+'. none of these (shared team practices)')
+            answer = input('Your team [1-'+str(len(teams)+1)+'] (Enter = none): ').strip()
+            if answer and answer not in [str(i+1) for i in range(len(teams)+1)]:
+                raise KitError('Choose a number between 1 and '+str(len(teams)+1)+'.')
+            team = teams[int(answer)-1] if answer and int(answer) <= len(teams) else None
+        apply(role,home,args.dry_run,identity,args.target,team)
         for adapter in selected_adapters(args.target, home):
             if not shutil.which(adapter.COMMAND):
                 print(adapter.LABEL+' not on the PATH: configuration ready; install and authenticate it following the IT procedure.')

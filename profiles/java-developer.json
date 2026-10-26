@@ -1,5 +1,7 @@
 {
   "id": "java-developer",
+  "label": "Java Developer: Maven or Gradle, Spring, JUnit",
+  "order": 20,
   "practices": [
     "company",
     "team"
