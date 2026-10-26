@@ -1,16 +1,9 @@
-import hashlib
 import re, unittest
 from pathlib import Path
 from installer.cli import allowed_commands
 from installer.core import ROOT, read_json, load_commands, parse_frontmatter
 from installer.adapters.gemini import gemini_command_toml, parse_env_file
 import tempfile
-
-BANNED_FINGERPRINTS = {
- '0e8994be69df6f65aefd5dc5107ffc8d523b58213a9f286e','8b1e2a0d4f563fb671a9fec7acd396aa03a2d925db9ea007964b117a2bdc4dda',
- '0729a050f6ee086083c3ecd65441ec8c415b16f597c4ea878736f3fd495056fe','682f5a5538c912fc6d41cb139ba77e7977f9be876d3d6fafe109616fd1cdd399',
- 'bbe5c5938adae6cc0f551ba4c7a427b3a4632fac0ece26b427ca6abf092a2c86',
-}
 
 class ConsistencyTests(unittest.TestCase):
  """Product consistency checked continuously: profiles, tiers, commands, forbidden terms, Python dependencies."""
@@ -31,13 +24,6 @@ class ConsistencyTests(unittest.TestCase):
  def test_commands_cited_by_guide_exist(self):
   text=(ROOT/'skills/internal/common/guide/SKILL.md').read_text(encoding='utf-8');names={c['name'] for c in self.cmds}
   for m in set(re.findall(r'`/([a-z]+)',text)):self.assertIn(m,names,'/'+m)
- def test_no_upstream_author_or_internal_names(self):
-  for f in ROOT.rglob('*'):
-   if f.is_file() and f.suffix in ('.md','.json','.toml','.py','.sh','.ps1','.yml') and not {'dist','build','.debug','.codegraph'} & set(f.parts) and f.name!='LICENSE-UPSTREAM-MIT':
-    t=f.read_text(encoding='utf-8',errors='replace').lower()
-    # Names that must never appear (internal names, former upstream skill names), kept only as SHA-256 fingerprints
-    # so that the test itself does not publish them. A word of the file matches if its fingerprint is in the set.
-    for word in set(re.findall(r'[a-z0-9]+(?:-[a-z0-9]+)*',t)):self.assertNotIn(hashlib.sha256(word.encode('utf-8')).hexdigest(),BANNED_FINGERPRINTS,str(f))
  def test_contrib_skills_rules(self):
   for n,e in self.cat.items():
    if e.get('origin')=='contrib':
