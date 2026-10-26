@@ -85,10 +85,23 @@ class OrganizationTests(unittest.TestCase):
         with self.assertRaises(KitError) as ctx:
             read_json(bad)
         message = str(ctx.exception)
-        self.assertIn('line 2, column 29', message)
+        self.assertRegex(message, r'line 2, column 2[89]')  # the column moved by one in Python 3.13
         self.assertIn('a comma is left before } or ]', message)
         self.assertIn('"extra_skills": ["a", "b",]', message)
 
+
+    def test_every_usual_json_mistake_is_explained(self):
+        # Each Python version words these errors its own way (3.13 changed the trailing comma): all must get a plain hint.
+        from installer.core import JSON_HINTS
+        plain = {hint for _, hint in JSON_HINTS}
+        for text in ('{"a": 1 "b": 2}', '{"a": [1, 2,]}', '{"a": 1,}', "{'a': 1}", '{"a" 1}', '{"a": "x}', '{"p": "C:\\Users"}',
+                     '{"a": 1} {"b": 2}', '{"a": }', '{"a": "x\ny"}'):
+            bad = self.home/'bad.json'
+            bad.write_text(text, encoding='utf-8')
+            with self.assertRaises(KitError) as ctx:
+                read_json(bad)
+            first = str(ctx.exception).splitlines()[0]
+            self.assertTrue(any(h in first for h in plain), text + ' -> ' + first)
 
 @unittest.skipIf(os.name == 'nt' or not shutil.which('git'), 'POSIX launcher and git required')
 class UpdatePullsTests(unittest.TestCase):

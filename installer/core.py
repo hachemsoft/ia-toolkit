@@ -40,6 +40,7 @@ def read_json(path, default=None):
 # json's messages, said plainly, with the usual cause.
 JSON_HINTS = (
     ("Expecting ',' delimiter", 'a comma is missing between two entries'),
+    ('Illegal trailing comma', 'a comma is left before } or ]'),  # Python 3.13 and later
     ('Expecting property name enclosed in double quotes', 'a key must be in double quotes, or a comma is left before } or ]'),
     ('Expecting value', 'a value is missing, or a comma is left before } or ], or a text is not in double quotes'),
     ("Expecting ':' delimiter", 'a colon is missing between a key and its value'),

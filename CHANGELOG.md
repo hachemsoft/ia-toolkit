@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.25.1
+JSON error messages: Python 3.13 and later word a trailing comma differently ("Illegal trailing comma"); it now gets the same plain explanation. A test checks that every usual JSON mistake is explained, on every Python version of the CI.
+
 ## 0.25.0
 No personal data in the kit repository: `people` (email to profile and team) is removed from `organization.json`; `setup` asks for the profile and the team, or takes `--profile` and `--team`, which IT hands each team as a ready-made command. `allowed_domains` stays (it warns about a CLI signed in with a personal account). A mistake in a JSON file (`overrides.json`, `organization.json`, CLI settings) is reported with its line, its column, the line itself and the usual cause in plain words.
 The test of the launcher's `git pull` builds its own repositories from the current files, so it also passes on tag checkouts (the v0.24.0 tag CI failed on it).
