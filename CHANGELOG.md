@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+No personal data in the kit repository: `people` (email to profile and team) is removed from `organization.json`; `setup` asks for the profile and the team, or takes `--profile` and `--team`, which IT hands each team as a ready-made command. `allowed_domains` stays (it warns about a CLI signed in with a personal account). A mistake in a JSON file (`overrides.json`, `organization.json`, CLI settings) is reported with its line, its column, the line itself and the usual cause in plain words.
+
 ## 0.24.0
 `organization.json` at the root of the kit replaces `profiles/directory.json` and the organization use of `templates/user-overrides.json`: expected domains, each person's profile and team, and organization defaults. The defaults are always merged with the person's `overrides.json` (lists add up, objects combine, the person wins for a single value): a personal file no longer drops the organization's authentication, model or guardrails. `doctor` lists the defaults a person changed. Teams are their own dimension: `practices/20-<team>.md`, chosen by `setup --team`, by `organization.json` or by a question at setup, installed as `20_<TEAM>.md` whatever the profile. `update` through the launcher fetches the new version itself (`git pull --ff-only` in a clean git clone, never blocking); `doctor` reports an installed version behind the folder and `doctor --live` a newer published version. `organization.json` and `CHANGELOG.md` are now in the pipx package.
 Profiles are discovered from the `profiles/` folder: each file carries its menu `label` and `order`, so adding a profile is adding one file (no code, no test to edit; the tests and the snapshot pick it up).

@@ -26,12 +26,37 @@ def read_json(path, default=None):
     if not path.exists():
         return {} if default is None else default
     try:
-        value = json.loads(path.read_text(encoding='utf-8-sig'))
-    except (ValueError, OSError) as exc:
-        raise KitError('Unreadable JSON: ' + str(path)) from exc
+        text = path.read_text(encoding='utf-8-sig')
+    except (OSError, UnicodeError) as exc:
+        raise KitError('Unreadable file: ' + str(path) + ' (' + str(exc) + ')') from exc
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise KitError(json_error(path, text, exc)) from exc
     if not isinstance(value, dict):
-        raise KitError('JSON object expected: ' + str(path))
+        raise KitError(str(path) + ': a JSON object { … } is expected at the top level.')
     return value
+
+# json's messages, said plainly, with the usual cause.
+JSON_HINTS = (
+    ("Expecting ',' delimiter", 'a comma is missing between two entries'),
+    ('Expecting property name enclosed in double quotes', 'a key must be in double quotes, or a comma is left before } or ]'),
+    ('Expecting value', 'a value is missing, or a comma is left before } or ], or a text is not in double quotes'),
+    ("Expecting ':' delimiter", 'a colon is missing between a key and its value'),
+    ('Unterminated string', 'a text is missing its closing double quote'),
+    ('Invalid control character', 'a line break or tab inside a text: write \\n or remove it'),
+    ('Invalid \\escape', 'a backslash inside a text: double it (\\\\), for example in a Windows path'),
+    ('Extra data', 'something follows the end of the object: an extra } or a second object'),
+)
+
+def json_error(path, text, exc):
+    """One message that says where (line, column, the line itself) and what (in plain words) is wrong in a JSON file."""
+    hint = next((plain for raw, plain in JSON_HINTS if exc.msg.startswith(raw)), exc.msg)
+    lines = text.splitlines() or ['']
+    line = lines[min(exc.lineno, len(lines)) - 1]
+    return (str(path) + ', line ' + str(exc.lineno) + ', column ' + str(exc.colno) + ': ' + hint + '.\n'
+            + '    ' + line.rstrip() + '\n    ' + ' ' * max(exc.colno - 1, 0) + '^\n'
+            + 'JSON allows no comments; keys starting with _ can hold explanations. A valid example: docs/customization.md.')
 
 def json_bytes(value):
     return (json.dumps(value, ensure_ascii=False, indent=2)+'\n').encode('utf-8')

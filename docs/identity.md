@@ -20,9 +20,9 @@ The git name completes the CLI account's email when both exist. OAuth tokens are
 - The state (`~/.ai-kit/state.json`) keeps `user.email`, `user.name`, `user.source`.
 - The "Person: …" header is written in `30_USER.md` only when the file is created. Fix it by hand afterwards.
 
-## Proposed profile
+## Profile and team
 
-`organization.json` (`people`) maps emails to a profile and a team. If the detected email is listed, that profile is proposed by default at the prompt, or selected in non-interactive mode when `--profile` is absent. `--profile` always wins. Keep this list minimal: it ships with the kit.
+`setup` asks for the profile, and for the team when several teams have their own practices, unless `--profile` and `--team` are given. Nothing personal is stored in the kit repository: IT hands each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile data-analyst --team finance`.
 
 ## Doctor checks
 

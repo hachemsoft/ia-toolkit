@@ -22,7 +22,7 @@ Before a merge request (MR): `python3 -m unittest discover -s tests` and `ruff c
 ## Add a team
 
 1. `practices/20-<team>.md`: the team's practices, short and checkable.
-2. Map people to it in `organization.json` (`people`: `{"profile": …, "team": "<team>"}`), or let `setup` ask.
+2. Give the team its setup command (`setup --profile <profile> --team <team>`), or let `setup` ask.
 3. Nothing to change in the profiles: a team adds its layer to any profile.
 
 ## Add a profile

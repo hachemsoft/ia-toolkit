@@ -2,7 +2,7 @@ import contextlib, io, json, os, shutil, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from unittest import mock
 from installer import cli
-from installer.cli import apply, doctor, detect_identity, directory_profile
+from installer.cli import apply, doctor, detect_identity
 from installer.core import read_json, ROOT
 class IdentityTests(unittest.TestCase):
  def setUp(self):
@@ -38,19 +38,6 @@ class IdentityTests(unittest.TestCase):
   proc=subprocess.run([sys.executable,'-m','installer','setup','--profile','data-analyst','--user','first.last@example.com','--home',str(self.home),'--no-live'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8',stdin=subprocess.DEVNULL,env={**os.environ,'PYTHONIOENCODING':'utf-8'})
   self.assertEqual(proc.returncode,0,proc.stdout+proc.stderr);self.assertIn('Identity: first.last@example.com (source option)',proc.stdout)
   self.assertEqual(read_json(self.home/'.ai-kit/state.json')['user']['source'],'option')
- def test_directory_suggests_profile(self):
-  fake={'people':{'dev@example.com':{'profile':'data-developer'}}}
-  real=cli.read_json
-  def patched(path,default=None):return fake if path.name=='organization.json' else real(path,default)
-  with mock.patch.object(cli,'read_json',side_effect=patched):
-   self.assertEqual(directory_profile('Dev@example.com'),'data-developer');self.assertIsNone(directory_profile('unknown@example.com'));self.assertIsNone(directory_profile(None))
- def test_directory_profile_used_non_interactive(self):
-  fake={'people':{'dev@example.com':{'profile':'data-developer'}}}
-  real=cli.read_json
-  def patched(path,default=None):return fake if path.name=='organization.json' else real(path,default)
-  with mock.patch.object(cli,'read_json',side_effect=patched), mock.patch.object(sys.stdin,'isatty',return_value=False), contextlib.redirect_stdout(io.StringIO()):
-   code=cli.main(['setup','--user','dev@example.com','--home',str(self.home),'--no-live'])
-  self.assertEqual(code,0);self.assertEqual(read_json(self.home/'.ai-kit/state.json')['profile'],'data-developer')
  def test_doctor_domain_and_mismatch_warnings(self):
   self.run_kit(user={'email':'first.last@example.com','source':'option'})
   self.write('.gemini/google_accounts.json',json.dumps({'active':'personal@gmail.com','old':[]}))

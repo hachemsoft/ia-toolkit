@@ -79,11 +79,15 @@ class OrganizationTests(unittest.TestCase):
         with self.assertRaises(KitError):
             self.install(team='no-such-team')
 
-    def test_people_give_profile_and_team(self):
-        with self.organization({'people': {'First.Last@example.com': {'profile': 'devops', 'team': 'ops'}, 'b@example.com': 'architect'}}):
-            self.assertEqual(cli.directory_entry('first.last@example.com'), {'profile': 'devops', 'team': 'ops'})
-            self.assertEqual(cli.directory_profile('b@example.com'), 'architect')
-            self.assertEqual(cli.directory_entry('nobody@example.com'), {})
+    def test_json_error_says_where_and_what(self):
+        bad = self.home/'overrides.json'
+        bad.write_text('{\n  "extra_skills": ["a", "b",]\n}\n', encoding='utf-8')
+        with self.assertRaises(KitError) as ctx:
+            read_json(bad)
+        message = str(ctx.exception)
+        self.assertIn('line 2, column 29', message)
+        self.assertIn('a comma is left before } or ]', message)
+        self.assertIn('"extra_skills": ["a", "b",]', message)
 
 
 @unittest.skipIf(os.name == 'nt' or not shutil.which('git'), 'POSIX launcher and git required')

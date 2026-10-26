@@ -6,22 +6,21 @@ The user folder is the Windows or macOS one, not the project folder.
 
 Two files, combined at every `setup` and `update`:
 
-- **`organization.json`**, at the root of the kit repository, belongs to the organization. It is changed by merge request, then each workstation runs `update`. It holds the expected email domains (`allowed_domains`), each person's suggested profile and team (`people`), and the organization defaults (`defaults`, with the same keys as `overrides.json`: authentication, model, guardrails, MCP, skills, commands…).
+- **`organization.json`**, at the root of the kit repository, belongs to the organization. It is changed by merge request, then each workstation runs `update`. It holds the expected email domains (`allowed_domains`) and the organization defaults (`defaults`, with the same keys as `overrides.json`: authentication, model, guardrails, MCP, skills, commands…).
 - **`~/.ai-kit/overrides.json`** belongs to the person. It is applied on top of the organization defaults: lists add up, objects combine, the person's value wins for a single value. It never replaces the organization defaults wholesale; `doctor` lists the defaults a person changed.
 
 ```json
 {
   "allowed_domains": ["company.com"],
-  "people": { "first.last@company.com": { "profile": "java-developer", "team": "finance" } },
   "defaults": { "code_assist": { "project": "my-gcp-project" }, "hooks": { "dbt-prod-guard": true } }
 }
 ```
 
-JSON allows no comments: keys starting with `_` (`_doc`) are documentation and are ignored.
+JSON allows no comments: keys starting with `_` (`_doc`) are documentation and are ignored. A mistake in either file is reported with its line, its column, the line itself and the usual cause (missing comma, comma left before `}`, single quotes, backslash in a Windows path).
 
 ## Teams
 
-A team with its own practices has a file `practices/20-<team>.md` in the kit repository. The person's team comes from `setup --team <team>`, from `organization.json` (`people`), or from the question `setup` asks when several team files exist; it is kept for `update`. The kit then installs `20_<TEAM>.md` instead of the shared `20_TEAM.md`, whatever the profile: profiles describe a job, teams describe who you work with.
+A team with its own practices has a file `practices/20-<team>.md` in the kit repository. The person's team comes from `setup --team <team>` or from the question `setup` asks when several team files exist; it is kept for `update`. The usual way: IT gives each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile java-developer --team finance`. The kit then installs `20_<TEAM>.md` instead of the shared `20_TEAM.md`, whatever the profile: profiles describe a job, teams describe who you work with.
 
 ## Context layers
 

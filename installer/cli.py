@@ -99,10 +99,10 @@ def detect_identity(home):
     return {'name': login, 'source': 'os'} if login else {}
 
 def organization():
-    """organization.json at the root of the kit: what the organization decides (domains, people, defaults)."""
+    """organization.json at the root of the kit: what the organization decides (expected email domains, defaults)."""
     org = read_json(ROOT/'organization.json', {})
-    if not isinstance(org.get('people', {}), dict) or not isinstance(org.get('defaults', {}), dict):
-        raise KitError('organization.json: people and defaults must be objects.')
+    if not isinstance(org.get('defaults', {}), dict):
+        raise KitError('organization.json: defaults must be an object.')
     return org
 
 def merge_settings(base, extra):
@@ -141,19 +141,6 @@ def allowed_domains():
 
 def domain_allowed(email, domains):
     return not domains or email.rsplit('@',1)[-1].lower() in domains
-
-def directory_entry(email):
-    """{profile, team} that organization.json gives for this email (a plain string is a profile), or {}."""
-    if not email:
-        return {}
-    people = {str(k).lower(): v for k, v in organization().get('people', {}).items()}
-    entry = people.get(email.lower())
-    entry = {'profile': entry} if isinstance(entry, str) else (entry if isinstance(entry, dict) else {})
-    return {k: safe_id(v) for k, v in entry.items() if k in ('profile', 'team') and v}
-
-def directory_profile(email):
-    """Profile suggested by organization.json, or None."""
-    return directory_entry(email).get('profile')
 
 def team_ids():
     """Teams that have their own practices: practices/20-<team>.md, besides the shared 20-team.md."""
@@ -326,8 +313,8 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     identity = dict(user) if user else dict(state.get('user', {}))
     if identity.get('email') and not EMAIL.fullmatch(identity['email']):
         raise KitError('Invalid email: '+identity['email'])
-    # Team: chosen at setup (--team), then kept; otherwise the one organization.json gives for this email.
-    team = safe_id(team) if team else (state.get('team') or directory_entry(identity.get('email')).get('team'))
+    # Team: chosen at setup (--team or the setup question), then kept for update.
+    team = safe_id(team) if team else state.get('team')
     profile = {**profile, 'practices': profile_practices(profile, team)}
     files = {}
     old_files = state.get('files',{})
@@ -838,26 +825,19 @@ def main(argv=None):
             migrate_kit_dir(home)  # with --dry-run, apply announces it without renaming
         state = read_json(home/'.ai-kit/state.json') or read_json(home/LEGACY_KIT_DIR/'state.json')
         identity = resolve_identity(args, home, state)
-        email = (identity or state.get('user') or {}).get('email')
         role = args.profile or state.get('profile')
-        suggested = directory_profile(email)
         if not role:
             if args.action == 'update':
                 raise KitError('Kit not installed: run setup.')
-            if suggested and not sys.stdin.isatty():
-                print('Profile suggested by the directory: '+suggested)
-                role = suggested
-            elif not sys.stdin.isatty():
+            if not sys.stdin.isatty():
                 raise KitError('Specify --profile among: '+', '.join(profile_ids())+'.')
-            else:
-                choices = profile_menu()
-                default = next((str(i+1) for i,(pid,_) in enumerate(choices) if pid == suggested), None)
-                print('Welcome to the AI Kit\n'+'\n'.join(str(i+1)+'. '+label for i,(_,label) in enumerate(choices)))
-                answer = input('Your profile [1-'+str(len(choices))+']'+(' (Enter = '+default+', suggested by the directory)' if default else '')+': ').strip() or default
-                if answer not in [str(i+1) for i in range(len(choices))]:
-                    raise KitError('Choose a number between 1 and '+str(len(choices))+'.')
-                role = choices[int(answer)-1][0]
-        team = args.team or state.get('team') or directory_entry(email).get('team')
+            choices = profile_menu()
+            print('Welcome to the AI Kit\n'+'\n'.join(str(i+1)+'. '+label for i,(_,label) in enumerate(choices)))
+            answer = input('Your profile [1-'+str(len(choices))+']: ').strip()
+            if answer not in [str(i+1) for i in range(len(choices))]:
+                raise KitError('Choose a number between 1 and '+str(len(choices))+'.')
+            role = choices[int(answer)-1][0]
+        team = args.team or state.get('team')
         if not team and args.action == 'setup' and team_ids() and sys.stdin.isatty():
             teams = team_ids()
             print('Teams with their own practices:\n'+'\n'.join(str(i+1)+'. '+t for i, t in enumerate(teams))+'\n'+str(len(teams)+1)+'. none of these (shared team practices)')
