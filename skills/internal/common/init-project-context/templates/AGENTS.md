@@ -43,7 +43,8 @@ Delete the rows of stacks this repo does not use; add one per other stack, same 
 - `<folder>` holds `<what>`; never edit `<generated>`
 
 ## Things the agent gets wrong
-- <Mistake seen twice, and the rule that prevents it.>
+<!-- One line per mistake seen twice: the rule, then (since YYYY-MM: what happened). The date lets the team remove a rule that no longer serves. -->
+- <Rule that prevents the mistake> (since <YYYY-MM>: <what the agent did>)
 
 ## Where the rest lives
 - Architecture: `docs/<file>`

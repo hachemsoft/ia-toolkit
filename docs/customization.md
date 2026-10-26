@@ -85,7 +85,7 @@ A developer who wants `/ask` and `/handoff`, prototyping, no delegated research,
 }
 ```
 
-`frictions` sets what the agent does on the five friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. `models` sets a model per agent capability (`fast`, `deep`); see [agents](agents.md#capability-profiles). Then `update`. Every key is optional; a missing key changes nothing. A skill added through `extra_commands` comes with its dependencies; a skill required by another one cannot be disabled on its own, and `update` says so.
+`frictions` sets what the agent does on the six friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. `models` sets a model per agent capability (`fast`, `deep`); see [agents](agents.md#capability-profiles). Then `update`. Every key is optional; a missing key changes nothing. A skill added through `extra_commands` comes with its dependencies; a skill required by another one cannot be disabled on its own, and `update` says so.
 
 ## Authentication and model
 

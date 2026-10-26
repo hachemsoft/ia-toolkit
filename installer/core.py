@@ -177,6 +177,24 @@ def _ts(value):
     except ValueError:
         return 0
 
+def friction_id(ts, text):
+    """Same id as runtime/friction.py: 6 hex characters from the date and the sentence (older lines get it when read)."""
+    return hashlib.sha256((str(ts) + '|' + str(text)).encode('utf-8')).hexdigest()[:6]
+
+FIXED_FRICTIONS = re.compile(r'\bfrictions?:\s*([0-9a-f]{6}(?:\s*,\s*[0-9a-f]{6})*)', re.I)
+
+def fixed_frictions(changelog):
+    """{friction id: version} for the ids a CHANGELOG cites as "(frictions: a1b2c3, d4e5f6)" under a "## <version>" heading."""
+    fixed, version = {}, None
+    for line in changelog.splitlines():
+        if line.startswith('## '):
+            version = line[3:].strip()
+            continue
+        for match in FIXED_FRICTIONS.finditer(line):
+            for fid in re.split(r'\s*,\s*', match.group(1).lower()):
+                fixed.setdefault(fid, version)
+    return fixed
+
 def record_auto_friction(home, diagnostic, cli='unknown'):
     """A failure seen by doctor --live becomes an `auth` friction, logged locally without asking (same format as /friction)."""
     if not (home/'.ai-kit/state.json').is_file():
@@ -187,6 +205,7 @@ def record_auto_friction(home, diagnostic, cli='unknown'):
         entry = {'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'category': 'auth', 'command': 'doctor',
                  'text': ' '.join(str(diagnostic).split())[:300], 'cli': cli, 'source': 'doctor',
                  'os': system, 'kit': str(state.get('version', '')), 'profile': str(state.get('profile', ''))}
+        entry['id'] = friction_id(entry['ts'], entry['text'])
         with open(home/'.ai-kit/frictions.jsonl', 'a', encoding='utf-8') as handle:
             handle.write(json.dumps(entry, ensure_ascii=False) + '\n')
     except (OSError, KitError, ValueError):

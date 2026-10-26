@@ -6,13 +6,14 @@ The context (kit version, profile, system) is added automatically. Nothing is se
 counts these lines and `usage --json` exports them for the usage review.
 """
 import argparse
+import hashlib
 import json
 import os
 import platform
 import sys
 from datetime import datetime, timezone
 
-CATEGORIES = ('command', 'skill', 'guardrail', 'docs', 'tool', 'auth', 'other')
+CATEGORIES = ('command', 'skill', 'guardrail', 'rule', 'docs', 'tool', 'auth', 'other')
 
 def kit_dir():
     return os.path.join(os.path.expanduser('~'), '.ai-kit')
@@ -29,11 +30,16 @@ def context():
         pass
     return info
 
+def friction_id(ts, text):
+    """Short stable id (6 hex characters) from the date and the sentence; cited in tickets and in the CHANGELOG."""
+    return hashlib.sha256((str(ts) + '|' + str(text)).encode('utf-8')).hexdigest()[:6]
+
 def record(category, text, command='none', cli='unknown', source='person'):
     text = ' '.join(str(text).split())[:300]
     entry = {'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'category': category,
              'command': (command or 'none').lstrip('/') or 'none', 'text': text, 'cli': cli, 'source': source}
     entry.update(context())
+    entry['id'] = friction_id(entry['ts'], entry['text'])
     os.makedirs(kit_dir(), exist_ok=True)
     path = os.path.join(kit_dir(), 'frictions.jsonl')
     with open(path, 'a', encoding='utf-8') as handle:
@@ -63,7 +69,7 @@ def main(argv=None):
         print('The text must be between 1 and 300 characters.', file=sys.stderr)
         return 2
     path, entry = record(args.category, text, args.command, args.cli)
-    print('Friction logged (' + entry['category'] + ', /' + entry['command'] + ') in ' + path + '; nothing is sent.')
+    print('Friction ' + entry['id'] + ' logged (' + entry['category'] + ', /' + entry['command'] + ') in ' + path + '; nothing is sent.')
     return 0
 
 if __name__ == '__main__':

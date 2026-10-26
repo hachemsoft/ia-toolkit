@@ -15,7 +15,7 @@ import uuid
 from datetime import datetime, timezone
 
 from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, KitError, read_json, json_bytes, digest,
-                   safe_id, inside, hook_command, load_commands, _ts)
+                   safe_id, inside, hook_command, load_commands, _ts, friction_id, fixed_frictions)
 from .adapters import ADAPTERS
 from .interface import ContextHost, DoctorContext, LiveCheck, Plan
 
@@ -167,7 +167,7 @@ def command_lines(commands):
             lines += ['- /'+c['name']+' — '+c['description'] for c in names]
     return '\n'.join(lines) if lines else '- No command installed.'
 
-FRICTION_SIGNALS = 'the person corrects or undoes what you just did; a check is red after "done"; they give up or ask the same thing again; you work around a skill or a guardrail; the ceremony was out of proportion.'
+FRICTION_SIGNALS = 'the person corrects or undoes what you just did; a check is red after "done"; they give up or ask the same thing again; you work around a skill or a guardrail; the ceremony was out of proportion; you went against a rule written in AGENTS.md, the kit context or a playbook (category rule).'
 
 def friction_rule(mode):
     """The Frictions section of 00_KIT.md from overrides.json (frictions: propose by default, auto, off)."""
@@ -507,7 +507,33 @@ def guardrail_checks(home, state, status):
         blocked = answer.get('decision') == 'deny' or answer.get('hookSpecificOutput', {}).get('permissionDecision') == 'deny'
         status(blocked, 'Guardrail '+name+': blocks a known case when run')
 
-def doctor(home):
+REPO_SKILL_DIRS = ('.agents/skills', '.gemini/skills', '.codex/skills')
+
+def repo_root(start):
+    """Folder holding .git, from start upwards; None outside a repo."""
+    current = Path(start).resolve()
+    for folder in [current] + list(current.parents):
+        if (folder/'.git').exists():
+            return folder
+    return None
+
+def repo_skill_overrides(state, cwd):
+    """Skills of the current repo that carry the name of a kit skill or command: the CLI uses them instead of the kit's."""
+    root = repo_root(cwd)
+    if not root:
+        return None, []
+    installed = state.get('installed') or {}
+    names = set(installed.get('skills', [])) | set(installed.get('commands', []))
+    found = []
+    for folder in dict.fromkeys([Path(cwd).resolve(), root]):
+        for rel in REPO_SKILL_DIRS:
+            base = folder/rel
+            if base.is_dir():
+                found += [(child.name, (base/child.name).relative_to(root).as_posix()) for child in sorted(base.iterdir())
+                          if child.name in names and (child/'SKILL.md').is_file()]
+    return root, found
+
+def doctor(home, cwd=None):
     issues = 0
     def status(ok,message):
         nonlocal issues
@@ -533,6 +559,12 @@ def doctor(home):
             path = inside(home,rel)
             status(path.is_file() and digest(path.read_bytes())==expected,rel)
         guardrail_checks(home, state, status)
+        root, overrides = repo_skill_overrides(state, cwd or os.getcwd())
+        if overrides:
+            print('[Info] This repo ('+root.name+') replaces kit skills: '+', '.join(path for _, path in overrides)
+                  + '. The CLI uses them instead of the kit\'s; check what they do (and protect .agents/ with CODEOWNERS).')
+        elif root:
+            print('[OK] No kit skill replaced by this repo ('+root.name+')')
         installed = set(state.get('installed', {}).get('clis') or [a.NAME for a in ADAPTERS])
         for adapter in ADAPTERS:
             if adapter.NAME in installed:
@@ -614,7 +646,7 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
                 out.append(s)
         return out
     # Frictions logged by /friction: ~/.ai-kit/frictions.jsonl, one line per friction, within the window.
-    frictions = []
+    frictions, own_ids = [], []
     frictions_file = home/'.ai-kit/frictions.jsonl'
     if frictions_file.is_file():
         for line in frictions_file.read_text(encoding='utf-8', errors='replace').splitlines():
@@ -622,8 +654,16 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
                 entry = json.loads(line)
             except ValueError:
                 continue
-            if isinstance(entry, dict) and _ts(entry.get('ts')) >= cutoff:
-                frictions.append({k: entry.get(k) for k in ('ts', 'category', 'command', 'text', 'cli', 'os', 'kit', 'profile', 'source') if entry.get(k) is not None})
+            if not isinstance(entry, dict):
+                continue
+            entry['id'] = entry.get('id') or friction_id(entry.get('ts'), entry.get('text'))  # lines written before ids existed
+            own_ids.append(entry['id'])
+            if _ts(entry.get('ts')) >= cutoff:
+                frictions.append({k: entry.get(k) for k in ('id', 'ts', 'category', 'command', 'text', 'cli', 'os', 'kit', 'profile', 'source') if entry.get(k) is not None})
+    # Frictions of this person that a released version says it fixed: "(frictions: a1b2c3, …)" in the kit's CHANGELOG.
+    changelog = ROOT/'CHANGELOG.md'
+    fixed = fixed_frictions(changelog.read_text(encoding='utf-8')) if changelog.is_file() else {}
+    fixed_own = {fid: fixed[fid] for fid in own_ids if fid in fixed}
     frictions_by_category = Counter(str(f.get('category')) for f in frictions)
     enough = sessions >= min_sessions and prompts >= min_prompts
     report = {'window_days': since_days, 'sessions': sessions, 'prompts': prompts, 'errors': errors,
@@ -631,13 +671,15 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
               'unused_commands': unused_commands, 'unused_skills': unused_skills, 'unused_agents': unused_agents,
               'core_candidates_to_demote': core_candidates() if enough else [], 'enough_data': enough,
               'frictions': frictions, 'frictions_by_category': dict(frictions_by_category),
-              'unknown_commands': dict(unknown_commands), 'repeated_prompts': repeated}
+              'unknown_commands': dict(unknown_commands), 'repeated_prompts': repeated, 'frictions_fixed': fixed_own}
     print('Window: '+str(since_days)+' days | '+str(sessions)+' sessions | '+str(prompts)+' prompts | '+str(errors)+' errors')
     print('Commands typed: '+(', '.join(k+' ×'+str(v) for k,v in commands.most_common()) or 'none'))
     print('Skills activated: '+(', '.join(k+' ×'+str(v) for k,v in skills.most_common()) or 'none'))
     print('Agents called: '+(', '.join(k+' ×'+str(v) for k,v in agents.most_common()) or 'none'))
     print('Never used: '+str(len(unused_commands))+' commands, '+str(len(unused_skills))+' skills, '+str(len(unused_agents))+' agents.')
     print('Unknown commands typed: '+(', '.join('/'+k+' ×'+str(v) for k,v in unknown_commands.most_common()) or 'none')+' | requests repeated within one session: '+str(repeated))
+    if fixed_own:
+        print('Your frictions fixed by the kit: '+', '.join(fid+' in '+str(version) for fid, version in fixed_own.items()))
     print('Frictions logged: '+str(len(frictions))+(' ('+', '.join(k+' ×'+str(v) for k,v in frictions_by_category.most_common())+')' if frictions else '')+'; /friction to log one.')
     if not enough:
         print('Not enough data to recommend (threshold: '+str(min_sessions)+' sessions and '+str(min_prompts)+' prompts in the window; --min-sessions and --min-prompts to adjust it). No recommendation.')

@@ -99,13 +99,15 @@ The kit sets no date. A review makes sense when several workstations have passed
 ## Steps
 
 1. Each person runs `usage --json <file>` and shares the file; reports are per workstation. The team aggregates with `python3 scripts/usage-aggregate.py <files>`: totals, commands, skills, agents, candidates never activated on any workstation, and the list of frictions by category, in Markdown ready to paste.
-2. The report already lists the groups of two or more frictions (same category, same command) and the measured signals (unknown commands, repeated requests). For each group: one ticket, handled by the support rule (a `doctor` check, a Troubleshooting line, an eval case, or a prompt fix). An isolated friction stays in the report until the next review.
+2. The report already lists the groups of two or more frictions (same category, same command), each friction with its short id, and the measured signals (unknown commands, repeated requests). `usage-aggregate.py --draft-issues` prints one ready-to-paste ticket draft per group, with the frictions, a suggested fix for the category and the ids to cite; someone pastes it into the tracker by hand, nothing is created automatically. For each group: one ticket, handled by the support rule (a `doctor` check, a Troubleshooting line, an eval case, or a prompt fix). An isolated friction stays in the report until the next review.
 3. For each core candidate: set it to `optional` in `skills/catalog.json`, or write in one line why it stays. Both are valid decisions; no decision is not.
 4. For each command never typed: check that `/guide` suggests it in the right cases and that its entry is clear without the docs. If not, fix the router or the entry, not the command.
 5. Review the accumulated `/retro` proposals and the playbooks' rationalization tables: each repeated mistake becomes an `AGENTS.md` line, an eval case, or a table row. Never one more prompt to retype.
-6. An upstream skill the team departs from is rewritten as a short in-house version, same name, same command; the old one stays available through `extra_skills`. A widely used contributed skill (`skills/contrib/`) moves to `skills/internal/`; a contributed skill without a reachable owner is removed.
-7. Rerun the tests and `evals/run.py`, publish the version, and record in the `CHANGELOG` what changed and why.
-8. When a fix answers frictions, say so in one line in the `CHANGELOG` ("`/test` no longer reruns the whole suite, reported three times"): people log more when they see it helps.
+6. **Promote a rule that is not enough.** A rule already written (an `AGENTS.md` line, a kit practice, a rationalization table row) that frictions of category `rule` show broken again becomes a check: an eval case, a guardrail, or a `doctor` check. Text the agent ignores twice is not going to work a third time.
+7. **Remove a rule that no longer serves.** Each "Things the agent gets wrong" line carries its date (`since YYYY-MM`). A line older than six months with no friction since is removed, or kept with one line explaining why. Rules only ever added make the context grow until the agent stops reading it.
+8. An upstream skill the team departs from is rewritten as a short in-house version, same name, same command; the old one stays available through `extra_skills`. A widely used contributed skill (`skills/contrib/`) moves to `skills/internal/`; a contributed skill without a reachable owner is removed.
+9. Rerun the tests and `evals/run.py`, publish the version, and record in the `CHANGELOG` what changed and why.
+10. When a fix answers frictions, say so in one line in the `CHANGELOG` with their ids: "`/test` no longer reruns the whole suite (frictions: a1b2c3, d4e5f6)". After `update`, `usage` tells each person which of their frictions a version fixed: people log more when they see it helps.
 
 ## Data and privacy
 

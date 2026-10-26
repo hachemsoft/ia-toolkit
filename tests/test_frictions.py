@@ -1,4 +1,4 @@
-import contextlib, io, json, os, subprocess, sys, tempfile, unittest
+import contextlib, io, json, os, re, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply, usage
 from installer.core import read_json, ROOT
@@ -76,5 +76,32 @@ class FrictionStdinTests(unittest.TestCase):
  def test_command_prompt_uses_stdin(self):
   prompt=(ROOT/'commands/friction.md').read_text(encoding='utf-8')
   self.assertIn("<<'FRICTION'",prompt);self.assertNotIn('--text "',prompt)
+
+class FrictionLoopTests(unittest.TestCase):
+ def test_id_cited_and_fixed_version_found(self):
+  from installer.core import fixed_frictions,friction_id
+  self.assertEqual(friction_id('2026-10-26T10:00:00Z','x'),friction_id('2026-10-26T10:00:00Z','x'))
+  log='# Changelog\n\n## 0.23.0\nOther.\n\n## 0.22.0\n`/test` no longer reruns the whole suite (frictions: a1b2c3, D4E5F6).\n'
+  self.assertEqual(fixed_frictions(log),{'a1b2c3':'0.22.0','d4e5f6':'0.22.0'})
+ def test_script_stores_id_and_usage_exports_it(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   home=Path(tmp)
+   with contextlib.redirect_stdout(io.StringIO()):apply('general',home,False,{'email':'t@example.org','source':'test'},'gemini')
+   proc=subprocess.run([sys.executable,'-I',str(home/'.ai-kit/bin/friction.py'),'--category','rule','--command','build','--cli','gemini'],input='Ignored the AGENTS.md rule on migrations'.encode('utf-8'),capture_output=True,env={**os.environ,'HOME':tmp,'USERPROFILE':tmp})
+   self.assertEqual(proc.returncode,0,proc.stderr)
+   entry=json.loads((home/'.ai-kit/frictions.jsonl').read_text(encoding='utf-8').splitlines()[0])
+   self.assertRegex(entry['id'],r'^[0-9a-f]{6}$');self.assertEqual(entry['category'],'rule')
+   # Une ligne écrite avant les identifiants en reçoit un à la lecture.
+   with open(home/'.ai-kit/frictions.jsonl','a',encoding='utf-8') as h:h.write(json.dumps({'ts':entry['ts'],'category':'docs','command':'none','text':'old line'})+'\n')
+   out=home/'report.json'
+   with contextlib.redirect_stdout(io.StringIO()):usage(home,as_json=out)
+   ids=[f['id'] for f in json.loads(out.read_text(encoding='utf-8'))['frictions']]
+   self.assertEqual(len(ids),2);self.assertTrue(all(re.fullmatch(r'[0-9a-f]{6}',i) for i in ids))
+ def test_aggregate_drafts_one_ticket_per_group(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   r={'sessions':1,'prompts':1,'frictions':[{'id':'a1b2c3','category':'rule','command':'build','text':'t1'},{'id':'d4e5f6','category':'rule','command':'build','text':'t2'},{'id':'0f0f0f','category':'docs','command':'none','text':'t3'}]}
+   Path(tmp,'a.json').write_text(json.dumps(r),encoding='utf-8')
+   proc=subprocess.run([sys.executable,'-I',str(ROOT/'scripts/usage-aggregate.py'),str(Path(tmp,'a.json')),'--draft-issues'],capture_output=True,text=True,encoding='utf-8')
+   self.assertIn('# Ticket drafts (1)',proc.stdout);self.assertIn('(frictions: a1b2c3, d4e5f6)',proc.stdout);self.assertIn('turn it into a check',proc.stdout);self.assertNotIn('0f0f0f`',proc.stdout.split('# Ticket drafts')[1])
 
 if __name__=='__main__':unittest.main()

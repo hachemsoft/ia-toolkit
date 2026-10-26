@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Aggregates several `installer usage --json` reports (one per machine) into a Markdown summary for the usage review.
 
-Usage: python3 scripts/usage-aggregate.py report-a.json report-b.json ... [--catalog skills/catalog.json]
-No dependencies. Nothing is sent: the files are the ones people chose to share.
+Usage: python3 scripts/usage-aggregate.py report-a.json report-b.json ... [--catalog skills/catalog.json] [--draft-issues]
+No dependencies. Nothing is sent: the files are the ones people chose to share. --draft-issues prints one ticket
+draft per group of frictions, to paste into the team's tracker by hand; nothing is created automatically.
 """
 import argparse
 import json
@@ -19,6 +20,38 @@ def table(title, counter, unit='×'):
     lines += ['| `' + k + '` | ' + str(v) + ' |' for k, v in counter.most_common()]
     return '\n'.join(lines) if counter else '### ' + title + '\n\nNone.'
 
+# Where a fix usually goes, by friction category (support rule of docs/usage-review.md).
+FIX_HINTS = {
+    'command': 'fix the command prompt, and add an eval case that reproduces it',
+    'skill': 'fix the skill or its description (when it fires), and add an eval case',
+    'guardrail': 'adjust the guardrail or its message, or document the legitimate case',
+    'rule': 'the written rule is not enough: turn it into a check (eval case, guardrail or doctor check)',
+    'docs': 'fix the page, or add a Troubleshooting line',
+    'tool': 'add a doctor check or a Troubleshooting line',
+    'auth': 'add a doctor --live diagnosis or a Troubleshooting line',
+    'other': 'decide the category first, then apply its fix',
+}
+
+def draft_issues(frictions):
+    """One ticket draft per group of two or more frictions (same category, same command), in Markdown."""
+    groups = {}
+    for f in frictions:
+        groups.setdefault((str(f.get('category')), str(f.get('command'))), []).append(f)
+    drafts = []
+    for (category, command), items in sorted(groups.items(), key=lambda kv: -len(kv[1])):
+        if len(items) < 2:
+            continue
+        ids = [str(f.get('id')) for f in items if f.get('id')]
+        lines = ['## [friction] ' + category + ' on /' + command + ' (' + str(len(items)) + ' reports)', '',
+                 '**Reported**', '']
+        for f in items:
+            ctx = ', '.join(str(f.get(k)) for k in ('cli', 'os', 'kit', 'profile') if f.get(k))
+            lines.append('- `' + str(f.get('id', '?')) + '` ' + str(f.get('text', '')) + (' (' + ctx + ')' if ctx else ''))
+        lines += ['', '**Suggested fix**: ' + FIX_HINTS.get(category, FIX_HINTS['other']) + '.', '',
+                  '**When fixed**: cite them in the CHANGELOG line of the fix: `(frictions: ' + ', '.join(ids) + ')`; each person then sees it in `usage`.', '']
+        drafts.append('\n'.join(lines))
+    return drafts
+
 def main(argv=None):
     for stream in (sys.stdout, sys.stderr):
         try:
@@ -27,6 +60,7 @@ def main(argv=None):
             pass
     parser = argparse.ArgumentParser(description='Aggregate usage reports.')
     parser.add_argument('files', nargs='+')
+    parser.add_argument('--draft-issues', action='store_true', help='print one ticket draft per group of frictions (nothing is created)')
     parser.add_argument('--catalog', default=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'skills', 'catalog.json'))
     args = parser.parse_args(argv)
     reports = []
@@ -72,13 +106,16 @@ def main(argv=None):
         repeated += int(r.get('repeated_prompts', 0) or 0)
     out += ['Measured signals: unknown commands typed ' + (', '.join('/' + k + ' ×' + str(v) for k, v in unknown.most_common()) or 'none') + '; requests repeated within one session: ' + str(repeated) + '.', '']
     if frictions:
-        out += ['| Category | Command | Friction | Context |', '| --- | --- | --- | --- |']
+        out += ['| Id | Category | Command | Friction | Context |', '| --- | --- | --- | --- | --- |']
         for f in sorted(frictions, key=lambda f: (str(f.get('category')), str(f.get('command')))):
             ctx = ' '.join(str(f.get(k)) for k in ('cli', 'os', 'kit', 'profile') if f.get(k)) + (' (auto)' if f.get('source') == 'doctor' else '')
-            out.append('| ' + str(f.get('category')) + ' | /' + str(f.get('command')) + ' | ' + str(f.get('text', '')).replace('|', '/') + ' | ' + ctx + ' |')
+            out.append('| `' + str(f.get('id', '')) + '` | ' + str(f.get('category')) + ' | /' + str(f.get('command')) + ' | ' + str(f.get('text', '')).replace('|', '/') + ' | ' + ctx + ' |')
         out += ['', 'By category: ' + ', '.join(k + ' ×' + str(v) for k, v in categories.most_common())]
     else:
         out.append('None.')
+    if args.draft_issues:
+        drafts = draft_issues(frictions)
+        out += ['', '# Ticket drafts (' + str(len(drafts)) + ')', '', 'Paste each draft into the team\'s tracker by hand; nothing has been created.', ''] + (drafts or ['No group of two or more frictions.'])
     print('\n'.join(out))
     return 0
 

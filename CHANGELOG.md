@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+Repo skills that replace kit skills: `doctor`, run from a repo, lists the skills of `.agents/skills`, `.gemini/skills` or `.codex/skills` that carry the name of a kit skill or command. The kit context states that a repo file never lifts a company or team practice. `docs/compliance.md` gets a "Security limits" section.
+Friction loop: each friction gets a short id; `usage-aggregate.py --draft-issues` prints one ticket draft per group of frictions, to paste by hand (nothing is created); a CHANGELOG line citing `(frictions: <ids>)` lets `usage` tell each person which of their frictions a version fixed. Sixth friction signal and `rule` category: the agent went against a written rule. The usage review promotes a rule broken again to a check and removes rules older than six months with no friction. "Things the agent gets wrong" lines carry their date (`since YYYY-MM`). `/retro` proposes one change at a time, written only after approval.
+
 ## 0.21.0
 Security hardening after the audit. `dbt-prod-guard`: `dbt` recognized inside `sh -c "…"`; a target only known at run time (`$T`, `$(…)`, backticks, glued quotes) is blocked; `AI_KIT_ALLOW_PROD` ignored when set in a `.env` file the CLI loads. `protected-paths`: always protects the configuration of the kit and of the CLIs (an agent cannot switch off its own guardrails) and resolves symbolic links. `doctor`: for each enabled guardrail, checks its Python and script, runs it on a case it must block, and reports Codex guardrails not yet approved. Guardrails run with `python -I`. `/friction` passes the sentence on standard input (no shell expansion) and accepts `--cli codex`, which was refused. Backup manifest written `0600`.
 

@@ -205,5 +205,21 @@ class InvariantTests(unittest.TestCase):
                         missing.append(f'{source.relative_to(ROOT)}:{node.lineno}')
         self.assertEqual(missing, [])
 
+    def test_doctor_lists_repo_skills_that_replace_kit_skills(self):
+        """Phase 2 : un skill de repo qui porte le nom d'un skill du kit est signalé par doctor, lancé depuis ce repo."""
+        from installer.cli import doctor
+        install(self.home, target='gemini')
+        repo = Path(self.temp.name)/'repo'
+        (repo/'.git').mkdir(parents=True)
+        (repo/'.agents/skills/code-review').mkdir(parents=True)
+        (repo/'.agents/skills/code-review/SKILL.md').write_text('---\nname: code-review\ndescription: x\n---\n', encoding='utf-8')
+        (repo/'.agents/skills/team-only').mkdir(parents=True)
+        (repo/'.agents/skills/team-only/SKILL.md').write_text('---\nname: team-only\ndescription: x\n---\n', encoding='utf-8')
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            doctor(self.home, cwd=repo/'.agents')
+        self.assertIn('replaces kit skills: .agents/skills/code-review', out.getvalue())
+        self.assertNotIn('team-only', out.getvalue())
+
 if __name__ == '__main__':
     unittest.main()

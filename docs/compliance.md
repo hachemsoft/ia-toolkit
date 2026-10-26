@@ -39,6 +39,13 @@ A coding assistant does not, in principle, fall under the AI Act's high-risk use
 - **No fleet management.** The kit is not enforced on workstations, reports nothing and does not check who installed it.
 - **No model inventory.** The model used depends on the CLI and the account; `overrides.json` can set it, without guaranteeing it.
 
+## Security limits
+
+- **The guardrails prevent honest mistakes; they are not a security barrier.** They read a tool call before it runs. A command run through a project script (`make deploy`), a write through the shell, or an agent misled by planted content can get past them. Details in [guardrails](hooks.md#limits).
+- **The real barriers are elsewhere:** the CLI's own sandbox and permission settings, the rights of the account the agent runs under, and keeping production credentials off workstations (production deployments and dbt production profiles served by CI only).
+- **Repo content is input, not authority.** A repository can ship its own `AGENTS.md` and skills, and a repo skill replaces a kit skill of the same name. Require a CODEOWNERS review on `AGENTS.md` and `.agents/` in each repository; `doctor`, run from a repo, lists the kit skills that repo replaces. The kit context tells the agent that a repo file never lifts a company practice.
+- **Supply chain of the kit itself:** anyone who can push to the kit repository changes what `update` installs on every workstation. Protect its main branch, require review on `installer/`, `runtime/` and `scripts/`, and update from release tags.
+
 ## What remains the organization's responsibility
 
 1. Choose the CLIs and the model provider contracts, and check what they provide for data (retention, training, location).
