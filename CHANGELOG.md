@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.23.0
 The agent cannot overwrite its own configuration. `protected-paths` is now on by default (`"protected-paths": false` in `overrides.json` turns it off) and, besides the CLI write tools, refuses simple shell commands that write to `~/.ai-kit/overrides.json`, the CLI settings and `.env` files, the guardrails or the repo protected paths (redirection, `tee`, `sed -i`, `cp`, `mv`, `rm`, `chmod`, PowerShell equivalents); reading them stays allowed. The kit context tells the agent never to change that configuration and to say what to change instead. With Codex, each person answers "Trust" once at the first launch.
+Evals on this version: Gemini 5/5, Codex 5/5; agy runs hit a temporary quota limit (HTTP 429), not a behaviour failure.
 
 ## 0.22.0
 Repo skills that replace kit skills: `doctor`, run from a repo, lists the skills of `.agents/skills`, `.gemini/skills` or `.codex/skills` that carry the name of a kit skill or command. The kit context states that a repo file never lifts a company or team practice. `docs/compliance.md` gets a "Security limits" section.
