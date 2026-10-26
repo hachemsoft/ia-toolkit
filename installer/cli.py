@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -14,7 +15,7 @@ import uuid
 from datetime import datetime, timezone
 
 from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, KitError, read_json, json_bytes, digest,
-                   safe_id, inside, quote_path, load_commands, _ts)
+                   safe_id, inside, hook_command, load_commands, _ts)
 from .adapters import ADAPTERS
 from .interface import ContextHost, DoctorContext, LiveCheck, Plan
 
@@ -333,7 +334,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto'):
             continue
         spec = hook_manifest[name]
         script = hooks_dir/spec['script']
-        enabled_hooks[name] = {'event': spec['event'], 'group': {'matcher': spec['matcher'], 'hooks': [{'name': 'ai-kit-'+name, 'type': 'command', 'command': quote_path(sys.executable)+' '+quote_path(script)}]}}
+        enabled_hooks[name] = {'event': spec['event'], 'group': {'matcher': spec['matcher'], 'hooks': [{'name': 'ai-kit-'+name, 'type': 'command', 'command': hook_command(script)}]}}
     mcp_entries = overrides.get('mcp',{})
     if not isinstance(mcp_entries,dict):
         raise KitError('mcp must be an object.')
@@ -421,6 +422,8 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto'):
                     if os.name != 'nt':
                         dest.chmod(0o600)
             (backup/'manifest.json').write_bytes(json_bytes({'created':[p.relative_to(home).as_posix() for p,b in originals.items() if b is None],'restore':'Copy the backed-up files to the home folder; remove the created files only if unchanged.'}))
+            if os.name != 'nt':
+                (backup/'manifest.json').chmod(0o600)
             for path,data in writes.items():
                 atomic_write(path,data)
             for path in deletes:
@@ -469,6 +472,41 @@ def atomic_write(path,data):
         if os.path.exists(tmp):
             os.unlink(tmp)
 
+# A known case each guardrail must block; doctor runs it to prove the guardrail works, not just that its file exists.
+GUARDRAIL_PROBES = {
+    'dbt-prod-guard': lambda home: {'tool_name': 'run_shell_command', 'tool_input': {'command': 'dbt run --target prod'}, 'cwd': str(home)},
+    'protected-paths': lambda home: {'tool_name': 'write_file', 'tool_input': {'file_path': str(home/'.ai-kit'/'overrides.json')}, 'cwd': str(home)},
+}
+
+def command_parts(command):
+    """Interpreter and script of a kit guardrail command (hook_command: "<python>" -I "<script>")."""
+    parts = [part.strip('"\'') for part in (shlex.split(command, posix=(os.name != 'nt')) or [])]
+    return (Path(parts[0]), Path(parts[-1])) if len(parts) >= 2 else (None, None)
+
+def guardrail_checks(home, state, status):
+    """Each enabled guardrail: its Python and script exist, and it really blocks a known case. A guardrail that cannot run lets everything through."""
+    for name, hook in sorted(state.get('hooks', {}).items()):
+        interpreter, script = command_parts(hook['group']['hooks'][0]['command'])
+        if not interpreter or not interpreter.is_file():
+            status(False, 'Guardrail '+name+': Python not found ('+str(interpreter)+'); run update to point to the current Python')
+            continue
+        if not script.is_file():
+            status(False, 'Guardrail '+name+': script missing ('+str(script)+'); run update')
+            continue
+        probe = GUARDRAIL_PROBES.get(name)
+        if not probe:
+            continue
+        env = {k: v for k, v in os.environ.items() if k != 'AI_KIT_ALLOW_PROD'}
+        env.update({'HOME': str(home), 'USERPROFILE': str(home)})
+        try:
+            proc = subprocess.run([str(interpreter), '-I', str(script)], input=json.dumps(probe(home)), capture_output=True, text=True,
+                                  encoding='utf-8', errors='replace', timeout=20, env=env)
+            answer = json.loads(proc.stdout or '{}')
+        except (OSError, ValueError, subprocess.SubprocessError):
+            answer = {}
+        blocked = answer.get('decision') == 'deny' or answer.get('hookSpecificOutput', {}).get('permissionDecision') == 'deny'
+        status(blocked, 'Guardrail '+name+': blocks a known case when run')
+
 def doctor(home):
     issues = 0
     def status(ok,message):
@@ -494,6 +532,7 @@ def doctor(home):
         for rel,expected in state.get('files',{}).items():
             path = inside(home,rel)
             status(path.is_file() and digest(path.read_bytes())==expected,rel)
+        guardrail_checks(home, state, status)
         installed = set(state.get('installed', {}).get('clis') or [a.NAME for a in ADAPTERS])
         for adapter in ADAPTERS:
             if adapter.NAME in installed:

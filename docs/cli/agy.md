@@ -31,6 +31,10 @@ After installation, restart agy: it discovers a new plugin only at startup.
 - agy lists the profile's `ai-kit-*` agents.
 - `/guide` and `/intent` work through the command skills; `/guide` routes to `/diagnose` for a dbt model that duplicates rows.
 
+## Protected configuration
+
+The `protected-paths` guardrail always blocks agent writes to the `ai-kit` plugin folder `~/.gemini/config/plugins/ai-kit/`.
+
 ## Known limits
 
 - **Print mode and permissions**: agy drops the whole response as soon as a tool asks for a permission it cannot request. Commands that read the repository (`/intent`, `/explain`, `/test`) therefore fail in `agy -p` until the person has approved read rules in their own agy settings. In interactive mode, agy asks for permission and everything works. The evals runner classifies this case as an infrastructure error, not a behavior failure.

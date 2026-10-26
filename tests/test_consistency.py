@@ -26,7 +26,7 @@ class ConsistencyTests(unittest.TestCase):
   for m in set(re.findall(r'`/([a-z]+)',text)):self.assertIn(m,names,'/'+m)
  def test_no_upstream_author_or_internal_names(self):
   for f in ROOT.rglob('*'):
-   if f.is_file() and f.suffix in ('.md','.json','.toml','.py','.sh','.ps1','.yml') and 'dist' not in f.parts and '.codegraph' not in f.parts and f.name!='LICENSE-UPSTREAM-MIT':
+   if f.is_file() and f.suffix in ('.md','.json','.toml','.py','.sh','.ps1','.yml') and not {'dist','build','.debug','.codegraph'} & set(f.parts) and f.name!='LICENSE-UPSTREAM-MIT':
     t=f.read_text(encoding='utf-8',errors='replace').lower()
     for term in ('ask-'+'matt','setup-'+'matt'):self.assertNotIn(term,t,str(f))
  def test_contrib_skills_rules(self):

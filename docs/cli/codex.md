@@ -21,6 +21,8 @@ The `config.toml` block is appended to the end of the file and checked before wr
 
 Codex runs a hook only after it has been approved: on the first launch after installation, it shows "Hooks need review". Answer "Trust all and continue"; "Continue without trusting" leaves them inactive. The kit never writes this approval for you. In non-interactive mode (`codex exec`), an unapproved hook does not run.
 
+
+`doctor` reports `[Check]` while the kit guardrails are not approved in Codex (no `[hooks.state."…config.toml:pre_tool_use:…"]` entry), and recalls that Codex asks again when a guardrail command changes after an update. The `protected-paths` guardrail always blocks agent writes to `~/.codex/config.toml` and `~/.codex/AGENTS.md`.
 ## Check in Codex
 
 `codex doctor` (configuration loaded, `config.toml parse ok`), `/skills` in Codex, then `$guide I need to …` in a repository.

@@ -111,12 +111,41 @@ def main():
             return
     print('{}')
 
+# Configuration of the kit and of the CLIs, always protected: an agent must not be able to switch off its own guardrails.
+# Relative to the home folder; a trailing / protects a whole folder. ~/.ai-kit/learn/ (personal /learn progress) stays writable.
+CONFIG_PATHS = ('.ai-kit/overrides.json', '.ai-kit/state.json', '.ai-kit/hooks/', '.ai-kit/bin/', '.ai-kit/backups/', '.ai-kit/context/00_',
+                '.ai-kit/context/10_', '.ai-kit/context/20_', '.gemini/settings.json', '.gemini/.env', '.gemini/config/plugins/ai-kit/',
+                '.codex/config.toml', '.codex/AGENTS.md')
+
+def real(path):
+    """Absolute path with symbolic links resolved (a link to a protected folder is that folder)."""
+    return os.path.realpath(os.path.abspath(path))
+
+def config_reason(absolute, directories):
+    home = real(os.path.expanduser('~'))
+    try:
+        relative = os.path.relpath(absolute, home).replace(os.sep, '/')
+    except ValueError:
+        relative = '..'
+    if not relative.startswith('..'):
+        for entry in CONFIG_PATHS:
+            if relative.lower() == entry.lower().rstrip('/') or relative.lower().startswith(entry.lower()):
+                return 'Blocked by the kit: "~/' + relative + '" is configuration of the kit or of a CLI; the agent does not change it. Make the change yourself (then run update).'
+    for directory in directories:
+        if absolute.lower() == os.path.join(real(directory), '.ai-kit', 'protected-paths').lower():
+            return 'Blocked by the kit: the repo protected paths (.ai-kit/protected-paths) are changed by a person, through a merge request.'
+    return None
+
 def check(file_path, cwd):
     """Reason for refusal if the file falls under a protected path, otherwise None."""
-    absolute = file_path if os.path.isabs(file_path) else os.path.join(cwd, file_path)
-    for directory in pattern_dirs(cwd):
+    absolute = real(file_path if os.path.isabs(file_path) else os.path.join(cwd, file_path))
+    directories = pattern_dirs(cwd)
+    reason = config_reason(absolute, directories)
+    if reason:
+        return reason
+    for directory in directories:
         try:
-            relative = os.path.relpath(os.path.normpath(absolute), os.path.normpath(directory)).replace(os.sep, '/')
+            relative = os.path.relpath(absolute, real(directory)).replace(os.sep, '/')
         except ValueError:
             # Windows: a different drive from this folder, so outside its patterns.
             continue

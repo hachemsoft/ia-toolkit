@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+Security hardening after the audit. `dbt-prod-guard`: `dbt` recognized inside `sh -c "…"`; a target only known at run time (`$T`, `$(…)`, backticks, glued quotes) is blocked; `AI_KIT_ALLOW_PROD` ignored when set in a `.env` file the CLI loads. `protected-paths`: always protects the configuration of the kit and of the CLIs (an agent cannot switch off its own guardrails) and resolves symbolic links. `doctor`: for each enabled guardrail, checks its Python and script, runs it on a case it must block, and reports Codex guardrails not yet approved. Guardrails run with `python -I`. `/friction` passes the sentence on standard input (no shell expansion) and accepts `--cli codex`, which was refused. Backup manifest written `0600`.
+
 ## 0.20.0
 Everything in English: documentation, installer and script messages, domain playbooks, practices, context templates, agent instructions, eval cases and tests. Agents still reply in the person's language; the default `30_USER.md` now says "reply in the language I write in" (existing files are never rewritten). Docs renamed: `troubleshooting.md`, `compliance.md`, `installer.md`, `pilot.md`, `cli/gemini-to-agy.md`. Codex managed blocks get English markers; the previous markers are recognized and replaced on `update`. Doctor prefixes: `[Check]`, `[Optional]`.
 Eval patterns accept English and French answers, since agents reply in the person's language. Evals on this version: Gemini 5/5 (the intent and dbt cases replayed twice), agy 5/5, Codex 5/5.

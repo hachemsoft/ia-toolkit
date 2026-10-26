@@ -26,6 +26,10 @@ The kit lines in `.env` carry the comment `# ai-kit :` and disappear when the ke
 
 `/memory show` (the four layers before the repository context), `/commands list`, `/skills list`, `/agents list` (after `/agents reload`), `/mcp`.
 
+## Protected configuration
+
+The `protected-paths` guardrail always blocks agent writes to `~/.gemini/settings.json` and `~/.gemini/.env`, and `dbt-prod-guard` ignores `AI_KIT_ALLOW_PROD` when it is set in `~/.gemini/.env` or a repo `.env`, which Gemini loads into its environment.
+
 ## Specifics
 
 - **`~/.agents/skills` alias**: Gemini reads it too, and it wins over `~/.gemini/skills` when names match ("Skill conflict detected" at startup). `doctor` lists the kit skills hidden this way.

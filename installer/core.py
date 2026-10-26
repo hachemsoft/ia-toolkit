@@ -65,6 +65,10 @@ def merge_defaults(current, defaults):
 def quote_path(path):
     return '"'+str(path)+'"' if os.name == 'nt' else shlex.quote(str(path))
 
+def hook_command(script):
+    """Command a CLI runs for a kit guardrail: this Python, isolated (-I: no PYTHON* variables, no current folder on the import path)."""
+    return quote_path(sys.executable)+' -I '+quote_path(script)
+
 def split_block(text, markers, label):
     """Text before, managed block (markers included) and text after; error if the markers are damaged."""
     start, end = markers

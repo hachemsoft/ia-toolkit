@@ -2,13 +2,12 @@
 import json
 import re
 import shutil
-import sys
 
 from pathlib import Path
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (USER_CONTEXT, KitError, digest, quote_path, split_block, place_block, command_skill_text)
+from ..core import (USER_CONTEXT, KitError, digest, hook_command, split_block, place_block, command_skill_text)
 
 CODEX_DIR = '.codex'
 # Managed block markers: no path, so they never change when a folder is renamed.
@@ -154,7 +153,7 @@ def finalize(p: Plan, active: bool = True) -> None:
                 raise KitError('~/.codex/config.toml already defines hooks.PreToolUse in another form: the kit cannot add its guardrails without rewriting it.')
             if re.search(r'^\s*\[\s*(agents|mcp_servers)\.ai-kit-', outside, re.M):
                 raise KitError('~/.codex/config.toml already contains ai-kit- entries outside the kit block: remove them, then update.')
-            hook_commands = [quote_path(sys.executable)+' '+quote_path(p.hooks_dir/p.hook_manifest[name]['script']) for name in p.enabled_hooks]
+            hook_commands = [hook_command(p.hooks_dir/p.hook_manifest[name]['script']) for name in p.enabled_hooks]
             block = codex_config_block(p.adapter_data.get(NAME, {}).get('agents', {}), hook_commands, p.enabled_mcp)
         if block is not None:
             # Normalised line endings: a 30_USER.md edited on Windows (CRLF) must not change the digest of the block read back.
@@ -199,7 +198,13 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     if (home/CODEX_DIR/'AGENTS.override.md').exists():
         status(False, '~/.codex/AGENTS.override.md exists: Codex reads it instead of AGENTS.md, the kit context is ignored')
     if state.get('hooks'):
-        print('[Info] Guardrails declared to Codex: they only run after approval in Codex ("Trust" on first launch).')
+        config = home/CODEX_DIR/'config.toml'
+        text = config.read_text(encoding='utf-8') if config.is_file() else ''
+        # Codex records each approved hook under [hooks.state."<config file>:pre_tool_use:<group>:<hook>"] with a trusted_hash.
+        approved = len(re.findall(r'^\[hooks\.state\."(?![^"]*<session-flags>)[^"]*config\.toml:pre_tool_use:\d+:\d+"\]', text, re.M))
+        status(approved >= len(state['hooks']), 'Codex: kit guardrails approved in Codex'+('' if approved >= len(state['hooks']) else ' (not yet: start codex and answer "Trust all and continue", otherwise they never run)'))
+        if approved:
+            print('[Info] If Codex asks again after an update ("Hooks need review"), the guardrail command changed: answer Trust again.')
     if not shutil.which('codex'):
         print('[Info] Codex set up by the kit but not on the PATH.')
 

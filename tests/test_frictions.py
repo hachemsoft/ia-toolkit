@@ -64,4 +64,17 @@ class FrictionSignalTests(unittest.TestCase):
   (self.home/'a.json').write_text(json.dumps({'sessions':1,'prompts':1,'frictions':[f('command','test'),f('command','test'),f('docs','intent')],'unknown_commands':{'spec':2},'repeated_prompts':3}),encoding='utf-8')
   p=subprocess.run([sys.executable,'-I',str(ROOT/'scripts/usage-aggregate.py'),str(self.home/'a.json')],capture_output=True,text=True,check=True)
   self.assertIn('| command | /test | 2 |',p.stdout);self.assertNotIn('| docs | /intent | 1 |',p.stdout);self.assertIn('/spec ×2',p.stdout);self.assertIn('session: 3',p.stdout);self.assertIn('gemini mac 0.15 data-analyst',p.stdout)
+class FrictionStdinTests(unittest.TestCase):
+ def test_sentence_from_stdin_is_never_expanded(self):
+  # Audit : la phrase passe par l'entrée standard ; une syntaxe shell y reste du texte.
+  with tempfile.TemporaryDirectory() as tmp:
+   marker=Path(tmp)/'pwned';text='/test reran everything $(touch '+str(marker)+') and `id` é'
+   proc=subprocess.run([sys.executable,'-I',str(ROOT/'runtime/friction.py'),'--category','command','--command','test','--cli','codex'],input=text.encode('utf-8'),capture_output=True,env={**os.environ,'HOME':tmp,'USERPROFILE':tmp})
+   self.assertEqual(proc.returncode,0,proc.stderr)
+   entry=json.loads((Path(tmp)/'.ai-kit/frictions.jsonl').read_text(encoding='utf-8').splitlines()[0])
+   self.assertEqual(entry['text'],text);self.assertEqual(entry['cli'],'codex');self.assertFalse(marker.exists())
+ def test_command_prompt_uses_stdin(self):
+  prompt=(ROOT/'commands/friction.md').read_text(encoding='utf-8')
+  self.assertIn("<<'FRICTION'",prompt);self.assertNotIn('--text "',prompt)
+
 if __name__=='__main__':unittest.main()

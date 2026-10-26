@@ -16,6 +16,34 @@ class HookScriptTests(unittest.TestCase):
    # Without -I, so that PYTHONIOENCODING simulates the Windows console.
    proc=subprocess.run([sys.executable,str(H/script)],input=json.dumps(payload).encode('utf-8'),capture_output=True,env={**os.environ,'PYTHONIOENCODING':'cp1252'})
    text=proc.stdout.decode('utf-8');self.assertIn('Blocked by the kit',text,proc.stderr)
+ def test_dbt_guard_closes_audit_bypasses(self):
+  # Contournements relevés par l'audit de sécurité : sh -c, cible connue seulement à l'exécution.
+  for cmd in ('sh -c "dbt run --target prod"',"bash -lc 'dbt build -t prd'",'T=prod; dbt run --target $T','dbt run --target ${TARGET:-prod}','dbt run --target pr""od',"dbt run --target 'p'rod",'dbt run --target $(echo prod)','dbt run --target `echo prod`','DBT_TARGET=$X dbt run'):
+   self.assertEqual(run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}).get('decision'),'deny',cmd)
+  for cmd in ('dbt run --threads 4 --target dev','dbt run --target "dev"','dbt run --select tag:$TAG --target dev','python prod.py --target $X','echo $HOME && dbt test -t dev'):
+   self.assertNotIn('decision',run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}),cmd)
+ def test_dbt_allow_ignored_when_set_in_env_file(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   payload={'tool_name':'run_shell_command','tool_input':{'command':'dbt run --target prod'},'cwd':tmp}
+   self.assertNotIn('decision',run_hook('dbt-prod-guard.py',payload,{'AI_KIT_ALLOW_PROD':'1'}))
+   Path(tmp,'.env').write_text('AI_KIT_ALLOW_PROD=1\n',encoding='utf-8')
+   self.assertEqual(run_hook('dbt-prod-guard.py',payload,{'AI_KIT_ALLOW_PROD':'1'}).get('decision'),'deny')
+ def test_protected_paths_symlink_and_config(self):
+  # Audit : un lien vers un dossier protégé, et la configuration du kit et des CLI, protégée même sans motif du repo.
+  with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as fake_home:
+   t=Path(tmp);(t/'.git').mkdir();(t/'.ai-kit').mkdir();(t/'.ai-kit/protected-paths').write_text('target/**\n',encoding='utf-8');(t/'target').mkdir()
+   env={'HOME':fake_home,'USERPROFILE':fake_home}
+   def decide(path):
+    return run_hook('protected-paths.py',{'tool_name':'write_file','tool_input':{'file_path':path},'cwd':tmp},env).get('decision')
+   try:(t/'link').symlink_to(t/'target',target_is_directory=True)
+   except (OSError,NotImplementedError):pass
+   if (t/'link').exists():self.assertEqual(decide('link/a.sql'),'deny')
+   self.assertEqual(decide('.ai-kit/protected-paths'),'deny')
+   for rel in ('.gemini/settings.json','.gemini/.env','.ai-kit/overrides.json','.ai-kit/hooks/dbt-prod-guard.py','.codex/config.toml','.gemini/config/plugins/ai-kit/hooks.json'):
+    self.assertEqual(decide(str(Path(fake_home)/rel)),'deny',rel)
+   for rel in ('.ai-kit/learn/topic/progress.md','.gemini/30_USER.md','notes.md'):
+    self.assertIsNone(decide(str(Path(fake_home)/rel)),rel)
+   self.assertIsNone(decide('models/a.sql'))
  def test_dbt_dev_allowed_and_non_dbt_ignored(self):
   for cmd in ('dbt test -t dev','dbt run','ls prod','python prod.py --target prod','dbt run -t prod-like','dbt run --target production_dev','mydbt run -t prod'):
    self.assertNotIn('decision',run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}),cmd)
@@ -78,6 +106,28 @@ class HookInstallTests(unittest.TestCase):
  def overrides(self,v):
   p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
  def settings(self):return read_json(self.home/'.gemini/settings.json')
+ def doctor_text(self):
+  out=io.StringIO()
+  with contextlib.redirect_stdout(out):doctor(self.home)
+  return out.getvalue()
+ def test_doctor_proves_guardrails_block(self):
+  # Audit : un garde-fou déclaré doit être prouvé, pas seulement présent.
+  self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':True}});self.run_kit()
+  text=self.doctor_text()
+  self.assertIn('[OK] Guardrail dbt-prod-guard: blocks a known case when run',text);self.assertIn('[OK] Guardrail protected-paths: blocks a known case when run',text)
+ def test_doctor_flags_missing_interpreter(self):
+  self.overrides({'hooks':{'dbt-prod-guard':True}});self.run_kit()
+  sp=self.home/'.ai-kit/state.json';st=read_json(sp)
+  hook=st['hooks']['dbt-prod-guard']['group']['hooks'][0];hook['command']=hook['command'].replace(sys.executable,str(self.home/'gone'/'python'))
+  sp.write_text(json.dumps(st),encoding='utf-8')
+  self.assertIn('[Check] Guardrail dbt-prod-guard: Python not found',self.doctor_text())
+ def test_doctor_flags_unapproved_codex_guardrails(self):
+  self.overrides({'hooks':{'dbt-prod-guard':True}})
+  with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'all')
+  self.assertIn('[Check] Codex: kit guardrails approved in Codex (not yet',self.doctor_text())
+  cfg=self.home/'.codex/config.toml'
+  cfg.write_text(cfg.read_text(encoding='utf-8')+'\n[hooks.state."'+str(cfg).replace('\\','/')+':pre_tool_use:0:0"]\ntrusted_hash = "sha256:00"\n',encoding='utf-8')
+  self.assertIn('[OK] Codex: kit guardrails approved in Codex',self.doctor_text())
  def test_disabled_by_default(self):
   self.run_kit();self.assertNotIn('hooks',self.settings());self.assertFalse((self.home/'.gemini/hooks').exists());self.assertEqual(read_json(self.home/'.ai-kit/state.json')['hooks'],{})
  def test_enable_then_disable(self):

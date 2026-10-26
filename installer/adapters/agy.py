@@ -2,7 +2,6 @@
 import json
 import shutil
 import subprocess
-import sys
 
 from pathlib import Path
 from typing import Optional
@@ -10,7 +9,7 @@ from typing import Optional
 from . import gemini
 from ..interface import DoctorContext, Plan, Status
 from ..core import (ROOT, USER_CONTEXT, json_bytes,
-                    quote_path, command_skill_text)
+                    hook_command, command_skill_text)
 
 AGY_PLUGIN = '.gemini/config/plugins/ai-kit'
 
@@ -66,7 +65,7 @@ def install(p: Plan) -> None:
     for name, spec in p.hook_manifest.items():
         script = p.hooks_dir/spec['script']
         matcher = 'run_command' if spec['matcher'] == 'run_shell_command' else '.*(write|replace|edit).*'
-        agy_hooks['ai-kit-'+name] = {'enabled': name in p.enabled_hooks, 'PreToolUse': [{'matcher': matcher, 'hooks': [{'type': 'command', 'command': quote_path(sys.executable)+' '+quote_path(script), 'timeout': 20}]}]}
+        agy_hooks['ai-kit-'+name] = {'enabled': name in p.enabled_hooks, 'PreToolUse': [{'matcher': matcher, 'hooks': [{'type': 'command', 'command': hook_command(script), 'timeout': 20}]}]}
     p.managed_write(plugin/'hooks.json', json_bytes(agy_hooks), 'Plugin agy')
     if p.enabled_mcp:
         p.managed_write(plugin/'mcp_config.json', json_bytes({'mcpServers': p.enabled_mcp}), 'Plugin agy')

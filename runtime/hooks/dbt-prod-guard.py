@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Gemini guardrail (BeforeTool, run_shell_command): blocks a dbt command aimed at a production target.
 
-One-off permission: AI_KIT_ALLOW_PROD=1 in the session environment.
+One-off permission: AI_KIT_ALLOW_PROD=1 exported in the shell that starts the CLI (ignored when it comes from a .env file the CLI loads,
+which the agent could write). A target only known at run time ($VAR, $(…)) is blocked.
 Targets treated as production: prod, production, prd, or the AI_KIT_PROD_TARGETS list (comma-separated).
 Output: JSON {"decision": "deny", "reason": ...} or {} to let it through. Never an exception towards Gemini.
 """
@@ -64,6 +65,36 @@ def use_utf8():
         except (AttributeError, ValueError):
             pass
 
+def unreadable_target(command):
+    """Target value that is only resolved by the shell ($VAR, $(…), backticks, glued quotes): unknown, so treated as unsafe."""
+    for match in re.finditer(r'(?:(?<![\w-])--target|(?<![\w-])-t|\bDBT_TARGET)(?:[\s=]+|(?<=-t))(\S+)', command):
+        value = match.group(1)
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in '"\'':
+            value = value[1:-1]
+        if re.search(r'[$`"\']', value):
+            return match.group(1)
+    return None
+
+def allow_from_env_file(payload):
+    """File that sets AI_KIT_ALLOW_PROD among the .env files Gemini loads (repo folders up to the root, then ~/.gemini/.env), or None."""
+    cwd = payload.get('cwd') or (payload.get('workspacePaths') or [None])[0] or os.getcwd()
+    candidates, current = [], os.path.abspath(cwd)
+    while True:
+        candidates += [os.path.join(current, '.gemini', '.env'), os.path.join(current, '.env')]
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    candidates.append(os.path.join(os.path.expanduser('~'), '.gemini', '.env'))
+    for path in candidates:
+        try:
+            with open(path, encoding='utf-8', errors='replace') as handle:
+                if re.search(r'^\s*(export\s+)?AI_KIT_ALLOW_PROD\s*=', handle.read(), re.M):
+                    return path
+        except OSError:
+            continue
+    return None
+
 def main():
     use_utf8()
     try:
@@ -82,8 +113,8 @@ def main():
     if not isinstance(args, dict):
         args = {'command': args}
     command = as_text(args.get('command') or args.get('cmd') or args.get('CommandLine'))
-    # `dbt`, `./dbt`, `/path/dbt`, `dbt.exe`, any case (case-insensitive file systems).
-    if not re.search(r'(^|[\s;&|/\\])dbt(\.exe)?(\s|$)', command, re.I):
+    # `dbt`, `./dbt`, `/path/dbt`, `dbt.exe`, any case; also right after a quote, a backtick or a parenthesis (`sh -c "dbt …"`, `$(dbt …)`).
+    if not re.search(r'(^|[\s;&|/\\"\'`(])dbt(\.exe)?(\s|$|["\'`)])', command, re.I):
         print('{}')
         return
     targets = [t.strip().lower() for t in os.environ.get('AI_KIT_PROD_TARGETS', 'prod,production,prd').split(',') if t.strip()]
@@ -92,12 +123,20 @@ def main():
     hits = (re.search(r'(?:--target|-t)(?:[\s=]+|(?<=-t))[\'"]?(' + alternation + r')[\'"]?(?![\w-])', command, re.I)
             or re.search(r'\bDBT_TARGET=[\'"]?(' + alternation + r')[\'"]?(?![\w-])', command, re.I))
     if not hits:
+        unreadable = unreadable_target(command)
+        if unreadable:
+            print(json.dumps(deny_output(payload, 'Blocked by the kit: the dbt target "' + unreadable + '" is only known when the command runs, so the kit cannot tell whether it is production. Write the target in plain text, for example --target dev.'), ensure_ascii=False))
+            return
         hits = default_target_hit(command, targets, payload)
     if not hits:
         print('{}')
         return
     if os.environ.get('AI_KIT_ALLOW_PROD') == '1':
-        print(json.dumps({'systemMessage': 'ai-kit: dbt command on a production target allowed by AI_KIT_ALLOW_PROD=1.'}))
+        origin = allow_from_env_file(payload)
+        if not origin:
+            print(json.dumps({'systemMessage': 'ai-kit: dbt command on a production target allowed by AI_KIT_ALLOW_PROD=1.'}))
+            return
+        print(json.dumps(deny_output(payload, 'Blocked by the kit: AI_KIT_ALLOW_PROD is set in ' + origin + ', a file the agent can write. Export it in the shell that starts the CLI instead.'), ensure_ascii=False))
         return
     print(json.dumps(deny_output(payload, 'Blocked by the kit: dbt command on the production target "' + hits.group(1) + '". Use the development target declared in AGENTS.md. An authorised person can export AI_KIT_ALLOW_PROD=1 for this session.'), ensure_ascii=False))
 

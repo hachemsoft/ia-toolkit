@@ -49,10 +49,16 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Log a friction, locally.')
     parser.add_argument('--category', required=True, choices=CATEGORIES)
     parser.add_argument('--command', default='none', help='current kit command, or none')
-    parser.add_argument('--cli', default='unknown', choices=('gemini', 'agy', 'unknown'))
-    parser.add_argument('--text', required=True, help='one sentence, no secret and no prompt text')
+    parser.add_argument('--cli', default='unknown', choices=('gemini', 'agy', 'codex', 'unknown'))
+    parser.add_argument('--text', help='one sentence, no secret and no prompt text; read from standard input when absent (safer: no shell expansion)')
     args = parser.parse_args(argv)
-    text = ' '.join(args.text.split())
+    if args.text is None:
+        try:
+            sys.stdin.reconfigure(encoding='utf-8', errors='replace')  # PowerShell 7 and shells send UTF-8
+        except (AttributeError, ValueError):
+            pass
+    raw = args.text if args.text is not None else sys.stdin.read()
+    text = ' '.join(raw.split())
     if not text or len(text) > 300:
         print('The text must be between 1 and 300 characters.', file=sys.stderr)
         return 2
