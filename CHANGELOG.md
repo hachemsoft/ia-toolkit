@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.21.0
 Security hardening after the audit. `dbt-prod-guard`: `dbt` recognized inside `sh -c "…"`; a target only known at run time (`$T`, `$(…)`, backticks, glued quotes) is blocked; `AI_KIT_ALLOW_PROD` ignored when set in a `.env` file the CLI loads. `protected-paths`: always protects the configuration of the kit and of the CLIs (an agent cannot switch off its own guardrails) and resolves symbolic links. `doctor`: for each enabled guardrail, checks its Python and script, runs it on a case it must block, and reports Codex guardrails not yet approved. Guardrails run with `python -I`. `/friction` passes the sentence on standard input (no shell expansion) and accepts `--cli codex`, which was refused. Backup manifest written `0600`.
 
 ## 0.20.0
