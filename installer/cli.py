@@ -851,6 +851,10 @@ def live_checks(home, announce=False):
             code = max(code, adapter.live(home))
     return code
 
+def interactive():
+    """A person at a terminal: both ends, because on Windows a stdin redirected from NUL also reports isatty()."""
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
 def resolve_identity(args, home, state):
     """Identity confirmed interactively, --user otherwise; never imposed."""
     if args.user:
@@ -861,7 +865,7 @@ def resolve_identity(args, home, state):
         return None
     detected = detect_identity(home)
     shown = detected.get('email') or detected.get('name')
-    if not sys.stdin.isatty():
+    if not interactive():
         if shown:
             print('Detected identity not confirmed: '+shown+'; use --user to record it.')
         return {}
@@ -915,7 +919,7 @@ def main(argv=None):
         if not role:
             if args.action == 'update':
                 raise KitError('Kit not installed: run setup.')
-            if not sys.stdin.isatty():
+            if not interactive():
                 raise KitError('Specify --profile among: '+', '.join(profile_ids())+'.')
             choices = profile_menu()
             print('Welcome to the AI Kit\n'+'\n'.join(str(i+1)+'. '+label for i,(_,label) in enumerate(choices)))
@@ -924,7 +928,7 @@ def main(argv=None):
                 raise KitError('Choose a number between 1 and '+str(len(choices))+'.')
             role = choices[int(answer)-1][0]
         team = args.team or state.get('team')
-        if not team and args.action == 'setup' and team_ids() and sys.stdin.isatty():
+        if not team and args.action == 'setup' and team_ids() and interactive():
             teams = team_ids()
             print('Teams with their own practices:\n'+'\n'.join(str(i+1)+'. '+t for i, t in enumerate(teams))+'\n'+str(len(teams)+1)+'. none of these (shared team practices)')
             answer = input('Your team [1-'+str(len(teams)+1)+'] (Enter = none): ').strip()
@@ -937,8 +941,7 @@ def main(argv=None):
                 print(adapter.LABEL+' not on the PATH: configuration ready; install and authenticate it following the IT procedure.')
         if not args.dry_run and not args.no_live and os.environ.get('AI_KIT_NO_LIVE') != '1' and live_checks(home, announce=True):
             print('Installation done, but the model does not answer yet: apply the fix above then run doctor --live again.')
-        # Both ends at a terminal: on Windows, stdin redirected from NUL also reports isatty().
-        if args.action == 'setup' and not args.dry_run and sys.stdin.isatty() and sys.stdout.isatty():
+        if args.action == 'setup' and not args.dry_run and interactive():
             state = read_json(home/'.ai-kit/state.json')
             def reapply():
                 with contextlib.redirect_stdout(io.StringIO()):
