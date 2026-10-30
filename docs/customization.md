@@ -62,7 +62,7 @@ Each repo provides its own `AGENTS.md`, read after the global layers. To redefin
 
 ## Commands, skills, agents and MCP
 
-`~/.ai-kit/overrides.json`: selection of commands, skills, agents and MCP. Keep the JSON valid.
+`~/.ai-kit/overrides.json`: selection of commands, skills, agents and MCP servers (the MCP rule, organization, profile and person, is on its own page: [MCP](mcp.md)). Keep the JSON valid.
 
 **Commands.** `extra_commands` adds commands to the profile's, with their skills; `disabled_commands` removes some. An analyst who wants `/spec` and `/review`:
 
@@ -75,8 +75,7 @@ Each repo provides its own `AGENTS.md`, read after the global layers. To redefin
 ```json
 {
   "extra_skills": ["python-js-change"],
-  "disabled_skills": ["bigquery-cost-review"],
-  "mcp": {}
+  "disabled_skills": ["bigquery-cost-review"]
 }
 ```
 
@@ -95,10 +94,10 @@ A developer who wants `/ask` and `/handoff`, prototyping, no delegated research,
   "extra_commands": ["ask", "handoff"],
   "disabled_commands": [],
   "extra_skills": ["prototype"],
-  "disabled_skills": ["research"],
+  "disabled_skills": ["investigation"],
   "extra_agents": ["doubter"],
   "disabled_agents": [],
-  "mcp": {},
+  "mcp": { "github": true },
   "hooks": { "dbt-prod-guard": true },
   "code_assist": { "project": "my-gcp-project" },
   "model": "gemini-2.5-flash",

@@ -29,11 +29,7 @@
     "wayfinder",
     "infra-change"
   ],
-  "mcp": {
-    "recommended": [
-      "documentation"
-    ]
-  },
+  "mcp": [],
   "agents": [
     "repo-investigator",
     "verifier",

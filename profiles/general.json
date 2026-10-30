@@ -25,11 +25,7 @@
     "setup-workflow",
     "init-project-context"
   ],
-  "mcp": {
-    "recommended": [
-      "documentation"
-    ]
-  },
+  "mcp": [],
   "agents": [
     "repo-investigator",
     "code-reviewer",

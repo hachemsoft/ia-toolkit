@@ -107,6 +107,39 @@ def organization():
         raise KitError('organization.json: defaults must be an object.')
     return org
 
+def resolve_mcp(org_mcp, profile_mcp, personal_mcp):
+    """MCP servers to install, by name, and the names chosen without a definition.
+    organization.json says how to reach each server, the profile which ones are active, overrides.json the person's
+    exceptions: true / false for a defined server, or a server of their own ({"server": {...}})."""
+    for label, entries in (('organization.json', org_mcp), ('overrides.json', personal_mcp)):
+        if not isinstance(entries, dict):
+            raise KitError(label+': mcp must be an object.')
+    if not isinstance(profile_mcp, list) or not all(isinstance(n, str) for n in profile_mcp):
+        raise KitError('Profile: mcp must be a list of server names.')
+    defined, active = {}, set(profile_mcp)
+    for source, entries in (('organization.json', org_mcp), ('overrides.json', personal_mcp)):
+        for name, entry in entries.items():
+            safe_id(name)
+            if isinstance(entry, bool):
+                if source == 'organization.json':
+                    raise KitError('organization.json: mcp.'+name+' must describe the server ({"server": {...}}).')
+                if entry:
+                    active.add(name)
+                else:
+                    active.discard(name)
+                continue
+            if not isinstance(entry, dict) or not isinstance(entry.get('enabled', True), bool):
+                raise KitError(source+': mcp.'+name+' must be true, false or {"server": {...}}.')
+            if entry.get('server') is not None:
+                defined[name] = validate_server(entry['server'])
+            # An organization server is active only for the profiles that choose it, unless "enabled": true (everyone).
+            # A person's entry is active unless "enabled": false (older format: "enabled": true with or without server).
+            if entry.get('enabled', source == 'overrides.json'):
+                active.add(name)
+            elif 'enabled' in entry:
+                active.discard(name)
+    return {name: defined[name] for name in sorted(active) if name in defined}, sorted(active - set(defined))
+
 def merge_settings(base, extra):
     """Organization defaults, then the person's overrides on top: lists add up, objects combine, a single value is replaced.
     Keys starting with _ are documentation, $schema is for editors."""
@@ -298,7 +331,8 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     profile = read_json(profile_path)
     state = read_json(kit/'state.json')
     # Organization defaults, then the person's own overrides on top (never replaced wholesale).
-    overrides = merge_settings(organization().get('defaults', {}), read_json(kit/'overrides.json', {}))
+    org_defaults, personal = organization().get('defaults', {}), read_json(kit/'overrides.json', {})
+    overrides = merge_settings(org_defaults, personal)
     if overrides.get('frictions', 'propose') not in ('propose', 'auto', 'off'):
         raise KitError('frictions must be propose (default), auto or off.')
     models = overrides.get('models', {})
@@ -400,16 +434,9 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
         spec = hook_manifest[name]
         script = hooks_dir/spec['script']
         enabled_hooks[name] = {'event': spec['event'], 'group': {'matcher': spec['matcher'], 'hooks': [{'name': 'ai-kit-'+name, 'type': 'command', 'command': hook_command(script)}]}}
-    mcp_entries = overrides.get('mcp',{})
-    if not isinstance(mcp_entries,dict):
-        raise KitError('mcp must be an object.')
-    enabled_mcp = {}
-    for name,entry in mcp_entries.items():
-        safe_id(name)
-        if not isinstance(entry,dict) or not isinstance(entry.get('enabled',False),bool):
-            raise KitError('MCP: invalid entry or enabled value.')
-        if entry.get('enabled'):
-            enabled_mcp['ai-kit-'+name] = validate_server(entry.get('server'))
+    # MCP: resolved from the three sources apart, not from the merged overrides ("github": true must not erase the server).
+    servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}))  # undefined names: doctor
+    enabled_mcp = {'ai-kit-'+name: server for name, server in servers.items()}
     p = Plan(active=[a.NAME for a in active],
         home=home, kit=kit, state=state, old_files=old_files, overrides=overrides, profile_id=profile_id, profile=profile,
         catalog=catalog, selected=selected, skill_sources=skill_sources, commands=commands, context_names=context_names,
@@ -506,7 +533,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     print('Your personal context: '+str(p.user_file))
     if p.migrated_prefs:
         print('Old preferences migrated to this file; copy kept in preferences.md.migrated.')
-    print('Optional MCP: configure overrides.json then run update. See docs/mcp.md.')
+    print('MCP servers: defined by your organization, chosen by your profile, adjusted in overrides.json. See docs/mcp.md.')
     print(str(len(commands))+' commands installed; /guide explains where to start.')
     for adapter in active:
         line = adapter.summary(p)
@@ -688,7 +715,7 @@ def doctor(home, cwd=None):
         for label, settings in (('~/.ai-kit/overrides.json', personal), ('organization.json defaults', org_defaults)):
             unknown = unknown_keys(settings)
             status(not unknown, label+': only known keys'+(' (unknown: '+', '.join(unknown)+'; a typo? keys are listed in schemas/overrides.schema.json)' if unknown else ''))
-        changed = setting_differences(org_defaults, merge_settings(org_defaults, read_json(home/'.ai-kit/overrides.json', {})))
+        changed = setting_differences({k: v for k, v in org_defaults.items() if k != 'mcp'}, merge_settings(org_defaults, personal))
         if changed:
             print('[Info] Your overrides.json changes organization defaults: '+', '.join(changed))
         if state.get('team'):
@@ -704,8 +731,11 @@ def doctor(home, cwd=None):
             if adapter.NAME in installed:
                 adapter.doctor(home, state, status, ctx)
                 hints.append(adapter.doctor_hint())
-        for name in profile['mcp']['recommended']:
-            print('[Optional] '+name+': '+('configured' if 'ai-kit-'+name in state.get('mcp',{}) else 'not configured'))
+        try:
+            servers, undefined = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}))
+            print('[Info] MCP servers: '+(', '.join(servers) or 'none')+(' | chosen but not defined in organization.json: '+', '.join(undefined) if undefined else ''))
+        except KitError as exc:
+            status(False, str(exc))
     print('Local diagnosis only: authentication, MCP connection and IAM rights not tested; doctor --live makes a real call to the model.')
     for hint in hints:
         if hint:

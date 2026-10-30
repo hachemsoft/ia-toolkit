@@ -28,13 +28,10 @@
     "bigquery-cost-review",
     "perimeter-brief"
   ],
-  "mcp": {
-    "recommended": [
-      "documentation",
-      "bigquery",
-      "dbt"
-    ]
-  },
+  "mcp": [
+    "bigquery",
+    "dbt"
+  ],
   "agents": [
     "repo-investigator",
     "sql-reviewer",

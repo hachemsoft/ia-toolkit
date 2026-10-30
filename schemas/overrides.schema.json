@@ -76,65 +76,75 @@
     },
     "mcp": {
       "type": "object",
-      "description": "MCP servers approved by the organization, by name.",
+      "description": "MCP servers by name. organization.json describes them; a profile lists those it activates; in overrides.json, true or false turns a server on or off for you, and {\"server\": {...}} adds your own. See docs/mcp.md.",
       "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "enabled": {
-            "type": "boolean"
+        "oneOf": [
+          {
+            "type": "boolean",
+            "description": "true: turn on a server defined by the organization; false: turn off a server your profile activates."
           },
-          "server": {
+          {
             "type": "object",
-            "description": "How the CLIs start the server: a single transport (command, url or httpUrl).",
             "properties": {
-              "command": {
-                "type": "string",
-                "description": "Executable that starts a local server."
+              "enabled": {
+                "type": "boolean",
+                "description": "organization.json: true = active for every profile. overrides.json: false = defined but off."
               },
-              "args": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "Arguments of the command."
-              },
-              "env": {
+              "server": {
                 "type": "object",
-                "additionalProperties": {
-                  "type": "string"
+                "description": "How the CLIs start the server: a single transport (command, url or httpUrl).",
+                "properties": {
+                  "command": {
+                    "type": "string",
+                    "description": "Executable that starts a local server."
+                  },
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Arguments of the command."
+                  },
+                  "env": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "Environment variables for the command."
+                  },
+                  "cwd": {
+                    "type": "string",
+                    "description": "Working folder of the command."
+                  },
+                  "url": {
+                    "type": "string",
+                    "pattern": "^https://",
+                    "description": "Remote server (SSE), HTTPS only."
+                  },
+                  "httpUrl": {
+                    "type": "string",
+                    "pattern": "^https://",
+                    "description": "Remote server (streamable HTTP), HTTPS only."
+                  },
+                  "headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "HTTP headers of a remote server."
+                  },
+                  "trust": {
+                    "const": false,
+                    "description": "Automatic trust is refused by the kit."
+                  }
                 },
-                "description": "Environment variables for the command."
-              },
-              "cwd": {
-                "type": "string",
-                "description": "Working folder of the command."
-              },
-              "url": {
-                "type": "string",
-                "pattern": "^https://",
-                "description": "Remote server (SSE), HTTPS only."
-              },
-              "httpUrl": {
-                "type": "string",
-                "pattern": "^https://",
-                "description": "Remote server (streamable HTTP), HTTPS only."
-              },
-              "headers": {
-                "type": "object",
-                "additionalProperties": {
-                  "type": "string"
-                },
-                "description": "HTTP headers of a remote server."
-              },
-              "trust": {
-                "const": false,
-                "description": "Automatic trust is refused by the kit."
+                "additionalProperties": false
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "A server: {\"server\": {...}}. In organization.json, active for the profiles that list it, or for everyone with \"enabled\": true. In overrides.json, active unless \"enabled\": false."
           }
-        },
-        "additionalProperties": false
+        ]
       }
     },
     "models": {

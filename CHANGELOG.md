@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+MCP servers made simple: three files, one role each ([docs/mcp.md](docs/mcp.md)).
+- `organization.json` says **how** to reach each approved server (`defaults.mcp.<name>.server`); `"enabled": true` there turns it on for every profile.
+- A profile says **which** servers are on for that job: `"mcp": ["bigquery", "dbt"]` (names only). The former `{"recommended": [...]}` is gone; in the public kit, no server is defined, so nothing changes.
+- `~/.ai-kit/overrides.json` holds the person's exceptions: `"github": true`, `"dbt": false`, or a server of their own, `"mine": {"server": {...}}`. The former `{"enabled": true, "server": {...}}` still works.
+- `"github": true` no longer erases the organization's definition when the settings are merged: MCP servers are resolved from the three files apart.
+- `doctor` lists the installed servers and the names chosen but not defined in `organization.json`.
+- The `mcp/` folder is removed: its sheets had no server and nothing read them.
+
 ## 0.27.0
 
 Enterprise installation, the same on Windows and macOS, with a standard account: download the release ZIP, extract it, run the installer, choose the profile, optionally personalise `30_USER.md`, use the CLI.

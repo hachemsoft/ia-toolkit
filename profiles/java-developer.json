@@ -31,11 +31,7 @@
     "wayfinder",
     "java-change"
   ],
-  "mcp": {
-    "recommended": [
-      "documentation"
-    ]
-  },
+  "mcp": [],
   "agents": [
     "repo-investigator",
     "verifier",

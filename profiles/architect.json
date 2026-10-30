@@ -32,11 +32,7 @@
     "wayfinder",
     "architecture-decision"
   ],
-  "mcp": {
-    "recommended": [
-      "documentation"
-    ]
-  },
+  "mcp": [],
   "agents": [
     "repo-investigator",
     "verifier",

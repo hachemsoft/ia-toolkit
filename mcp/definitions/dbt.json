@@ -1,7 +1,0 @@
-{
-  "id": "dbt",
-  "description": "dbt tools compatible with your installation",
-  "enabled_by_default": false,
-  "server": null,
-  "note": "Fill in an approved server; no placeholder URL or command is enabled."
-}

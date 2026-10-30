@@ -106,7 +106,7 @@ class OrganizationTests(unittest.TestCase):
     def test_schema_lists_exactly_the_keys_the_installer_reads(self):
         import re
         code = ''.join(f.read_text(encoding='utf-8') for f in (ROOT/'installer').rglob('*.py'))
-        read = set(re.findall(r"overrides(?:\.get\(|\[)'([a-z_]+)'", code))
+        read = set(re.findall(r"(?:overrides|personal)(?:\.get\(|\[)'([a-z_]+)'", code))
         schema = read_json(ROOT/'schemas/overrides.schema.json')
         declared = {k for k in schema['properties'] if not k.startswith('$')}
         self.assertEqual(read, declared)
@@ -132,6 +132,65 @@ class OrganizationTests(unittest.TestCase):
             doctor(self.home)
         self.assertIn('unknown: extra_skill', out.getvalue())
         self.assertEqual(merge_settings({}, {'$schema': 'x', 'model': 'm'}), {'model': 'm'})
+
+class McpTests(unittest.TestCase):
+    """organization.json says how to reach a server, the profile which ones are on, overrides.json the person's exceptions."""
+    ORG = {'bigquery': {'server': {'httpUrl': 'https://bq.example.org/mcp'}},
+           'dbt': {'server': {'command': 'dbt-mcp'}},
+           'github': {'server': {'command': 'docker', 'args': ['run', '-i', '--rm', 'ghcr.io/github/github-mcp-server:1.0.0']}},
+           'docs': {'enabled': True, 'server': {'httpUrl': 'https://docs.example.org/mcp'}}}
+
+    def resolve(self, profile, personal=None):
+        return cli.resolve_mcp(self.ORG, profile, personal or {})
+
+    def test_the_profile_chooses_among_the_organization_servers(self):
+        servers, undefined = self.resolve(['bigquery', 'dbt'])
+        self.assertEqual(sorted(servers), ['bigquery', 'dbt', 'docs'])  # docs: "enabled": true, for every profile
+        self.assertEqual(undefined, [])
+
+    def test_the_person_turns_servers_on_and_off(self):
+        servers, _ = self.resolve(['bigquery', 'dbt'], {'dbt': False, 'github': True, 'docs': False})
+        self.assertEqual(sorted(servers), ['bigquery', 'github'])
+        self.assertEqual(servers['github']['command'], 'docker')  # "github": true keeps the organization's definition
+
+    def test_the_person_adds_a_server_of_their_own(self):
+        servers, _ = self.resolve([], {'mine': {'server': {'command': 'my-mcp', 'env': {'TOKEN': '${MY_TOKEN}'}}}})
+        self.assertEqual(servers['mine']['command'], 'my-mcp')
+        servers, _ = self.resolve([], {'mine': {'enabled': False, 'server': {'command': 'my-mcp'}}})
+        self.assertNotIn('mine', servers)
+
+    def test_older_personal_format_still_works(self):
+        servers, _ = self.resolve([], {'dbt': {'enabled': True}, 'old': {'enabled': True, 'server': {'command': 'x'}}})
+        self.assertEqual(sorted(servers), ['dbt', 'docs', 'old'])
+
+    def test_a_name_without_definition_is_reported_not_installed(self):
+        servers, undefined = cli.resolve_mcp({}, ['bigquery'], {'github': True})
+        self.assertEqual((servers, undefined), ({}, ['bigquery', 'github']))
+
+    def test_invalid_entries_refused(self):
+        for org, profile, personal in (({'x': True}, [], {}), ({}, {'recommended': []}, {}), ({}, [], {'x': 'yes'}),
+                                       ({}, [], {'x': {'server': {'httpUrl': 'http://plain.example.org'}}})):
+            with self.assertRaises(KitError):
+                cli.resolve_mcp(org, profile, personal)
+
+    def test_installed_from_the_three_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home/'.ai-kit').mkdir()
+            (home/'.ai-kit/overrides.json').write_text(json.dumps({'mcp': {'dbt': False, 'github': True}}), encoding='utf-8')
+            real = cli.read_json
+            org = {'defaults': {'mcp': self.ORG}}
+            with mock.patch.object(cli, 'read_json', side_effect=lambda p, d=None: org if Path(p).name == 'organization.json' else real(p, d)), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                apply('data-analyst', home, False, IDENTITY, 'gemini')
+                out = io.StringIO()
+                with contextlib.redirect_stdout(out):
+                    doctor(home)
+            installed = read_json(home/'.gemini/settings.json')['mcpServers']
+            self.assertEqual(sorted(installed), ['ai-kit-bigquery', 'ai-kit-docs', 'ai-kit-github'])
+            self.assertIn('[Info] MCP servers: bigquery, docs, github', out.getvalue())
+            self.assertNotIn('changes organization defaults', out.getvalue())
+
 
 @unittest.skipIf(os.name == 'nt' or not shutil.which('git'), 'POSIX launcher and git required')
 class UpdatePullsTests(unittest.TestCase):

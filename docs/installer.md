@@ -46,7 +46,7 @@ On Windows, replace `python3` with `py -3`. `--home` applies only to the kit, no
 
 ## MCP
 
-The catalog offers a documentation server, BigQuery and dbt. No server is enabled by default: your endpoints, transports and authentication are not known. See [MCP configuration](mcp.md).
+No server is defined in the public kit: endpoints, transports and authentication belong to the organization. `organization.json` defines the approved servers, each profile lists those it turns on, and each person adjusts or adds their own in `overrides.json`. See [MCP configuration](mcp.md).
 
 ## Limits
 

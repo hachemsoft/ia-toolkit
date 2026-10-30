@@ -27,7 +27,7 @@ Before a merge request (MR): `python3 -m unittest discover -s tests` and `ruff c
 
 ## Add a profile
 
-1. `profiles/<id>.json`: `practices`, `skills` (start from `general.json`, then add the domain playbook), `agents`, `mcp.recommended`, and `commands` only to restrict the list (otherwise all those whose skills are installed).
+1. `profiles/<id>.json`: `practices`, `skills` (start from `general.json`, then add the domain playbook), `agents`, `mcp` (names of servers defined in `organization.json`, see [MCP](mcp.md)), and `commands` only to restrict the list (otherwise all those whose skills are installed).
 2. The domain playbook, if there is one: [add a skill](extending.md#for-the-organization-in-the-kit), category `domain`; wire it into `commands/build.md` or `commands/diagnose.md` "if installed".
 3. In the same file, `label` (shown in the `setup` menu) and `order` (its position): the menu is built from the `profiles/` folder, no code to change.
 4. The tests: nothing to declare, a new profile is picked up by the tests and the snapshot automatically; run `python3 tests/snapshot.py --update`, and refresh the profile table: `python3 scripts/profile_table.py --write`.

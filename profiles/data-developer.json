@@ -38,12 +38,9 @@
     "bigquery-query-review",
     "kpi-definition"
   ],
-  "mcp": {
-    "recommended": [
-      "documentation",
-      "bigquery"
-    ]
-  },
+  "mcp": [
+    "bigquery"
+  ],
   "agents": [
     "repo-investigator",
     "code-reviewer",
