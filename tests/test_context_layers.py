@@ -23,10 +23,12 @@ class ContextLayerTests(unittest.TestCase):
   doctor_out=io.StringIO()
   with contextlib.redirect_stdout(doctor_out):doctor(self.home)
   self.assertEqual([line for line in doctor_out.getvalue().splitlines() if line.startswith('[Check]') and 'PATH' not in line and 'approved in Codex' not in line],[],doctor_out.getvalue());self.assertIn('[OK] Personal context present',doctor_out.getvalue())
- def test_modified_kit_layer_blocks(self):
-  self.run_kit();self.write('.gemini/10_COMPANY.md','modified')
-  with self.assertRaises(KitError):self.run_kit('data-developer')
-  self.assertEqual(read_json(self.path('.ai-kit/state.json'))['profile'],'data-analyst')
+ def test_modified_kit_layer_restored(self):
+  # Rule layers edited by hand no longer block update: they are restored (see RuleLayerRestoreTests).
+  self.run_kit();official=self.path('.gemini/10_COMPANY.md').read_text(encoding='utf-8');self.write('.gemini/10_COMPANY.md','modified')
+  self.run_kit('data-developer')
+  self.assertEqual(self.path('.gemini/10_COMPANY.md').read_text(encoding='utf-8'),official)
+  self.assertEqual(read_json(self.path('.ai-kit/state.json'))['profile'],'data-developer')
  def test_existing_unmanaged_layer_blocks(self):
   self.write('.gemini/00_KIT.md','third-party')
   with self.assertRaises(KitError):self.run_kit()
@@ -72,3 +74,44 @@ class ContextLayerTests(unittest.TestCase):
  def test_kit_template_has_priority_rules(self):
   text=(ROOT/'templates/kit-context.md').read_text(encoding='utf-8');self.assertIn('30_USER.md',text);self.assertIn('AGENTS.md',text);self.assertIn('CLAUDE.md',text);self.assertIn('extra_commands',text);self.assertIn('{frictions}',text);self.assertLess(len(text),3700)
 if __name__=='__main__':unittest.main()
+
+
+class RuleLayerRestoreTests(unittest.TestCase):
+    """The rule layers (00, 10, 20) edited by hand are restored by update, the edited copy kept; anything else still stops update."""
+    def setUp(self):
+        import tempfile
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.home = Path(self.temp.name)
+
+    def run_kit(self):
+        import contextlib, io
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            apply('general', self.home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
+        return out.getvalue()
+
+    def test_hand_edited_rule_layer_restored_with_backup(self):
+        self.run_kit()
+        kit_file = self.home/'.gemini/00_KIT.md'
+        official = kit_file.read_text(encoding='utf-8')
+        kit_file.write_text(official.replace('never production without an explicit instruction', 'production is fine'), encoding='utf-8')
+        out = self.run_kit()
+        self.assertEqual(kit_file.read_text(encoding='utf-8'), official)
+        self.assertIn('00_KIT.md was modified by hand: restored', out)
+        copies = list((self.home/'.ai-kit/backups').glob('*/.gemini/00_KIT.md'))
+        self.assertTrue(any('production is fine' in c.read_text(encoding='utf-8') for c in copies))
+
+    def test_personal_context_never_restored(self):
+        self.run_kit()
+        user_file = self.home/'.gemini/30_USER.md'
+        user_file.write_text('# Mine\n', encoding='utf-8')
+        self.run_kit()
+        self.assertEqual(user_file.read_text(encoding='utf-8'), '# Mine\n')
+
+    def test_other_managed_file_edited_still_stops_update(self):
+        self.run_kit()
+        skill = next((self.home/'.gemini/skills').glob('*/SKILL.md'))
+        skill.write_text('edited\n', encoding='utf-8')
+        with self.assertRaises(KitError):
+            self.run_kit()

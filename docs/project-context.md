@@ -20,7 +20,7 @@ The agent reads, in this order: `00_KIT.md` (the kit), `10_COMPANY.md` (company 
 | Mechanism | Applied by | Covers | What it guarantees |
 | --- | --- | --- | --- |
 | Settings merge | the installer, at `setup` and `update` | the JSON files: `organization.json` (defaults, teams), the profile, `~/.ai-kit/overrides.json`; lists add up, objects combine, the person's value wins ([customization](customization.md#organization-team-and-person)) | what is installed; nothing is locked, since the person's file has the last word |
-| Priority between instructions | the model, while it works | the layers `00` to `30`, the repo's `AGENTS.md` and skills, the conversation, as in the table above | nothing: the model follows them as instructions, it is not enforced |
+| Priority between instructions | the model, while it works; the rule layers `00` to `20` are put back by `update` if edited by hand | the layers `00` to `30`, the repo's `AGENTS.md` and skills, the conversation, as in the table above | nothing: the model follows them as instructions, it is not enforced |
 | Technical restrictions | the guardrails (hooks), the CLI's permissions and sandbox, access rights (IAM), CODEOWNERS, the policies set by IT | what must not happen | enforced outside the model ([guardrails](hooks.md)): no instruction and no requested exception lifts them. A kit guardrail is turned off only in the person's own settings, then `update`, not by asking the agent, which is told never to change that configuration |
 
 ## Expected files in a repo

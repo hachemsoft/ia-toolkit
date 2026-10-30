@@ -392,13 +392,16 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     profile = {**profile, 'practices': profile_practices(profile, team)}
     files = {}
     old_files = state.get('files',{})
-    def managed_write(target, data, label):
+    restored = []  # kit rule layers edited by hand: put back, the edited copy kept in the backup
+    def managed_write(target, data, label, restore=False):
         rel = target.relative_to(home).as_posix()
         if target.exists():
             previous = target.read_bytes()
             if rel in old_files:
                 if digest(previous) != old_files[rel]:
-                    raise KitError(label+' modified locally: '+str(target))
+                    if not restore:
+                        raise KitError(label+' modified locally: '+str(target))
+                    restored.append(target)
             elif previous != data:
                 raise KitError(label+' existing file not managed by the kit: '+str(target))
         writes[target] = data
@@ -465,9 +468,10 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     for name in enabled_hooks:
         managed_write(hooks_dir/hook_manifest[name]['script'], (ROOT/'runtime/hooks'/hook_manifest[name]['script']).read_bytes(), 'Guardrail')
     # Context layers and 30_USER.md, in the context folder (see context_location).
-    managed_write(context_dir/KIT_CONTEXT, kit_text.encode('utf-8'), 'Context file')
+    # The rule layers (00, 10, 20) are company and team rules, not personal settings: a hand edit is restored, not kept.
+    managed_write(context_dir/KIT_CONTEXT, kit_text.encode('utf-8'), 'Context file', restore=True)
     for name, text in zip(practice_names, practice_texts):
-        managed_write(context_dir/name, text.encode('utf-8'), 'Context file')
+        managed_write(context_dir/name, text.encode('utf-8'), 'Context file', restore=True)
     user_file = context_dir/USER_CONTEXT
     if not user_file.exists():
         # Created once, never rewritten or tracked. If the location changed, copy the existing version: the original stays in place.
@@ -508,6 +512,8 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     if identity.get('email'):
         print('Identity: '+identity['email']+' (source '+identity.get('source','?')+')')
     if dry_run:
+        for target in restored:
+            print('[Check] '+target.name+' was modified by hand: it would be restored, your copy kept in ~/.ai-kit/backups/.')
         print('Dry run: '+str(len(writes))+' files to write, '+str(len(deletes))+' to remove. Nothing changed.')
         return
     # No download, dependency installation or MCP execution.
@@ -545,6 +551,9 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
             raise
     print('Installation complete.' if changed else 'Already up to date.')
     print('Your personal context: '+str(p.user_file))
+    for target in restored:
+        print('[Check] '+target.name+' was modified by hand: restored to the kit version; your copy: '+str(backup/target.relative_to(home))
+              + '. Personal preferences go in 30_USER.md; a rule change goes through the kit repository.')
     if p.migrated_prefs:
         print('Old preferences migrated to this file; copy kept in preferences.md.migrated.')
     print('MCP servers: defined by your organization, chosen by your profile, adjusted in overrides.json. See docs/mcp.md.')

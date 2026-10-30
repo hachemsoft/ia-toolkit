@@ -21,7 +21,8 @@ First step, always: `sh scripts/bootstrap.sh doctor --live` (Mac) or `Installer.
 | `/intent` or `/build` cannot be found | command not installed, or skill disabled | `doctor`; check `disabled_skills` and `disabled_commands` in `overrides.json` |
 | "Skill existing file not managed by the kit" at `update` | a skill with the same name installed outside the kit | remove it, or add it to `disabled_skills` |
 | dbt refuses to run: "Blocked by the kit: production target" | guardrail active | use the development target; an authorized person exports `AI_KIT_ALLOW_PROD=1` |
-| `update` stops on "modified locally" | a generated file was edited | move the change to `30_USER.md` or a repo skill, restore, run again |
+| `update` stops on "modified locally" | a file installed by the kit (skill, agent, command, settings block) was edited | move the change to `30_USER.md` or a repo skill, restore, run again |
+| `update` says "was modified by hand: restored" | a rule layer (`00_KIT.md`, `10_COMPANY.md`, `20_…md`) was edited | normal: the kit version is back, your copy is in `~/.ai-kit/backups/`; personal preferences go in `30_USER.md`, a rule change through the kit repository |
 
 ## Other cases
 
