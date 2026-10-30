@@ -401,7 +401,9 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
             print('[Info] Skills that delegate to subagents, degraded without them: '+', '.join(needing))
     for name,hook in state.get('hooks',{}).items():
         groups = (settings.get('hooks') or {}).get(hook['event'], [])
-        script = Path(hook['group']['hooks'][0]['command'].split()[-1].strip('"\''))
+        # The command is "<python> -I <script>" (core.hook_command), each part quoted: split on " -I ", not on spaces,
+        # so that a home folder with spaces ("Home à") gives the right path.
+        script = Path(hook['group']['hooks'][0]['command'].split(' -I ', 1)[-1].strip().strip('"\''))
         status(isinstance(groups,list) and hook['group'] in groups and script.is_file(),'Guardrail active: '+name)
     if not state.get('hooks'):
         print('[Info] No guardrail enabled; see docs/hooks.md (dbt-prod-guard, protected-paths).')

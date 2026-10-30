@@ -736,7 +736,7 @@ def print_summary(home, state, live=None, problems=()):
     except KitError as exc:
         print('  Data connections (MCP): '+str(exc))
     if problems:
-        print('  To fix ('+str(len(problems))+'): '+'; '.join(problems[:5])+('; and '+str(len(problems)-5)+' more in the details' if len(problems) > 5 else '')+'.')
+        print('  Failed checks, to fix ('+str(len(problems))+'): '+'; '.join(problems[:5])+('; and '+str(len(problems)-5)+' more in the details' if len(problems) > 5 else '')+'.')
     if problems:
         step = 'fix the points above, then run doctor again.'
     elif any(r not in (0, None) for r in (live or {}).values()):

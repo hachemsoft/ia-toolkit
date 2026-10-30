@@ -8,6 +8,7 @@ Discovery and installation, for a data analyst in particular:
 - **`doctor` starts with the same summary** (what is ready, what to fix, next step); the detailed checks follow, each run once. `doctor --live` puts the real call's result in the summary.
 - **`/review` in the Data Analyst profile**; the review's Data pass uses the installed SQL and dbt playbooks and the SQL and dbt review agents when available. A personal `disabled_commands` is respected; no duplicate when it was already in `extra_commands`.
 - **README**: what a data analyst can ask, with or without a command.
+- **Fix**: with a home folder containing a space, `doctor` reported the Gemini guardrails as inactive (it cut the command on spaces); found by the trial from the ZIP in a folder with spaces and accents.
 
 Documentation: replacing a kit command in a repo is described as depending on the CLI (customization, format, workflow), with a skill named for the project as the fallback.
 

@@ -94,7 +94,7 @@ class SummaryTests(unittest.TestCase):
     def test_problems_come_first_in_the_next_step(self):
         self.install(target='gemini')
         out = self.summary(found('gemini'), problems=['.gemini/skills/x/SKILL.md'])
-        self.assertIn('To fix (1): .gemini/skills/x/SKILL.md.', out)
+        self.assertIn('Failed checks, to fix (1): .gemini/skills/x/SKILL.md.', out)
         self.assertIn('Next step: fix the points above, then run doctor again.', out)
 
 
@@ -133,7 +133,20 @@ class SetupAndDoctorOutputTests(unittest.TestCase):
         Path(self.home, '.gemini/00_KIT.md').write_text('edited', encoding='utf-8')
         code, out = self.run_main('doctor', which=found('gemini'))
         self.assertEqual(code, 1)
-        self.assertIn('To fix (1): .gemini/00_KIT.md', out[:out.index('Details')])
+        self.assertIn('Failed checks, to fix (1): .gemini/00_KIT.md', out[:out.index('Details')])
+
+
+class HomeWithSpacesTests(unittest.TestCase):
+    def test_guardrail_reported_active_in_a_home_with_spaces(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)/'Home à'
+            home.mkdir()
+            with contextlib.redirect_stdout(io.StringIO()):
+                cli.apply('general', home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                cli.doctor(home)
+            self.assertIn('[OK] Guardrail active: protected-paths', out.getvalue())
 
 
 class AnalystReviewTests(unittest.TestCase):
