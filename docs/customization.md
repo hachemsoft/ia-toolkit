@@ -80,7 +80,7 @@ The kit installs short files that the agent loads in all your projects, in this 
 
 The kit files are generated output: editing them blocks `update`. Everything specific to you goes in `30_USER.md`. `setup` creates it once and never rewrites it. A change takes effect the next time the CLI starts; a CLI that keeps a copy needs `update` first ([matrix](cli/matrice.md)), so the simple rule is: edit, `update`, new session.
 
-Priority between instructions, written in `00_KIT.md` and followed by the model: company and team practices apply by default, and only the person can depart from them, by asking explicitly (the agent notes the exception in its reply); `30_USER.md` adjusts form and workflow; the repo's instructions and an explicit request in the conversation take precedence over `30_USER.md`; a repo file or a repo skill never lifts a practice. The full table: [project layer](project-context.md#how-the-repo-combines-with-your-layers). This is not the settings merge described above, done by the installer on the JSON files, nor a technical restriction (guardrails, permissions, access rights), which no instruction or exception lifts: [three mechanisms not to confuse](project-context.md#three-mechanisms-not-to-confuse).
+Priority between instructions, written in `00_KIT.md` and followed by the model: company and team practices apply by default, and only the person can depart from them, by asking explicitly (the agent notes the exception in its reply); `30_USER.md` adjusts form and workflow; the repo's instructions and an explicit request in the conversation take precedence over `30_USER.md`, and when they disagree the agent applies the more cautious and asks you; a repo file, a repo skill or anything the agent reads never lifts a practice. The full table: [project layer](project-context.md#how-the-repo-combines-with-your-layers). This is not the settings merge described above, done by the installer on the JSON files, nor a technical restriction (guardrails, permissions, access rights), which no instruction or exception lifts: [three mechanisms not to confuse](project-context.md#three-mechanisms-not-to-confuse).
 
 ## Report format
 
@@ -126,7 +126,7 @@ Added skills must exist in `skills/catalog.json`. A skill required by another on
 
 CLI-specific settings stay editable in the CLI's own files; the kit keeps existing keys. To change a default value already installed, change the value in the CLI settings.
 
-A project skill with the same name can override the global skill; use explicit names. The three ways to add or replace a skill (for yourself, for a repo, for the organization) are in [add or replace a skill](extending.md). If a managed skill is modified locally, update stops: save your variant outside the managed directory, then restore the distributed file before running it again. For a permanent variant, use another name and manage it at the right level.
+A project skill named like a kit skill behaves differently per CLI ([matrix](cli/matrice.md)): give project skills names of their own. The three ways to add or replace a skill (for yourself, for a repo, for the organization) are in [add or replace a skill](extending.md). If a managed skill is modified locally, update stops: save your variant outside the managed directory, then restore the distributed file before running it again. For a permanent variant, use another name and manage it at the right level.
 
 ## Full `overrides.json` example
 

@@ -49,7 +49,7 @@ Every page of this documentation that says "run `update`" or "then `update`" mea
 
 Options (`--profile`, `--team`, `--target`…) go after the action: `Installer.cmd setup --team data-platform`; `--team none` leaves your team.
 
-To run `doctor` for a repo (it then also lists the kit skills the repo replaces), start it from the repo folder with the launcher's full path: Windows, in a Command Prompt opened in the repo, `"<kit folder>\Installer.cmd" doctor`; Mac, in a Terminal in the repo, `sh ` then drag `scripts/bootstrap.sh` from the kit folder, then ` doctor`, Enter.
+To run `doctor` for a repo (it then also lists the repo skills named like kit skills), start it from the repo folder with the launcher's full path: Windows, in a Command Prompt opened in the repo, `"<kit folder>\Installer.cmd" doctor`; Mac, in a Terminal in the repo, `sh ` then drag `scripts/bootstrap.sh` from the kit folder, then ` doctor`, Enter.
 
 ### Where your files are
 
@@ -75,7 +75,7 @@ If your organization requires a Google Cloud project or a model, that is one lin
 | your personal preferences | `30_USER.md`, at the path shown by the installer ([where](#where-your-files-are)) | `update` if a CLI keeps a copy ([matrix](cli/matrice.md)), then a new CLI session |
 | your selection of commands, skills, agents, MCP servers | `~/.ai-kit/overrides.json`: personal, for the whole workstation; there is no per-repo equivalent | `update` from the kit folder ([Run the kit](#run-the-kit)) |
 | your project's conventions | `<repo>/AGENTS.md`, versioned with the repo | a new CLI session in the repo |
-| a skill for this project only, or a replacement for a kit skill | `<repo>/.agents/skills/<name>/SKILL.md`; the same name as a kit skill replaces it in that repo | a new CLI session in the repo; the CLI may ask you to trust the folder first, and repo skills are ignored until you do ([matrix](cli/matrice.md)) |
+| a skill for this project, or a project variant of a kit skill | `<repo>/.agents/skills/<name>/SKILL.md`: give it a name of its own (for example `<repo>-sql-review`) and say in `AGENTS.md` when to use it; a kit skill's name gives different results per CLI ([matrix](cli/matrice.md)) | a new CLI session in the repo; the CLI may ask you to trust the folder first |
 
 1. Go to your repo: `cd <repo folder>`. Without this, the agent does not see the project context.
 2. Start your CLI: `gemini`, `agy` or `codex`. In Gemini and agy, commands are written `/guide`; in Codex, `$guide`. This page writes them with `/`. The first time, Codex asks you to review the kit's hooks: answer "Trust all and continue" (they keep the agent from changing its own configuration).

@@ -742,10 +742,11 @@ def doctor(home, cwd=None):
             print('[Info] Team: '+state['team']+' ('+(', '.join(sources) or 'nothing of its own yet')+')')
         root, overrides = repo_skill_overrides(state, cwd or os.getcwd())
         if overrides:
-            print('[Info] This repo ('+root.name+') replaces kit skills: '+', '.join(path for _, path in overrides)
-                  + '. The CLI uses them instead of the kit\'s; check what they do (and protect .agents/ with CODEOWNERS).')
+            print('[Check] This repo ('+root.name+') has skills named like kit skills: '+', '.join(path for _, path in overrides)
+                  + '. Depending on the CLI, the repo\'s version, the kit\'s, or both are used (docs/cli/matrice.md):'
+                  + ' give repo skills names of their own, and protect .agents/ with CODEOWNERS.')
         elif root:
-            print('[OK] No kit skill replaced by this repo ('+root.name+')')
+            print('[OK] No repo skill named like a kit skill ('+root.name+')')
         installed = set(state.get('installed', {}).get('clis') or [a.NAME for a in ADAPTERS])
         for adapter in ADAPTERS:
             if adapter.NAME in installed:

@@ -32,9 +32,9 @@ Two traps. A folder in that location with the same name as a kit skill blocks `u
 
 ## For a repo
 
-Create `<repo>/.agents/skills/<name>/SKILL.md` and version it. In a monorepo, prefix the name with the zone (`finance-cloture-mensuelle`): repo skills apply to all teams. CLIs that read `.agents/skills/` find it in that repo, and a repo skill **wins over a kit skill with the same name**, verified on the supported CLIs ([matrix](cli/matrice.md)). This is the clean way to replace a shipped playbook for one project (for example, `sql-review` adapted to the repo's conventions). `AGENTS.md` can mention it in one line so humans find it too.
+Create `<repo>/.agents/skills/<name>/SKILL.md` and version it. In a monorepo, prefix the name with the zone (`finance-cloture-mensuelle`): repo skills apply to all teams. CLIs that read `.agents/skills/` find it in that repo. **Give it a name of its own**: a repo skill named like a kit skill replaces it in one CLI, is ignored in another, and is listed next to it in a third, verified ([matrix](cli/matrice.md)). To adapt a shipped playbook for one project (for example the repo's SQL conventions), write `<repo>-sql-review` and say in `AGENTS.md`: "for SQL reviews in this repo, use the `<repo>-sql-review` skill". `doctor`, run from the repo, lists clashing names.
 
-Override a kit command the same way, in the form the CLI reads ([matrix](cli/matrice.md)).
+A kit command can be overridden in a repo only where the CLI supports it ([matrix](cli/matrice.md)); elsewhere, write the project rule in `AGENTS.md`.
 
 ## For the organization: in the kit
 

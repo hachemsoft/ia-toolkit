@@ -218,7 +218,7 @@ class InvariantTests(unittest.TestCase):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             doctor(self.home, cwd=repo/'.agents')
-        self.assertIn('replaces kit skills: .agents/skills/code-review', out.getvalue())
+        self.assertIn('has skills named like kit skills: .agents/skills/code-review', out.getvalue())
         self.assertNotIn('team-only', out.getvalue())
 
     def test_no_skill_shares_a_command_name(self):
