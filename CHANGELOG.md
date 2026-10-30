@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.29.0
 
 Teams bring their tools, not only their context ([customization › Teams](docs/customization.md#teams)).
 - `organization.json` gets a `teams` section: per team, the same keys and formats as `overrides.json` (skills, commands, agents, guardrails, MCP servers, model). Order: organization defaults, team, then the person's `overrides.json`, which keeps the last word.
