@@ -623,6 +623,7 @@ def plain_text_problem(path):
 
 def personal_context_step(user_file, reapply):
     """End of an interactive setup: offer to open 30_USER.md in the system editor, then apply it where a CLI keeps a copy."""
+    print('\nYour personal context: '+str(user_file))
     print('It tells the agent who you are and how you work: plain text, kept as is by every update.')
     editor = text_editor(user_file)
     if not editor:
