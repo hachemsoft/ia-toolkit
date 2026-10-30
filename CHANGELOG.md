@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.27.0
 
 Enterprise installation, the same on Windows and macOS, with a standard account: download the release ZIP, extract it, run the installer, choose the profile, optionally personalise `30_USER.md`, use the CLI.
 - **Windows: `Installer.cmd`**, at the root of the kit, double-click. Command Prompt only, no PowerShell: `scripts/bootstrap.ps1` is removed. It finds Python 3.9+ (`py -3`, `python`, `python3`; the Microsoft Store alias without Python counts as absent), runs the installer, and keeps the window open when double-clicked.
