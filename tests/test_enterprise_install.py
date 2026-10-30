@@ -163,6 +163,11 @@ class ReleaseFilesTests(unittest.TestCase):
                 self.assertNotIn(word, text, source.name)
 
 
+class Console(io.StringIO):
+    def isatty(self):
+        return True
+
+
 class PersonalContextTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -205,6 +210,14 @@ class PersonalContextTests(unittest.TestCase):
     def test_editor_renamed_the_file(self):
         self.file.rename(self.file.with_name('30_USER.md.txt'))
         self.assertIn('30_USER.md.txt', cli.plain_text_problem(self.file))
+
+    def test_setup_without_a_terminal_never_asks(self):
+        # Windows: stdin redirected from NUL reports isatty(); the optional step must not turn a complete install into a failure.
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(cli.sys.stdin, 'isatty', return_value=True), \
+             mock.patch('builtins.input', side_effect=EOFError) as asked, contextlib.redirect_stdout(Console()):
+            code = cli.main(['setup', '--profile', 'general', '--home', tmp, '--no-live', '--user', 'a@example.org', '--target', 'gemini'])
+        self.assertEqual(code, 0)
+        asked.assert_called_once()  # the question was asked, the end of input skipped it
 
     def test_native_editor_or_none(self):
         found = cli.text_editor(self.file)

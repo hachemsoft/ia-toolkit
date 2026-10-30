@@ -937,12 +937,16 @@ def main(argv=None):
                 print(adapter.LABEL+' not on the PATH: configuration ready; install and authenticate it following the IT procedure.')
         if not args.dry_run and not args.no_live and os.environ.get('AI_KIT_NO_LIVE') != '1' and live_checks(home, announce=True):
             print('Installation done, but the model does not answer yet: apply the fix above then run doctor --live again.')
-        if args.action == 'setup' and not args.dry_run and sys.stdin.isatty():
+        # Both ends at a terminal: on Windows, stdin redirected from NUL also reports isatty().
+        if args.action == 'setup' and not args.dry_run and sys.stdin.isatty() and sys.stdout.isatty():
             state = read_json(home/'.ai-kit/state.json')
             def reapply():
                 with contextlib.redirect_stdout(io.StringIO()):
                     apply(role, home, False, None, args.target, team)
-            personal_context_step(home/state.get('context_dir', '.gemini')/USER_CONTEXT, reapply)
+            try:
+                personal_context_step(home/state.get('context_dir', '.gemini')/USER_CONTEXT, reapply)
+            except EOFError:
+                print()  # optional step: the installation is already complete
         return 0
     except (KitError,OSError,UnicodeError) as exc:
         print('Error: '+str(exc),file=sys.stderr)
