@@ -344,7 +344,8 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     profile = read_json(profile_path)
     state = read_json(kit/'state.json')
     # Team: chosen at setup (--team or the setup question), then kept for update.
-    team = safe_id(team) if team else state.get('team')
+    # 'none' (setup --team none) leaves the team; no value keeps the recorded one.
+    team = None if team == 'none' else safe_id(team) if team else state.get('team')
     # Organization defaults, then the team's settings, then the person's own overrides on top (never replaced wholesale).
     org_defaults, team_layer, personal = organization().get('defaults', {}), team_settings(team), read_json(kit/'overrides.json', {})
     overrides = merge_settings(merge_settings(org_defaults, team_layer), personal)
@@ -945,7 +946,7 @@ def main(argv=None):
     parser.add_argument('--user',help='Work email to record, without interactive confirmation')
     parser.add_argument('--home',type=Path,default=Path.home(),help='Alternative home folder for an isolated trial')
     parser.add_argument('--dry-run',action='store_true',help='Show the plan without writing')
-    parser.add_argument('--team',help='setup: your team, when it has its own practices (practices/20-<team>.md) or tools (teams in organization.json); kept for update')
+    parser.add_argument('--team',help='setup: your team, when it has its own practices (practices/20-<team>.md) or tools (teams in organization.json); kept for update; none to leave it')
     parser.add_argument('--target',choices=list(TARGETS),default='auto',help='auto: the CLIs present on the machine (Gemini if none); gemini, agy, codex: that CLI only; both: Gemini and agy; all: every supported CLI')
     parser.add_argument('--live',action='store_true',help='doctor: make a real call to the model and diagnose')
     parser.add_argument('--no-live',action='store_true',help='setup/update: do not check with a real call to the model')

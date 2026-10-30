@@ -6,9 +6,9 @@
 
 ## Organization, team and person
 
-Settings come in three layers, combined at every `setup` and `update`, each on top of the previous one:
+Settings are combined at every `setup` and `update`, in this order, each on top of the previous one: **organization**, **profile** (the skills, commands, agents and MCP servers of your job, `profiles/<profile>.json`), **team**, **you**. The person keeps the last word.
 
-- **`organization.json`**, at the root of the kit repository, belongs to the organization. It is changed by merge request, then each workstation runs `update`. It holds the expected email domains (`allowed_domains`) and the organization defaults (`defaults`, with the same keys as `overrides.json`: authentication, model, guardrails, MCP, skills, commands…).
+- **`organization.json`**, at the root of the kit repository, belongs to the organization. It is changed by merge request and reaches workstations with the next version of the kit. It holds the expected email domains (`allowed_domains`) and the organization defaults (`defaults`, with the same keys as `overrides.json`: authentication, model, guardrails, MCP, skills, commands…).
 - **The team's settings**, in the same `organization.json`, under `teams` (see [Teams](#teams)).
 - **`~/.ai-kit/overrides.json`** belongs to the person. It is applied on top: lists add up, objects combine, the person's value wins for a single value. It never replaces the organization or team settings wholesale; `doctor` lists the values a person changed.
 
@@ -99,13 +99,13 @@ Priority rule, written in `00_KIT.md`: company and team practices apply by defau
 
 ## Override per project
 
-Override a kit command in the repo, in the form the CLI reads ([matrix](cli/matrice.md)). The project wins.
+Override a kit command in the repo, in the form the CLI reads (matrix row "Override a command in a repository": [matrix](cli/matrice.md)). The project wins.
 
 Each repo provides its own `AGENTS.md`, read after the global layers. To redefine a preference there, reuse the same heading as in `30_USER.md` ("Language and style", "My default workflow") and write the project rule.
 
 ## Commands, skills, agents and MCP
 
-`~/.ai-kit/overrides.json`: selection of commands, skills, agents and MCP servers (the MCP rule, organization, profile and person, is on its own page: [MCP](mcp.md)). Keep the JSON valid.
+`~/.ai-kit/overrides.json`: selection of commands, skills, agents and MCP servers (the MCP rule, organization, profile and person, is on its own page: [MCP](mcp.md)). Keep the JSON valid. The names to choose from: commands in the [profile table](getting-started.md#3-work-one-command-per-step) and [tools](tools.md), skills in the [skills reference](skills-reference.md), agents in [agents](agents.md).
 
 **Commands.** `extra_commands` adds commands to the profile's, with their skills; `disabled_commands` removes some. An analyst who wants `/spec` and `/review`:
 
@@ -130,15 +130,15 @@ A project skill with the same name can override the global skill; use explicit n
 
 ## Full `overrides.json` example
 
-A developer who wants `/ask` and `/handoff`, prototyping, no delegated research, the doubter agent added, the dbt guardrail on, an enterprise Code Assist project and a fixed model:
+A General-profile developer who wants `/ask` and `/handoff`, prototyping, no `/retro`, the security review agent, the dbt guardrail on, the GitHub MCP server of the organization, an enterprise Code Assist project and a fixed model:
 
 ```json
 {
   "extra_commands": ["ask", "handoff"],
   "disabled_commands": [],
   "extra_skills": ["prototype"],
-  "disabled_skills": ["investigation"],
-  "extra_agents": ["doubter"],
+  "disabled_skills": ["retrospective"],
+  "extra_agents": ["security-reviewer"],
   "disabled_agents": [],
   "mcp": { "github": true },
   "hooks": { "dbt-prod-guard": true },

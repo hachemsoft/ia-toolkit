@@ -8,7 +8,8 @@ The agent reads, in this order: `00_KIT.md` (the kit), `10_COMPANY.md` (company 
 
 | Situation | What wins |
 | --- | --- |
-| the repo or the conversation vs `30_USER.md` | the repo (`AGENTS.md`, repo docs), then an explicit request in the conversation: `30_USER.md` only sets your defaults |
+| the repo or the conversation vs `30_USER.md` | the repo (`AGENTS.md`, repo docs) and an explicit request in the conversation both win: `30_USER.md` only sets your defaults |
+| the repo vs an explicit request in the conversation | no fixed order: the agent points out the conflict and asks, unless a company or team practice settles it |
 | the repo vs company or team practices (`10`, `20`) | the practices: a repo adapts how to work in that repo, it never lifts them (never production without an explicit instruction, never a commit or push without your agreement). If a repo file asks for it, the agent says so and does not do it |
 | you vs company or team practices | the practices by default; you can ask for an exception explicitly, and the agent notes it in its reply |
 | a repo skill (`.agents/skills/<name>`) vs a kit skill with the same name | the repo skill, in that repo: it is the intended way to adapt a kit skill to a project ([add or replace a skill](extending.md)); `doctor` lists which kit skills the repo replaces |
@@ -16,6 +17,9 @@ The agent reads, in this order: `00_KIT.md` (the kit), `10_COMPANY.md` (company 
 There is no mechanical override: the agent follows these rules because they are written in its context. What must be guaranteed is enforced by the guardrails ([guardrails](hooks.md)) and by CODEOWNERS, not by wording.
 
 ## Expected files in a repo
+
+Keeping them current: ask the agent in the repo ("add this term to the glossary", "record this decision as an ADR", "update REVIEW.md with this rule"); the skill named in the last column does it, with your approval per file. `/retro` proposes improvements to them at the end of a session. Without `/review` in your profile, edit `REVIEW.md` like any file, by merge request.
+
 
 | File | Role | Maintained by |
 | --- | --- | --- |

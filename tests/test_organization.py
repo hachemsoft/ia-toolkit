@@ -75,6 +75,16 @@ class OrganizationTests(unittest.TestCase):
         # Kept for update, without --team.
         self.assertEqual(self.install('java-developer')['team'], 'kit-test-team')
 
+    def test_team_none_leaves_the_team(self):
+        team_file = ROOT/'practices/20-kit-test-team.md'
+        team_file.write_text('# Test team practices\n', encoding='utf-8')
+        self.addCleanup(team_file.unlink)
+        self.install('general', team='kit-test-team')
+        state = self.install('general', team='none')
+        self.assertIsNone(state['team'])
+        self.assertTrue((self.home/'.gemini/20_TEAM.md').is_file())
+        self.assertFalse((self.home/'.gemini/20_KIT_TEST_TEAM.md').exists())
+
     def test_unknown_team_refused(self):
         with self.assertRaises(KitError):
             self.install(team='no-such-team')

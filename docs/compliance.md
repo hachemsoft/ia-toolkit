@@ -21,7 +21,7 @@ A coding assistant does not, in principle, fall under the AI Act's high-risk use
 | Topic | What the kit does | Where to check |
 | --- | --- | --- |
 | Human oversight | the person starts each command; the agent commits, pushes, deploys or runs an infrastructure `apply` only with their approval; ceremony matches the stakes (spec, full review) | `practices/`, `commands/`, [workflow](workflow.md) |
-| Deterministic guardrails | blocks a dbt command on a production target; blocks writes under protected paths declared by the repository; disabled by default, enabled by the organization | `runtime/hooks/`, [guardrails](hooks.md) |
+| Deterministic guardrails | blocks a dbt command on a production target; blocks writes to the configuration of the kit and of the CLIs, and under protected paths declared by the repository (`protected-paths`, on by default); blocks a dbt command on a production target (`dbt-prod-guard`, off by default, turned on by the organization or a team) | `runtime/hooks/`, [guardrails](hooks.md) |
 | Review | read-only review agents (code, security, infrastructure, architecture, SQL, dbt) and a doubter agent for high-stakes changes | `agents/`, [agents](agents.md) |
 | Permissions | no mode that skips confirmations; the kit never writes CLI permissions or Codex guardrail approvals | test `test_invariants.py` |
 | Data on the workstation | no telemetry; usage review and frictions read and written locally; no credentials stored | [usage review](usage-review.md), `runtime/friction.py` |

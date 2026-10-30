@@ -6,7 +6,7 @@ Three scopes, three places. The choice depends on who must see the skill, not on
 
 | For | Where to put it | Seen by | Kit update |
 | --- | --- | --- | --- |
-| you only | your CLI's skills folder ([matrix](cli/matrice.md)), `<name>/SKILL.md` | your CLI | untouched: the kit only touches folders it installed itself |
+| you only | your CLI's skills folder, `<name>/SKILL.md` (matrix row "Your own skills": [matrix](cli/matrice.md)) | your CLI | untouched: the kit only touches folders it installed itself |
 | a repo and its whole team | `<repo>/.agents/skills/<name>/SKILL.md`, versioned | CLIs that read `.agents/skills/` ([matrix](cli/matrice.md)) | no effect |
 | the whole organization | `skills/internal/<category>/<name>/` in the kit, plus the catalog | every workstation at the next distribution | it is the kit |
 

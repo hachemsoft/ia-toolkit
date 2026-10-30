@@ -23,6 +23,7 @@ A CLI without an adapter can already read the kit's repository files (`AGENTS.md
 | Personal context `30_USER.md` | `~/.gemini/30_USER.md`, declared in `context.fileName` | included by path from the plugin | copied into that block on every `update` |
 | Repository context | `AGENTS.md` or `GEMINI.md`, at the root and in the folders traversed | `AGENTS.md`, `GEMINI.md`, `.agents/rules/` | `AGENTS.md` (and `AGENTS.override.md`), at the root and in the folders |
 | Kit skills | `~/.gemini/skills/<name>/SKILL.md` | the same (`~/.gemini/skills/`) | `~/.codex/skills/<name>/SKILL.md`, "on command only" honored (`agents/openai.yaml`) |
+| Your own skills (personal, any name the kit does not install) | `~/.gemini/skills/<name>/SKILL.md` | the same (`~/.gemini/skills/`) | `~/.codex/skills/<name>/SKILL.md` |
 | Repository skills | `<repo>/.agents/skills/` or `<repo>/.gemini/skills/` | `<repo>/.agents/skills/` | `<repo>/.agents/skills/` |
 | Commands (`commands/<name>.md`) | `~/.gemini/commands/<name>.toml` | a command skill in the plugin, `~/.gemini/config/plugins/ai-kit/skills/<name>/` (in agy, every skill is a command) | a command skill, called with `$<name>` |
 | Override a command in a repository | `<repo>/.gemini/commands/<name>.toml` | `<repo>/.agents/skills/<name>/SKILL.md` | `<repo>/.agents/skills/<name>/SKILL.md` |
@@ -34,6 +35,7 @@ A CLI without an adapter can already read the kit's repository files (`AGENTS.md
 | Logs read by `usage` | `~/.gemini/tmp/*/chats/*.json` | `~/.gemini/antigravity-cli/history.jsonl` | `~/.codex/history.jsonl` |
 | Real call by `doctor --live` | `gemini -p` | no (agy is checked by `agy plugin validate`) | no (`codex doctor` checks its configuration) |
 | Evals | `evals/run.py --cli gemini` | `evals/run.py --cli agy` | `evals/run.py --cli codex` |
+| Model (`model`, `models` in `overrides.json`) | `model` sets `model.name` in `settings.json`; `models` sets `model:` on the agents with a capability | not applied: agy's own model choice | not applied: the session model |
 | Authentication set by the kit | when declared: `vertex`, `code_assist`, `model` in `overrides.json` | never; see [the agy page](agy.md#authentication-google-account-or-google-cloud-project) | never (`codex login`) |
 | Detailed page | [Gemini CLI](gemini.md) | [Antigravity CLI](agy.md) | [Codex CLI](codex.md) |
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+Documentation reviewed from three newcomers' paths (install, use in a repo, adjust): how to run `setup`, `update` and `doctor` on Windows and Mac, where your files are, one rule for a new version, how the repo combines with your layers and what wins, who decides what and what the kit cannot enforce, the model settings per CLI, your own skills folder per CLI. `setup --team none` leaves a team.
+
 ## 0.29.0
 
 Teams bring their tools, not only their context ([customization › Teams](docs/customization.md#teams)).

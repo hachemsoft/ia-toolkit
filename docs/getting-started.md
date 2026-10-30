@@ -6,7 +6,7 @@ This page is for someone who has never seen the kit. Fifteen minutes, in order.
 
 Before you start: Python 3.9 or later (3.11 recommended) and your CLI must be available on the workstation, as provided or approved by your company. The kit installs nothing else and needs no administrator rights. If Python is missing or blocked, the installer says exactly what to ask IT.
 
-1. Download `ai-kit-<version>.zip` from the Releases page of the kit repository, and extract it into a folder you keep, for example `Documents`: this is your **kit folder**, from which you will run `update` and `doctor`. Windows: right-click the ZIP, **Extract All**. Mac: double-click the ZIP.
+1. Download `ai-kit-<version>.zip` from the Releases page of the kit repository (your organization's copy if it distributes its own, with its `organization.json`; otherwise the public one), and extract it into a folder you keep, for example `Documents`: this is your **kit folder**, from which you will run `update` and `doctor`. Windows: right-click the ZIP, **Extract All**. Mac: double-click the ZIP.
 2. Run the installer:
    - **Windows**: double-click `Installer.cmd` in the extracted folder. If Windows asks to confirm running a downloaded file, follow your company's rule; if it is blocked, ask IT and change no security setting.
    - **Mac**: open **Terminal** (Applications > Utilities), type `sh ` (with a space), drag the `scripts/bootstrap.sh` file of the extracted folder into the window, press Enter. (A double-click launcher is not provided: macOS blocks unsigned downloaded scripts, see [validation](validation.md).)
@@ -19,7 +19,7 @@ Before you start: Python 3.9 or later (3.11 recommended) and your CLI must be av
    - **5. Data Analyst**: you mostly write SQL, dbt, BigQuery queries, KPIs.
    - **6. Data Developer**: the same, plus Python or JavaScript code.
 
-   You can change the profile at any time by running `setup` again. A skill or agent from another profile is added in `~/.ai-kit/overrides.json` (see [customization](customization.md)).
+   To change profile later: `setup --profile <id>` ([Run the kit](#run-the-kit)), with the id shown in brackets in the [profile table](#3-work-one-command-per-step) (`general`, `java-developer`, `devops`, `architect`, `data-analyst`, `data-developer`); `setup` alone keeps your current profile. A skill or agent from another profile is added in `~/.ai-kit/overrides.json` (see [customization](customization.md)).
 5. **Which CLI?** Nothing to choose in the usual case: the kit configures the CLIs it finds on the workstation (Gemini CLI, Antigravity CLI, Codex CLI), and Gemini CLI if none is installed yet. To force a choice: add `--target` to the command, for example `sh scripts/bootstrap.sh setup --target codex` (Windows: `Installer.cmd setup --target codex`).
 
    | `--target` | CLIs configured |
@@ -47,7 +47,9 @@ Every page of this documentation that says "run `update`" or "then `update`" mea
 - **Windows, a Command Prompt in the kit folder**: open the folder in Explorer, click the address bar, type `cmd`, press Enter.
 - **Mac, a Terminal in the kit folder**: in Terminal, type `cd ` (with a space), drag the kit folder into the window, press Enter.
 
-Options (`--profile`, `--team`, `--target`…) go after the action: `Installer.cmd setup --team data-platform`.
+Options (`--profile`, `--team`, `--target`…) go after the action: `Installer.cmd setup --team data-platform`; `--team none` leaves your team.
+
+To run `doctor` for a repo (it then also lists the kit skills the repo replaces), start it from the repo folder with the launcher's full path: Windows, in a Command Prompt opened in the repo, `"<kit folder>\Installer.cmd" doctor`; Mac, in a Terminal in the repo, `sh ` then drag `scripts/bootstrap.sh` from the kit folder, then ` doctor`, Enter.
 
 ### Where your files are
 
