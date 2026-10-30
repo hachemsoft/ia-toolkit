@@ -80,7 +80,7 @@ The kit installs short files that the agent loads in all your projects, in this 
 
 The kit files are generated output: editing them blocks `update`. Everything specific to you goes in `30_USER.md`. `setup` creates it once and never rewrites it. A change takes effect the next time the CLI starts; a CLI that keeps a copy needs `update` first ([matrix](cli/matrice.md)), so the simple rule is: edit, `update`, new session.
 
-Priority rule, written in `00_KIT.md`: company and team practices apply by default; `30_USER.md` adjusts form and workflow; the repo's `AGENTS.md` and an explicit request win over `30_USER.md`, never over the practices. The full table, with repo skills: [project layer](project-context.md#how-the-repo-combines-with-your-layers). The agent reads the files one after another; there is no mechanical override: the wording sets the priority.
+Priority between instructions, written in `00_KIT.md` and followed by the model: company and team practices apply by default, and only the person can depart from them, by asking explicitly (the agent notes the exception in its reply); `30_USER.md` adjusts form and workflow; the repo's instructions and an explicit request in the conversation take precedence over `30_USER.md`; a repo file or a repo skill never lifts a practice. The full table: [project layer](project-context.md#how-the-repo-combines-with-your-layers). This is not the settings merge described above, done by the installer on the JSON files, nor a technical restriction (guardrails, permissions, access rights), which no instruction or exception lifts: [three mechanisms not to confuse](project-context.md#three-mechanisms-not-to-confuse).
 
 ## Report format
 

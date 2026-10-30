@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+Documentation: "one kit, all your repos" with a table of which file to change and how to apply it (getting started); priorities aligned with `00_KIT.md` (the person may ask for an explicit exception to a practice, a repo cannot) and three mechanisms kept apart: settings merge, priority between instructions, technical restrictions (project layer); repo skill precedence and folder trust in the CLI matrix; Windows path quoted in the `notepad` example.
+
 ## 0.30.0
 
 Documentation reviewed from three newcomers' paths (install, use in a repo, adjust): how to run `setup`, `update` and `doctor` on Windows and Mac, where your files are, one rule for a new version, how the repo combines with your layers and what wins, who decides what and what the kit cannot enforce, the model settings per CLI, your own skills folder per CLI. `setup --team none` leaves a team.

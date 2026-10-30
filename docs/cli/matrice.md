@@ -24,7 +24,7 @@ A CLI without an adapter can already read the kit's repository files (`AGENTS.md
 | Repository context | `AGENTS.md` or `GEMINI.md`, at the root and in the folders traversed | `AGENTS.md`, `GEMINI.md`, `.agents/rules/` | `AGENTS.md` (and `AGENTS.override.md`), at the root and in the folders |
 | Kit skills | `~/.gemini/skills/<name>/SKILL.md` | the same (`~/.gemini/skills/`) | `~/.codex/skills/<name>/SKILL.md`, "on command only" honored (`agents/openai.yaml`) |
 | Your own skills (personal, any name the kit does not install) | `~/.gemini/skills/<name>/SKILL.md` | the same (`~/.gemini/skills/`) | `~/.codex/skills/<name>/SKILL.md` |
-| Repository skills | `<repo>/.agents/skills/` or `<repo>/.gemini/skills/` | `<repo>/.agents/skills/` | `<repo>/.agents/skills/` |
+| Repository skills | `<repo>/.agents/skills/` or `<repo>/.gemini/skills/`; loaded after the kit's and personal skills, so the same name replaces them; only in a trusted folder (verified on 0.65) | `<repo>/.agents/skills/` | `<repo>/.agents/skills/` |
 | Commands (`commands/<name>.md`) | `~/.gemini/commands/<name>.toml` | a command skill in the plugin, `~/.gemini/config/plugins/ai-kit/skills/<name>/` (in agy, every skill is a command) | a command skill, called with `$<name>` |
 | Override a command in a repository | `<repo>/.gemini/commands/<name>.toml` | `<repo>/.agents/skills/<name>/SKILL.md` | `<repo>/.agents/skills/<name>/SKILL.md` |
 | Agents | `~/.gemini/agents/ai-kit-<name>.md` | plugin `agents/` | `[agents.ai-kit-<name>]` in the managed block of `config.toml` |

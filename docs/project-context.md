@@ -4,17 +4,23 @@ The kit prepares the workstation; the repo carries its own context. After the gl
 
 ## How the repo combines with your layers
 
-The agent reads, in this order: `00_KIT.md` (the kit), `10_COMPANY.md` (company practices), `20_TEAM.md` or your team's `20_<TEAM>.md`, `30_USER.md` (you), then the repo's `AGENTS.md` files and its CLI-specific context file. When they disagree, the rule given to the agent in `00_KIT.md` is:
+The agent reads, in this order: `00_KIT.md` (the kit), `10_COMPANY.md` (company practices), `20_TEAM.md` or your team's `20_<TEAM>.md`, `30_USER.md` (you), then the repo's `AGENTS.md` files and its CLI-specific context file. When they disagree, the rule given to the agent in `00_KIT.md` (from `templates/kit-context.md`) is:
 
 | Situation | What wins |
 | --- | --- |
 | the repo or the conversation vs `30_USER.md` | the repo (`AGENTS.md`, repo docs) and an explicit request in the conversation both win: `30_USER.md` only sets your defaults |
-| the repo vs an explicit request in the conversation | no fixed order: the agent points out the conflict and asks, unless a company or team practice settles it |
+| the repo vs an explicit request in the conversation | not set: `00_KIT.md` places each one above `30_USER.md` and below the practices, but does not order them against each other; the model decides case by case |
 | the repo vs company or team practices (`10`, `20`) | the practices: a repo adapts how to work in that repo, it never lifts them (never production without an explicit instruction, never a commit or push without your agreement). If a repo file asks for it, the agent says so and does not do it |
-| you vs company or team practices | the practices by default; you can ask for an exception explicitly, and the agent notes it in its reply |
+| you vs company or team practices | the practices by default; you, the person, can ask for an exception explicitly, and the agent notes it in its reply. A repo file cannot ask for one on your behalf. An exception changes what the agent is instructed to do, nothing else ([below](#three-mechanisms-not-to-confuse)) |
 | a repo skill (`.agents/skills/<name>`) vs a kit skill with the same name | the repo skill, in that repo: it is the intended way to adapt a kit skill to a project ([add or replace a skill](extending.md)); `doctor` lists which kit skills the repo replaces |
 
-There is no mechanical override: the agent follows these rules because they are written in its context. What must be guaranteed is enforced by the guardrails ([guardrails](hooks.md)) and by CODEOWNERS, not by wording.
+### Three mechanisms not to confuse
+
+| Mechanism | Applied by | Covers | What it guarantees |
+| --- | --- | --- | --- |
+| Settings merge | the installer, at `setup` and `update` | the JSON files: `organization.json` (defaults, teams), the profile, `~/.ai-kit/overrides.json`; lists add up, objects combine, the person's value wins ([customization](customization.md#organization-team-and-person)) | what is installed; nothing is locked, since the person's file has the last word |
+| Priority between instructions | the model, while it works | the layers `00` to `30`, the repo's `AGENTS.md` and skills, the conversation, as in the table above | nothing: the model follows them as instructions, it is not enforced |
+| Technical restrictions | the guardrails (hooks), the CLI's permissions and sandbox, access rights (IAM), CODEOWNERS, the policies set by IT | what must not happen | enforced outside the model ([guardrails](hooks.md)): no instruction and no requested exception lifts them. A kit guardrail is turned off only in the person's own settings, then `update`, not by asking the agent, which is told never to change that configuration |
 
 ## Expected files in a repo
 
@@ -65,7 +71,7 @@ A repo shared by several teams (for example a dbt project shared by finance and 
 
 ## Override preferences
 
-For a project to enforce a rule different from `30_USER.md` (language, level of detail, workflow, report format), write it in `AGENTS.md` under the same heading as in the personal file: *Language and style*, *My level and my domains*, *My default workflow*, *Report*. `00_KIT.md` tells the agent that the project wins over `30_USER.md`; it does not win over company or team practices ([above](#how-the-repo-combines-with-your-layers)).
+For a project to set a rule different from `30_USER.md` (language, level of detail, workflow, report format), write it in `AGENTS.md` under the same heading as in the personal file: *Language and style*, *My level and my domains*, *My default workflow*, *Report*. `00_KIT.md` tells the agent that the project wins over `30_USER.md`; it does not win over company or team practices ([above](#how-the-repo-combines-with-your-layers)).
 
 ## What the kit does not do
 

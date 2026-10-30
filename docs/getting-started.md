@@ -58,7 +58,7 @@ To run `doctor` for a repo (it then also lists the kit skills the repo replaces)
 | Your settings, `overrides.json` (created by `setup`, with one explanation line) | `~/.ai-kit/overrides.json` | `%USERPROFILE%\.ai-kit\overrides.json` |
 | Your personal context, `30_USER.md` | `~/.gemini/30_USER.md` with Gemini CLI, otherwise `~/.ai-kit/context/30_USER.md` | `%USERPROFILE%\.gemini\30_USER.md`, otherwise `%USERPROFILE%\.ai-kit\context\30_USER.md` |
 
-`~` and `%USERPROFILE%` are your home folder. Folders starting with a dot are hidden: on Windows, paste the path into the Explorer address bar (or open it with `notepad %USERPROFILE%\.ai-kit\overrides.json`); on Mac, in Finder press Cmd+Shift+G and paste the path, or Cmd+Shift+. to show hidden files. `doctor` prints the exact path of `30_USER.md`.
+`~` and `%USERPROFILE%` are your home folder. Folders starting with a dot are hidden: on Windows, paste the path into the Explorer address bar (or open it with `notepad "%USERPROFILE%\.ai-kit\overrides.json"`); on Mac, in Finder press Cmd+Shift+G and paste the path, or Cmd+Shift+. to show hidden files. `doctor` prints the exact path of `30_USER.md`.
 
 ### New version
 
@@ -67,6 +67,15 @@ Download and extract the new ZIP, then run its installer, as for the first time.
 If your organization requires a Google Cloud project or a model, that is one line in `~/.ai-kit/overrides.json`, provided by your platform team; see [customization](customization.md#authentication-and-model). Otherwise there is nothing to declare.
 
 ## 2. First session (five minutes)
+
+**One kit, all your repos.** You install the kit once per workstation, not once per repo. The kit folder only serves to run `setup`, `update` and `doctor` ([Run the kit](#run-the-kit)); you never work in it. To work, open a terminal in your own repo and start your CLI there (`gemini`, `agy` or `codex`) directly. In `projet-a`, the CLI reads the kit's global context (company, team, you) and the context of `projet-a`; in `projet-b`, the same kit and the context of `projet-b`. What belongs to a project stays in its repo; your preferences stay in your home folder. If the repo already has its context (`AGENTS.md`…), use it as is: do not initialize it again.
+
+| You want to change | File or location | To apply it |
+| --- | --- | --- |
+| your personal preferences | `30_USER.md`, at the path shown by the installer ([where](#where-your-files-are)) | `update` if a CLI keeps a copy ([matrix](cli/matrice.md)), then a new CLI session |
+| your selection of commands, skills, agents, MCP servers | `~/.ai-kit/overrides.json`: personal, for the whole workstation; there is no per-repo equivalent | `update` from the kit folder ([Run the kit](#run-the-kit)) |
+| your project's conventions | `<repo>/AGENTS.md`, versioned with the repo | a new CLI session in the repo |
+| a skill for this project only, or a replacement for a kit skill | `<repo>/.agents/skills/<name>/SKILL.md`; the same name as a kit skill replaces it in that repo | a new CLI session in the repo; the CLI may ask you to trust the folder first, and repo skills are ignored until you do ([matrix](cli/matrice.md)) |
 
 1. Go to your repo: `cd <repo folder>`. Without this, the agent does not see the project context.
 2. Start your CLI: `gemini`, `agy` or `codex`. In Gemini and agy, commands are written `/guide`; in Codex, `$guide`. This page writes them with `/`. The first time, Codex asks you to review the kit's hooks: answer "Trust all and continue" (they keep the agent from changing its own configuration).
