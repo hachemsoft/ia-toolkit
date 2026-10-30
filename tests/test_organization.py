@@ -62,7 +62,7 @@ class OrganizationTests(unittest.TestCase):
             with contextlib.redirect_stdout(out):
                 doctor(self.home)
         self.assertNotIn('dbt-prod-guard', state['hooks'])
-        self.assertIn('Your overrides.json changes organization defaults: hooks.dbt-prod-guard', out.getvalue())
+        self.assertIn('Your overrides.json changes organization or team defaults: hooks.dbt-prod-guard', out.getvalue())
 
     def test_team_selects_its_practices_whatever_the_profile(self):
         team_file = ROOT/'practices/20-kit-test-team.md'
@@ -132,6 +132,63 @@ class OrganizationTests(unittest.TestCase):
             doctor(self.home)
         self.assertIn('unknown: extra_skill', out.getvalue())
         self.assertEqual(merge_settings({}, {'$schema': 'x', 'model': 'm'}), {'model': 'm'})
+
+class TeamToolsTests(unittest.TestCase):
+    """A team in organization.json brings its tools (same keys as overrides.json), between the organization and the person."""
+    ORG = {'defaults': {'extra_skills': ['teach'], 'mcp': {'dbt': {'server': {'command': 'dbt-mcp'}},
+                                                          'github': {'server': {'command': 'gh-mcp'}}}},
+           'teams': {'data-platform': {'extra_skills': ['prototype'], 'extra_commands': ['ask'], 'mcp': {'dbt': True},
+                                       'hooks': {'dbt-prod-guard': True}}}}
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.home = Path(self.temp.name)
+
+    def install(self, team=None, personal=None, profile='general'):
+        if personal is not None:
+            (self.home/'.ai-kit').mkdir(parents=True, exist_ok=True)
+            (self.home/'.ai-kit/overrides.json').write_text(json.dumps(personal), encoding='utf-8')
+        real = cli.read_json
+        with mock.patch.object(cli, 'read_json', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.json' else real(p, d)), \
+             contextlib.redirect_stdout(io.StringIO()):
+            apply(profile, self.home, False, IDENTITY, 'gemini', team)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                doctor(self.home)
+        return read_json(self.home/'.ai-kit/state.json'), out.getvalue()
+
+    def test_team_brings_skills_commands_guardrails_and_mcp(self):
+        state, out = self.install('data-platform')
+        skills = self.home/'.gemini/skills'
+        self.assertTrue((skills/'teach').is_dir())       # organization
+        self.assertTrue((skills/'prototype').is_dir())   # team
+        self.assertTrue((self.home/'.gemini/commands/ask.toml').is_file())
+        self.assertIn('dbt-prod-guard', state['hooks'])
+        self.assertEqual(list(state['mcp']), ['ai-kit-dbt'])
+        # No practices/20-data-platform.md: the shared team practices stay, the team is kept for update.
+        self.assertEqual(state['team'], 'data-platform')
+        self.assertIn('team', state['practices'])
+        self.assertIn('[Info] Team: data-platform (organization.json teams.data-platform)', out)
+        self.assertIn('organization.json teams.data-platform: only known keys', out)
+
+    def test_without_the_team_nothing_of_it(self):
+        state, _ = self.install()
+        self.assertFalse((self.home/'.gemini/skills/prototype').exists())
+        self.assertEqual(state['mcp'], {})
+
+    def test_the_person_still_has_the_last_word(self):
+        state, out = self.install('data-platform', {'mcp': {'dbt': False, 'github': True}, 'disabled_skills': ['prototype']})
+        self.assertEqual(list(state['mcp']), ['ai-kit-github'])
+        self.assertFalse((self.home/'.gemini/skills/prototype').exists())
+
+    def test_team_listed_at_setup_and_unknown_team_refused(self):
+        real = cli.read_json
+        with mock.patch.object(cli, 'read_json', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.json' else real(p, d)):
+            self.assertIn('data-platform', cli.team_ids())
+            with self.assertRaises(KitError):
+                apply('general', self.home, False, IDENTITY, 'gemini', 'no-such-team')
+
 
 class McpTests(unittest.TestCase):
     """organization.json says how to reach a server, the profile which ones are on, overrides.json the person's exceptions."""

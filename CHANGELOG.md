@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+Teams bring their tools, not only their context ([customization › Teams](docs/customization.md#teams)).
+- `organization.json` gets a `teams` section: per team, the same keys and formats as `overrides.json` (skills, commands, agents, guardrails, MCP servers, model). Order: organization defaults, team, then the person's `overrides.json`, which keeps the last word.
+- A team can have settings, a practices file (`practices/20-<team>.md`), or both. A team with settings only keeps the shared team practices.
+- `setup` lists every team; `doctor` shows the team and where its content comes from, and checks the team's keys like the others.
+- `organization.schema.json` describes `teams`.
+
 ## 0.28.0
 
 MCP servers made simple: three files, one role each ([docs/mcp.md](docs/mcp.md)).

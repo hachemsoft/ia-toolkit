@@ -2,12 +2,13 @@
 
 The user folder is the Windows or macOS one, not the project folder.
 
-## Organization and person
+## Organization, team and person
 
-Two files, combined at every `setup` and `update`:
+Settings come in three layers, combined at every `setup` and `update`, each on top of the previous one:
 
 - **`organization.json`**, at the root of the kit repository, belongs to the organization. It is changed by merge request, then each workstation runs `update`. It holds the expected email domains (`allowed_domains`) and the organization defaults (`defaults`, with the same keys as `overrides.json`: authentication, model, guardrails, MCP, skills, commands…).
-- **`~/.ai-kit/overrides.json`** belongs to the person. It is applied on top of the organization defaults: lists add up, objects combine, the person's value wins for a single value. It never replaces the organization defaults wholesale; `doctor` lists the defaults a person changed.
+- **The team's settings**, in the same `organization.json`, under `teams` (see [Teams](#teams)).
+- **`~/.ai-kit/overrides.json`** belongs to the person. It is applied on top: lists add up, objects combine, the person's value wins for a single value. It never replaces the organization or team settings wholesale; `doctor` lists the values a person changed.
 
 ```json
 {
@@ -16,13 +17,39 @@ Two files, combined at every `setup` and `update`:
 }
 ```
 
-Both files have a JSON Schema in `schemas/`: an editor that knows the `"$schema"` key (VS Code and most others) completes the keys, shows each key's description and flags a typo or a wrong value as you type. `organization.json` points to its schema; the personal file created by `setup` points to the kit's copy. For a personal file created before 0.26, add this first line, with the path of your kit folder: `"$schema": "file:///<kit folder>/schemas/overrides.schema.json",`. `doctor` also reports an unknown key (usually a typo), and the CI checks the shipped files against the schemas.
+Both files have a JSON Schema in `schemas/`: an editor that knows the `"$schema"` key (VS Code and most others) completes the keys, shows each key's description and flags a typo or a wrong value as you type. `organization.json` points to its schema; the personal file points to the copy in `~/.ai-kit/schemas/` (`setup` adds or updates that line, and changes nothing else in the file). `doctor` also reports an unknown key (usually a typo), and the CI checks the shipped files against the schemas.
 
 JSON allows no comments: keys starting with `_` (`_doc`) are documentation and are ignored. A mistake in either file is reported with its line, its column, the line itself and the usual cause (missing comma, comma left before `}`, single quotes, backslash in a Windows path).
 
 ## Teams
 
-A team with its own practices has a file `practices/20-<team>.md` in the kit repository. The person's team comes from `setup --team <team>` or from the question `setup` asks when several team files exist; it is kept for `update`. The usual way: IT gives each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile java-developer --team finance`. The kit then installs `20_<TEAM>.md` instead of the shared `20_TEAM.md`, whatever the profile: profiles describe a job, teams describe who you work with.
+Profiles describe a job; teams describe who you work with. A person has one profile and, optionally, one team; the two are independent. A team can bring two things, both in the kit repository and both optional.
+
+**Its context: `practices/20-<team>.md`.** The team's rules in plain text: ticket tracker, branch names, review and deployment habits. The kit installs it as `20_<TEAM>.md` instead of the shared `20_TEAM.md`, whatever the profile.
+
+**Its tools: `teams` in `organization.json`.** The same keys and formats as `overrides.json`: skills, commands, agents, guardrails, MCP servers, model.
+
+```json
+{
+  "defaults": {
+    "mcp": { "dbt": { "server": { "command": "dbt-mcp" } } }
+  },
+  "teams": {
+    "data-platform": {
+      "extra_skills": ["prototype"],
+      "extra_commands": ["ask"],
+      "hooks": { "dbt-prod-guard": true },
+      "mcp": { "dbt": true }
+    }
+  }
+}
+```
+
+Order: organization defaults, then the team, then the person's `overrides.json`, which keeps the last word (`"dbt": false`, `"disabled_skills": ["prototype"]`). For MCP servers, the team uses the person's formats: `true` or `false` for a server the organization defines, `{"server": {...}}` for one of its own ([MCP](mcp.md)).
+
+**Choosing the team.** `setup` lists the teams (those with a practices file or settings) and asks; or `setup --team <team>`. The team is kept for `update`. The usual way: IT gives each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile java-developer --team data-platform`. To change team, run `setup --team <other>`. `doctor` shows the team and where its content comes from.
+
+**Adding a team** is one merge request on the kit repository: the practices file, the `teams` entry, or both. Protect them with a CODEOWNERS line so that the team reviews its own changes.
 
 ## Context layers
 
@@ -35,7 +62,7 @@ The kit installs short files that the agent loads in all your projects, in this 
 | `20_TEAM.md` | kit | team practices |
 | `30_USER.md` | you | language, style, level, domains, default workflow |
 
-The kit files are generated output: editing them blocks `update`. Everything specific to you goes in `30_USER.md`. `setup` creates it once and never rewrites it. A change takes effect the next time the CLI starts, without `update`.
+The kit files are generated output: editing them blocks `update`. Everything specific to you goes in `30_USER.md`. `setup` creates it once and never rewrites it. A change takes effect the next time the CLI starts; a CLI that keeps a copy needs `update` first ([matrix](cli/matrice.md)), so the simple rule is: edit, `update`, new session.
 
 Priority rule, written in `00_KIT.md`: practices are mandatory; `30_USER.md` adjusts form and workflow; the project's `AGENTS.md` wins over `30_USER.md` on conflict. The agent reads the files one after another. There is no mechanical override: the wording sets the priority.
 

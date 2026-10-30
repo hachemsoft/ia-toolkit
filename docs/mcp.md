@@ -8,9 +8,10 @@ An MCP server gives the agent access to a tool or to data: a documentation site,
 | --- | --- | --- | --- |
 | `organization.json` (kit repository) | the platform team, by merge request | **how** to reach each approved server | `"bigquery": {"server": {"httpUrl": "https://…"}}` |
 | `profiles/<profile>.json` (kit repository) | the kit maintainers | **which** servers are on for that job | `"mcp": ["bigquery", "dbt"]` |
+| `organization.json`, under `teams.<team>` | the team, by merge request | **the team's exceptions**, same formats as yours | `"mcp": {"github": true}` |
 | `~/.ai-kit/overrides.json` (your workstation) | you | **your exceptions**: turn one on or off, or add your own | `"mcp": {"dbt": false, "github": true}` |
 
-A server is installed when it is **defined** (in `organization.json` or in your file) **and on** (through your profile, through `"enabled": true` in `organization.json`, or through your file). Your file has the last word. After any change: `update`, then restart the CLI.
+A server is installed when it is **defined** (in `organization.json` or in your file) **and on** (through your profile, through `"enabled": true` in `organization.json`, through your team, or through your file). Order: organization, profile, team, you; your file has the last word. Teams: [customization](customization.md#teams). After any change: `update`, then restart the CLI.
 
 ## For the platform team: define the approved servers
 

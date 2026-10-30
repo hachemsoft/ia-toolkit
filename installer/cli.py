@@ -105,19 +105,29 @@ def organization():
     org = read_json(ROOT/'organization.json', {})
     if not isinstance(org.get('defaults', {}), dict):
         raise KitError('organization.json: defaults must be an object.')
+    teams = org.get('teams', {})
+    if not isinstance(teams, dict) or not all(isinstance(v, dict) for v in teams.values()):
+        raise KitError('organization.json: teams must be an object {"<team>": {settings}}.')
+    for name in teams:
+        safe_id(name)
     return org
 
-def resolve_mcp(org_mcp, profile_mcp, personal_mcp):
+def team_settings(team):
+    """The team's settings in organization.json (same keys as overrides.json), between the organization and the person."""
+    return organization().get('teams', {}).get(team, {}) if team else {}
+
+def resolve_mcp(org_mcp, profile_mcp, personal_mcp, team_mcp=None):
     """MCP servers to install, by name, and the names chosen without a definition.
-    organization.json says how to reach each server, the profile which ones are active, overrides.json the person's
-    exceptions: true / false for a defined server, or a server of their own ({"server": {...}})."""
-    for label, entries in (('organization.json', org_mcp), ('overrides.json', personal_mcp)):
+    organization.json says how to reach each server, the profile which ones are active; the team (organization.json teams)
+    then the person (overrides.json) adjust: true / false for a defined server, or a server of their own ({"server": {...}})."""
+    team_mcp = team_mcp or {}
+    for label, entries in (('organization.json', org_mcp), ('organization.json teams', team_mcp), ('overrides.json', personal_mcp)):
         if not isinstance(entries, dict):
             raise KitError(label+': mcp must be an object.')
     if not isinstance(profile_mcp, list) or not all(isinstance(n, str) for n in profile_mcp):
         raise KitError('Profile: mcp must be a list of server names.')
     defined, active = {}, set(profile_mcp)
-    for source, entries in (('organization.json', org_mcp), ('overrides.json', personal_mcp)):
+    for source, entries in (('organization.json', org_mcp), ('team', team_mcp), ('overrides.json', personal_mcp)):
         for name, entry in entries.items():
             safe_id(name)
             if isinstance(entry, bool):
@@ -134,7 +144,7 @@ def resolve_mcp(org_mcp, profile_mcp, personal_mcp):
                 defined[name] = validate_server(entry['server'])
             # An organization server is active only for the profiles that choose it, unless "enabled": true (everyone).
             # A person's entry is active unless "enabled": false (older format: "enabled": true with or without server).
-            if entry.get('enabled', source == 'overrides.json'):
+            if entry.get('enabled', source != 'organization.json'):
                 active.add(name)
             elif 'enabled' in entry:
                 active.discard(name)
@@ -183,14 +193,17 @@ def domain_allowed(email, domains):
     return not domains or email.rsplit('@',1)[-1].lower() in domains
 
 def team_ids():
-    """Teams that have their own practices: practices/20-<team>.md, besides the shared 20-team.md."""
-    return sorted(p.stem[3:] for p in (ROOT/'practices').glob('20-*.md') if p.stem != '20-team')
+    """Teams: those with their own practices (practices/20-<team>.md, besides the shared 20-team.md) or their own settings
+    (teams in organization.json): context, tools, or both."""
+    files = {p.stem[3:] for p in (ROOT/'practices').glob('20-*.md') if p.stem != '20-team'}
+    return sorted(files | set(organization().get('teams', {})))
 
 def profile_practices(profile, team):
     """The profile's practices, with the shared team practice replaced by the person's team when it has its own file."""
     if team and team not in team_ids():
-        raise KitError('Unknown team: '+team+'. Teams with practices: '+(', '.join(team_ids()) or 'none (practices/20-<team>.md)'))
-    return [team if p == 'team' and team else p for p in profile['practices']]
+        raise KitError('Unknown team: '+team+'. Teams: '+(', '.join(team_ids()) or 'none (practices/20-<team>.md or teams in organization.json)'))
+    own = team and (ROOT/'practices'/('20-'+team+'.md')).is_file()
+    return [team if p == 'team' and own else p for p in profile['practices']]
 
 # 0.26: skills renamed so that no skill shares a command's name (Gemini CLI turns every skill into a /command).
 RENAMED_SKILLS = {'guide': 'routing', 'handoff': 'handover', 'research': 'investigation', 'retro': 'retrospective',
@@ -330,9 +343,11 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
         raise KitError('Unknown profile: '+profile_id)
     profile = read_json(profile_path)
     state = read_json(kit/'state.json')
-    # Organization defaults, then the person's own overrides on top (never replaced wholesale).
-    org_defaults, personal = organization().get('defaults', {}), read_json(kit/'overrides.json', {})
-    overrides = merge_settings(org_defaults, personal)
+    # Team: chosen at setup (--team or the setup question), then kept for update.
+    team = safe_id(team) if team else state.get('team')
+    # Organization defaults, then the team's settings, then the person's own overrides on top (never replaced wholesale).
+    org_defaults, team_layer, personal = organization().get('defaults', {}), team_settings(team), read_json(kit/'overrides.json', {})
+    overrides = merge_settings(merge_settings(org_defaults, team_layer), personal)
     if overrides.get('frictions', 'propose') not in ('propose', 'auto', 'off'):
         raise KitError('frictions must be propose (default), auto or off.')
     models = overrides.get('models', {})
@@ -373,8 +388,6 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     identity = dict(user) if user else dict(state.get('user', {}))
     if identity.get('email') and not EMAIL.fullmatch(identity['email']):
         raise KitError('Invalid email: '+identity['email'])
-    # Team: chosen at setup (--team or the setup question), then kept for update.
-    team = safe_id(team) if team else state.get('team')
     profile = {**profile, 'practices': profile_practices(profile, team)}
     files = {}
     old_files = state.get('files',{})
@@ -435,7 +448,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
         script = hooks_dir/spec['script']
         enabled_hooks[name] = {'event': spec['event'], 'group': {'matcher': spec['matcher'], 'hooks': [{'name': 'ai-kit-'+name, 'type': 'command', 'command': hook_command(script)}]}}
     # MCP: resolved from the three sources apart, not from the merged overrides ("github": true must not erase the server).
-    servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}))  # undefined names: doctor
+    servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
     enabled_mcp = {'ai-kit-'+name: server for name, server in servers.items()}
     p = Plan(active=[a.NAME for a in active],
         home=home, kit=kit, state=state, old_files=old_files, overrides=overrides, profile_id=profile_id, profile=profile,
@@ -711,15 +724,21 @@ def doctor(home, cwd=None):
         folder_version = (ROOT/'VERSION').read_text(encoding='utf-8').strip()
         status(state.get('version') == folder_version, 'Installed version '+str(state.get('version'))+' matches the kit folder'+('' if state.get('version') == folder_version else ' ('+folder_version+'): run update'))
         org_defaults = organization().get('defaults', {})
+        team_layer = team_settings(state.get('team'))
         personal = read_json(home/'.ai-kit/overrides.json', {})
-        for label, settings in (('~/.ai-kit/overrides.json', personal), ('organization.json defaults', org_defaults)):
+        layers = [('~/.ai-kit/overrides.json', personal), ('organization.json defaults', org_defaults)]
+        layers += [('organization.json teams.'+state['team'], team_layer)] if state.get('team') else []
+        for label, settings in layers:
             unknown = unknown_keys(settings)
             status(not unknown, label+': only known keys'+(' (unknown: '+', '.join(unknown)+'; a typo? keys are listed in schemas/overrides.schema.json)' if unknown else ''))
-        changed = setting_differences({k: v for k, v in org_defaults.items() if k != 'mcp'}, merge_settings(org_defaults, personal))
+        shared = merge_settings(org_defaults, team_layer)
+        changed = setting_differences({k: v for k, v in shared.items() if k != 'mcp'}, merge_settings(shared, personal))
         if changed:
-            print('[Info] Your overrides.json changes organization defaults: '+', '.join(changed))
+            print('[Info] Your overrides.json changes organization or team defaults: '+', '.join(changed))
         if state.get('team'):
-            print('[Info] Team: '+state['team']+' (practices/20-'+state['team']+'.md)')
+            sources = [s for s, present in (('practices/20-'+state['team']+'.md', (ROOT/'practices'/('20-'+state['team']+'.md')).is_file()),
+                                            ('organization.json teams.'+state['team'], bool(team_layer))) if present]
+            print('[Info] Team: '+state['team']+' ('+(', '.join(sources) or 'nothing of its own yet')+')')
         root, overrides = repo_skill_overrides(state, cwd or os.getcwd())
         if overrides:
             print('[Info] This repo ('+root.name+') replaces kit skills: '+', '.join(path for _, path in overrides)
@@ -732,7 +751,7 @@ def doctor(home, cwd=None):
                 adapter.doctor(home, state, status, ctx)
                 hints.append(adapter.doctor_hint())
         try:
-            servers, undefined = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}))
+            servers, undefined = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))
             print('[Info] MCP servers: '+(', '.join(servers) or 'none')+(' | chosen but not defined in organization.json: '+', '.join(undefined) if undefined else ''))
         except KitError as exc:
             status(False, str(exc))
@@ -926,7 +945,7 @@ def main(argv=None):
     parser.add_argument('--user',help='Work email to record, without interactive confirmation')
     parser.add_argument('--home',type=Path,default=Path.home(),help='Alternative home folder for an isolated trial')
     parser.add_argument('--dry-run',action='store_true',help='Show the plan without writing')
-    parser.add_argument('--team',help='setup: your team, when it has its own practices (practices/20-<team>.md); kept for update')
+    parser.add_argument('--team',help='setup: your team, when it has its own practices (practices/20-<team>.md) or tools (teams in organization.json); kept for update')
     parser.add_argument('--target',choices=list(TARGETS),default='auto',help='auto: the CLIs present on the machine (Gemini if none); gemini, agy, codex: that CLI only; both: Gemini and agy; all: every supported CLI')
     parser.add_argument('--live',action='store_true',help='doctor: make a real call to the model and diagnose')
     parser.add_argument('--no-live',action='store_true',help='setup/update: do not check with a real call to the model')
@@ -960,7 +979,7 @@ def main(argv=None):
         team = args.team or state.get('team')
         if not team and args.action == 'setup' and team_ids() and interactive():
             teams = team_ids()
-            print('Teams with their own practices:\n'+'\n'.join(str(i+1)+'. '+t for i, t in enumerate(teams))+'\n'+str(len(teams)+1)+'. none of these (shared team practices)')
+            print('Teams:\n'+'\n'.join(str(i+1)+'. '+t for i, t in enumerate(teams))+'\n'+str(len(teams)+1)+'. none of these (shared team practices)')
             answer = input('Your team [1-'+str(len(teams)+1)+'] (Enter = none): ').strip()
             if answer and answer not in [str(i+1) for i in range(len(teams)+1)]:
                 raise KitError('Choose a number between 1 and '+str(len(teams)+1)+'.')

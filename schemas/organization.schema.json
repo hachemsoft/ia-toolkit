@@ -19,6 +19,16 @@
     "defaults": {
       "$ref": "overrides.schema.json",
       "description": "Organization defaults, same keys as overrides.json; each person's overrides.json is applied on top."
+    },
+    "teams": {
+      "type": "object",
+      "description": "Settings per team, same keys and formats as overrides.json; applied after defaults and before each person's overrides.json. The team is chosen at setup (--team or the question). Its context goes in practices/20-<team>.md.",
+      "propertyNames": {
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "additionalProperties": {
+        "$ref": "overrides.schema.json"
+      }
     }
   },
   "patternProperties": {
