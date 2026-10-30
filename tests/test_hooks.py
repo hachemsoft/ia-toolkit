@@ -39,7 +39,8 @@ class HookScriptTests(unittest.TestCase):
    except (OSError,NotImplementedError):pass
    if (t/'link').exists():self.assertEqual(decide('link/a.sql'),'deny')
    self.assertEqual(decide('.ai-kit/protected-paths'),'deny')
-   for rel in ('.gemini/settings.json','.gemini/.env','.ai-kit/overrides.json','.ai-kit/hooks/dbt-prod-guard.py','.codex/config.toml','.gemini/config/plugins/ai-kit/hooks.json'):
+   for rel in ('.gemini/settings.json','.gemini/.env','.ai-kit/overrides.json','.ai-kit/hooks/dbt-prod-guard.py','.codex/config.toml','.gemini/config/plugins/ai-kit/hooks.json',
+               '.gemini/00_KIT.md','.gemini/10_COMPANY.md','.gemini/20_TEAM.md','.gemini/20_DATA_PLATFORM.md','.ai-kit/context/00_KIT.md'):
     self.assertEqual(decide(str(Path(fake_home)/rel)),'deny',rel)
    for rel in ('.ai-kit/learn/topic/progress.md','.gemini/30_USER.md','notes.md'):
     self.assertIsNone(decide(str(Path(fake_home)/rel)),rel)

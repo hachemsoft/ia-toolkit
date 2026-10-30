@@ -1,7 +1,7 @@
 {
  "architect/all": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".codex/AGENTS.md": "635a0b39858e4063",
@@ -213,7 +213,7 @@
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "1100597e3fd7312b",
   ".ai-kit/context/30_USER.md": "2447f3ce3c98a9d1",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-dbt-reviewer.md": "7547fe73f1d8cc36",
@@ -276,7 +276,7 @@
  },
  "data-analyst/all": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".codex/AGENTS.md": "e6cb0b5cb2ccdeff",
@@ -424,7 +424,7 @@
  },
  "data-analyst/both": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".gemini/00_KIT.md": "6b0e6512da959457",
@@ -504,7 +504,7 @@
  },
  "data-analyst/gemini": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".gemini/00_KIT.md": "6b0e6512da959457",
@@ -569,7 +569,7 @@
  },
  "data-developer/all": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".codex/AGENTS.md": "8d660119d2372a34",
@@ -791,7 +791,7 @@
  "data-developer/all/overrides": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
   ".ai-kit/hooks/dbt-prod-guard.py": "7b6f4cf4b2906214",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "914076edc45b50a9",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".codex/AGENTS.md": "04a56652710cec73",
@@ -1027,7 +1027,7 @@
  },
  "data-developer/both": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".gemini/00_KIT.md": "e4771271f6d90da3",
@@ -1142,7 +1142,7 @@
  "data-developer/both/overrides": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
   ".ai-kit/hooks/dbt-prod-guard.py": "7b6f4cf4b2906214",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "914076edc45b50a9",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".gemini/.env": "74afa839b2f144eb",
@@ -1267,7 +1267,7 @@
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "1100597e3fd7312b",
   ".ai-kit/context/30_USER.md": "2447f3ce3c98a9d1",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".codex/AGENTS.md": "8d660119d2372a34",
@@ -1380,7 +1380,7 @@
  },
  "data-developer/gemini": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".gemini/00_KIT.md": "e4771271f6d90da3",
@@ -1470,7 +1470,7 @@
  },
  "devops/all": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".codex/AGENTS.md": "926b30a9fd636d68",
@@ -1658,7 +1658,7 @@
  },
  "general/all": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".codex/AGENTS.md": "9a5be6fac32b82b8",
@@ -1820,7 +1820,7 @@
  },
  "general/both": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".gemini/00_KIT.md": "67026a3dbd990a26",
@@ -1905,7 +1905,7 @@
  },
  "general/gemini": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".gemini/00_KIT.md": "67026a3dbd990a26",
@@ -1971,7 +1971,7 @@
  },
  "java-developer/all": {
   ".ai-kit/bin/friction.py": "729735362bd6ff3f",
-  ".ai-kit/hooks/protected-paths.py": "08902751009f7ecf",
+  ".ai-kit/hooks/protected-paths.py": "524256616e34a390",
   ".ai-kit/overrides.json": "a668f127e207a8db",
   ".ai-kit/schemas/overrides.schema.json": "31a96054f8d158e0",
   ".codex/AGENTS.md": "94fa91b4219806eb",
