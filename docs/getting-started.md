@@ -30,7 +30,7 @@ Before you start: Python 3.9 or later (3.11 recommended) and your CLI must be av
    | `all` | all three |
 
    A CLI installed later is picked up at the next `update`.
-6. Installation ends with a real call to the model. **Green**: you are done. Otherwise, the installation is still complete, and the message says exactly what to do: sign in, a line to add, or what to ask IT (network, proxy, certificate). Do it, then run `doctor --live` again.
+6. Installation ends with a **summary**: the kit configuration, each targeted CLI (found, or not found with its configuration prepared), the data connections (MCP) and your **next step**. When a CLI is found, a real call to the model checks the connection; if it fails, the installation is still complete and the message says exactly what to do: sign in, a line to add, or what to ask IT (network, proxy, certificate). Without that call, the summary says "connection not verified": a CLI found is not a CLI signed in. `doctor` starts with the same summary.
 7. **Your personal context** (optional, two minutes): the installer shows the path of `30_USER.md` and offers to open it in Notepad (Windows) or your text editor (Mac). The file is already filled with headings and examples: *Language and style*, *My level and my domains*, *My default workflow*, *Report*, *Personal context*. Replace the "to fill in" lines with your role, your projects and your preferences, in plain text; save under the same name, then press Enter in the installer: it applies the file. Start a new session of your CLI to take it into account. Later: edit the same file, run `update` ([below](#run-the-kit)), then start a new session.
 
 ### Run the kit
@@ -109,7 +109,7 @@ What each profile installs:
 | **Java Developer** (`java-developer`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/triage` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, verifier, doubter, code-reviewer, security-reviewer |
 | **DevOps** (`devops`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/map` `/triage` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, verifier, doubter, infra-reviewer, security-reviewer |
 | **Architect** (`architect`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/guide` `/friction` `/learn` `/explain` `/retro` `/research` `/audit` | repo-investigator, verifier, doubter, architecture-reviewer, code-reviewer |
-| **Data Analyst** (`data-analyst`) | `/intent` `/build` `/test` `/ship` `/diagnose` | `/guide` `/friction` `/learn` | repo-investigator, sql-reviewer, dbt-reviewer, verifier |
+| **Data Analyst** (`data-analyst`) | `/intent` `/build` `/test` `/review` `/ship` `/diagnose` | `/guide` `/friction` `/learn` | repo-investigator, sql-reviewer, dbt-reviewer, verifier |
 | **Data Developer** (`data-developer`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/triage` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, code-reviewer, verifier, doubter, sql-reviewer, dbt-reviewer |
 <!-- profile-table:end -->
 

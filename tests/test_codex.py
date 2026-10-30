@@ -65,7 +65,7 @@ class CodexAdapterTests(unittest.TestCase):
   self.assertIn('allow_implicit_invocation: false',(sk/'to-spec/agents/openai.yaml').read_text(encoding='utf-8'))
   self.assertFalse((sk/'grilling/agents/openai.yaml').exists())
  def test_idempotent_and_removed_cleanly_when_target_changes(self):
-  self.run_kit();self.assertIn('Already up to date',self.run_kit())
+  self.run_kit();self.assertIn('Kit configuration already up to date',self.run_kit())
   self.run_kit(target='gemini')
   self.assertEqual(self.agents.read_text(encoding='utf-8'),'# My instructions\n- always in French\n');self.assertNotIn('ai-kit',self.config.read_text(encoding='utf-8'))
   self.assertFalse((self.home/'.codex/skills/intent').exists());self.assertFalse((self.home/'.codex/ai-kit').exists())

@@ -43,6 +43,7 @@
     "intent",
     "build",
     "test",
+    "review",
     "ship",
     "diagnose",
     "learn",

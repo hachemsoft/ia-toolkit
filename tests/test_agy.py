@@ -36,7 +36,7 @@ class AgyAdapterTests(unittest.TestCase):
   # Gemini reads the shared folder: no command skill there, or it would show every command twice.
   self.assertFalse((shared/'intent').exists());self.assertFalse((shared/'retro').exists())
  def test_analyst_gets_only_its_commands_as_skills(self):
-  self.run_kit();base=self.plugin()/'skills';self.assertTrue((base/'intent/SKILL.md').is_file());self.assertFalse((base/'review').exists());self.assertFalse((base/'spec').exists())
+  self.run_kit();base=self.plugin()/'skills';self.assertTrue((base/'intent/SKILL.md').is_file());self.assertTrue((base/'review/SKILL.md').is_file());self.assertFalse((base/'spec').exists())
  def test_gemini_only_target(self):
   self.run_kit(target='gemini');self.assertFalse(self.plugin().exists());self.assertFalse((self.home/'.gemini/skills/intent').exists())
  def test_switch_target_removes_plugin(self):

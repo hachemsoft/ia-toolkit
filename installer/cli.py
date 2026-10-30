@@ -508,7 +508,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
                 break
             if part.is_symlink():
                 raise KitError('Symbolic link in a managed path: '+str(part))
-    print('Profile: '+profile_id+(' | team '+team if team else '')+' | '+str(len(selected))+' skills | '+str(len(agents))+' agents | '+str(len(enabled_mcp))+' MCP enabled | '+str(len(enabled_hooks))+' guardrails')
+    print('Profile: '+profile_id+(' | team '+team if team else '')+' | '+str(len(selected))+' skills | '+str(len(agents))+' agents | '+str(len(enabled_hooks))+' guardrails')
     if identity.get('email'):
         print('Identity: '+identity['email']+' (source '+identity.get('source','?')+')')
     if dry_run:
@@ -549,20 +549,17 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
                 else:
                     atomic_write(path,data)
             raise
-    print('Installation complete.' if changed else 'Already up to date.')
+    print('Kit configuration installed.' if changed else 'Kit configuration already up to date.')
     print('Your personal context: '+str(p.user_file))
     for target in restored:
         print('[Check] '+target.name+' was modified by hand: restored to the kit version; your copy: '+str(backup/target.relative_to(home))
               + '. Personal preferences go in 30_USER.md; a rule change goes through the kit repository.')
     if p.migrated_prefs:
         print('Old preferences migrated to this file; copy kept in preferences.md.migrated.')
-    print('MCP servers: defined by your organization, chosen by your profile, adjusted in overrides.json. See docs/mcp.md.')
-    print(str(len(commands))+' commands installed; /guide explains where to start.')
     for adapter in active:
         line = adapter.summary(p)
         if line:
             print(line)
-    print('Open a project, start the CLI and type /guide; CLI-specific checks: docs/cli/.')
 
 KIT_MANAGED = ('.ai-kit/bin/', '.ai-kit/hooks/', '.ai-kit/context/', '.ai-kit/schemas/')
 
@@ -695,13 +692,89 @@ def personal_context_step(user_file, reapply):
     reapply()
     print('Personal context applied. Start a new session of your CLI: it reads 30_USER.md when it starts.')
 
-def doctor(home, cwd=None):
+def mcp_report(home, state):
+    """MCP lines of the summaries, from the installer's own resolution: configured, chosen but not provided by the
+    organization, or turned off. Never claims a connection: the kit does not call MCP servers."""
+    profile = read_json(ROOT/'profiles'/(safe_id(state['profile'])+'.json'))
+    servers, undefined = resolve_mcp(organization().get('defaults', {}).get('mcp', {}), profile.get('mcp', []),
+                                     read_json(home/'.ai-kit/overrides.json', {}).get('mcp', {}), team_settings(state.get('team')).get('mcp', {}))
+    off = [n for n in profile.get('mcp', []) if n not in servers and n not in undefined]
+    lines = []
+    if servers:
+        lines.append('Data connections (MCP): '+', '.join(servers)+' configured; connection not verified (check it with your CLI\'s MCP command).')
+    if undefined or off:
+        missing = [n+' not provided by your organization yet' for n in undefined] + [n+' turned off (in your overrides.json or by your team)' for n in off]
+        about = 'the SQL and dbt files' if {'bigquery', 'dbt'} & set(undefined + off) else 'the files'
+        lines.append('Data connections (MCP): '+'; '.join(missing)+'. You can work on '+about+' of your repo with its usual tools;'
+                     ' access to the data through MCP needs a connection provided by your company (platform team, docs/mcp.md).')
+    return lines or ['Data connections (MCP): none configured (optional, docs/mcp.md).']
+
+def print_summary(home, state, live=None, problems=()):
+    """What is ready, what is missing, the next action. Facts only: a CLI found is not a CLI signed in, and a connection
+    is "verified" only when a real call was made (live: {cli name: 0 if the model answered}). Same text for setup and doctor."""
+    print('\nSummary')
+    if not state:
+        print('  Kit configuration: not installed.')
+        print('Next step: run setup from the kit folder (docs/getting-started.md#run-the-kit).')
+        return
+    commands = state.get('installed', {}).get('commands', [])
+    print('  Kit configuration: installed (profile '+state['profile']+', version '+str(state.get('version'))+', '+str(len(commands))+' commands).')
+    targeted = [a for a in ADAPTERS if a.NAME in (state.get('installed', {}).get('clis') or [])]
+    found = []
+    for adapter in targeted:
+        if not shutil.which(adapter.COMMAND):
+            print('  '+adapter.LABEL+': not found on this workstation; its configuration is prepared. Install it following your IT procedure, then run update.')
+            continue
+        found.append(adapter)
+        result = (live or {}).get(adapter.NAME)
+        print('  '+adapter.LABEL+': found; '+('connection verified: the model answered.' if result == 0 else
+                                             'the model did not answer: see its diagnosis and fix.' if result is not None else
+                                             'connection not verified.'))
+    try:
+        for line in mcp_report(home, state):
+            print('  '+line)
+    except KitError as exc:
+        print('  Data connections (MCP): '+str(exc))
+    if problems:
+        print('  To fix ('+str(len(problems))+'): '+'; '.join(problems[:5])+('; and '+str(len(problems)-5)+' more in the details' if len(problems) > 5 else '')+'.')
+    if problems:
+        step = 'fix the points above, then run doctor again.'
+    elif any(r not in (0, None) for r in (live or {}).values()):
+        step = 'apply the fix shown above, then run doctor --live.'
+    elif not found:
+        step = 'install '+' or '.join(a.LABEL for a in targeted)+' following your IT procedure, then run update; meanwhile nothing else is needed.'
+    else:
+        names = ' or '.join('`'+a.COMMAND+'`' for a in found)
+        step = 'open a terminal in your repo, start '+names+' and type /guide'+(' ($guide in Codex)' if any(a.NAME == 'codex' for a in found) else '')+'.'
+        if not live or any((live or {}).get(a.NAME) != 0 for a in found):
+            step += ' Connection not verified yet: if the CLI asks you to sign in, follow your IT procedure; doctor --live checks it where supported.'
+    print('Next step: '+step)
+
+def doctor(home, cwd=None, live=False):
+    """Summary first (what is ready, what to fix, next step), then the detailed checks. Each check runs once:
+    the details are collected while the checks run, and printed after the summary. Exit code: 1 if a check or the
+    live call fails."""
+    problems, results, details = [], {}, io.StringIO()
+    if live:
+        print('Checking the connection with a real call to the model (up to 90 s)…')
+    with contextlib.redirect_stdout(details):
+        code = doctor_checks(home, cwd, problems)
+        if live:
+            release_check()
+            code = max(code, live_checks(home, results=results))
+    print_summary(home, read_json(home/'.ai-kit/state.json'), results if live else None, problems)
+    print('\nDetails\n'+details.getvalue(), end='')
+    return code
+
+def doctor_checks(home, cwd=None, problems=None):
     issues = 0
     def status(ok,message):
         nonlocal issues
         print(('[OK] ' if ok else '[Check] ')+message)
         if not ok:
             issues += 1
+            if problems is not None:
+                problems.append(message)
     status(sys.version_info >= (3,9),'Python 3.9 minimum')
     if (home/LEGACY_KIT_DIR).exists():
         status(False,'Old ~/'+LEGACY_KIT_DIR+' folder present: run update, which renames it to ~/.ai-kit')
@@ -901,14 +974,18 @@ def release_check():
     if tags and key(tags[0]) > key(current):
         print('[Info] AI Kit '+tags[0].lstrip('v')+' is published (this folder: '+current+'): run update, which fetches it.')
 
-def live_checks(home, announce=False):
-    """Real call to the model by each installed CLI that supports it (live); 1 if one does not answer."""
+def live_checks(home, announce=False, results=None):
+    """Real call to the model by each installed CLI that supports it (live); 1 if one does not answer.
+    results, when given, receives {cli name: 0 if the model answered}: the summaries say "verified" only from it."""
     code = 0
     for adapter in ADAPTERS:
         if isinstance(adapter, LiveCheck) and shutil.which(adapter.COMMAND):
             if announce:
                 print('Checking with a real call to the model, '+adapter.LABEL+' (--no-live to skip):')
-            code = max(code, adapter.live(home))
+            answer = adapter.live(home)
+            if results is not None:
+                results[adapter.NAME] = answer
+            code = max(code, answer)
     return code
 
 def interactive():
@@ -964,11 +1041,7 @@ def main(argv=None):
     try:
         home = args.home.resolve()
         if args.action == 'doctor':
-            code = doctor(home)
-            if args.live:
-                release_check()
-                code = max(code, live_checks(home))
-            return code
+            return doctor(home, live=args.live)
         if args.action == 'usage':
             return usage(home, args.since, args.json, args.min_sessions, args.min_prompts)
         if not args.dry_run:
@@ -996,11 +1069,10 @@ def main(argv=None):
                 raise KitError('Choose a number between 1 and '+str(len(teams)+1)+'.')
             team = teams[int(answer)-1] if answer and int(answer) <= len(teams) else None
         apply(role,home,args.dry_run,identity,args.target,team)
-        for adapter in selected_adapters(args.target, home):
-            if not shutil.which(adapter.COMMAND):
-                print(adapter.LABEL+' not on the PATH: configuration ready; install and authenticate it following the IT procedure.')
-        if not args.dry_run and not args.no_live and os.environ.get('AI_KIT_NO_LIVE') != '1' and live_checks(home, announce=True):
-            print('Installation done, but the model does not answer yet: apply the fix above then run doctor --live again.')
+        live = None  # None: no real call made, so the summary says "connection not verified"
+        if not args.dry_run and not args.no_live and os.environ.get('AI_KIT_NO_LIVE') != '1':
+            live = {}
+            live_checks(home, announce=True, results=live)
         if args.action == 'setup' and not args.dry_run and interactive():
             state = read_json(home/'.ai-kit/state.json')
             def reapply():
@@ -1010,6 +1082,8 @@ def main(argv=None):
                 personal_context_step(home/state.get('context_dir', '.gemini')/USER_CONTEXT, reapply)
             except EOFError:
                 print()  # optional step: the installation is already complete
+        if not args.dry_run:
+            print_summary(home, read_json(home/'.ai-kit/state.json'), live)
         return 0
     except (KitError,OSError,UnicodeError) as exc:
         print('Error: '+str(exc),file=sys.stderr)

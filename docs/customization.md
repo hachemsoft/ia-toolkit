@@ -107,10 +107,10 @@ Each repo provides its own `AGENTS.md`, read after the global layers. To redefin
 
 `~/.ai-kit/overrides.json`: selection of commands, skills, agents and MCP servers (the MCP rule, organization, profile and person, is on its own page: [MCP](mcp.md)). Keep the JSON valid. The names to choose from: commands in the [profile table](getting-started.md#3-work-one-command-per-step) and [tools](tools.md), skills in the [skills reference](skills-reference.md), agents in [agents](agents.md).
 
-**Commands.** `extra_commands` adds commands to the profile's, with their skills; `disabled_commands` removes some. An analyst who wants `/spec` and `/review`:
+**Commands.** `extra_commands` adds commands to the profile's, with their skills; `disabled_commands` removes some. An analyst who wants `/spec` and `/explain`, and no `/learn`:
 
 ```json
-{ "extra_commands": ["spec", "review"] }
+{ "extra_commands": ["spec", "explain"], "disabled_commands": ["learn"] }
 ```
 
 **Skills.** Example: an analyst adds the Python/JS skill (which relies on `codebase-design`, added automatically) and disables the BigQuery cost playbook:

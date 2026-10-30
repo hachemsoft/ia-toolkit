@@ -47,7 +47,7 @@ class SkillCatalogTests(unittest.TestCase):
  def test_kit_layer_lists_commands_and_playbooks(self):
   self.run_kit();text=(self.home/'.gemini/00_KIT.md').read_text(encoding='utf-8')
   for s in ('- /intent — ','- /ship — ','- /learn — ','- sql-review : '):self.assertIn(s,text)
-  self.assertNotIn('{commands}',text);self.assertNotIn('{playbooks}',text);self.assertNotIn('/design',text);self.assertNotIn('/review',text);self.assertNotIn('grilling',text)
+  self.assertNotIn('{commands}',text);self.assertNotIn('{playbooks}',text);self.assertNotIn('/design',text);self.assertIn('- /review — ',text);self.assertNotIn('grilling',text)
   self.run_kit('data-developer');text=(self.home/'.gemini/00_KIT.md').read_text(encoding='utf-8');self.assertIn('- /design — ',text);self.assertIn('- /triage — ',text);self.assertIn('- /review — ',text);self.assertNotIn('/ask',text);self.assertIn('- python-js-change : ',text)
  def test_upstream_files_copied_without_codex_metadata(self):
   self.run_kit('data-developer');base=self.home/'.gemini/skills'

@@ -31,8 +31,8 @@ class CommandTests(unittest.TestCase):
   for pid in ('data-analyst','data-developer'):
    skills=set(read_json(ROOT/'profiles'/(pid+'.json'))['skills']);(self.assertTrue(core<=skills,pid) if pid=='data-developer' else None);self.assertFalse({k for k in skills if catalog[k]['tier']=='optional' and catalog[k]['category']=='reference'}-{'codebase-design'})
  def test_commands_installed_per_profile(self):
-  self.run_kit();self.assertTrue(self.cmd('intent').exists());self.assertTrue(self.cmd('learn').exists());self.assertFalse(self.cmd('ask').exists());self.assertFalse(self.cmd('review').exists());self.assertFalse(self.cmd('spec').exists());self.assertFalse(self.cmd('design').exists());self.assertFalse(self.cmd('triage').exists())
-  self.assertEqual(sorted(p.stem for p in (self.home/'.gemini/commands').glob('*.toml')),['build','diagnose','friction','guide','intent','learn','ship','test'])
+  self.run_kit();self.assertTrue(self.cmd('intent').exists());self.assertTrue(self.cmd('learn').exists());self.assertFalse(self.cmd('ask').exists());self.assertTrue(self.cmd('review').exists());self.assertFalse(self.cmd('spec').exists());self.assertFalse(self.cmd('design').exists());self.assertFalse(self.cmd('triage').exists())
+  self.assertEqual(sorted(p.stem for p in (self.home/'.gemini/commands').glob('*.toml')),['build','diagnose','friction','guide','intent','learn','review','ship','test'])
   self.assertIn('.gemini/commands/intent.toml',read_json(self.home/'.ai-kit/state.json')['files'])
   self.run_kit('data-developer');self.assertTrue(self.cmd('design').exists());self.assertTrue(self.cmd('triage').exists());self.assertTrue(self.cmd('review').exists());self.assertFalse(self.cmd('ask').exists())
  def test_command_removed_when_skill_disabled(self):

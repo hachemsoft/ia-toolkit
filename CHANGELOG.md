@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+Discovery and installation, for a data analyst in particular:
+- **End of setup**: a summary instead of loose lines: the kit configuration, each targeted CLI (found, or not found with its configuration prepared), the data connections (MCP) and the next step. A connection is "verified" only after a real call to the model; otherwise "connection not verified". No invitation to start a CLI that is not found; a missing CLI no longer hides one that is there. Exit codes and the network policy of setup are unchanged.
+- **Data connections explained**: instead of "0 MCP enabled", each server chosen by the profile is reported as not provided by the organization yet, turned off, or configured (connection not verified), with what the person can do meanwhile (work on the repo's SQL and dbt files with its usual tools).
+- **`doctor` starts with the same summary** (what is ready, what to fix, next step); the detailed checks follow, each run once. `doctor --live` puts the real call's result in the summary.
+- **`/review` in the Data Analyst profile**; the review's Data pass uses the installed SQL and dbt playbooks and the SQL and dbt review agents when available. A personal `disabled_commands` is respected; no duplicate when it was already in `extra_commands`.
+- **README**: what a data analyst can ask, with or without a command.
+
 Documentation: replacing a kit command in a repo is described as depending on the CLI (customization, format, workflow), with a skill named for the project as the fallback.
 
 ## 0.31.0

@@ -25,7 +25,7 @@ The agent reads, in this order: `00_KIT.md` (the kit), `10_COMPANY.md` (company 
 
 ## Expected files in a repo
 
-Keeping them current: ask the agent in the repo ("add this term to the glossary", "record this decision as an ADR", "update REVIEW.md with this rule"); the skill named in the last column does it, with your approval per file. `/retro` proposes improvements to them at the end of a session. Without `/review` in your profile, edit `REVIEW.md` like any file, by merge request.
+Keeping them current: ask the agent in the repo ("add this term to the glossary", "record this decision as an ADR", "update REVIEW.md with this rule"); the skill named in the last column does it, with your approval per file. `/retro` proposes improvements to them at the end of a session. Otherwise edit it like any file, by merge request.
 
 
 | File | Role | Maintained by |
