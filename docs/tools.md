@@ -2,6 +2,8 @@
 
 Utilities independent of the flow, usable at any time. One tool = one command, one skill underneath, one sheet here. A tool without a sheet does not enter the core.
 
+> `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
+
 Each sheet follows the same template: when, command, output, needs, skill, example.
 
 ## `/guide` — where to start

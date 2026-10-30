@@ -2,6 +2,8 @@
 
 A skill describes a procedure. An agent receives a bounded mission in a separate context and returns its findings to the parent. The kit uses each CLI's native sub-agents; it does not impose a delegation or parallel-agent workflow.
 
+> `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
+
 | Agent | Default profiles | Mission |
 | --- | --- | --- |
 | `ai-kit-repo-investigator` | all | Understand the repo's flows and dependencies |
@@ -33,7 +35,7 @@ The agent can also choose to delegate based on the description. These instructio
 
 ## Capability profiles
 
-An agent never names a model: at most, it declares what it needs (`"capability": "fast"` for the verifier, which runs tests and must answer quickly; `"deep"` for the doubter agent, which must reason). The organization provides the mapping, if it wants to, in `~/.ai-kit/overrides.json`:
+An agent never names a model: at most, it declares what it needs (`"capability": "fast"` for the verifier, which runs tests and must answer quickly; `"deep"` for the doubter agent, which must reason). The organization provides the mapping, if it wants to, in `organization.json` under `defaults` (a team under `teams.<team>`, a person in `~/.ai-kit/overrides.json`):
 
 ```json
 { "models": { "fast": "gemini-2.5-flash", "deep": "gemini-2.5-pro" } }

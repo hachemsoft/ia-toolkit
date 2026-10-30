@@ -12,7 +12,7 @@ Reference page for people who deploy or maintain the kit. To install: [getting s
 - Prevalidates conflicts, backs up, then writes the files; attempts a restore on a write error.
 - Touches no project repository, starts no MCP server, downloads nothing.
 - Changes nothing on the system: no administrator rights, no registry, no system or user PATH, no execution policy, no Gatekeeper or quarantine setting, no shell startup file. Needs no network: only the final check calls the model.
-- Installs nothing that points back to the extracted kit folder: the guardrails, the friction script and the `overrides.json` schema are copied to `~/.ai-kit`. The folder can be deleted after installation; the next version comes as a new ZIP.
+- Installs nothing that points back to the extracted kit folder: the guardrails, the friction script and the `overrides.json` schema are copied to `~/.ai-kit`. Keep the folder to run `update` and `doctor`; when the next version comes as a new ZIP, the new folder replaces it.
 
 Existing settings must be strict JSON. An invalid JSON file or one with comments is refused without change. Symbolic links on managed paths are not supported.
 

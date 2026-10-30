@@ -2,6 +2,8 @@
 
 A skill is an advisory control: it makes a violation rare. A CLI hook is deterministic: it makes it nearly impossible. The kit ships two. `protected-paths` is on by default: it keeps the agent from changing the configuration of the kit and of the CLIs. `dbt-prod-guard` is off by default. Both are set in `~/.ai-kit/overrides.json` (`false` turns one off):
 
+> `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
+
 ```json
 {
   "hooks": {

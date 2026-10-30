@@ -2,6 +2,8 @@
 
 First step, always: `sh scripts/bootstrap.sh doctor --live` (Mac) or `Installer.cmd doctor --live` (Windows, in a Command Prompt opened in the kit folder: type `cmd` in the Explorer address bar). It makes a real call to the model and, for each known failure, gives the diagnosis and the command that fixes it. The symptoms below are those seen on real workstations; each new ticket adds one.
 
+> `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
+
 | Symptom | Cause | What to do |
 | --- | --- | --- |
 | "Your prepayment credits are depleted", HTTP 402 | the AI Studio key has no balance left | top up, or switch to Vertex: `"vertex": {"project": "<project>"}` in `overrides.json`, then `update` |
@@ -11,7 +13,8 @@ First step, always: `sh scripts/bootstrap.sh doctor --live` (Mac) or `Installer.
 | "This account requires setting the GOOGLE_CLOUD_PROJECT…" | Code Assist Standard or Enterprise licence with no project declared | `"code_assist": {"project": "<project>"}` in `overrides.json`, then `update` |
 | "When using Vertex AI, you must specify…" | project and region missing | `"vertex": {"project": "<project>", "location": "<region>"}` in `overrides.json`, then `update` |
 | Vertex variables are ignored | `selectedType` is still `gemini-api-key` | `update` with `vertex` in `overrides.json` fixes it; otherwise `/auth` in Gemini |
-| "Skill conflict detected" at startup, the command does not do what the docs say | a personal copy in `~/.agents/skills` or in the repo's `.agents/skills` hides the kit's skill | `doctor` lists hidden skills; remove or rename the copy |
+| "Skill conflict detected" at startup, the command does not do what the docs say | a personal copy with the same name in `~/.agents/skills` hides the kit's skill | `doctor` lists hidden skills; remove or rename the personal copy |
+| in one repo, a command behaves differently from the docs | the repo replaces the kit skill with its own (`.agents/skills/<name>`), on purpose | normal: the repo adapts the skill; `doctor`, run in the repo, lists the replaced skills; see [project layer](project-context.md#how-the-repo-combines-with-your-layers) |
 | agy asks for permission on every shell command | normal behaviour: agy permissions belong to each person | answer; "always allow" saves the rule in your agy settings, and the kit does not touch them |
 | "It does not see my glossary" | CLI started outside the repo | `cd` into the repo, then start the CLI; the kit is global, the repo is not |
 | a command from the docs cannot be found | command not in your profile ([profile table](getting-started.md#3-work-one-command-per-step)) | `"extra_commands": ["spec"]` in `overrides.json`, then `update`; `00_KIT.md` lists the installed commands |

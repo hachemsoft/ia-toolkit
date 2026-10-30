@@ -21,7 +21,7 @@ A foundation for working with a coding agent as a team, on Mac and Windows. It c
 
 Requirements: Python 3.9 or later (3.11 recommended) and your CLI, provided or approved by your company. The kit checks them and installs nothing else: no dependencies, no administrator rights, no change to the system or its security settings, no network needed except to talk to the model. If something is missing or blocked, the message says what to ask IT. The CLI and its authentication come from your organization's procedure; if it requires a cloud project or a model, that is one line in `~/.ai-kit/overrides.json`. The full step-by-step guide: [getting started](docs/getting-started.md). For IT and pilots: [validation on enterprise workstations](docs/validation.md).
 
-Update: download and extract the new ZIP, then run the installer again the same way. It keeps your profile, team, `overrides.json` and `30_USER.md`; the previous folder can be deleted. In a git clone, `update` runs `git pull` first.
+Update: download and extract the new ZIP, then run the installer again the same way. It keeps your profile, team, `overrides.json` and `30_USER.md`; the new folder becomes your kit folder and the old one can be deleted. In a git clone, `update` runs `git pull` first. Running `setup`, `update` and `doctor`, and where your files are: [getting started](docs/getting-started.md#run-the-kit).
 
 ## Profiles
 

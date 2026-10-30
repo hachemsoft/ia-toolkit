@@ -22,7 +22,7 @@ The git name completes the CLI account's email when both exist. OAuth tokens are
 
 ## Profile and team
 
-`setup` asks for the profile, and for the team when several teams have their own practices, unless `--profile` and `--team` are given. Nothing personal is stored in the kit repository: IT hands each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile data-analyst --team finance`.
+`setup` asks for the profile, and for the team when the kit has teams (a practices file `practices/20-<team>.md` or settings in `organization.json` `teams`), unless `--profile` and `--team` are given. Nothing personal is stored in the kit repository: IT hands each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile data-analyst --team finance`.
 
 ## Doctor checks
 

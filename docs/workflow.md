@@ -1,6 +1,6 @@
 # Workflow: six steps, one command per step
 
-The kit follows the cycle from Anthropic's ["AI-native SDLC playbook"](https://claude.com/resources/articles/the-ai-native-sdlc-playbook): each step ends with a versioned artifact that the next step reads. Commands are English verbs typed in the CLI; the skills that carry them out stay under the hood. `/guide` explains where to start.
+The kit follows the cycle from Anthropic's ["AI-native SDLC playbook"](https://claude.com/resources/articles/the-ai-native-sdlc-playbook): each step ends with an artifact that the next step reads (versioned in the repo, or a local working note for `intent.md` and `plan.md`). Commands are English verbs typed in the CLI; the skills that carry them out stay under the hood. `/guide` explains where to start.
 
 ## Ceremony matches the stakes
 

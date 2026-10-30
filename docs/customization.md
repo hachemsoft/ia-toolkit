@@ -1,6 +1,8 @@
 # Customization
 
-The user folder is the Windows or macOS one, not the project folder.
+`~` is your home folder (`%USERPROFILE%` on Windows), not the project folder: `~/.ai-kit/overrides.json` is `%USERPROFILE%\.ai-kit\overrides.json` on Windows. Folders starting with a dot are hidden; how to open them: [where your files are](getting-started.md#where-your-files-are).
+
+> `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
 
 ## Organization, team and person
 
@@ -18,6 +20,20 @@ Settings come in three layers, combined at every `setup` and `update`, each on t
 ```
 
 Both files have a JSON Schema in `schemas/`: an editor that knows the `"$schema"` key (VS Code and most others) completes the keys, shows each key's description and flags a typo or a wrong value as you type. `organization.json` points to its schema; the personal file points to the copy in `~/.ai-kit/schemas/` (`setup` adds or updates that line, and changes nothing else in the file). `doctor` also reports an unknown key (usually a typo), and the CI checks the shipped files against the schemas.
+
+**How a change of `organization.json` reaches you**: with the next version of the kit (a new ZIP, or `git pull` in a clone), then `setup` or `update`. Where your own files are, on Mac and Windows: [getting started](getting-started.md#where-your-files-are).
+
+### Who decides what, and what the kit cannot enforce
+
+| Who | Where | Decides |
+| --- | --- | --- |
+| the organization | `organization.json` (`allowed_domains`, `defaults`), `practices/10-company.md` | defaults for everyone: authentication, model, guardrails, approved MCP servers, company practices |
+| the team | `organization.json` (`teams.<team>`), `practices/20-<team>.md` | its tools and its practices, on top of the organization |
+| the profile | `profiles/<profile>.json` | the skills, commands, agents and MCP servers of a job |
+| you | `~/.ai-kit/overrides.json`, `30_USER.md` | your additions and exceptions, your preferences |
+| the repo | `AGENTS.md`, `.agents/skills/`, `.ai-kit/protected-paths` | how to work in that repo |
+
+The kit configures; it does not lock. Your `overrides.json` has the last word, so you can turn off a guardrail or an MCP server that the organization turned on, and `doctor` shows it ("Your overrides.json changes organization or team defaults"). What must be guaranteed is enforced outside the kit: IAM rights and data access, managed CLI settings pushed by IT, CODEOWNERS on repos. The practices in `10` and `20` are instructions to the agent, followed by default, not a technical barrier.
 
 JSON allows no comments: keys starting with `_` (`_doc`) are documentation and are ignored. A mistake in either file is reported with its line, its column, the line itself and the usual cause (missing comma, comma left before `}`, single quotes, backslash in a Windows path).
 
@@ -59,12 +75,12 @@ The kit installs short files that the agent loads in all your projects, in this 
 | --- | --- | --- |
 | `00_KIT.md` | kit | profile, priority rule between layers |
 | `10_COMPANY.md` | kit | company practices |
-| `20_TEAM.md` | kit | team practices |
+| `20_TEAM.md`, or `20_<TEAM>.md` for a team with its own practices | kit (the team's file in the kit repository) | team practices |
 | `30_USER.md` | you | language, style, level, domains, default workflow |
 
 The kit files are generated output: editing them blocks `update`. Everything specific to you goes in `30_USER.md`. `setup` creates it once and never rewrites it. A change takes effect the next time the CLI starts; a CLI that keeps a copy needs `update` first ([matrix](cli/matrice.md)), so the simple rule is: edit, `update`, new session.
 
-Priority rule, written in `00_KIT.md`: practices are mandatory; `30_USER.md` adjusts form and workflow; the project's `AGENTS.md` wins over `30_USER.md` on conflict. The agent reads the files one after another. There is no mechanical override: the wording sets the priority.
+Priority rule, written in `00_KIT.md`: company and team practices apply by default; `30_USER.md` adjusts form and workflow; the repo's `AGENTS.md` and an explicit request win over `30_USER.md`, never over the practices. The full table, with repo skills: [project layer](project-context.md#how-the-repo-combines-with-your-layers). The agent reads the files one after another; there is no mechanical override: the wording sets the priority.
 
 ## Report format
 
@@ -133,7 +149,7 @@ A developer who wants `/ask` and `/handoff`, prototyping, no delegated research,
 }
 ```
 
-`frictions` sets what the agent does on the six friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. `models` sets a model per agent capability (`fast`, `deep`); see [agents](agents.md#capability-profiles). Then `update`. Every key is optional; a missing key changes nothing. A skill added through `extra_commands` comes with its dependencies; a skill required by another one cannot be disabled on its own, and `update` says so.
+`frictions` sets what the agent does on the six friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. `models` sets a model per agent capability (`fast`, `deep`); see [agents](agents.md#capability-profiles). `model` and `models` take effect only in the CLIs that support them ([matrix](cli/matrice.md)); elsewhere they are ignored. Then `update`. Every key is optional; a missing key changes nothing. A skill added through `extra_commands` comes with its dependencies; a skill required by another one cannot be disabled on its own, and `update` says so.
 
 ## Authentication and model
 

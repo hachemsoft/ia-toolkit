@@ -2,7 +2,9 @@
 
 An MCP server gives the agent access to a tool or to data: a documentation site, BigQuery, dbt, GitHub. The kit writes the same server into each installed CLI, under the name `ai-kit-<name>` ([where, CLI by CLI](cli/matrice.md)). It never downloads, starts or tests a server, and handles neither tokens nor OAuth.
 
-## The rule: three files, one role each
+> `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
+
+## The rule: who decides what
 
 | File | Who writes it | What it says | Example |
 | --- | --- | --- | --- |

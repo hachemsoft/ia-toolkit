@@ -6,7 +6,7 @@ This page is for someone who has never seen the kit. Fifteen minutes, in order.
 
 Before you start: Python 3.9 or later (3.11 recommended) and your CLI must be available on the workstation, as provided or approved by your company. The kit installs nothing else and needs no administrator rights. If Python is missing or blocked, the installer says exactly what to ask IT.
 
-1. Download `ai-kit-<version>.zip` from the Releases page of the kit repository, and extract it into a folder you keep, for example `Documents`. Windows: right-click the ZIP, **Extract All**. Mac: double-click the ZIP.
+1. Download `ai-kit-<version>.zip` from the Releases page of the kit repository, and extract it into a folder you keep, for example `Documents`: this is your **kit folder**, from which you will run `update` and `doctor`. Windows: right-click the ZIP, **Extract All**. Mac: double-click the ZIP.
 2. Run the installer:
    - **Windows**: double-click `Installer.cmd` in the extracted folder. If Windows asks to confirm running a downloaded file, follow your company's rule; if it is blocked, ask IT and change no security setting.
    - **Mac**: open **Terminal** (Applications > Utilities), type `sh ` (with a space), drag the `scripts/bootstrap.sh` file of the extracted folder into the window, press Enter. (A double-click launcher is not provided: macOS blocks unsigned downloaded scripts, see [validation](validation.md).)
@@ -31,9 +31,36 @@ Before you start: Python 3.9 or later (3.11 recommended) and your CLI must be av
 
    A CLI installed later is picked up at the next `update`.
 6. Installation ends with a real call to the model. **Green**: you are done. Otherwise, the installation is still complete, and the message says exactly what to do: sign in, a line to add, or what to ask IT (network, proxy, certificate). Do it, then run `doctor --live` again.
-7. **Your personal context** (optional, two minutes): the installer shows the path of `30_USER.md` and offers to open it in Notepad (Windows) or your text editor (Mac). Write your role, your projects and your preferences in plain text, save under the same name, then press Enter in the installer: it applies the file. Start a new session of your CLI to take it into account. Later, edit the same file, run the installer again (or `update`), then start a new session.
+7. **Your personal context** (optional, two minutes): the installer shows the path of `30_USER.md` and offers to open it in Notepad (Windows) or your text editor (Mac). The file is already filled with headings and examples: *Language and style*, *My level and my domains*, *My default workflow*, *Report*, *Personal context*. Replace the "to fill in" lines with your role, your projects and your preferences, in plain text; save under the same name, then press Enter in the installer: it applies the file. Start a new session of your CLI to take it into account. Later: edit the same file, run `update` ([below](#run-the-kit)), then start a new session.
 
-To update: download and extract the new ZIP, then run its installer the same way. Profile, team, `overrides.json` and `30_USER.md` are kept, and the previous folder can be deleted.
+### Run the kit
+
+Every page of this documentation that says "run `update`" or "then `update`" means the command below. All four are run **from the kit folder**.
+
+| Action | Windows | Mac |
+| --- | --- | --- |
+| `setup`: install, change profile or team | double-click `Installer.cmd`, or `Installer.cmd setup` | `sh scripts/bootstrap.sh` |
+| `update`: apply a change to `overrides.json`, pick up a newly installed CLI | `Installer.cmd update` | `sh scripts/bootstrap.sh update` |
+| `doctor`: check, and say what to do | `Installer.cmd doctor --live` | `sh scripts/bootstrap.sh doctor --live` |
+| `usage`: what you used, locally | `Installer.cmd usage` | `sh scripts/bootstrap.sh usage` |
+
+- **Windows, a Command Prompt in the kit folder**: open the folder in Explorer, click the address bar, type `cmd`, press Enter.
+- **Mac, a Terminal in the kit folder**: in Terminal, type `cd ` (with a space), drag the kit folder into the window, press Enter.
+
+Options (`--profile`, `--team`, `--target`…) go after the action: `Installer.cmd setup --team data-platform`.
+
+### Where your files are
+
+| File | Mac | Windows |
+| --- | --- | --- |
+| Your settings, `overrides.json` (created by `setup`, with one explanation line) | `~/.ai-kit/overrides.json` | `%USERPROFILE%\.ai-kit\overrides.json` |
+| Your personal context, `30_USER.md` | `~/.gemini/30_USER.md` with Gemini CLI, otherwise `~/.ai-kit/context/30_USER.md` | `%USERPROFILE%\.gemini\30_USER.md`, otherwise `%USERPROFILE%\.ai-kit\context\30_USER.md` |
+
+`~` and `%USERPROFILE%` are your home folder. Folders starting with a dot are hidden: on Windows, paste the path into the Explorer address bar (or open it with `notepad %USERPROFILE%\.ai-kit\overrides.json`); on Mac, in Finder press Cmd+Shift+G and paste the path, or Cmd+Shift+. to show hidden files. `doctor` prints the exact path of `30_USER.md`.
+
+### New version
+
+Download and extract the new ZIP, then run its installer, as for the first time. Profile, team, `overrides.json` and `30_USER.md` are kept. The new folder is now your kit folder; the old one can be deleted, since nothing installed depends on it. `update` alone re-applies the version of the folder you have: it fetches a new version only in a git clone (it runs `git pull` first).
 
 If your organization requires a Google Cloud project or a model, that is one line in `~/.ai-kit/overrides.json`, provided by your platform team; see [customization](customization.md#authentication-and-model). Otherwise there is nothing to declare.
 
@@ -43,6 +70,8 @@ If your organization requires a Google Cloud project or a model, that is one lin
 2. Start your CLI: `gemini`, `agy` or `codex`. In Gemini and agy, commands are written `/guide`; in Codex, `$guide`. This page writes them with `/`. The first time, Codex asks you to review the kit's hooks: answer "Trust all and continue" (they keep the agent from changing its own configuration).
 3. Type: **"Initialize the project context"**. The agent proposes, file by file and with your approval, `AGENTS.md` (one page about the repo), `GLOSSARY.md` (the domain terms), `REVIEW.md` (what a review checks) and two `.gitignore` lines for working notes. If someone has already done this in the repo, skip it.
 4. Type: `/guide I need to …` with today's need. It answers: which level of ceremony, which command, what it produces, an example prompt.
+
+**Your repo and your layers.** The kit's layers (company, team, you) apply in every repo; each repo adds its own context on top: `AGENTS.md`, `GLOSSARY.md`, `REVIEW.md`, its decisions (`docs/adr/`), its working notes (`docs/sdlc/`) and, if the team wants, its own skills in `.agents/skills/`. What wins when they disagree, and what a repo can and cannot change: [project layer](project-context.md).
 
 ## 3. Work: one command per step
 
@@ -93,8 +122,8 @@ The rule that avoids running everything: **ceremony matches the stakes**. A smal
 
 ## 6. Later
 
-- Your preferences (language, style, domains): `30_USER.md`, created for you and never rewritten by the kit. It is in `~/.gemini/` if Gemini CLI is installed, otherwise in `~/.ai-kit/context/`; `doctor` shows its path.
-- Add or remove commands, skills, agents, MCP servers, guardrails: `~/.ai-kit/overrides.json`, then `update`. See [customization](customization.md).
+- Your preferences (language, style, domains): `30_USER.md`, created for you and never rewritten by the kit ([where](#where-your-files-are)).
+- Add or remove commands, skills, agents, MCP servers, guardrails: `~/.ai-kit/overrides.json`, then [`update`](#run-the-kit). What you decide, and what the organization and your team decide: [customization](customization.md).
 - Write your own skill, or replace a kit skill for yourself, a repo or the team: [add or replace a skill](extending.md).
-- When the team wants the agent to read and create tickets: `setup-workflow` in the repo (requires `glab` or `gh`).
-- Kit update: `update` from its folder; it fetches the new version itself (without git: download the ZIP again, replace the folder, then `update`). `doctor` says when the installed version is behind the folder, and `doctor --live` when a newer version is published.
+- When the team wants the agent to read and create tickets: in the repo, ask the agent "set up the workflow for this repo" (the `setup-workflow` skill; requires `glab` or `gh`).
+- The day-to-day of each command: [workflow](workflow.md). A new version of the kit: [new version](#new-version). `doctor` says when what is installed is behind the kit folder.
