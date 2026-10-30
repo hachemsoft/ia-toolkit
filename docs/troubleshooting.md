@@ -1,6 +1,6 @@
 # Troubleshooting
 
-First step, always: `sh scripts/bootstrap.sh doctor --live` (Mac) or `.\scripts\bootstrap.ps1 doctor --live` (Windows). It makes a real call to the model and, for each known failure, gives the diagnosis and the command that fixes it. The symptoms below are those seen on real workstations; each new ticket adds one.
+First step, always: `sh scripts/bootstrap.sh doctor --live` (Mac) or `Installer.cmd doctor --live` (Windows, in a Command Prompt opened in the kit folder: type `cmd` in the Explorer address bar). It makes a real call to the model and, for each known failure, gives the diagnosis and the command that fixes it. The symptoms below are those seen on real workstations; each new ticket adds one.
 
 | Symptom | Cause | What to do |
 | --- | --- | --- |
@@ -24,8 +24,10 @@ First step, always: `sh scripts/bootstrap.sh doctor --live` (Mac) or `.\scripts\
 
 CLI-specific issues are on each CLI's page: [Gemini CLI](cli/gemini.md#gemini-troubleshooting), [Antigravity CLI](cli/agy.md#troubleshooting), [Codex CLI](cli/codex.md).
 
-- **Python missing or too old**: check `python3 --version` on Mac, `py -3 --version` or `python --version` on Windows. Version 3.11 or later recommended, 3.9 minimum. Do not change company policies; ask IT support if needed.
-- **PowerShell scripts blocked**: use `py -3 -m installer setup` in the kit folder. Do not bypass the policy.
+- **Python missing, too old or blocked**: the launcher says which, and what to ask IT: Python 3.9 or newer (3.11 recommended), usable by a standard account, provided or approved by the company. On Windows, the Microsoft Store alias without Python counts as missing; on a Mac, `/usr/bin/python3` without the developer tools too (the launcher does not trigger their installation). Do not change company policies.
+- **`Installer.cmd` blocked, or Windows asks to confirm a downloaded file**: follow your company's rule; if it is blocked, ask IT. The launcher only finds Python and runs `python -m installer` from the kit folder, which helps IT decide. Do not unblock the file or change the policy yourself.
+- **No network, proxy, certificate**: the installation is complete anyway; only the final check needs the model. `doctor --live` names the cause: no network or blocked hosts, a proxy asking for authentication (HTTP 407), or HTTPS inspection without the company root certificate. What to ask IT is in the message; never disable certificate checks.
+- **`30_USER.md` not applied**: saved as rich text, under another name (`30_USER.md.txt`) or in another encoding. `doctor` says which. TextEdit: Format > Make Plain Text, then save under the same name; Notepad: encoding UTF-8. Then `update`, and a new session of the CLI.
 - **Unreadable settings**: fix the existing JSON after making a backup. The kit does not accept JSON with comments (JSONC).
 - **Kit skill hidden**: a personal copy with the same name, in a folder the CLI reads first, hides the kit's skill. `doctor` lists hidden skills. Remove or rename the personal copy.
 - **Evals failing with an infrastructure error**: `evals/run.py` distinguishes an unavailable API response (401, 402 credits exhausted, 403, 429) from a behaviour failure; fix the CLI's authentication or billing before drawing conclusions about a skill.

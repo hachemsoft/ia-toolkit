@@ -10,10 +10,21 @@ import hashlib
 import json
 import os
 import platform
+import re
 import sys
 from datetime import datetime, timezone
 
 CATEGORIES = ('command', 'skill', 'guardrail', 'rule', 'docs', 'tool', 'auth', 'other')
+# What looks like a secret (API keys and tokens of common services, bearer tokens, password=..., private keys): never kept
+# in a friction or shown in a diagnosis. Same list in installer/core.py (a test checks it).
+SECRET = re.compile(r'AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,}'
+                    r'|glpat-[A-Za-z0-9_-]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|ya29\.[0-9A-Za-z_-]{20,}'
+                    r'|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----'
+                    r'|(?i:bearer)\s+[A-Za-z0-9._~+/-]{16,}=*'
+                    r'|(?i:\b(?:password|passwd|pwd|secret|token|api[_-]?key)\b\s*[:=]\s*)(?!\$\{)[^\s"\',;]{6,}')
+
+def redact(text):
+    return SECRET.sub('[redacted]', str(text))
 
 def kit_dir():
     return os.path.join(os.path.expanduser('~'), '.ai-kit')
@@ -35,7 +46,7 @@ def friction_id(ts, text):
     return hashlib.sha256((str(ts) + '|' + str(text)).encode('utf-8')).hexdigest()[:6]
 
 def record(category, text, command='none', cli='unknown', source='person'):
-    text = ' '.join(str(text).split())[:300]
+    text = redact(' '.join(str(text).split()))[:300]
     entry = {'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'category': category,
              'command': (command or 'none').lstrip('/') or 'none', 'text': text, 'cli': cli, 'source': source}
     entry.update(context())

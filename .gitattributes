@@ -1,3 +1,11 @@
 # Line endings: text normalised in the repo; shell scripts stay LF on every system.
 * text=auto
 *.sh text eol=lf
+# cmd.exe misreads labels in a batch file with LF line endings.
+*.cmd text eol=crlf
+# Not in the release ZIP (scripts/package.sh): maintainer files.
+.github export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+tests export-ignore
+evals export-ignore

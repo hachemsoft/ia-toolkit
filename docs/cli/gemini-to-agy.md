@@ -18,10 +18,10 @@ A page for people moving from Gemini CLI to agy. A two-minute read.
 
 ## Troubleshooting
 
-1. `sh scripts/bootstrap.sh doctor --live` (Mac) or `.\scripts\bootstrap.ps1 doctor --live` (Windows): it tells you what to do.
+1. `sh scripts/bootstrap.sh doctor --live` (Mac) or `Installer.cmd doctor --live` (Windows): it tells you what to do.
 2. The [Troubleshooting](../troubleshooting.md) page.
 3. Otherwise, a ticket: it will become a `doctor` check, a line on the page, or an eval case, never a repeated verbal explanation.
 
 ## Install or update
 
-From the kit folder: `sh scripts/bootstrap.sh update` (Mac) or `.\scripts\bootstrap.ps1 update` (Windows). The kit detects Gemini and agy and installs for both.
+From the kit folder: `sh scripts/bootstrap.sh update` (Mac) or `Installer.cmd update` (Windows). The kit detects Gemini and agy and installs for both.

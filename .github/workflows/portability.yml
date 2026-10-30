@@ -44,3 +44,69 @@ jobs:
           check-jsonschema --check-metaschema schemas/overrides.schema.json schemas/organization.schema.json
           check-jsonschema --schemafile schemas/organization.schema.json organization.json
           check-jsonschema --schemafile schemas/overrides.schema.json templates/user-overrides.json
+  release-zip:
+    name: Release ZIP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the ZIP people download (scripts/package.sh)
+        run: sh scripts/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-zip
+          path: dist/*.zip
+  release-zip-test:
+    name: Release ZIP on ${{ matrix.os }}
+    needs: release-zip
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-zip
+          path: release
+      - name: Extracted ZIP, launcher (Installer.cmd on Windows), spaces and accents, Python absent, new version
+        shell: bash
+        run: |
+          set -o pipefail
+          zip="$PWD/$(ls release/*.zip)"
+          # Windows: a Windows path for Python (Git Bash gives /d/a/...).
+          if command -v cygpath >/dev/null 2>&1; then zip="$(cygpath -w "$zip")"; fi
+          export AI_KIT_RELEASE_ZIP="$zip"
+          python -m unittest tests.test_enterprise_install -v 2>&1 | tee test-output.txt
+      - name: Failed tests as annotations
+        if: failure()
+        shell: bash
+        run: python scripts/ci_annotations.py test-output.txt
+  publish:
+    name: Publish the release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [native-tests, lint, release-zip-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-zip
+          path: release
+      - name: GitHub release with the ZIP and the CHANGELOG section
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          python3 -c "import re,sys; t=open('CHANGELOG.md',encoding='utf-8').read(); m=re.search(r'^## '+re.escape(sys.argv[1])+r'\n(.*?)(?=^## |\Z)', t, re.S|re.M); print(m.group(1).strip() if m else '')" "$version" > notes.md
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release/*.zip --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" release/*.zip --title "AI Kit $version" --notes-file notes.md
+          fi

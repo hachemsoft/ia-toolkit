@@ -11,6 +11,8 @@ Reference page for people who deploy or maintain the kit. To install: [getting s
 - Removes old managed files on a profile or version change if they are intact.
 - Prevalidates conflicts, backs up, then writes the files; attempts a restore on a write error.
 - Touches no project repository, starts no MCP server, downloads nothing.
+- Changes nothing on the system: no administrator rights, no registry, no system or user PATH, no execution policy, no Gatekeeper or quarantine setting, no shell startup file. Needs no network: only the final check calls the model.
+- Installs nothing that points back to the extracted kit folder: the guardrails, the friction script and the `overrides.json` schema are copied to `~/.ai-kit`. The folder can be deleted after installation; the next version comes as a new ZIP.
 
 Existing settings must be strict JSON. An invalid JSON file or one with comments is refused without change. Symbolic links on managed paths are not supported.
 
@@ -20,14 +22,17 @@ Before 0.19, the kit folder was called `~/.ai-toolkit`. The first `setup` or `up
 
 ## Commands
 
-| Action | Mac | Windows PowerShell |
+| Action | Mac and Linux (Terminal) | Windows (Command Prompt) |
 | --- | --- | --- |
-| Install / change profile | `sh scripts/bootstrap.sh setup` | `.\scripts\bootstrap.ps1 setup` |
-| Fetch and apply a new version (does `git pull` first in a git clone without local changes) | `sh scripts/bootstrap.sh update` | `.\scripts\bootstrap.ps1 update` |
-| Diagnose | `sh scripts/bootstrap.sh doctor --live` | `.\scripts\bootstrap.ps1 doctor --live` |
-| Usage review | `sh scripts/bootstrap.sh usage` | `.\scripts\bootstrap.ps1 usage` |
+| Install / change profile | `sh scripts/bootstrap.sh` | double-click `Installer.cmd`, or `Installer.cmd setup` |
+| New version | extract the new ZIP and run its installer | the same |
+| Reapply this version (after editing `overrides.json`; in a git clone, `git pull` first) | `sh scripts/bootstrap.sh update` | `Installer.cmd update` |
+| Diagnose | `sh scripts/bootstrap.sh doctor --live` | `Installer.cmd doctor --live` |
+| Usage review | `sh scripts/bootstrap.sh usage` | `Installer.cmd usage` |
 
-Options for `setup` and `update`: `--profile <id>`, `--user <email>`, `--team <team>`, `--target auto|gemini|agy|codex|both|all` (see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--no-live`. Non-interactive example: `python3 -m installer setup --profile general --user first.last@company.com`. If company policy blocks PowerShell scripts: `py -3 -m installer setup`, without changing the policy.
+Windows: to get a Command Prompt in the kit folder, type `cmd` in the Explorer address bar and press Enter. The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) look for Python 3.9 or newer, then run `python -m installer` from the kit folder; without a usable Python they say what to ask IT. They need neither PowerShell nor administrator rights.
+
+Options for `setup` and `update`: `--profile <id>`, `--user <email>`, `--team <team>`, `--target auto|gemini|agy|codex|both|all` (see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--no-live`. Non-interactive example: `sh scripts/bootstrap.sh setup --profile general --user first.last@company.com`. If a company policy blocks a launcher, IT decides: the launcher is equivalent to `python -m installer` run from the kit folder. Never change the policy yourself.
 
 ## Try it without touching your account
 

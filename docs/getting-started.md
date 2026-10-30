@@ -4,11 +4,13 @@ This page is for someone who has never seen the kit. Fifteen minutes, in order.
 
 ## 1. Install (once)
 
-1. Get the kit into a durable folder, for example `Documents`: `git clone <repository url> ai-kit`. Without git: "Download ZIP" button on the repository page, then extract into `Documents/ai-kit`.
-2. Open a terminal **in that folder**. Mac: right-click the folder, "New Terminal at Folder". Windows: in Explorer, open the folder, then type `powershell` in the address bar and press Enter.
-3. Run:
-   - Mac: `sh scripts/bootstrap.sh`
-   - Windows: `.\scripts\bootstrap.ps1` (if scripts are blocked: `py -3 -m installer setup`)
+Before you start: Python 3.9 or later (3.11 recommended) and your CLI must be available on the workstation, as provided or approved by your company. The kit installs nothing else and needs no administrator rights. If Python is missing or blocked, the installer says exactly what to ask IT.
+
+1. Download `ai-kit-<version>.zip` from the Releases page of the kit repository, and extract it into a folder you keep, for example `Documents`. Windows: right-click the ZIP, **Extract All**. Mac: double-click the ZIP.
+2. Run the installer:
+   - **Windows**: double-click `Installer.cmd` in the extracted folder. If Windows asks to confirm running a downloaded file, follow your company's rule; if it is blocked, ask IT and change no security setting.
+   - **Mac**: open **Terminal** (Applications > Utilities), type `sh ` (with a space), drag the `scripts/bootstrap.sh` file of the extracted folder into the window, press Enter. (A double-click launcher is not provided: macOS blocks unsigned downloaded scripts, see [validation](validation.md).)
+3. The installer checks Python, then asks the questions below. Nothing is changed outside your home folder.
 4. Confirm the detected identity (your work email), then choose the profile:
    - **1. General**: the workflow and tools, without domain playbooks; the right choice if in doubt.
    - **2. Java Developer**: Maven or Gradle, Spring, JUnit; code and security review.
@@ -18,7 +20,7 @@ This page is for someone who has never seen the kit. Fifteen minutes, in order.
    - **6. Data Developer**: the same, plus Python or JavaScript code.
 
    You can change the profile at any time by running `setup` again. A skill or agent from another profile is added in `~/.ai-kit/overrides.json` (see [customization](customization.md)).
-5. **Which CLI?** Nothing to choose in the usual case: the kit configures the CLIs it finds on the workstation (Gemini CLI, Antigravity CLI, Codex CLI), and Gemini CLI if none is installed yet. To force a choice: add `--target` to the command, for example `sh scripts/bootstrap.sh setup --target codex`.
+5. **Which CLI?** Nothing to choose in the usual case: the kit configures the CLIs it finds on the workstation (Gemini CLI, Antigravity CLI, Codex CLI), and Gemini CLI if none is installed yet. To force a choice: add `--target` to the command, for example `sh scripts/bootstrap.sh setup --target codex` (Windows: `Installer.cmd setup --target codex`).
 
    | `--target` | CLIs configured |
    | --- | --- |
@@ -28,7 +30,10 @@ This page is for someone who has never seen the kit. Fifteen minutes, in order.
    | `all` | all three |
 
    A CLI installed later is picked up at the next `update`.
-6. Installation ends with a real call to the model. **Green**: you are done. Otherwise, the message says exactly what to do (a line to add, a command to run); do it, then run `doctor --live` again.
+6. Installation ends with a real call to the model. **Green**: you are done. Otherwise, the installation is still complete, and the message says exactly what to do: sign in, a line to add, or what to ask IT (network, proxy, certificate). Do it, then run `doctor --live` again.
+7. **Your personal context** (optional, two minutes): the installer shows the path of `30_USER.md` and offers to open it in Notepad (Windows) or your text editor (Mac). Write your role, your projects and your preferences in plain text, save under the same name, then press Enter in the installer: it applies the file. Start a new session of your CLI to take it into account. Later, edit the same file, run the installer again (or `update`), then start a new session.
+
+To update: download and extract the new ZIP, then run its installer the same way. Profile, team, `overrides.json` and `30_USER.md` are kept, and the previous folder can be deleted.
 
 If your organization requires a Google Cloud project or a model, that is one line in `~/.ai-kit/overrides.json`, provided by your platform team; see [customization](customization.md#authentication-and-model). Otherwise there is nothing to declare.
 
@@ -82,7 +87,7 @@ The rule that avoids running everything: **ceremony matches the stakes**. A smal
 
 ## 5. Troubleshooting
 
-1. From the kit folder: `sh scripts/bootstrap.sh doctor --live` (Mac) or `.\scripts\bootstrap.ps1 doctor --live` (Windows). It tells you what to do.
+1. Mac: `sh scripts/bootstrap.sh doctor --live` from the kit folder; Windows: in the kit folder, type `cmd` in the Explorer address bar and press Enter, then `Installer.cmd doctor --live`. It tells you what to do.
 2. The [Troubleshooting](troubleshooting.md) page: one symptom, one cause, one command.
 3. Otherwise a ticket, using the template on the [pilot](pilot.md) page. And on the spot, `/friction <one sentence>`: the usage review will pick it up. It will become a check, a line on that page or an eval case, never a repeated verbal explanation.
 

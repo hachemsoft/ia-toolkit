@@ -18,6 +18,16 @@ KIT_CONTEXT = '00_KIT.md'
 USER_CONTEXT = '30_USER.md'
 CONTEXT_NAME = re.compile(r'[0-9]{2}_[A-Z0-9_]+\.md')
 EMAIL = re.compile(r'[^@\s]+@[^@\s]+\.[^@\s]+')
+# What looks like a secret (API keys and tokens of common services, bearer tokens, password=..., private keys): never kept
+# in a friction or shown in a diagnosis. Same list in runtime/friction.py (a test checks it).
+SECRET = re.compile(r'AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,}'
+                    r'|glpat-[A-Za-z0-9_-]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|ya29\.[0-9A-Za-z_-]{20,}'
+                    r'|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----'
+                    r'|(?i:bearer)\s+[A-Za-z0-9._~+/-]{16,}=*'
+                    r'|(?i:\b(?:password|passwd|pwd|secret|token|api[_-]?key)\b\s*[:=]\s*)(?!\$\{)[^\s"\',;]{6,}')
+
+def redact(text):
+    return SECRET.sub('[redacted]', str(text))
 
 class KitError(Exception):
     pass
@@ -229,7 +239,7 @@ def record_auto_friction(home, diagnostic, cli='unknown'):
         state = read_json(home/'.ai-kit/state.json')
         system = {'darwin': 'mac', 'win32': 'windows'}.get(sys.platform, sys.platform)
         entry = {'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'category': 'auth', 'command': 'doctor',
-                 'text': ' '.join(str(diagnostic).split())[:300], 'cli': cli, 'source': 'doctor',
+                 'text': redact(' '.join(str(diagnostic).split()))[:300], 'cli': cli, 'source': 'doctor',
                  'os': system, 'kit': str(state.get('version', '')), 'profile': str(state.get('profile', ''))}
         entry['id'] = friction_id(entry['ts'], entry['text'])
         with open(home/'.ai-kit/frictions.jsonl', 'a', encoding='utf-8') as handle:

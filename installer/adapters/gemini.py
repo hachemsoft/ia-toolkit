@@ -76,8 +76,25 @@ def kit_hook_groups(groups):
 
 LIVE_PROMPT = 'Reply with OK only.'
 
+def network_problem(output):
+    """Network, proxy or certificate failure in the output: the installation is complete, access to the model is what fails.
+    The fixes respect the company network: never bypass the proxy, never disable certificate checks."""
+    if re.search(r'Proxy Authentication Required|status: 407|"code": 407', output):
+        return ('The company proxy asks for authentication (HTTP 407).',
+                'Ask IT how command-line tools authenticate to the proxy on your workstation; the CLI uses the proxy set in HTTPS_PROXY.')
+    if re.search(r'SELF_SIGNED_CERT_IN_CHAIN|UNABLE_TO_GET_ISSUER_CERT|UNABLE_TO_VERIFY_LEAF_SIGNATURE|self[- ]signed certificate in certificate chain|unable to get local issuer certificate', output, re.I):
+        return ('The company network inspects HTTPS and Gemini (Node.js) does not know the company root certificate.',
+                'Ask IT for the company root certificate and how to declare it (Node.js reads it from NODE_EXTRA_CA_CERTS). Never disable certificate checks.')
+    if re.search(r'ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|fetch failed|getaddrinfo|socket hang up', output):
+        return ('Gemini cannot reach the Google APIs: no network, or the network blocks them.',
+                'The kit itself is installed and works offline. Connect to the network; behind a company proxy, the CLI uses the proxy set by IT (HTTPS_PROXY); if it is still blocked, ask IT to allow the Google API hosts (googleapis.com) for Gemini CLI.')
+    return None
+
 def diagnose_live(returncode, output, timed_out, settings):
     """A one-sentence diagnosis and the fix, from the output of a real call to Gemini."""
+    network = network_problem(output)
+    if network:
+        return network
     if timed_out:
         return ('Gemini does not answer in time: the default model is probably unavailable for your access and Gemini is looping on a fallback.',
                 'Pin a model: "model": "gemini-2.5-flash" in ~/.ai-kit/overrides.json then update (or model.name in ~/.gemini/settings.json).')

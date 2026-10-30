@@ -2,7 +2,6 @@
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -70,24 +69,6 @@ class PortabilityTests(unittest.TestCase):
                               cwd=self.base,capture_output=True,text=True,encoding='utf-8')
         self.assertEqual(proc.returncode,0,proc.stdout+proc.stderr)
         self.assertTrue((self.home/'.ai-kit/state.json').exists())
-
-    @unittest.skipUnless(os.name == 'nt', 'Requires a real Windows')
-    def test_native_windows_launchers(self):
-        # Tests Windows PowerShell 5.1 and PowerShell 7 when they are installed.
-        tested=[]
-        for engine in ('powershell.exe','pwsh.exe'):
-            executable=shutil.which(engine)
-            if not executable:
-                continue
-            target=self.base/engine
-            proc=subprocess.run([executable,'-NoProfile','-NonInteractive','-File',
-                                 str(ROOT/'scripts/bootstrap.ps1'),'setup','--profile',
-                                 'data-developer','--home',str(target),'--no-live'],cwd=self.base,
-                                capture_output=True)
-            self.assertEqual(proc.returncode,0,repr(proc.stdout)+repr(proc.stderr))
-            self.assertTrue((target/'.ai-kit/state.json').exists())
-            tested.append(engine)
-        self.assertTrue(tested,'No PowerShell available on the Windows runner')
 
 if __name__=='__main__':
     unittest.main()

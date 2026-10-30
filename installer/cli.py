@@ -1,7 +1,9 @@
 """AI Kit: installation orchestration. Builds a neutral plan, then each adapter (installer/adapters/) translates it for its CLI.
 Never modifies a project repo."""
 import argparse
+import contextlib
 import getpass
+import io
 import json
 import os
 from pathlib import Path
@@ -14,7 +16,7 @@ import tempfile
 import uuid
 from datetime import datetime, timezone
 
-from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, KitError, read_json, json_bytes, digest,
+from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, read_json, json_bytes, digest,
                    safe_id, inside, hook_command, load_commands, _ts, friction_id, fixed_frictions)
 from .adapters import ADAPTERS
 from .interface import ContextHost, DoctorContext, LiveCheck, Plan
@@ -323,10 +325,17 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     selected = resolve_skills({**profile, 'skills': list(profile['skills']) + extra_command_skills}, overrides, catalog)
     allowed = allowed_commands(profile.get('commands'), overrides, command_names)
     writes, deletes = {}, []
+    # The schema is copied into ~/.ai-kit: the personal file never points to the extracted kit folder, which may be deleted.
+    schema_uri = (kit/'schemas'/'overrides.schema.json').as_uri()
     if not (kit/'overrides.json').exists():
-        # Created once, pointing to the kit's schema so that editors complete and check the keys.
-        starter = {'$schema': (ROOT/'schemas'/'overrides.schema.json').resolve().as_uri(), **read_json(ROOT/'templates/user-overrides.json')}
-        writes[kit/'overrides.json'] = json_bytes(starter)
+        # Created once, pointing to the schema so that editors complete and check the keys.
+        writes[kit/'overrides.json'] = json_bytes({'$schema': schema_uri, **read_json(ROOT/'templates/user-overrides.json')})
+    else:
+        # Written by an earlier version towards the kit folder: only that value changes, the rest of the file stays as is.
+        text = (kit/'overrides.json').read_bytes().decode('utf-8', 'replace')
+        relinked = re.sub(r'("\$schema"\s*:\s*")[^"]*schemas/overrides\.schema\.json(")', lambda m: m.group(1)+schema_uri+m.group(2), text, count=1)
+        if relinked != text:
+            writes[kit/'overrides.json'] = relinked.encode('utf-8')
     identity = dict(user) if user else dict(state.get('user', {}))
     if identity.get('email') and not EMAIL.fullmatch(identity['email']):
         raise KitError('Invalid email: '+identity['email'])
@@ -411,6 +420,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
         agent_body=lambda definition: practices+'\n'+AGENT_INSTRUCTION+'\n'+definition['instructions']+'\n')
     # Scripts shared by all CLIs: frictions and enabled guardrails.
     managed_write(kit/'bin'/'friction.py', (ROOT/'runtime/friction.py').read_bytes(), 'Kit script')
+    managed_write(kit/'schemas'/'overrides.schema.json', (ROOT/'schemas/overrides.schema.json').read_bytes(), 'Kit schema')
     for name in enabled_hooks:
         managed_write(hooks_dir/hook_manifest[name]['script'], (ROOT/'runtime/hooks'/hook_manifest[name]['script']).read_bytes(), 'Guardrail')
     # Context layers and 30_USER.md, in the context folder (see context_location).
@@ -504,7 +514,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
             print(line)
     print('Open a project, start the CLI and type /guide; CLI-specific checks: docs/cli/.')
 
-KIT_MANAGED = ('.ai-kit/bin/', '.ai-kit/hooks/', '.ai-kit/context/')
+KIT_MANAGED = ('.ai-kit/bin/', '.ai-kit/hooks/', '.ai-kit/context/', '.ai-kit/schemas/')
 
 def managed_roots(home):
     """Root folders where the kit puts files: its own and each CLI's."""
@@ -589,6 +599,51 @@ def repo_skill_overrides(state, cwd):
                           if child.name in names and (child/'SKILL.md').is_file()]
     return root, found
 
+def text_editor(path):
+    """(name, command) of the system's plain-text editor for this file, or None: nothing to install, nothing to configure."""
+    if sys.platform == 'darwin' and shutil.which('open'):
+        return 'your text editor (TextEdit unless you chose another)', ['open', '-t', str(path)]
+    if os.name == 'nt':
+        return 'Notepad', ['notepad.exe', str(path)]
+    return None
+
+def plain_text_problem(path):
+    """Why 30_USER.md cannot be read as plain text (renamed, rich text, not UTF-8), or None."""
+    if not path.is_file():
+        others = sorted(p.name for p in path.parent.glob(path.stem+'*') if p.name != path.name and p.suffix.lower() in ('.txt', '.rtf', '.rtfd'))
+        return path.name+' is missing'+(' (saved as '+', '.join(others)+'?): give it back its name '+path.name if others else '')+'.'
+    data = path.read_bytes()
+    if data.lstrip().startswith(b'{\\rtf'):
+        return path.name+' was saved as rich text: reopen it and save it as plain text (TextEdit: Format > Make Plain Text).'
+    try:
+        data.decode('utf-8')
+    except UnicodeDecodeError:
+        return path.name+' is not UTF-8 text: save it again choosing the UTF-8 encoding.'
+    return None
+
+def personal_context_step(user_file, reapply):
+    """End of an interactive setup: offer to open 30_USER.md in the system editor, then apply it where a CLI keeps a copy."""
+    print('It tells the agent who you are and how you work: plain text, kept as is by every update.')
+    editor = text_editor(user_file)
+    if not editor:
+        print('To personalise it: edit it with a plain-text editor, run update, then start a new session of your CLI.')
+        return
+    if input('Open it now in '+editor[0]+'? [y/N] ').strip().lower() not in ('y', 'yes', 'o', 'oui'):
+        print('Later: edit it, run update, then start a new session of your CLI.')
+        return
+    try:
+        subprocess.Popen(editor[1], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError:
+        print('No editor could be opened: open the file above with a plain-text editor, then run update.')
+        return
+    input('Edit it, save it (same name, plain text), then press Enter here: ')
+    problem = plain_text_problem(user_file)
+    if problem:
+        print('[Check] '+problem+' Then run update.')
+        return
+    reapply()
+    print('Personal context applied. Start a new session of your CLI: it reads 30_USER.md when it starts.')
+
 def doctor(home, cwd=None):
     issues = 0
     def status(ok,message):
@@ -611,7 +666,16 @@ def doctor(home, cwd=None):
         ctx = DoctorContext(profile=profile, load_commands=load_commands, managed_context_names=managed_context_names,
                                     allowed_domains=allowed_domains, domain_allowed=domain_allowed)
         context = state.get('context_dir', '.gemini')
-        status((home/context/USER_CONTEXT).is_file(),'Personal context present: '+context+'/'+USER_CONTEXT)
+        user_file = home/context/USER_CONTEXT
+        status(user_file.is_file(),'Personal context present: '+context+'/'+USER_CONTEXT)
+        if user_file.is_file():
+            problem = plain_text_problem(user_file)
+            status(not problem, problem or USER_CONTEXT+' is plain UTF-8 text')
+            if not problem and SECRET.search(user_file.read_text(encoding='utf-8')):
+                status(False, USER_CONTEXT+' seems to contain a secret (key, token or password): remove it, the agent reads this file')
+        personal_file = home/'.ai-kit/overrides.json'
+        if personal_file.is_file() and SECRET.search(personal_file.read_text(encoding='utf-8', errors='replace')):
+            status(False, '~/.ai-kit/overrides.json seems to contain a secret: write ${VARIABLE} instead and define it in your environment (docs/mcp.md)')
         for rel,expected in state.get('files',{}).items():
             path = inside(home,rel)
             status(path.is_file() and digest(path.read_bytes())==expected,rel)
@@ -872,6 +936,12 @@ def main(argv=None):
                 print(adapter.LABEL+' not on the PATH: configuration ready; install and authenticate it following the IT procedure.')
         if not args.dry_run and not args.no_live and os.environ.get('AI_KIT_NO_LIVE') != '1' and live_checks(home, announce=True):
             print('Installation done, but the model does not answer yet: apply the fix above then run doctor --live again.')
+        if args.action == 'setup' and not args.dry_run and sys.stdin.isatty():
+            state = read_json(home/'.ai-kit/state.json')
+            def reapply():
+                with contextlib.redirect_stdout(io.StringIO()):
+                    apply(role, home, False, None, args.target, team)
+            personal_context_step(home/state.get('context_dir', '.gemini')/USER_CONTEXT, reapply)
         return 0
     except (KitError,OSError,UnicodeError) as exc:
         print('Error: '+str(exc),file=sys.stderr)

@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+Enterprise installation, the same on Windows and macOS, with a standard account: download the release ZIP, extract it, run the installer, choose the profile, optionally personalise `30_USER.md`, use the CLI.
+- **Windows: `Installer.cmd`**, at the root of the kit, double-click. Command Prompt only, no PowerShell: `scripts/bootstrap.ps1` is removed. It finds Python 3.9+ (`py -3`, `python`, `python3`; the Microsoft Store alias without Python counts as absent), runs the installer, and keeps the window open when double-clicked.
+- **macOS: `sh scripts/bootstrap.sh`**, from Terminal (type `sh `, drag the file, Enter). No double-click launcher: Gatekeeper refuses an unsigned downloaded script, and getting past it would mean changing a security decision. The launcher no longer runs `/usr/bin/python3` without the developer tools, which would offer to install them.
+- **Python absent, too old or blocked**: both launchers say which, and what to ask IT, without writing anything.
+- **Release ZIP**: `scripts/package.sh` builds it from the committed files (`git archive`), without maintainer files and without a top folder, so extracting gives a single `ai-kit-<version>` folder. CI tests it on the three systems and, on a version tag, attaches it to the GitHub release.
+- **The extracted folder can be deleted**: the `overrides.json` schema is now copied to `~/.ai-kit/schemas/`, and a personal file that pointed to the kit folder is relinked (only that value changes). A new version is a new ZIP: run its installer, profile, team, `overrides.json` and `30_USER.md` are kept.
+- **`30_USER.md` guidance**: at the end of an interactive setup, its real path, then an offer to open it in Notepad or the Mac's text editor (plain text). After saving, the file is checked (rich text, renamed, not UTF-8) and applied, with a reminder to start a new CLI session. `doctor` runs the same checks.
+- **No secret kept**: frictions, manual and automatic, are redacted (keys, tokens, passwords); `doctor` flags a secret written in `30_USER.md` or `overrides.json` without printing it.
+- **Offline and company networks**: the final model check names a network failure, a proxy asking for authentication (407) or HTTPS inspection without the company root certificate, with what to ask IT; it never suggests disabling a protection. The installation itself needs no network.
+- **Validation**: [docs/validation.md](docs/validation.md) states the commitments, what CI proves and the manual checks on real company workstations. Tests: launchers from folders with spaces and accents, Python absent, old or blocked, extracted folder deleted, new version from another folder, no system-change command in the installer and launchers, nothing downloaded.
+
 ## 0.26.0
 No skill shares a command's name any more: Gemini CLI 0.65 turns every skill into a `/command`, so `/guide` and the `guide` skill were both renamed (`/user.guide`, `/guide1`). Skills renamed: `guide` → `routing`, `handoff` → `handover`, `research` → `investigation`, `retro` → `retrospective`, `triage` → `ticket-sorting`, `wizard` → `manual-steps`; the commands keep their names and, in agy and Codex, now get their own command skill with the kit's instructions. Old names still work in `overrides.json` (with a notice); `update` removes the old skill folders. A test forbids a skill named like a command.
 With agy installed, its command skills (`intent`, `build`, `test`…) move from the shared `~/.gemini/skills/` to the agy plugin (`~/.gemini/config/plugins/ai-kit/skills/`): Gemini CLI, which reads the shared folder, showed every kit command twice and renamed them. Verified: agy counts plugin skills, Gemini does not see them. `update` removes the old copies.

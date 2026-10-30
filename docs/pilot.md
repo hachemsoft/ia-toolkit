@@ -4,9 +4,9 @@ Goal: fix the kit on real tickets before opening it to the whole team, and check
 
 ## Day 1, per person (fifteen minutes)
 
-1. Get the kit: `git clone <repository url> ai-kit` in `Documents` (without git: "Download ZIP" on the repository page, then extract).
+1. Get the kit: download `ai-kit-<version>.zip` from the Releases page and extract it into `Documents`.
 2. If the organization requires an authentication mode (Code Assist with a project, Vertex AI) or a model, write the matching key in `~/.ai-kit/overrides.json` before the next step; see [customization › Authentication and model](customization.md#authentication-and-model). Otherwise, nothing to do.
-3. In that folder: `sh scripts/bootstrap.sh` (Mac) or `.\scripts\bootstrap.ps1` (Windows). Confirm your identity, choose the profile. Installation ends with a real call to the model: if it is not green, follow the remedy shown, do not call for help.
+3. Run the installer: double-click `Installer.cmd` (Windows), or in Terminal `sh scripts/bootstrap.sh` from the extracted folder (Mac). Confirm your identity, choose the profile. Installation ends with a real call to the model: if it is not green, follow the remedy shown, do not call for help.
 4. Open your usual repo, start your CLI (`gemini`, `agy` or `codex`), type `/guide where do I start?` (`$guide` in Codex).
 5. First time in the repo: "Initialize the project context", then `setup-workflow` to declare the team's ticket tracker.
 

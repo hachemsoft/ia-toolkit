@@ -10,14 +10,18 @@ A foundation for working with a coding agent as a team, on Mac and Windows. It c
 
 ## Getting started
 
-1. **Install**: `git clone <repository url> ai-kit` (without git: "Download ZIP" on the repository page, then extract). Open a terminal in that folder, then run `sh scripts/bootstrap.sh` (Mac) or `.\scripts\bootstrap.ps1` (Windows). Confirm your identity, then choose the profile closest to your job; if in doubt, **General**.
+1. **Install**: download `ai-kit-<version>.zip` from the [Releases](https://github.com/hachemsoft/ia-toolkit/releases) page and extract it, for example into Documents.
+   - **Windows**: double-click `Installer.cmd`.
+   - **Mac**: open Terminal, type `sh ` (with a space), drag the `scripts/bootstrap.sh` file of the extracted folder into the window, press Enter.
+
+   Confirm your identity, then choose the profile closest to your job; if in doubt, **General**. The installer then shows your personal context file, `30_USER.md`, and offers to open it.
 2. **Check**: installation ends with a real call to the model. Green means done. Otherwise, the message says what to do.
 3. **Use**: open your repo (`cd` into it), start your CLI (`gemini`, `agy` or `codex`), type `/guide I need to …` (`$guide` in Codex): it tells you which command to type. The first time in a repo: "Initialize the project context".
-4. **Troubleshooting**: `sh scripts/bootstrap.sh doctor --live` (Mac) or `.\scripts\bootstrap.ps1 doctor --live` (Windows), then the [Troubleshooting](docs/troubleshooting.md) page.
+4. **Troubleshooting**: Mac: `sh scripts/bootstrap.sh doctor --live` from the kit folder; Windows: in the kit folder, type `cmd` in the Explorer address bar and press Enter, then `Installer.cmd doctor --live`. Then the [Troubleshooting](docs/troubleshooting.md) page.
 
-Requirements: Python 3.11 or later recommended; 3.9 minimum, which lets you use the Python shipped with macOS. The kit installs no dependencies. The CLI and its authentication come from your organization's procedure; if it requires a cloud project or a model, that is one line in `~/.ai-kit/overrides.json`. The full step-by-step guide: [getting started](docs/getting-started.md).
+Requirements: Python 3.9 or later (3.11 recommended) and your CLI, provided or approved by your company. The kit checks them and installs nothing else: no dependencies, no administrator rights, no change to the system or its security settings, no network needed except to talk to the model. If something is missing or blocked, the message says what to ask IT. The CLI and its authentication come from your organization's procedure; if it requires a cloud project or a model, that is one line in `~/.ai-kit/overrides.json`. The full step-by-step guide: [getting started](docs/getting-started.md). For IT and pilots: [validation on enterprise workstations](docs/validation.md).
 
-Update: `sh scripts/bootstrap.sh update` (Windows: `.\scripts\bootstrap.ps1 update`) from the kit folder; it fetches the new version itself when the folder is a git clone.
+Update: download and extract the new ZIP, then run the installer again the same way. It keeps your profile, team, `overrides.json` and `30_USER.md`; the previous folder can be deleted. In a git clone, `update` runs `git pull` first.
 
 ## Profiles
 
@@ -57,7 +61,7 @@ Verified versions, where each file is placed, and what differs between CLIs: [CL
 - **Use**: [getting started](docs/getting-started.md), [workflow](docs/workflow.md), [tools](docs/tools.md), [agents](docs/agents.md), [project layer](docs/project-context.md), [Troubleshooting](docs/troubleshooting.md).
 - **Customize**: [customization](docs/customization.md), [add or replace a skill](docs/extending.md), [guardrails](docs/hooks.md), [MCP](docs/mcp.md), [identity](docs/identity.md).
 - **Per CLI**: [matrix](docs/cli/matrice.md), [Gemini CLI](docs/cli/gemini.md), [Antigravity CLI](docs/cli/agy.md), [Codex CLI](docs/cli/codex.md), [moving from Gemini to agy](docs/cli/gemini-to-agy.md).
-- **Deploy and maintain**: [the installer](docs/installer.md), [compliance and governance](docs/compliance.md), [contributing](docs/contributing.md), [command format](docs/format.md), [skills reference](docs/skills-reference.md), [evals](docs/evals.md), [usage review](docs/usage-review.md), [pilot](docs/pilot.md), [sources](docs/sources.md), [changelog](CHANGELOG.md).
+- **Deploy and maintain**: [the installer](docs/installer.md), [validation on enterprise workstations](docs/validation.md), [compliance and governance](docs/compliance.md), [contributing](docs/contributing.md), [command format](docs/format.md), [skills reference](docs/skills-reference.md), [evals](docs/evals.md), [usage review](docs/usage-review.md), [pilot](docs/pilot.md), [sources](docs/sources.md), [changelog](CHANGELOG.md).
 
 ## Credits and inspiration
 
