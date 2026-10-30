@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.28.0
 
 MCP servers made simple: three files, one role each ([docs/mcp.md](docs/mcp.md)).
 - `organization.json` says **how** to reach each approved server (`defaults.mcp.<name>.server`); `"enabled": true` there turns it on for every profile.
