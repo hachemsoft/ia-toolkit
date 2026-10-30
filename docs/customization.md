@@ -99,7 +99,7 @@ Priority between instructions, written in `00_KIT.md` and followed by the model:
 
 ## Override per project
 
-Override a kit command in the repo, in the form the CLI reads (matrix row "Override a command in a repository": [matrix](cli/matrice.md)). The project wins.
+Whether a repo can replace a kit command depends on the CLI: one reads a command file from the repo, others keep the kit's version or show both. The exact limits are in the row "Override a command in a repository" of the [CLI matrix](cli/matrice.md). Where the replacement is not reliable, write a skill with a name of its own to the project (`<repo>-review`, for example) and say in `AGENTS.md` when to use it ([add or replace a skill](extending.md#for-a-repo)).
 
 Each repo provides its own `AGENTS.md`, read after the global layers. To redefine a preference there, reuse the same heading as in `30_USER.md` ("Language and style", "My default workflow") and write the project rule.
 

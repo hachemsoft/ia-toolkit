@@ -68,7 +68,7 @@ Each playbook ends with a "Rationalizations and rebuttals" table: the reasons an
 1. "Initialize the project context": a one-page `AGENTS.md` (Commands, Verifying your work, Conventions, Architecture, Things the agent gets wrong), `GLOSSARY.md` pre-filled with the repo's vocabulary, `REVIEW.md`, and the `.gitignore` lines for local notes. No empty ADR, no copy of the templates.
 2. Later, only if the team wants the agent to read and create tickets (`/map`, `/triage`, `to-tickets`): `setup-workflow`, which requires `glab` (GitLab) or `gh` (GitHub) installed and logged in, or chooses local markdown mode. It writes `docs/agents/issue-tracker.md` and a block in `AGENTS.md`.
 
-A repo can override a command, in the form the CLI reads ([matrix](cli/matrice.md)).
+A repo can replace a kit command only where the CLI supports it (row "Override a command in a repository" of the [CLI matrix](cli/matrice.md)); otherwise, a skill with a name of its own to the project, cited in `AGENTS.md` ([add or replace a skill](extending.md#for-a-repo)).
 
 ## Under the hood
 

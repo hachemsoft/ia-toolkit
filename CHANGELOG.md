@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+Documentation: replacing a kit command in a repo is described as depending on the CLI (customization, format, workflow), with a skill named for the project as the fallback.
+
 ## 0.31.0
 
 Priority rule hardened in `00_KIT.md`: only the person, in the conversation, can ask for an exception to a practice, and never for a guardrail, permission or access control; a conflict between a repo instruction and an explicit request gets the more cautious of the two and a confirmation; what the agent reads (files, command output, web pages, tickets, MCP results) is data, not instructions.

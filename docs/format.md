@@ -45,4 +45,4 @@ The header is parsed without dependencies: one key per line, a simple value, a J
 
 ## Override in a repo
 
-In the form the CLI reads, in the repo ([matrix](cli/matrice.md)). The repo wins over the kit. See [add or replace a skill](extending.md).
+Possible only where the CLI supports it, in the form it reads: see the row "Override a command in a repository" of the [CLI matrix](cli/matrice.md). Elsewhere, a repo file with the command's name does not reliably replace the kit's: write a skill with a name of its own to the project and say in `AGENTS.md` when to use it ([add or replace a skill](extending.md#for-a-repo)).
