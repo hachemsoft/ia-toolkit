@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.36.2
+
+Reported frictions fixed (frictions: 6d941d, d8a974, ebbdb2):
+- `grilling`: every question gives at least two options, each with what it implies, then the recommended one: the person can choose without asking for a rewording. A decision outside the step's scope (hosting, access, operations while framing) is listed under **Later** instead of being asked.
+- `/spec`: the decisions `intent.md` leaves open are asked in one round, only those that change the spec, with options and a recommendation; then the whole `spec.md` is written in the same turn, the deferred ones under open questions.
+
 ## 0.36.1
 
 - The `protected-paths` guardrail judges a shell line one simple command at a time (split on `;`, `&&`, `||`, `|`, new lines), and the text of a heredoc given to a program that is not a shell is data: a command that only quotes a protected path next to an unrelated `sed -i` or `rm` is no longer refused. A write to the configuration in the same simple command, through a pipe, a continued line or a heredoc run by a shell is still blocked.

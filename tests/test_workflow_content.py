@@ -18,6 +18,16 @@ def skill_text(name):
 
 
 class CeremonyTests(unittest.TestCase):
+    def test_grilling_offers_options_and_stays_in_scope(self):
+        # Frictions from a session: a single recommended answer to confirm, and a drift to hosting and access while framing.
+        grilling = (ROOT/'skills/internal/common/grilling/SKILL.md').read_text(encoding='utf-8')
+        self.assertIn('at least two real options', grilling)
+        self.assertIn('**Later**', grilling)
+        spec = COMMANDS['spec']
+        self.assertIn('all in one round', spec)
+        self.assertIn('write the whole spec.md in the same turn', spec)
+        self.assertIn('hosting, access, operations', spec)
+
     def test_levels_defined_once_and_used_by_the_commands(self):
         kit = (ROOT/'templates/kit-context.md').read_text(encoding='utf-8')
         for level in ('**quick**', '**standard**', '**full**'):

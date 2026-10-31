@@ -15,6 +15,7 @@
     "implement": "Commit only with the person's agreement in the session or the repo's instructions (0.34); upstream committed unconditionally.",
     "prototype": "Committing the prototype needs the person's agreement (0.34).",
     "manual-steps": "Committing the wizard is proposed, with the person's agreement (0.34).",
-    "workflow-guide": "The code-review line describes the kit's review (0.34)."
+    "workflow-guide": "The code-review line describes the kit's review (0.34).",
+    "grilling": "Every question gives at least two options with what each implies, then the recommendation; decisions outside the step's scope go to a Later list instead of being asked (0.36.2, frictions)."
   }
 }
