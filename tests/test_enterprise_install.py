@@ -75,8 +75,10 @@ class LauncherTests(unittest.TestCase):
         shutil.rmtree(self.base/'Kit IA été')
         # Nothing installed points back to the extracted folder: hooks, scripts and schema live in ~/.ai-kit.
         markers = {str(self.kit), self.kit.as_uri(), str(self.kit).replace('\\', '/'), str(self.kit).replace('\\', '\\\\')}
+        # The private environment is left out: pip records there where the package came from (direct_url.json), a note
+        # nothing reads; that the kit runs without the folder is checked by running it after the deletion (test_launcher).
         for path in self.home.rglob('*'):
-            if path.is_file() and '/backups/' not in path.as_posix():
+            if path.is_file() and '/backups/' not in path.as_posix() and '/.ai-kit/runtime/' not in path.as_posix():
                 text = path.read_text(encoding='utf-8', errors='replace')
                 self.assertFalse([m for m in markers if m in text], path)
         self.assertTrue((self.home/'.ai-kit/schemas/overrides.schema.json').is_file())

@@ -118,9 +118,11 @@ class LauncherRunTests(unittest.TestCase):
         code, out = self.run_kit(kit, *self.setup_args(), env=self.env(**wheelhouse.pip_env()))
         self.assertEqual(code, 0, out)
         self.assertIn('configured package index', out)
-        probe = subprocess.run([str(self.runtime_python()), '-I', '-c', 'import ai_kit, sys; print(ai_kit.__file__)'], capture_output=True, text=True)
-        self.assertIn(str(self.home), probe.stdout)  # installed into the environment, not pointing to the clone
-        self.assertNotIn(str(kit), probe.stdout)
+        probe = subprocess.run([str(self.runtime_python()), '-I', '-c', 'import ai_kit, sys; print(ai_kit.__file__)'], capture_output=True,
+                               text=True, encoding='utf-8', env={**os.environ, 'PYTHONIOENCODING': 'utf-8'})
+        where = os.path.normcase(os.path.realpath(probe.stdout.strip()))
+        self.assertTrue(where.startswith(os.path.normcase(os.path.realpath(self.home))), where)  # in the environment, not the clone
+        self.assertFalse(where.startswith(os.path.normcase(os.path.realpath(kit))), where)
 
     def test_failed_package_install_configures_nothing_and_is_detected_next_time(self):
         kit = self.repo_copy()
@@ -243,7 +245,7 @@ class GitUpdateTests(unittest.TestCase):
 
     def test_fetch_failure_is_not_a_success(self):
         self.setup_kit()
-        shutil.rmtree(self.origin)  # the remote is gone: like no network
+        self.git(self.clone, 'remote', 'set-url', 'origin', str(self.base/'gone'))  # the remote is unreachable: like no network
         code, out = self.update()
         self.assertEqual(code, 1, out)
         self.assertIn('Fetch failed', out)

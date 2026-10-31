@@ -104,7 +104,7 @@ class PersonalContextTests(Base):
         self.assertEqual(kept[0].read_text(encoding='utf-8'), 'Preference A\n')
         self.assertTrue(any('now the file in effect' in n for n in notices))
         self.assertTrue(any('kept as' in n for n in notices))
-        self.assertIn(str(self.home/'.gemini/30_USER.md'), self.out)
+        self.assertIn(str(self.home.resolve()/'.gemini/30_USER.md'), self.out)  # resolved: Windows short names (RUNNER~1)
 
     def test_secret_is_never_copied_to_a_new_location(self):
         self.run_kit('gemini')
