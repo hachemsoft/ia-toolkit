@@ -25,6 +25,11 @@ class CeremonyTests(unittest.TestCase):
         self.assertIn('a go-ahead already given stands', kit)
         for name in ('build', 'intent', 'guide'):
             self.assertRegex(COMMANDS[name], r'quick, standard or full', name)
+        # The level is a fixed first line, written even when the agent is blocked: the workflow and the evals read it.
+        self.assertIn('`Level: quick|standard|full`', kit)
+        for name in ('build', 'intent'):
+            self.assertIn('The first line of your reply is `Level: quick`', COMMANDS[name], name)
+            self.assertIn('even if you then ask', COMMANDS[name], name)
 
     def test_a_quick_change_needs_no_plan_and_no_new_acceptance(self):
         build = COMMANDS['build']

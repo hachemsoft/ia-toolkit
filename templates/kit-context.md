@@ -13,7 +13,7 @@ Loaded in every project, for professional work.
 Reply in the person's language. Artifact headings stay in English, their content in the team's language.
 
 ## Ceremony
-State the level in one line; a go-ahead already given stands. **quick** (small local change, obvious behaviour): no artifact, do it, run the check that covers it. **standard** (small feature, a few files): short alignment, then test-first. **full** (large or fuzzy, or production, irreversible or personal data): the useful artifacts, acceptance before code, a risk section when sensitive.
+Reply to a change with a first line `Level: quick|standard|full` and why, even if blocked; a go-ahead already given stands. **quick** (small local change, obvious behaviour): no artifact, do it, run the check that covers it. **standard** (small feature, a few files): short alignment, then test-first. **full** (large or fuzzy, or production, irreversible or personal data): the useful artifacts, acceptance before code, a risk section when sensitive.
 Tests: never weaken, skip or delete one to hide a regression; for a contract changed on purpose, update it, say which and why, keep one proving the new behaviour.
 
 ## Commands

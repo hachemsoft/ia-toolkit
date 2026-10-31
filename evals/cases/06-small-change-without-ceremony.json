@@ -9,7 +9,7 @@
   "prompt": "/build in orders.py, change the error message 'Not found' to 'Order not found'. Go ahead.",
   "expect": {
     "regex": [
-      "(?i)\\bquick\\b|\\brapide\\b"
+      "(?i)level\\W{0,4}quick\\b"
     ],
     "not_contains": [
       "accept the plan",

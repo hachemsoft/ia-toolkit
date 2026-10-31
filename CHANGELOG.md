@@ -15,6 +15,9 @@ The same on every CLI:
 - agy agents get their tool list with agy's tool names: a reviewer can no longer write or run the shell there.
 - The matrix lists the limits that come from the CLIs themselves.
 
+Workflow:
+- The ceremony level is now a fixed first line, `Level: quick`, `Level: standard` or `Level: full` with its reason, in `00_KIT.md`, `/build` and `/intent`, written even when the agent then asks, stops or is blocked (the first Claude Code eval campaign, 7/8, missed it on a blocked quick change). The eval checks that line.
+
 ## 0.35.0
 
 Claude Code, the fourth supported CLI, with everything the others get:

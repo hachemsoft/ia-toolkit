@@ -72,7 +72,7 @@ class ContextLayerTests(unittest.TestCase):
   with contextlib.redirect_stdout(out):doctor(self.home)
   text=out.getvalue();self.assertIn('[OK] context.fileName contains',text);self.assertNotIn('[Check] .gemini/',text)
  def test_kit_template_has_priority_rules(self):
-  text=(ROOT/'templates/kit-context.md').read_text(encoding='utf-8');self.assertIn('30_USER.md',text);self.assertIn('AGENTS.md',text);self.assertIn('CLAUDE.md',text);self.assertIn('extra_commands',text);self.assertIn('{frictions}',text);self.assertLess(len(text),3700)
+  text=(ROOT/'templates/kit-context.md').read_text(encoding='utf-8');self.assertIn('30_USER.md',text);self.assertIn('AGENTS.md',text);self.assertIn('CLAUDE.md',text);self.assertIn('extra_commands',text);self.assertIn('{frictions}',text);self.assertLess(len(text),3800)
 if __name__=='__main__':unittest.main()
 
 
