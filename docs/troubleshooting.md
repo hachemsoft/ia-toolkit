@@ -19,7 +19,7 @@ First step, always: `sh scripts/bootstrap.sh doctor` (Mac) or `Installer.cmd doc
 | "It does not see my glossary" | CLI started outside the repo | `cd` into the repo, then start the CLI; the kit is global, the repo is not |
 | a command from the docs cannot be found | command not in your profile ([profile table](getting-started.md#3-work-one-command-per-step)) | `"extra_commands": ["spec"]` in `overrides.json`, then `update`; `00_KIT.md` lists the installed commands |
 | `/intent` or `/build` cannot be found | command not installed, or skill disabled | `doctor`; check `disabled_skills` and `disabled_commands` in `overrides.json` |
-| "Skill existing file not managed by the kit" at `update` | a skill with the same name installed outside the kit | remove it, or add it to `disabled_skills` |
+| a kit skill or command named `ai-kit-<name>` | one of your own skills or commands already had the name | normal: yours is kept and the kit's takes the prefix (`skill_prefix`); the installer said which. Rename or remove yours, then `update`: the kit's gets its plain name back |
 | dbt refuses to run: "Blocked by the kit: production target" | guardrail active | use the development target; an authorized person exports `AI_KIT_ALLOW_PROD=1` |
 | `update` stops on "modified locally" | a file installed by the kit (skill, agent, command, settings block) was edited | move the change to `30_USER.md` or a repo skill, restore, run again |
 | `update` says "was modified by hand: restored" | a rule layer (`00_KIT.md`, `10_COMPANY.md`, `20_…md`) was edited | normal: the kit version is back, your copy is in `~/.ai-kit/backups/`; personal preferences go in `30_USER.md`, a rule change through the kit repository |
@@ -41,15 +41,15 @@ CLI-specific issues are on each CLI's page: [Gemini CLI](cli/gemini.md#gemini-tr
 - **Unreadable settings**: fix the existing JSON after making a backup. The kit does not accept JSON with comments (JSONC).
 - **Kit skill hidden**: a personal copy with the same name, in a folder the CLI reads first, hides the kit's skill. `doctor` lists hidden skills. Remove or rename the personal copy.
 - **Evals failing with an infrastructure error**: `evals/run.py` distinguishes an unavailable API response (401, 402 credits exhausted, 403, 429) from a behaviour failure; fix the CLI's authentication or billing before drawing conclusions about a skill.
-- **Skill existing file not managed by the kit**: a skill with the same name was installed outside the kit (by a CLI command, for example). Either remove it to let the kit provide its own, or add it to `disabled_skills` in overrides.json. The kit never overwrites a file it does not manage.
+- **A kit skill or command installed as `ai-kit-<name>`**: one of your own skills or commands (in the CLI's skills or commands folder) already has the name. The kit never overwrites it: it keeps yours and installs its own with the prefix (`skill_prefix` in `overrides.json`, `ai-kit-` by default), and the kit's texts use the new name. With `"skill_prefix": ""`, `update` stops instead: set a prefix.
 - **Skill modified**: save your adaptations in a new skill or in the kit sources, restore the old untouched generated output, run update again.
 - **Context layer modified** (`00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md`): these files are generated. Move the change to `30_USER.md`, restore the file from a backup, run update again.
 - **Context not loaded**: check with the CLI's command that the global layers appear before the project's `AGENTS.md`; the steps are on each CLI's page.
-- **Wrong identity detected**: run `setup --user your.email@company` again; the `30_USER.md` header can be fixed by hand. Identity grants no rights.
+- **Wrong identity detected**: run `update --user your.email@company`, or the installer's **Change my choices** (email step). The `30_USER.md` header is written only when the file is created: fix it by hand. Identity grants no rights.
 - **Doctor reports an out-of-domain account**: the CLI is logged in with an account that is not in `allowed_domains`. Log in again with your work account before working on company data.
 - **Skills not visible**: list them with the CLI's command, check that they are enabled and check managed policies. Having the files present does not guarantee they are enabled.
 - **MCP not configured**: this is normal, no server is enabled by default; see [MCP](mcp.md). A missing optional MCP server does not make doctor fail.
-- **Doctor returns 1**: at least one local check needs action; 2 means a configuration error. The setup/update actions return 0 on success, 2 on error.
+- **Doctor returns 1**: at least one local check needs action; 2 means a configuration error. The setup/update actions return 0 on success, 2 on error. Through the launcher: 3 when the kit package did not install, 4 when another run is in progress, 1 for "Update incomplete".
 
 ## Manual rollback
 

@@ -12,7 +12,7 @@ Record one friction: something that slowed the person down, surprised them or ma
 
 Pass the sentence on standard input, never on the command line, so that the shell expands nothing in it (no `$(...)`, no backticks). One sentence, no secret, no prompt text, no repository path. On macOS or Linux:
 
-python3 ~/.ai-kit/bin/friction.py --category <category> --command <the kit command in use, or none> --cli <gemini, agy or codex: the CLI you are> <<'FRICTION'
+python3 ~/.ai-kit/bin/friction.py --category <category> --command <the kit command in use, or none> --cli <gemini, agy, codex or claude: the CLI you are> <<'FRICTION'
 <the sentence>
 FRICTION
 
@@ -20,6 +20,6 @@ On Windows (PowerShell), the same with a literal here-string:
 
 @'
 <the sentence>
-'@ | py -3 $HOME/.ai-kit/bin/friction.py --category <category> --command <command or none> --cli <gemini, agy or codex>
+'@ | py -3 $HOME/.ai-kit/bin/friction.py --category <category> --command <command or none> --cli <gemini, agy, codex or claude>
 
 The script adds the kit version, profile and operating system itself. The line lands in ~/.ai-kit/frictions.jsonl on this machine only; nothing is sent anywhere. Confirm in one line what was recorded, then go back to the work in progress.

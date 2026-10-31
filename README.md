@@ -6,7 +6,7 @@
 [![Platforms](https://img.shields.io/badge/platforms-Mac%20%7C%20Windows%20%7C%20Linux-informational)](docs/getting-started.md)
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-A foundation for working with a coding agent as a team, on Mac and Windows. It configures the agent CLIs present on the workstation (**Gemini CLI**, **Antigravity CLI**, **Codex CLI** and **Claude Code**) with the same content: layered context, a command-based workflow, domain playbooks, review agents and guardrails. Technical and domain context stays in each repo.
+A foundation for working with a coding agent as a team, on Mac and Windows. It configures the agent CLIs you choose (**Gemini CLI**, **Antigravity CLI**, **Codex CLI** and **Claude Code**) with the same content: layered context, a command-based workflow, domain playbooks, review agents and guardrails. Technical and domain context stays in each repo.
 
 ## Getting started
 
@@ -60,7 +60,7 @@ Commands and agents installed per profile: [getting started](docs/getting-starte
 
 A **framework** first: the kit installs a base on the workstation that decides nothing on the team's behalf. It sets up context layers (company practices, team practices, personal preferences), read before the repo context. It provides profiles, agents, guardrails, an overrides file (overrides.json), a usage review and evals. It is tooling and precedence rules, not a procedure.
 
-Within this framework, a **workflow**: one command per step of the development cycle (`/intent`, `/spec`, `/build`, `/test`, `/review`, `/ship`, `/diagnose`) and a chain of artifacts (`intent.md`, `spec.md`, `plan.md`, review findings, merge request (MR) description). Ceremony matches the stakes: a small fix needs no command, a small feature uses a short `/intent` then `/build`, and only a large change or a production change runs the full sequence. These are prompts and skills the model follows, plus two deterministic guardrails for what must be guaranteed. See [workflow](docs/workflow.md).
+Within this framework, a **workflow**: one command per step of the development cycle (`/intent`, `/spec`, `/build`, `/test`, `/review`, `/ship`, `/diagnose`) and a chain of artifacts (`intent.md`, `spec.md`, `plan.md`, review findings, merge request (MR) description). Ceremony matches the stakes, in three levels the agent states on the first line of its reply (`Level: quick`, `standard` or `full`): a small local change is done and checked with no document, a small feature gets a short alignment then test-first, and only a large, fuzzy or production change runs intent, spec, plan and your acceptance before code. These are prompts and skills the model follows, plus two deterministic guardrails for what must be guaranteed. See [workflow](docs/workflow.md).
 
 Alongside, **tools** (`/guide`, `/learn`, `/explain`, `/retro`, `/friction`) and **domain playbooks** activated when the task calls for them; yours are added the same way. See [tools](docs/tools.md) and [adding a skill](docs/extending.md).
 

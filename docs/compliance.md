@@ -4,7 +4,7 @@ This page helps an organization's compliance, security or legal team assess the 
 
 ## What the kit is, in governance terms
 
-The kit is a configuration tool. It installs text files (context, commands, skills, agents, guardrails) in the folders of coding agent CLIs already present on the workstation: Gemini CLI, Antigravity CLI, Codex CLI, Claude Code. It provides no model and calls no service during installation or update. The only call to a model is `doctor --live`, run on request with the person's CLI and account; `AI_KIT_NO_LIVE=1` refuses it. It processes no business data. The prompts, code and data the agent sees go to the model provider under the contract of the chosen CLI (Google account, Gemini Code Assist, Vertex AI, OpenAI): that contract governs their processing, not the kit.
+The kit is a configuration tool. It installs text files (context, commands, skills, agents, guardrails) in the folders of coding agent CLIs already present on the workstation: Gemini CLI, Antigravity CLI, Codex CLI, Claude Code. It provides no model and calls no service during installation or update. The only call to a model is `doctor --live`, run on request with the person's CLI and account; `AI_KIT_NO_LIVE=1` refuses it. It processes no business data. The prompts, code and data the agent sees go to the model provider under the contract of the chosen CLI (Google account, Gemini Code Assist, Vertex AI, OpenAI, Anthropic): that contract governs their processing, not the kit.
 
 ## Reference frameworks
 
@@ -21,11 +21,11 @@ A coding assistant does not, in principle, fall under the AI Act's high-risk use
 | Topic | What the kit does | Where to check |
 | --- | --- | --- |
 | Human oversight | the person starts each command; the agent commits, pushes, deploys or runs an infrastructure `apply` only with their approval; ceremony matches the stakes (spec, full review) | `practices/`, `commands/`, [workflow](workflow.md) |
-| Deterministic guardrails | blocks a dbt command on a production target; blocks writes to the configuration of the kit and of the CLIs, and under protected paths declared by the repository (`protected-paths`, on by default); blocks a dbt command on a production target (`dbt-prod-guard`, off by default, turned on by the organization or a team) | `runtime/hooks/`, [guardrails](hooks.md) |
+| Deterministic guardrails | blocks writes to the configuration of the kit and of the CLIs, and under protected paths declared by the repository (`protected-paths`, on by default); blocks a dbt command on a production target (`dbt-prod-guard`, off by default, turned on by the organization or a team) | `runtime/hooks/`, [guardrails](hooks.md) |
 | Review | read-only review agents (code, security, infrastructure, architecture, SQL, dbt) and a doubter agent for high-stakes changes | `agents/`, [agents](agents.md) |
 | Permissions | no mode that skips confirmations; the kit never writes CLI permissions or Codex guardrail approvals | test `test_invariants.py` |
 | Data on the workstation | no telemetry; usage review and frictions read and written locally; no credentials stored | [usage review](usage-review.md), `runtime/friction.py` |
-| Authentication | never chosen by the kit; only what the organization declares in `overrides.json` | [customization](customization.md) |
+| Authentication and model | never written by the kit: set in each CLI following the IT procedure; `vertex`, `code_assist`, `model`, `models` are ignored and reported by `update` and `doctor` | [customization](customization.md#authentication-and-model) |
 | Installation traceability | each installed file is tracked by fingerprint; backup before each write; refuses to overwrite a file edited by hand | `~/.ai-kit/state.json`, `~/.ai-kit/backups/` |
 | AI literacy for staff | "Getting started" path, `/guide` which explains which command and which level of ceremony to choose, `/learn` and `/explain` to understand a scope or code | [getting started](getting-started.md), [tools](tools.md) |
 | Measured quality | evals of agent behavior on fixed cases, replayable on every kit change | `evals/`, [evals](evals.md) |
@@ -37,7 +37,7 @@ A coding assistant does not, in principle, fall under the AI Act's high-risk use
 - **No signed proof of reviews.** A review by an agent produces text, not a verifiable attestation.
 - **No control of data sent to the model.** The kit filters neither the code nor the data the agent reads; the repository rules (`AGENTS.md`, protected paths) guide the agent, they do not block reading.
 - **No fleet management.** The kit is not enforced on workstations, reports nothing and does not check who installed it.
-- **No model inventory.** The model used depends on the CLI and the account; `overrides.json` can set it, without guaranteeing it.
+- **No model inventory.** The model used depends on the CLI and the account; the kit does not set it, and the agents inherit the session's model.
 
 ## Security limits
 

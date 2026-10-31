@@ -4,13 +4,13 @@
 
 > `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
 
-**Without editing any file.** The usual choices (CLIs, profile, domain playbooks, optional tools, commands, review agents) are made in the installer: run it again and choose **Change my choices**. It writes the corresponding lists of `overrides.json` (`extra_skills`, `disabled_skills`, `extra_commands`, `disabled_commands`, `extra_agents`, `disabled_agents`) only when you confirm **Install**, and keeps your other keys and `_` comments. The file stays the single place for these choices: what you edit by hand and what the installer writes are the same lists, the last one written wins. The rest of this page is for what the installer does not ask (MCP servers, guardrails, models, authentication) and for organizations. A name that the kit does not know in `disabled_skills` or `disabled_agents` is reported at the next update (a typo has no effect). `skill_prefix` (Claude Code only, `"ai-kit-"` by default) names the kit's skills there: see [Claude Code](cli/claude-code.md#the-prefix).
+**Without editing any file.** The usual choices (CLIs, profile, domain playbooks, optional tools, commands, review agents) are made in the installer: run it again and choose **Change my choices**. It writes the corresponding lists of `overrides.json` (`extra_skills`, `disabled_skills`, `extra_commands`, `disabled_commands`, `extra_agents`, `disabled_agents`) only when you confirm **Install**, and keeps your other keys and `_` comments. The file stays the single place for these choices: what you edit by hand and what the installer writes are the same lists, the last one written wins. The rest of this page is for what the installer does not ask (MCP servers, guardrails, `skill_prefix`, `frictions`) and for organizations. A name that the kit does not know in `disabled_skills` or `disabled_agents` is reported at the next update (a typo has no effect). `skill_prefix` (`"ai-kit-"` by default) is the name given to a kit skill or command when one of yours already has its name, on every CLI; one CLI gives it to every kit skill: see [Claude Code](cli/claude-code.md#the-prefix).
 
 ## Organization, team and person
 
 Settings are combined at every `setup` and `update`, in this order, each on top of the previous one: **organization**, **profile** (the skills, commands, agents and MCP servers of your job, `profiles/<profile>.json`), **team**, **you**. The person keeps the last word.
 
-- **`organization.json`**, at the root of the kit repository, belongs to the organization. It is changed by merge request and reaches workstations with the next version of the kit. It holds the expected email domains (`allowed_domains`) and the organization defaults (`defaults`, with the same keys as `overrides.json`: authentication, model, guardrails, MCP, skills, commands…).
+- **`organization.json`**, at the root of the kit repository, belongs to the organization. It is changed by merge request and reaches workstations with the next version of the kit. It holds the expected email domains (`allowed_domains`) and the organization defaults (`defaults`, with the same keys as `overrides.json`: guardrails, MCP, skills, commands, agents, `skill_prefix`, `frictions`).
 - **The team's settings**, in the same `organization.json`, under `teams` (see [Teams](#teams)).
 - **`~/.ai-kit/overrides.json`** belongs to the person. It is applied on top: lists add up, objects combine, the person's value wins for a single value. It never replaces the organization or team settings wholesale; `doctor` lists the values a person changed.
 
@@ -29,7 +29,7 @@ Both files have a JSON Schema in `schemas/`: an editor that knows the `"$schema"
 
 | Who | Where | Decides |
 | --- | --- | --- |
-| the organization | `organization.json` (`allowed_domains`, `defaults`), `practices/10-company.md` | defaults for everyone: authentication, model, guardrails, approved MCP servers, company practices |
+| the organization | `organization.json` (`allowed_domains`, `defaults`), `practices/10-company.md` | defaults for everyone: guardrails, approved MCP servers, skills and commands, company practices |
 | the team | `organization.json` (`teams.<team>`), `practices/20-<team>.md` | its tools and its practices, on top of the organization |
 | the profile | `profiles/<profile>.json` | the skills, commands, agents and MCP servers of a job |
 | you | `~/.ai-kit/overrides.json`, `30_USER.md` | your additions and exceptions, your preferences |
@@ -45,7 +45,7 @@ Profiles describe a job; teams describe who you work with. A person has one prof
 
 **Its context: `practices/20-<team>.md`.** The team's rules in plain text: ticket tracker, branch names, review and deployment habits. The kit installs it as `20_<TEAM>.md` instead of the shared `20_TEAM.md`, whatever the profile.
 
-**Its tools: `teams` in `organization.json`.** The same keys and formats as `overrides.json`: skills, commands, agents, guardrails, MCP servers, model.
+**Its tools: `teams` in `organization.json`.** The same keys and formats as `overrides.json`: skills, commands, agents, guardrails, MCP servers.
 
 ```json
 {
@@ -71,7 +71,7 @@ Order: organization defaults, then the team, then the person's `overrides.json`,
 
 ## Context layers
 
-The kit installs short files that the agent loads in all your projects, in this order. They live in `~/.gemini/` if Gemini CLI is installed (it only reads its own folder), otherwise in `~/.ai-kit/context/`. Details per CLI: [matrix](cli/matrice.md#add-a-cli).
+The kit installs short files that the agent loads in all your projects, in this order. They live in `~/.gemini/` if Gemini CLI is installed (among the CLIs you chose; it only reads its own folder), otherwise in `~/.ai-kit/context/`. Details per CLI: [matrix](cli/matrice.md#add-a-cli).
 
 | File | Owner | Content |
 | --- | --- | --- |
@@ -115,7 +115,7 @@ Each repo provides its own `AGENTS.md`, read after the global layers. To redefin
 { "extra_commands": ["spec", "explain"], "disabled_commands": ["learn"] }
 ```
 
-**Skills.** Example: an analyst adds the Python/JS skill (which relies on `codebase-design`, added automatically) and disables the BigQuery cost playbook:
+**Skills.** Example: an analyst adds the Python/JS skill (its required skill, `tdd`, comes with it; `codebase-design` is optional and yours to add) and disables the BigQuery cost playbook:
 
 ```json
 {
@@ -132,7 +132,7 @@ A project skill named like a kit skill behaves differently per CLI ([matrix](cli
 
 ## Full `overrides.json` example
 
-A General-profile developer who wants `/ask` and `/handoff`, prototyping, no `/retro`, the security review agent, the dbt guardrail on, the GitHub MCP server of the organization, an enterprise Code Assist project and a fixed model:
+A General-profile developer who wants `/ask` and `/handoff`, prototyping, no `/retro`, the security review agent, the dbt guardrail on and the GitHub MCP server of the organization:
 
 ```json
 {
@@ -161,7 +161,7 @@ The kit configures neither: signing in to the model provider and choosing a mode
 | Codex CLI | `codex login` | the session model |
 | Claude Code | `/login`, or the provider's variables ([its page](cli/claude-code.md)) | `/model` |
 
-Before 0.36 the kit could write some of these settings for the first CLI of the table (`vertex`, `code_assist`, `model`, `models` in `overrides.json`). What it wrote stays, now yours: the lines of its `.env` file (their `# ai-kit :` comment says so) and the authentication type or model name in its settings. These keys are ignored if they remain in `overrides.json`, and `update` and `doctor` say so.
+Before 0.36 the kit could write some of these settings for the first CLI of the table (`vertex`, `code_assist`, `model`, `models` in `overrides.json`). What it wrote stays, now yours: the lines of its `.env` file (a comment line above them now says so) and the authentication type or model name in its settings. These keys are ignored if they remain in `overrides.json`, and `update` and `doctor` say so.
 
 ## Guardrails
 

@@ -28,7 +28,7 @@ Running the installer again once the kit is installed opens a menu: **Update**, 
    | `auto` | those present on the workstation; Gemini CLI if none |
    | `gemini`, `agy`, `codex`, `claude` | that CLI only |
    | `both` | Gemini CLI and Antigravity CLI |
-   | `all` | all three |
+   | `all` | all four supported CLIs |
 
 ### Run the kit
 
@@ -68,7 +68,7 @@ Signing in to the model and choosing it are done in your CLI, following your IT 
 
 ## 2. First session (five minutes)
 
-**One kit, all your repos.** You install the kit once per workstation, not once per repo. The kit folder only serves to run `setup`, `update` and `doctor` ([Run the kit](#run-the-kit)); you never work in it. To work, open a terminal in your own repo and start your CLI there (`gemini`, `agy` or `codex`) directly. In `projet-a`, the CLI reads the kit's global context (company, team, you) and the context of `projet-a`; in `projet-b`, the same kit and the context of `projet-b`. What belongs to a project stays in its repo; your preferences stay in your home folder. If the repo already has its context (`AGENTS.md`…), use it as is: do not initialize it again.
+**One kit, all your repos.** You install the kit once per workstation, not once per repo. The kit folder only serves to run `setup`, `update` and `doctor` ([Run the kit](#run-the-kit)); you never work in it. To work, open a terminal in your own repo and start your CLI there (`gemini`, `agy`, `codex` or `claude`) directly. In `projet-a`, the CLI reads the kit's global context (company, team, you) and the context of `projet-a`; in `projet-b`, the same kit and the context of `projet-b`. What belongs to a project stays in its repo; your preferences stay in your home folder. If the repo already has its context (`AGENTS.md`…), use it as is: do not initialize it again.
 
 | You want to change | File or location | To apply it |
 | --- | --- | --- |
@@ -79,7 +79,7 @@ Signing in to the model and choosing it are done in your CLI, following your IT 
 
 1. Go to your repo: `cd <repo folder>`. Without this, the agent does not see the project context.
 2. Start your CLI: `gemini`, `agy`, `codex` or `claude`. In Gemini, agy and Claude Code, commands are written `/guide`; in Codex, `$guide`. This page writes them with `/`. The first time, Codex asks you to review the kit's hooks: answer "Trust all and continue" (they keep the agent from changing its own configuration).
-3. Type: **"Initialize the project context"**. The agent proposes, file by file and with your approval, `AGENTS.md` (one page about the repo), `GLOSSARY.md` (the domain terms), `REVIEW.md` (what a review checks) and two `.gitignore` lines for working notes. If someone has already done this in the repo, skip it.
+3. Optional: type **"Initialize the project context"** (the agent also offers it when it becomes useful). The agent proposes, file by file and with your approval, `AGENTS.md` (one page about the repo), `GLOSSARY.md` (the domain terms), `REVIEW.md` (what a review checks) and two `.gitignore` lines for working notes. If someone has already done this in the repo, skip it.
 4. Type: `/guide I need to …` with today's need. It answers: which level of ceremony, which command, what it produces, an example prompt.
 
 **Your repo and your layers.** The kit's layers (company, team, you) apply in every repo; each repo adds its own context on top: `AGENTS.md`, `GLOSSARY.md`, `REVIEW.md`, its decisions (`docs/adr/`), its working notes (`docs/sdlc/`) and, if the team wants, its own skills in `.agents/skills/`. What wins when they disagree, and what a repo can and cannot change: [project layer](project-context.md).

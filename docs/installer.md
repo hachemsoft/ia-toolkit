@@ -18,14 +18,15 @@ Nobody activates the environment, runs pip, changes the `PATH` or needs administ
 
 **Update in a git clone**, three steps, each reported: 1. fetch, `git pull --ff-only`, refused when the kit folder has local changes (nothing is overwritten, stashed, reset or merged); 2. reinstall the package in the private environment; 3. apply the configuration. If the fetch fails or is refused, the configuration of the current folder is reapplied and the command ends with "Update incomplete" and a non-zero code. The versions of the folder and of the environment are shown when they differ. With a ZIP, a new version is a new ZIP: run its installer.
 
-**Modes.** In a terminal without options: the guided installer (Rich and Questionary), or its menu once the kit is installed. `--plain` or `AI_KIT_PLAIN=1`: plain numbered questions, no colours (also used automatically without the libraries, for example `python -m installer` from a clone). With an action and options, or without a terminal: nothing is asked; a missing choice is an error that names the option, never a question waiting for an answer. `NO_COLOR` is respected; output redirected to a file or a CI log carries no colour codes; a terminal that cannot show Unicode gets ASCII marks. Nothing is applied before the review screen's **Install**; Ctrl+C or a closed terminal during the writes puts every file back.
+**Modes.** In a terminal without options: the guided installer (Rich and Questionary), or its menu once the kit is installed. `--plain` or `AI_KIT_PLAIN=1`: plain numbered questions, no colours (also used automatically without the libraries, for example `python -m installer` from a clone). Without a terminal, nothing is asked: a missing choice is an error that names the option, never a question waiting for an answer. At a terminal, `setup --profile <id>` still asks to confirm the detected identity (unless `--user` is given) and offers to open `30_USER.md`; `update`, `doctor` and `usage` never ask. `NO_COLOR` is respected; output redirected to a file or a CI log carries no colour codes; a terminal that cannot show Unicode gets ASCII marks. Nothing is applied before the review screen's **Install**; Ctrl+C or a closed terminal during the writes puts every file back.
 
 ## What it does
 
 - Does not configure authentication or the model: they belong to each CLI and to your IT procedure. See [customization](customization.md#authentication-and-model).
 - Detects a declarative identity (active CLI account, git, OS session), asks you to confirm it and writes it at the top of `30_USER.md` when it creates the file. See [identity](identity.md).
 - Stores profile, identity, overrides, fingerprints and backups in `~/.ai-kit`.
-- Refuses to overwrite managed layers, skills, agents or MCP servers that were edited by hand.
+- Refuses to overwrite managed skills, agents, commands or MCP entries that were edited by hand; restores a rule layer (`00`, `10`, `20`) edited by hand and keeps your copy in `~/.ai-kit/backups/`.
+- Keeps your own skills and commands: when one has the name of a kit skill or command, the kit's is installed as `<skill_prefix><name>` (`ai-kit-` by default) and the installer says which.
 - Removes old managed files on a profile or version change if they are intact.
 - Prevalidates conflicts, backs up, then writes the files; attempts a restore on a write error.
 - Touches no project repository, starts no MCP server, calls no model. Downloads nothing from a ZIP; from a git clone, only what pip fetches from the configured package index.
@@ -35,7 +36,7 @@ Nobody activates the environment, runs pip, changes the `PATH` or needs administ
 
 Existing settings must be strict JSON. An invalid JSON file or one with comments is refused without change. Symbolic links on managed paths are not supported.
 
-The context layers and `30_USER.md` are written to `~/.gemini/` when Gemini CLI is installed (it reads only its own folder), otherwise to `~/.ai-kit/context/`, which the other CLIs include or copy. The guardrail scripts are in `~/.ai-kit/hooks/`.
+The context layers and `30_USER.md` are written to `~/.gemini/` when Gemini CLI is among the CLIs you chose (it reads only its own folder), otherwise to `~/.ai-kit/context/`, which the other CLIs include or copy. The guardrail scripts are in `~/.ai-kit/hooks/`.
 
 Before 0.19, the kit folder was called `~/.ai-toolkit`. The first `setup` or `update` renames it to `~/.ai-kit`, with `overrides.json`, the state and the backups, then rewrites the files that referenced the old path. If both folders exist, the kit stops without touching anything: keep `~/.ai-kit`, move what is missing into it, remove `~/.ai-toolkit`, then run `update`.
 
@@ -51,9 +52,9 @@ Before 0.19, the kit folder was called `~/.ai-toolkit`. The first `setup` or `up
 | Check the connection (real call to the model, may be billed) | `sh scripts/bootstrap.sh doctor --live` | `Installer.cmd doctor --live` |
 | Usage review | `sh scripts/bootstrap.sh usage` | `Installer.cmd usage` |
 
-Windows: to get a Command Prompt in the kit folder, type `cmd` in the Explorer address bar and press Enter. The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) look for Python 3.9 or newer, then run `python -m installer` from the kit folder; without a usable Python they say what to ask IT. They need neither PowerShell nor administrator rights.
+Windows: to get a Command Prompt in the kit folder, type `cmd` in the Explorer address bar and press Enter. The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) look for Python 3.9 or newer, then hand over to `scripts/launcher.py` (above); without a usable Python they say what to ask IT. They need neither PowerShell nor administrator rights.
 
-Options for `setup` and `update`: `--profile <id>`, `--user <email>`, `--team <team>`, `--target auto|gemini|agy|codex|claude|both|all` (without it: the CLIs chosen last time; see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--plain` (`--no-live` is still accepted and changes nothing). `scripts\bootstrap.ps1` remains for older instructions: it only runs `Installer.cmd`, where the workstation's script policy already allows it, and changes nothing about that policy. `AI_KIT_NO_PAUSE=1` keeps `Installer.cmd` from waiting for a key when it is started without arguments by a script. Non-interactive example: `sh scripts/bootstrap.sh setup --profile general --user first.last@company.com`. If a company policy blocks a launcher, IT decides: the launcher is equivalent to `python -m installer` run from the kit folder. Never change the policy yourself.
+Options for `setup` and `update`: `--profile <id>`, `--user <email>`, `--team <team>`, `--target auto|gemini|agy|codex|claude|both|all` (without it: the CLIs chosen last time; see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--plain` (`--no-live` is still accepted and changes nothing). `scripts\bootstrap.ps1` remains for older instructions: it only runs `Installer.cmd`, where the workstation's script policy already allows it, and changes nothing about that policy. `AI_KIT_NO_PAUSE=1` keeps `Installer.cmd` from waiting for a key when it is started without arguments by a script. Non-interactive example: `sh scripts/bootstrap.sh setup --profile general --user first.last@company.com`. If a company policy blocks a launcher, IT decides: the launcher is equivalent to `python -I scripts/launcher.py` (Windows: `python -I scripts\launcher.py`) followed by the action, run from the kit folder. Never change the policy yourself.
 
 ## Try it without touching your account
 
@@ -71,7 +72,7 @@ No server is defined in the public kit: endpoints, transports and authentication
 
 ## Uninstall
 
-`uninstall` removes what the kit installed and nothing else: the managed files it recognises as unchanged, its blocks and entries in the CLIs' settings (guardrails, MCP servers, layers in `context.fileName`, kit lines of `.env`, the Codex blocks), and its state. It keeps your personal context (`30_USER.md`), `overrides.json`, the backups and frictions, the CLIs' folders and your own settings; a managed file you edited is kept and named. Everything removed or cleaned is first copied to `~/.ai-kit/backups/`. No network, no model. Interactive: it shows the list and asks; automation: `--yes`; `--dry-run` shows the list without changing anything. The private environment stays unless the launcher is given `--remove-runtime`; it removes it only after the kit has exited, so no file in use is deleted.
+`uninstall` removes what the kit installed and nothing else: the managed files it recognises as unchanged, its blocks and entries in the CLIs' settings (guardrails, MCP servers, layers in `context.fileName`, the Codex blocks), and its state. It keeps your personal context (`30_USER.md`), `overrides.json`, the backups and frictions, the CLIs' folders, your own settings, and the `~/.gemini/.env` lines an earlier version wrote (now yours); a managed file you edited is kept and named. Everything removed or cleaned is first copied to `~/.ai-kit/backups/`. No network, no model. Interactive: it shows the list and asks; automation: `--yes`; `--dry-run` shows the list without changing anything. The private environment stays unless the launcher is given `--remove-runtime`; it removes it only after the kit has exited, so no file in use is deleted.
 
 ## Limits
 
@@ -79,7 +80,7 @@ No server is defined in the public kit: endpoints, transports and authentication
 - Company and team practices are offered as a baseline, to be validated by each organization before rollout.
 - The core skills come from an upstream repository under the MIT licence (`skills/LICENSE-UPSTREAM-MIT`), in English; they are updated by hand.
 - `research` and `implement-spec` (optional) delegate to CLI subagents; without them, they run in degraded mode. `/map`, `/triage` and `to-tickets` expect a ticket tracker declared per repository with `setup-workflow`.
-- The core skills were written for another tool: `00_KIT.md` gives the model the mapping table (subagents, `CLAUDE.md`, PR). None of the current CLIs understands their "on command only" flag; the kit restates it in context but cannot guarantee it.
+- The core skills were written for another tool: `00_KIT.md` gives the model the mapping table (subagents, `CLAUDE.md`, PR). Codex (through `agents/openai.yaml`) and Claude Code honour their "on command only" flag; Gemini CLI and agy have no field for it, so the kit restates it in context but cannot guarantee it there.
 - No embedded secrets, fleet management or admin policy. The detected identity grants no rights.
 - No project-specific role, dataset, dbt target or KPI configuration.
 - `doctor` checks files, settings, identity and executables, not authentication, IAM rights or MCP calls.

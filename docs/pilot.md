@@ -8,12 +8,12 @@ Goal: fix the kit on real tickets before opening it to the whole team, and check
 2. Sign in to your CLI following the IT procedure (authentication mode, project, model are set in the CLI, not in the kit); see [customization › Authentication and model](customization.md#authentication-and-model). Otherwise, nothing to do.
 3. Run the installer: double-click `Installer.cmd` (Windows), or in Terminal `sh scripts/bootstrap.sh` from the extracted folder (Mac). Confirm your identity, choose the profile. Installation makes no call to the model. Then run `doctor --live` once: one real call (your provider may bill it); if it is not green, follow the remedy shown, do not call for help.
 4. Open your usual repo, start your CLI (`gemini`, `agy`, `codex` or `claude`), type `/guide where do I start?` (`$guide` in Codex).
-5. First time in the repo: "Initialize the project context", then `setup-workflow` to declare the team's ticket tracker.
+5. First time in the repo, if it has no `AGENTS.md`: "Initialize the project context". `setup-workflow` only if the team wants the agent to read and create tickets.
 
 ## During the pilot
 
 - Work normally, going through the commands.
-- When something goes wrong: `doctor --live`, then the "Troubleshooting" page, then a ticket.
+- When something goes wrong: `doctor`, adding `--live` for a sign-in, quota or network symptom; then the "Troubleshooting" page, then a ticket.
 - At the end of each longer session: `/retro`, and note what it proposes.
 - In agy, answer permission requests: "always allow" saves the rule in your own agy settings, and the kit does not touch them.
 
@@ -23,7 +23,7 @@ Goal: fix the kit on real tickets before opening it to the whole team, and check
 Command or action:
 What I expected:
 What happened (copied output):
-doctor --live output:
+doctor output (and doctor --live for a sign-in or network symptom):
 ```
 
 Each ticket is handled by the rule: a `doctor` check, a line in "Troubleshooting", or an eval case. Never a repeated verbal explanation.

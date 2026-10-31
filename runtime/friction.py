@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Logs a friction as one line in ~/.ai-kit/frictions.jsonl, locally. Installed by the kit, called by /friction.
 
-Usage: python3 ~/.ai-kit/bin/friction.py --category <command|skill|guardrail|docs|tool|auth|other> [--command <name>] [--cli gemini|agy] --text "<one sentence>"
+Usage: python3 ~/.ai-kit/bin/friction.py --category <command|skill|guardrail|rule|docs|tool|auth|other> [--command <name>] [--cli gemini|agy|codex|claude] --text "<one sentence>"
 The context (kit version, profile, system) is added automatically. Nothing is sent; the usage report
 counts these lines and `usage --json` exports them for the usage review.
 """
@@ -66,7 +66,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Log a friction, locally.')
     parser.add_argument('--category', required=True, choices=CATEGORIES)
     parser.add_argument('--command', default='none', help='current kit command, or none')
-    parser.add_argument('--cli', default='unknown', choices=('gemini', 'agy', 'codex', 'unknown'))
+    parser.add_argument('--cli', default='unknown', choices=('gemini', 'agy', 'codex', 'claude', 'unknown'))
     parser.add_argument('--text', help='one sentence, no secret and no prompt text; read from standard input when absent (safer: no shell expansion)')
     args = parser.parse_args(argv)
     if args.text is None:

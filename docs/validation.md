@@ -73,6 +73,6 @@ To do on a Windows and a macOS workstation, with a **standard account**, for eac
 
 - Python 3.9 or newer (3.11 recommended) with its standard `venv` and `pip` modules, usable by a standard account from a command prompt or the Terminal.
 - The CLI (Gemini CLI, Antigravity CLI, Codex CLI or Claude Code) and its authentication, following the company procedure.
-- Network access to the model through the company proxy. With HTTPS inspection, the company root certificate, which Node.js reads from `NODE_EXTRA_CA_CERTS`.
+- Network access to the model through the company proxy. With HTTPS inspection, the company root certificate, declared for command-line tools as IT says (`NODE_EXTRA_CA_CERTS` for Node.js CLIs, `SSL_CERT_FILE` for others).
 - Windows: running `Installer.cmd` from the folder where the person extracted the ZIP. The launcher only finds Python, then runs `scripts\launcher.py`, which installs the kit in `%USERPROFILE%\.ai-kit\runtime` from the ZIP's own wheels.
 - For a git clone only: pip's access to the company package index (it fetches the build tool and the libraries there).

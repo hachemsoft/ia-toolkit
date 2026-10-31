@@ -14,7 +14,7 @@ The git name completes the CLI account's email when both exist. OAuth tokens are
 
 ## Behavior
 
-- In interactive mode, `setup` shows "Detected identity: …" and waits for Enter to confirm, or an email to correct it.
+- In the guided installer, the email step shows the detected email as the default: Enter confirms it, or type another. `setup --profile <id>` at a terminal without `--user` shows "Detected identity: …" and waits for Enter, or an email.
 - In non-interactive mode, `--user your.email@company` saves the identity; without this option nothing is saved and a line says so.
 - `update` keeps the saved identity, unless `--user` is given.
 - The state (`~/.ai-kit/state.json`) keeps `user.email`, `user.name`, `user.source`.
@@ -22,7 +22,7 @@ The git name completes the CLI account's email when both exist. OAuth tokens are
 
 ## Profile and team
 
-`setup` asks for the profile, and for the team when the kit has teams (a practices file `practices/20-<team>.md` or settings in `organization.json` `teams`), unless `--profile` and `--team` are given. Nothing personal is stored in the kit repository: IT hands each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile data-analyst --team finance`.
+`setup` asks for the profile, and for the team when the kit has teams (a practices file `practices/20-<team>.md` or settings in `organization.json` `teams`), unless `--profile` is given (then `--team`, or the recorded team, applies). Nothing personal is stored in the kit repository: IT hands each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile data-analyst --team finance`.
 
 ## Doctor checks
 
@@ -32,4 +32,4 @@ The git name completes the CLI account's email when both exist. OAuth tokens are
 
 ## Out of scope
 
-The kit does not force the CLI's authentication type, does not block installation based on identity and does not read tokens. Data access stays controlled by IT and Google Workspace.
+The kit does not force the CLI's authentication type, does not block installation based on identity and does not read tokens. Data access stays controlled by IT and the identity provider.

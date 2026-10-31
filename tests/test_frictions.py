@@ -16,6 +16,9 @@ class FrictionTests(unittest.TestCase):
   self.assertEqual(p.returncode,0,p.stderr);lines=(self.home/'.ai-kit/frictions.jsonl').read_text(encoding='utf-8').splitlines();self.assertEqual(len(lines),1)
   e=json.loads(lines[0]);self.assertEqual(e['category'],'docs');self.assertEqual(e['command'],'intent')
   p=subprocess.run([sys.executable,'-I',str(script),'--category','nope','--text','x'],capture_output=True,text=True,env=env);self.assertNotEqual(p.returncode,0)
+  for cli in ('gemini','agy','codex','claude'):  # every supported CLI can record its own frictions
+   p=subprocess.run([sys.executable,'-I',str(script),'--category','rule','--cli',cli,'--text','x'],capture_output=True,text=True,env=env);self.assertEqual(p.returncode,0,cli+': '+p.stderr)
+  (self.home/'.ai-kit/frictions.jsonl').write_text(lines[0]+'\n',encoding='utf-8')
   out=io.StringIO()
   with contextlib.redirect_stdout(out):usage(self.home,42,self.home/'r.json')
   self.assertIn('Frictions logged: 1 (docs ×1)',out.getvalue());rep=read_json(self.home/'r.json');self.assertEqual(rep['frictions_by_category'],{'docs':1});self.assertEqual(rep['frictions'][0]['text'],'The page says X but the command does Y')
