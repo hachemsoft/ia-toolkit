@@ -3,6 +3,7 @@ from pathlib import Path
 from installer.cli import apply, doctor
 from installer.core import KitError, read_json, ROOT
 from installer.adapters.codex import CODEX_MD, CODEX_TOML
+from installer.toml_files import dump_toml
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload):
  p=subprocess.run([sys.executable,'-I',str(H/script)],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8');return json.loads(p.stdout or '{}')
@@ -14,7 +15,7 @@ class CodexAdapterTests(unittest.TestCase):
   self.agents.write_text('# My instructions\n- always in French\n',encoding='utf-8');self.config.write_text('model = "gpt-x"\n\n[projects."/x"]\ntrust_level = "trusted"\n',encoding='utf-8')
  def run_kit(self,role='data-developer',target='all',overrides=None):
   if overrides is not None:
-   (self.home/'.ai-kit').mkdir(exist_ok=True);(self.home/'.ai-kit/overrides.json').write_text(json.dumps(overrides),encoding='utf-8')
+   (self.home/'.ai-kit').mkdir(exist_ok=True);(self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides),encoding='utf-8')
   out=io.StringIO()
   with contextlib.redirect_stdout(out):apply(role,self.home,False,{'email':'t@example.org'},target)
   return out.getvalue()

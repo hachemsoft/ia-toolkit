@@ -11,7 +11,8 @@ from ..core import (USER_CONTEXT, KitError, digest, hook_command, split_block, p
                     skill_prefix, free_name, rename_references, renamed_skill_file, renamed_notice, _ts, live_call, LIVE_PROMPT, skills_read)
 
 CODEX_DIR = '.codex'
-# Managed block markers: no path, so they never change when a folder is renamed.
+# Managed block markers: no path, so they never change when a folder is renamed. Their text is an identifier, kept as
+# written up to 0.36 ("overrides.json" is now overrides.toml): changing it would orphan the blocks already installed.
 CODEX_MD = ('<!-- ai-kit:start : block managed by the AI Kit; do not edit here (30_USER.md, overrides.json, then update) -->', '<!-- ai-kit:end -->')
 CODEX_TOML = ('# >>> ai-kit : block managed by the AI Kit; do not edit here (overrides.json, then update) >>>', '# <<< ai-kit <<<')
 # Markers written by earlier versions (French, before and after 0.18): recognised to take the block over, then replaced.
@@ -170,7 +171,7 @@ def finalize(p: Plan, active: bool = True) -> None:
         text = original = path.read_text(encoding='utf-8') if path.exists() else ''
         before, old_block, after, written = read_block(text, markers, label)
         if old_block is not None and old_blocks.get(rel) != digest(normalize_newlines(written).encode('utf-8')):
-            raise KitError('Kit block edited by hand in '+label+': move your changes outside the block (or into overrides.json), remove the block, then update.')
+            raise KitError('Kit block edited by hand in '+label+': move your changes outside the block (or into overrides.toml), remove the block, then update.')
         outside = before.rstrip('\n')+('\n' if before.strip() and after.strip() else '')+after.lstrip('\n')
         block = None
         if active and rel.endswith('AGENTS.md'):

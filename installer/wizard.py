@@ -107,17 +107,17 @@ def labelled(name, entry):
 
 
 def customize(ui, home, profile_id):
-    """None to keep the profile as proposed; otherwise the new lists for overrides.json. A choice the person turned off
+    """None to keep the profile as proposed; otherwise the new lists for overrides.toml. A choice the person turned off
     stays off: nothing is ticked again behind their back, and a conflict is explained, not resolved silently."""
     keep = ui.select('Skills, commands and agents', [('keep', 'Keep what the profile proposes (recommended)'),
                                                       ('adjust', 'Adjust playbooks, tools, commands and agents')], 'keep')
     if keep == 'keep':
         return None
-    profile = read_json(ROOT/'profiles'/(profile_id+'.json'))
+    profile = cli.load_profile(profile_id)
     catalog = read_json(ROOT/'skills/catalog.json')
     agent_catalog = read_json(ROOT/'agents/catalog.json')
     manifest = load_commands()
-    personal = read_json(home/'.ai-kit/overrides.json', {})
+    personal = cli.personal_settings(home/'.ai-kit')
     extra = [cli.RENAMED_SKILLS.get(s, s) for s in personal.get('extra_skills', [])]
     disabled = [cli.RENAMED_SKILLS.get(s, s) for s in personal.get('disabled_skills', [])]
     effective = (set(profile['skills']) | set(extra)) - set(disabled)
@@ -182,7 +182,7 @@ def review(ui, home, plan):
         shown = report['removed'][:6]
         lines.append('Removed: '+', '.join(shown)+(' and '+str(len(report['removed'])-6)+' more' if len(report['removed']) > 6 else ''))
     lines.append('Kept as they are: your personal context ('+report['context_file']+')'
-                 + ('; overrides.json gets only the lists you changed' if plan['choices'] else '; overrides.json'))
+                 + ('; overrides.toml gets only the lists you changed' if plan['choices'] else '; overrides.toml'))
     lines.append('Where: '+report['home'])
     lines.append('No call to the model: nothing is billed, the connection stays "not checked".')
     lines += report['notices']

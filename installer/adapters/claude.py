@@ -2,7 +2,7 @@
 guardrails in ~/.claude/settings.json, MCP servers in ~/.claude.json, and the session transcripts for usage.
 
 Claude Code ships skills of its own (code-review) and people keep personal skills in ~/.claude/skills, often with the
-same names as the kit's: the kit's skills are installed with a prefix (skill_prefix in overrides.json, ai-kit- by
+same names as the kit's: the kit's skills are installed with a prefix (skill_prefix in overrides.toml, ai-kit- by
 default) and the texts the kit installs name them that way. A command keeps its name unless a personal skill or command
 already has it; it is then installed with the same prefix and the person is told."""
 import json
@@ -16,6 +16,7 @@ from ..interface import DoctorContext, Plan, Status
 from ..core import (ROOT, USER_CONTEXT, KitError, digest, hook_command, split_block, place_block, json_bytes, read_json, _ts, live_call, LIVE_PROMPT, DEFAULT_PREFIX, skill_prefix, rename_references, renamed_skill_file)
 
 CLAUDE_DIR = '.claude'
+# The marker text is an identifier, kept as written in 0.35 ("overrides.json" is now overrides.toml).
 CLAUDE_MD = ('<!-- ai-kit:start : block managed by the AI Kit; do not edit here (30_USER.md, overrides.json, then update) -->', '<!-- ai-kit:end -->')
 # Skills Claude Code itself ships: a kit skill installed without a prefix must not take one of these names.
 BUNDLED_SKILLS = {'code-review', 'security-review', 'simplify', 'init', 'loop', 'schedule', 'claude-api', 'update-config',

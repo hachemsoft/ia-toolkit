@@ -2,6 +2,7 @@ import contextlib, io, json, os, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply, doctor
 from installer.core import KitError, read_json, ROOT
+from installer.toml_files import dump_toml
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload,env=None):
  proc=subprocess.run([sys.executable,'-I',str(H/script)],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8',env={**os.environ,**(env or {})});return json.loads(proc.stdout or '{}')
@@ -105,7 +106,7 @@ class HookScriptTests(unittest.TestCase):
  def test_old_hook_location_migrated(self):
   import hashlib
   with tempfile.TemporaryDirectory() as tmp:
-   home=Path(tmp);(home/'.ai-kit').mkdir();(home/'.ai-kit/overrides.json').write_text(json.dumps({'hooks':{'dbt-prod-guard':True}}),encoding='utf-8')
+   home=Path(tmp);(home/'.ai-kit').mkdir();(home/'.ai-kit/overrides.toml').write_text(dump_toml({'hooks':{'dbt-prod-guard':True}}),encoding='utf-8')
    with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',home,False,None,'gemini')
    # Simulate a 0.16 installation: script at the old location, tracked by the state.
    old=home/'.gemini/hooks/ai-kit/dbt-prod-guard.py';old.parent.mkdir(parents=True);old.write_bytes((H/'dbt-prod-guard.py').read_bytes())
@@ -124,7 +125,7 @@ class HookInstallTests(unittest.TestCase):
  def run_kit(self,role='data-analyst'):
   with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home)
  def overrides(self,v):
-  p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
+  p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def settings(self):return read_json(self.home/'.gemini/settings.json')
  def doctor_text(self):
   out=io.StringIO()

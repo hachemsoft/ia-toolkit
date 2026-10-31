@@ -16,6 +16,7 @@ from installer.cli import apply, prune_empty_dirs
 from installer.interface import Adapter, ContextHost, LiveCheck
 from installer.adapters.codex import CODEX_TOML
 from installer.core import KitError, ROOT, digest, split_block
+from installer.toml_files import dump_toml, read_toml
 
 IDENTITY = {'email': 'test@example.org', 'source': 'test'}
 CONFIG_FILES = ('settings.json', 'config.toml', 'hooks.json', 'plugin.json', 'mcp_config.json', '.env')
@@ -24,7 +25,7 @@ CONFIG_FILES = ('settings.json', 'config.toml', 'hooks.json', 'plugin.json', 'mc
 def install(home, target='all', overrides=None):
     if overrides is not None:
         (home/'.ai-kit').mkdir(parents=True, exist_ok=True)
-        (home/'.ai-kit/overrides.json').write_text(json.dumps(overrides), encoding='utf-8')
+        (home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
     with contextlib.redirect_stdout(io.StringIO()):
         apply('data-developer', home, False, IDENTITY, target)
 
@@ -112,7 +113,7 @@ class InvariantTests(unittest.TestCase):
 
     def test_each_cli_alone_gets_the_whole_profile(self):
         """Installed alone, each CLI gets all the skills and all the agents of the profile."""
-        profile = json.loads((ROOT/'profiles/general.json').read_text(encoding='utf-8'))
+        profile = read_toml(ROOT/'profiles/general.toml')
         places = {'gemini': ('.gemini/skills', '.gemini/agents'),
                   'agy': ('.gemini/skills', '.gemini/config/plugins/ai-kit/agents'),
                   'codex': ('.codex/skills', '.codex/ai-kit/agents')}
@@ -175,7 +176,7 @@ class InvariantTests(unittest.TestCase):
         self.assertTrue((self.home/'.ai-toolkit').is_dir())
         install(self.home, overrides=None)
         self.assertFalse((self.home/'.ai-toolkit').exists())
-        self.assertEqual(json.loads((kit/'overrides.json').read_text(encoding='utf-8')), {'hooks': {'dbt-prod-guard': True}})
+        self.assertEqual(read_toml(kit/'overrides.toml'), {'hooks': {'dbt-prod-guard': True}})
         state = json.loads((kit/'state.json').read_text(encoding='utf-8'))
         self.assertFalse([rel for rel in state['files'] if rel.startswith('.ai-toolkit/')])
         for rel in ('.gemini/settings.json', '.codex/config.toml', '.gemini/config/plugins/ai-kit/hooks.json'):

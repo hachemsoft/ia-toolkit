@@ -67,9 +67,9 @@ class GeminiTests(Base):
 
     def test_empty_prefix_refuses_a_collision(self):
         self.mine('.gemini/skills/tdd/SKILL.md')
-        overrides = self.home/'.ai-kit/overrides.json'
+        overrides = self.home/'.ai-kit/overrides.toml'
         overrides.parent.mkdir()
-        overrides.write_text(json.dumps({'skill_prefix': ''}), encoding='utf-8')
+        overrides.write_text('skill_prefix = ""\n', encoding='utf-8')
         with self.assertRaises(KitError):
             self.run_kit('gemini')
 

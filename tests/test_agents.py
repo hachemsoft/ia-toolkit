@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from installer.cli import apply
 from installer.core import KitError, read_json, ROOT
+from installer.toml_files import dump_toml
 class AgentTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
@@ -13,7 +14,7 @@ class AgentTests(unittest.TestCase):
   with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home)
  def agent(self,name):return self.home/'.gemini/agents'/('ai-kit-'+name+'.md')
  def overrides(self,v):
-  p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
+  p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def test_analyst_selection(self):
   self.run_kit();self.assertTrue(self.agent('repo-investigator').exists());self.assertTrue(self.agent('sql-reviewer').exists());self.assertTrue(self.agent('dbt-reviewer').exists());self.assertFalse(self.agent('code-reviewer').exists())
  def test_agents_inherit_the_session_model(self):

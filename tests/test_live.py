@@ -3,6 +3,7 @@ from pathlib import Path
 from installer.adapters.gemini import diagnose_live
 from installer.cli import apply
 from installer.core import read_json
+from installer.toml_files import dump_toml
 S_KEY={'security':{'auth':{'selectedType':'gemini-api-key'}}}
 class LiveDiagnosisTests(unittest.TestCase):
  def test_ok(self):
@@ -28,7 +29,7 @@ class RetiredAuthAndModelTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def overrides(self,v):
-  p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
+  p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def run_kit(self):
   out=io.StringIO()
   with contextlib.redirect_stdout(out):notices=apply('data-analyst',self.home,False,None,'gemini')

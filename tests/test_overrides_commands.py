@@ -2,11 +2,12 @@ import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply
 from installer.core import KitError
+from installer.toml_files import dump_toml
 class ExtraCommandsTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def overrides(self,v):
-  p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
+  p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def run_kit(self,role='data-analyst',target='gemini'):
   with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home,False,None,target)
  def test_extra_command_installs_command_and_its_skills(self):

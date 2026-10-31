@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from installer.cli import apply, profile_ids  # noqa: E402
+from installer.toml_files import dump_toml
 
 GOLDEN = ROOT / 'tests' / 'golden' / 'install-snapshot.json'
 IDENTITY = {'email': 'test@example.org', 'name': 'Test', 'source': 'option'}
@@ -28,7 +29,7 @@ def capture(profile, target, overrides=None):
         home = Path(tmp)
         if overrides is not None:
             (home / '.ai-kit').mkdir()
-            (home / '.ai-kit' / 'overrides.json').write_text(json.dumps(overrides), encoding='utf-8')
+            (home / '.ai-kit' / 'overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
         with contextlib.redirect_stdout(io.StringIO()):
             apply(profile, home, False, IDENTITY, target)
         out = {}

@@ -2,6 +2,7 @@ import contextlib, io, json, os, re, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply, usage
 from installer.core import read_json, ROOT
+from installer.toml_files import dump_toml, read_toml
 class FrictionTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
@@ -38,7 +39,7 @@ class FrictionSignalTests(unittest.TestCase):
   return [json.loads(line) for line in (self.home/'.ai-kit/frictions.jsonl').read_text(encoding='utf-8').splitlines()]
  def test_context_added_automatically(self):
   subprocess.run([sys.executable,'-I',str(self.home/'.ai-kit/bin/friction.py'),'--category','skill','--cli','agy','--text','x y z'],capture_output=True,text=True,env=self.env,check=True)
-  e=self.lines()[0];self.assertEqual(e['profile'],'data-analyst');self.assertEqual(e['kit'],read_json(ROOT/'profiles/data-analyst.json') and (ROOT/'VERSION').read_text(encoding='utf-8').strip());self.assertEqual(e['cli'],'agy');self.assertIn(e['os'],('mac','windows','linux'));self.assertEqual(e['source'],'person')
+  e=self.lines()[0];self.assertEqual(e['profile'],'data-analyst');self.assertEqual(e['kit'],read_toml(ROOT/'profiles/data-analyst.toml') and (ROOT/'VERSION').read_text(encoding='utf-8').strip());self.assertEqual(e['cli'],'agy');self.assertIn(e['os'],('mac','windows','linux'));self.assertEqual(e['source'],'person')
  def test_doctor_failure_recorded_without_asking(self):
   from installer.core import record_auto_friction
   record_auto_friction(self.home,'Quota exceeded (HTTP 429).')
@@ -54,12 +55,12 @@ class FrictionSignalTests(unittest.TestCase):
  def test_friction_mode_option(self):
   kit=lambda:(self.home/'.gemini/00_KIT.md').read_text(encoding='utf-8')
   self.assertIn('Offer in one line to log a `/friction`',kit())
-  ov=self.home/'.ai-kit/overrides.json'
+  ov=self.home/'.ai-kit/overrides.toml'
   for mode,needle,absent in (('auto','Log the friction yourself, without asking','Offer in one line'),('off',None,'## Frictions')):
-   d=read_json(ov);d['frictions']=mode;ov.write_text(json.dumps(d),encoding='utf-8')
+   d=read_toml(ov);d['frictions']=mode;ov.write_text(dump_toml(d),encoding='utf-8')
    with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'gemini')
    (self.assertIn(needle,kit()) if needle else None);self.assertNotIn(absent,kit())
-  d=read_json(ov);d['frictions']='always';ov.write_text(json.dumps(d),encoding='utf-8')
+  d=read_toml(ov);d['frictions']='always';ov.write_text(dump_toml(d),encoding='utf-8')
   from installer.core import KitError
   with self.assertRaises(KitError),contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'gemini')
  def test_aggregate_groups_and_flags_two_or_more(self):

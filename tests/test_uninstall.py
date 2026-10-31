@@ -52,9 +52,9 @@ class UninstallTests(unittest.TestCase):
         self.assertFalse([n for n in settings['context']['fileName'] if n[:2] in ('00', '10', '20')])
         self.assertEqual((self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'), '# My Codex notes\n')
         self.assertEqual((self.home/'.codex/config.toml').read_text(encoding='utf-8'), 'model = "my-model"\n')
-        # Kept: the personal context, overrides.json, the backups; the CLIs' folders are never removed.
+        # Kept: the personal context, overrides.toml, the backups; the CLIs' folders are never removed.
         self.assertEqual((self.home/'.gemini/30_USER.md').read_text(encoding='utf-8'), 'My preferences\n')
-        self.assertTrue((self.home/'.ai-kit/overrides.json').is_file())
+        self.assertTrue((self.home/'.ai-kit/overrides.toml').is_file())
         self.assertTrue(any((self.home/'.ai-kit/backups').iterdir()))
         self.assertTrue((self.home/'.gemini').is_dir() and (self.home/'.codex').is_dir())
         self.assertIn('Backup of every removed or cleaned file', self.out)

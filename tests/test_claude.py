@@ -16,6 +16,7 @@ from unittest import mock
 from installer import cli, core
 from installer.adapters import claude
 from installer.core import ROOT, KitError, read_json
+from installer.toml_files import dump_toml, read_toml
 
 H = ROOT/'runtime/hooks'
 PERSONAL_HOOK = {'hooks': [{'type': 'command', 'command': '/usr/local/bin/my-status'}]}
@@ -31,9 +32,9 @@ class Base(unittest.TestCase):
         self.addCleanup(patcher.stop)
 
     def overrides(self, value):
-        path = self.home/'.ai-kit/overrides.json'
+        path = self.home/'.ai-kit/overrides.toml'
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(value), encoding='utf-8')
+        path.write_text(dump_toml(value), encoding='utf-8')
 
     def run_kit(self, target='claude', profile='general'):
         out = io.StringIO()
@@ -262,7 +263,7 @@ class GuardrailPayloadTests(unittest.TestCase):
             self.assertTrue(self.denied(self.run_hook('dbt-prod-guard.py', {**base, 'tool_name': 'Bash', 'tool_input': {'command': 'dbt run --target prod'}}, home)))
             self.assertFalse(self.denied(self.run_hook('dbt-prod-guard.py', {**base, 'tool_name': 'Bash', 'tool_input': {'command': 'dbt run --target dev'}}, home)))
             for tool, key in (('Write', 'file_path'), ('Edit', 'file_path'), ('MultiEdit', 'file_path'), ('NotebookEdit', 'notebook_path')):
-                for target in ('.claude/settings.json', '.claude.json', '.ai-kit/overrides.json'):
+                for target in ('.claude/settings.json', '.claude.json', '.ai-kit/overrides.toml'):
                     answer = self.run_hook('protected-paths.py', {**base, 'tool_name': tool, 'tool_input': {key: str(home/target)}}, home)
                     self.assertTrue(self.denied(answer), tool+' '+target)
             answer = self.run_hook('protected-paths.py', {**base, 'tool_name': 'Write', 'tool_input': {'file_path': str(home/'notes.md')}}, home)

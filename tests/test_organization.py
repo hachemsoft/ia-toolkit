@@ -3,6 +3,7 @@ import contextlib
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -14,6 +15,7 @@ from installer import cli
 from installer.cli import apply, doctor, merge_settings, setting_differences
 import wheelhouse
 from installer.core import KitError, ROOT, read_json
+from installer.toml_files import dump_toml, parse_toml, read_toml
 
 IDENTITY = {'email': 'first.last@example.com', 'source': 'test'}
 
@@ -25,11 +27,11 @@ class OrganizationTests(unittest.TestCase):
         self.home = Path(self.temp.name)
 
     def organization(self, org):
-        """Run with this organization.json instead of the kit's."""
-        real = cli.read_json
+        """Run with this organization.toml instead of the kit's."""
+        real = cli.read_toml
         def patched(path, default=None):
-            return org if Path(path).name == 'organization.json' else real(path, default)
-        return mock.patch.object(cli, 'read_json', side_effect=patched)
+            return org if Path(path).name == 'organization.toml' else real(path, default)
+        return mock.patch.object(cli, 'read_toml', side_effect=patched)
 
     def install(self, profile='general', team=None):
         with contextlib.redirect_stdout(io.StringIO()):
@@ -38,7 +40,7 @@ class OrganizationTests(unittest.TestCase):
 
     def personal(self, overrides):
         (self.home/'.ai-kit').mkdir(parents=True, exist_ok=True)
-        (self.home/'.ai-kit/overrides.json').write_text(json.dumps(overrides), encoding='utf-8')
+        (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
 
     def test_merge_adds_lists_combines_objects_person_wins(self):
         org = {'extra_skills': ['a'], 'hooks': {'dbt-prod-guard': True}, 'model': 'm1', '_doc': 'x'}
@@ -63,7 +65,7 @@ class OrganizationTests(unittest.TestCase):
             with contextlib.redirect_stdout(out):
                 doctor(self.home)
         self.assertNotIn('dbt-prod-guard', state['hooks'])
-        self.assertIn('Your overrides.json changes organization or team defaults: hooks.dbt-prod-guard', out.getvalue())
+        self.assertIn('Your overrides.toml changes organization or team defaults: hooks.dbt-prod-guard', out.getvalue())
 
     def test_team_selects_its_practices_whatever_the_profile(self):
         team_file = ROOT/'practices/20-kit-test-team.md'
@@ -124,20 +126,27 @@ class OrganizationTests(unittest.TestCase):
         self.assertEqual(set(schema['properties']['hooks']['properties']), set(read_json(ROOT/'runtime/hooks/hooks.json')['hooks']))
 
     def test_shipped_files_follow_the_schemas(self):
-        org = read_json(ROOT/'organization.json')
-        self.assertTrue((ROOT/org['$schema']).is_file())
+        text = (ROOT/'organization.toml').read_text(encoding='utf-8')
+        schema_line = re.search(r'(?m)^#:schema (.+)$', text)
+        self.assertTrue((ROOT/schema_line.group(1).strip()).is_file())
+        org = read_toml(ROOT/'organization.toml')
         known = set(read_json(ROOT/'schemas/organization.schema.json')['properties'])
-        self.assertEqual([k for k in org if not k.startswith('_') and k not in known], [])
+        self.assertEqual([k for k in org if k not in known], [])
         self.assertEqual(cli.unknown_keys(org.get('defaults', {})), [])
-        self.assertEqual(cli.unknown_keys(read_json(ROOT/'templates/user-overrides.json')), [])
+        template = (ROOT/'templates/user-overrides.toml').read_text(encoding='utf-8')
+        self.assertTrue((ROOT/'templates'/re.search(r'(?m)^#:schema (.+)$', template).group(1).strip()).is_file())
+        self.assertEqual(read_toml(ROOT/'templates/user-overrides.toml'), {})  # comments only: nothing set for the person
+        # Every example of the template, uncommented, is a valid setting.
+        examples = '\n'.join(line[2:] for line in template.splitlines() if line.startswith('# ') and ('=' in line or line.startswith('# [')))
+        self.assertEqual(cli.unknown_keys(parse_toml(examples)), [])
 
     def test_personal_file_points_to_the_schema_and_typos_are_reported(self):
         self.install()
-        personal = read_json(self.home/'.ai-kit/overrides.json')
+        uri = re.search(r'(?m)^#:schema (.+)$', (self.home/'.ai-kit/overrides.toml').read_text(encoding='utf-8')).group(1).strip()
         from urllib.parse import urlparse, unquote
-        target = Path(unquote(urlparse(personal['$schema']).path.lstrip('/') if os.name == 'nt' else unquote(urlparse(personal['$schema']).path)))
-        self.assertTrue(target.is_file(), personal['$schema'])
-        self.personal({**personal, 'extra_skill': ['teach']})
+        target = Path(unquote(urlparse(uri).path.lstrip('/') if os.name == 'nt' else unquote(urlparse(uri).path)))
+        self.assertTrue(target.is_file(), uri)
+        self.personal({'extra_skill': ['teach']})
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             doctor(self.home)
@@ -159,9 +168,9 @@ class TeamToolsTests(unittest.TestCase):
     def install(self, team=None, personal=None, profile='general'):
         if personal is not None:
             (self.home/'.ai-kit').mkdir(parents=True, exist_ok=True)
-            (self.home/'.ai-kit/overrides.json').write_text(json.dumps(personal), encoding='utf-8')
-        real = cli.read_json
-        with mock.patch.object(cli, 'read_json', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.json' else real(p, d)), \
+            (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(personal), encoding='utf-8')
+        real = cli.read_toml
+        with mock.patch.object(cli, 'read_toml', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.toml' else real(p, d)), \
              contextlib.redirect_stdout(io.StringIO()):
             apply(profile, self.home, False, IDENTITY, 'gemini', team)
             out = io.StringIO()
@@ -180,8 +189,8 @@ class TeamToolsTests(unittest.TestCase):
         # No practices/20-data-platform.md: the shared team practices stay, the team is kept for update.
         self.assertEqual(state['team'], 'data-platform')
         self.assertIn('team', state['practices'])
-        self.assertIn('[Info] Team: data-platform (organization.json teams.data-platform)', out)
-        self.assertIn('organization.json teams.data-platform: only known keys', out)
+        self.assertIn('[Info] Team: data-platform (organization.toml teams.data-platform)', out)
+        self.assertIn('organization.toml teams.data-platform: only known keys', out)
 
     def test_without_the_team_nothing_of_it(self):
         state, _ = self.install()
@@ -194,8 +203,8 @@ class TeamToolsTests(unittest.TestCase):
         self.assertFalse((self.home/'.gemini/skills/prototype').exists())
 
     def test_team_listed_at_setup_and_unknown_team_refused(self):
-        real = cli.read_json
-        with mock.patch.object(cli, 'read_json', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.json' else real(p, d)):
+        real = cli.read_toml
+        with mock.patch.object(cli, 'read_toml', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.toml' else real(p, d)):
             self.assertIn('data-platform', cli.team_ids())
             with self.assertRaises(KitError):
                 apply('general', self.home, False, IDENTITY, 'gemini', 'no-such-team')
@@ -245,10 +254,10 @@ class McpTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home/'.ai-kit').mkdir()
-            (home/'.ai-kit/overrides.json').write_text(json.dumps({'mcp': {'dbt': False, 'github': True}}), encoding='utf-8')
-            real = cli.read_json
+            (home/'.ai-kit/overrides.toml').write_text(dump_toml({'mcp': {'dbt': False, 'github': True}}), encoding='utf-8')
+            real = cli.read_toml
             org = {'defaults': {'mcp': self.ORG}}
-            with mock.patch.object(cli, 'read_json', side_effect=lambda p, d=None: org if Path(p).name == 'organization.json' else real(p, d)), \
+            with mock.patch.object(cli, 'read_toml', side_effect=lambda p, d=None: org if Path(p).name == 'organization.toml' else real(p, d)), \
                  contextlib.redirect_stdout(io.StringIO()):
                 apply('data-analyst', home, False, IDENTITY, 'gemini')
                 out = io.StringIO()

@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 
 from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, read_json, json_bytes, digest,
                    safe_id, inside, hook_command, load_commands, _ts, friction_id, fixed_frictions, redact, user_context_refusal)
+from .toml_files import read_toml, parse_toml, dump_toml, set_list, set_schema
 from .adapters import ADAPTERS
 from .interface import ContextHost, DoctorContext, LiveCheck, Plan
 
@@ -33,11 +34,18 @@ def practice_file(practice_id):
 
 def profile_menu():
     """(id, label) of every profile in profiles/, sorted by its "order": adding a profile is adding one file."""
-    profiles = [read_json(p) for p in sorted((ROOT/'profiles').glob('*.json'))]
+    profiles = [read_toml(p) for p in sorted((ROOT/'profiles').glob('*.toml'))]
     return [(p['id'], p.get('label') or p['id']) for p in sorted(profiles, key=lambda p: (p.get('order', 1000), p['id']))]
 
 def profile_ids():
-    return sorted(p.stem for p in (ROOT/'profiles').glob('*.json'))
+    return sorted(p.stem for p in (ROOT/'profiles').glob('*.toml'))
+
+def load_profile(profile_id):
+    """profiles/<id>.toml: the skills, commands, agents and MCP servers of a job."""
+    path = ROOT/'profiles'/(safe_id(profile_id)+'.toml')
+    if not path.exists():
+        raise KitError('Unknown profile: '+profile_id+'. Profiles: '+', '.join(profile_ids()))
+    return read_toml(path)
 
 def managed_context_names(profile):
     names = [KIT_CONTEXT] + [practice_file(p)[1] for p in profile['practices']]
@@ -102,50 +110,50 @@ def detect_identity(home):
     return {'name': login, 'source': 'os'} if login else {}
 
 def organization():
-    """organization.json at the root of the kit: what the organization decides (expected email domains, defaults)."""
-    org = read_json(ROOT/'organization.json', {})
+    """organization.toml at the root of the kit: what the organization decides (expected email domains, defaults, teams)."""
+    org = read_toml(ROOT/'organization.toml', {})
     if not isinstance(org.get('defaults', {}), dict):
-        raise KitError('organization.json: defaults must be an object.')
+        raise KitError('organization.toml: defaults must be a table ([defaults]).')
     teams = org.get('teams', {})
     if not isinstance(teams, dict) or not all(isinstance(v, dict) for v in teams.values()):
-        raise KitError('organization.json: teams must be an object {"<team>": {settings}}.')
+        raise KitError('organization.toml: teams must be tables, one per team ([teams.<team>]).')
     for name in teams:
         safe_id(name)
     return org
 
 def team_settings(team):
-    """The team's settings in organization.json (same keys as overrides.json), between the organization and the person."""
+    """The team's settings in organization.toml (same keys as overrides.toml), between the organization and the person."""
     return organization().get('teams', {}).get(team, {}) if team else {}
 
 def resolve_mcp(org_mcp, profile_mcp, personal_mcp, team_mcp=None):
     """MCP servers to install, by name, and the names chosen without a definition.
-    organization.json says how to reach each server, the profile which ones are active; the team (organization.json teams)
-    then the person (overrides.json) adjust: true / false for a defined server, or a server of their own ({"server": {...}})."""
+    organization.toml says how to reach each server, the profile which ones are active; the team (organization.toml teams)
+    then the person (overrides.toml) adjust: true / false for a defined server, or a server of their own ([mcp.<name>.server])."""
     team_mcp = team_mcp or {}
-    for label, entries in (('organization.json', org_mcp), ('organization.json teams', team_mcp), ('overrides.json', personal_mcp)):
+    for label, entries in (('organization.toml', org_mcp), ('organization.toml teams', team_mcp), ('overrides.toml', personal_mcp)):
         if not isinstance(entries, dict):
             raise KitError(label+': mcp must be an object.')
     if not isinstance(profile_mcp, list) or not all(isinstance(n, str) for n in profile_mcp):
         raise KitError('Profile: mcp must be a list of server names.')
     defined, active = {}, set(profile_mcp)
-    for source, entries in (('organization.json', org_mcp), ('team', team_mcp), ('overrides.json', personal_mcp)):
+    for source, entries in (('organization.toml', org_mcp), ('team', team_mcp), ('overrides.toml', personal_mcp)):
         for name, entry in entries.items():
             safe_id(name)
             if isinstance(entry, bool):
-                if source == 'organization.json':
-                    raise KitError('organization.json: mcp.'+name+' must describe the server ({"server": {...}}).')
+                if source == 'organization.toml':
+                    raise KitError('organization.toml: mcp.'+name+' must describe the server ([mcp.'+name+'.server]).')
                 if entry:
                     active.add(name)
                 else:
                     active.discard(name)
                 continue
             if not isinstance(entry, dict) or not isinstance(entry.get('enabled', True), bool):
-                raise KitError(source+': mcp.'+name+' must be true, false or {"server": {...}}.')
+                raise KitError(source+': mcp.'+name+' must be true, false or a server ([mcp.'+name+'.server]).')
             if entry.get('server') is not None:
                 defined[name] = validate_server(entry['server'])
             # An organization server is active only for the profiles that choose it, unless "enabled": true (everyone).
             # A person's entry is active unless "enabled": false (older format: "enabled": true with or without server).
-            if entry.get('enabled', source != 'organization.json'):
+            if entry.get('enabled', source != 'organization.toml'):
                 active.add(name)
             elif 'enabled' in entry:
                 active.discard(name)
@@ -168,7 +176,7 @@ def merge_settings(base, extra):
     return merged
 
 def unknown_keys(settings):
-    """Keys of an overrides.json (or organization defaults) the kit does not know: usually a typo. The schema is the list."""
+    """Keys of an overrides.toml (or organization defaults) the kit does not know: usually a typo. The schema is the list."""
     known = set(read_json(ROOT/'schemas'/'overrides.schema.json').get('properties', {}))
     return sorted(k for k in settings if not str(k).startswith(('_', '$')) and k not in known and k not in RETIRED_KEYS)
 
@@ -187,7 +195,7 @@ def setting_differences(base, effective, prefix=''):
 def allowed_domains():
     value = organization().get('allowed_domains', [])
     if not isinstance(value, list) or not all(isinstance(x,str) and x for x in value):
-        raise KitError('organization.json: allowed_domains must be a list of domains.')
+        raise KitError('organization.toml: allowed_domains must be a list of domains.')
     return [x.lower().lstrip('@') for x in value]
 
 def domain_allowed(email, domains):
@@ -195,14 +203,14 @@ def domain_allowed(email, domains):
 
 def team_ids():
     """Teams: those with their own practices (practices/20-<team>.md, besides the shared 20-team.md) or their own settings
-    (teams in organization.json): context, tools, or both."""
+    (teams in organization.toml): context, tools, or both."""
     files = {p.stem[3:] for p in (ROOT/'practices').glob('20-*.md') if p.stem != '20-team'}
     return sorted(files | set(organization().get('teams', {})))
 
 def profile_practices(profile, team):
     """The profile's practices, with the shared team practice replaced by the person's team when it has its own file."""
     if team and team not in team_ids():
-        raise KitError('Unknown team: '+team+'. Teams: '+(', '.join(team_ids()) or 'none (practices/20-<team>.md or teams in organization.json)'))
+        raise KitError('Unknown team: '+team+'. Teams: '+(', '.join(team_ids()) or 'none (practices/20-<team>.md or teams in organization.toml)'))
     own = team and (ROOT/'practices'/('20-'+team+'.md')).is_file()
     return [team if p == 'team' and own else p for p in profile['practices']]
 
@@ -226,7 +234,7 @@ def resolve_skills(profile, overrides, catalog, log=print):
             return
         if name in disabled:
             if via:
-                raise KitError('Skill '+name+' is disabled in overrides.json but required by '+via+'.')
+                raise KitError('Skill '+name+' is disabled in overrides.toml but required by '+via+'.')
             return
         if name in selected:
             return
@@ -249,7 +257,7 @@ def skill_note(skill, selected, catalog):
 RETIRED_KEYS = ('vertex', 'code_assist', 'model', 'models')
 
 def retired_key_notice(key):
-    return ('[Info] overrides.json: "'+key+'" is no longer handled by the kit (0.36): what it set before stays in your CLI\'s'
+    return ('[Info] overrides.toml: "'+key+'" is no longer handled by the kit (0.36): what it set before stays in your CLI\'s'
             ' configuration; change authentication or model in the CLI itself (docs/customization.md#authentication-and-model).')
 
 def unknown_names(overrides, catalog, agent_catalog, notices):
@@ -257,7 +265,7 @@ def unknown_names(overrides, catalog, agent_catalog, notices):
     for key, known in (('disabled_skills', catalog), ('disabled_agents', agent_catalog)):
         unknown = [name for name in overrides.get(key, []) if name not in known]
         if unknown:
-            notices.append('[Check] overrides.json '+key+': unknown name '+', '.join(unknown)+' (a typo?); it has no effect.')
+            notices.append('[Check] overrides.toml '+key+': unknown name '+', '.join(unknown)+' (a typo?); it has no effect.')
 
 def allowed_commands(profile_commands, overrides, command_names):
     """Allowed commands: the profile list (or all), plus extra_commands, minus disabled_commands; None when nothing restricts."""
@@ -283,7 +291,7 @@ def command_lines(commands):
 FRICTION_SIGNALS = 'the person corrects or undoes what you just did; a check is red after "done"; they give up or ask the same thing again; you work around a skill or a guardrail; the ceremony was out of proportion; you went against a rule written in AGENTS.md, the kit context or a playbook (category rule).'
 
 def friction_rule(mode):
-    """The Frictions section of 00_KIT.md from overrides.json (frictions: propose by default, auto, off)."""
+    """The Frictions section of 00_KIT.md from overrides.toml (frictions: propose by default, auto, off)."""
     if mode == 'off':
         return ''
     if mode == 'auto':
@@ -380,12 +388,21 @@ def recorded_targets(state):
     """The CLIs the person chose at the last installation."""
     return state.get('targets') or (state.get('installed') or {}).get('clis') or None
 
+PERSONAL_FILE = 'overrides.toml'
+LEGACY_PERSONAL_FILE = 'overrides.json'  # before 0.37: becomes overrides.toml at the next setup or update
+
+def personal_settings(kit):
+    """The person's settings: ~/.ai-kit/overrides.toml, or the overrides.json of a version before 0.37 not converted yet."""
+    if (kit/PERSONAL_FILE).exists() or not (kit/LEGACY_PERSONAL_FILE).exists():
+        return read_toml(kit/PERSONAL_FILE, {})
+    return read_json(kit/LEGACY_PERSONAL_FILE, {})
+
 CHOICE_KEYS = ('extra_skills', 'disabled_skills', 'extra_commands', 'disabled_commands', 'extra_agents', 'disabled_agents')
 
 def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None):
     """Full prevalidation, neutral plan, adapters, backup, then atomic write file by file.
     target: a --target value or a list of CLI names; None keeps the CLIs recorded by the previous installation.
-    choices: new values for keys of the person's overrides.json (CHOICE_KEYS), written with the rest of the installation,
+    choices: new values for keys of the person's overrides.toml (CHOICE_KEYS), written with the rest of the installation,
     never before: a preview (dry_run) or a cancelled run leaves the file as it was.
     report: a dict filled with what the plan writes and removes (the interface's summary). progress(step, done, total):
     called as the files are really written. Returns the notices shown to the person (also printed)."""
@@ -397,15 +414,12 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     active = selected_adapters(target, home, recorded_targets(state))
     context_dir = context_location(home, active)
     profile_id = safe_id(profile_id)
-    profile_path = ROOT/'profiles'/(profile_id+'.json')
-    if not profile_path.exists():
-        raise KitError('Unknown profile: '+profile_id)
-    profile = read_json(profile_path)
+    profile = load_profile(profile_id)
     # Team: chosen at setup (--team or the setup question), then kept for update.
     # 'none' (setup --team none) leaves the team; no value keeps the recorded one.
     team = None if team == 'none' else safe_id(team) if team else state.get('team')
     # Organization defaults, then the team's settings, then the person's own overrides on top (never replaced wholesale).
-    org_defaults, team_layer, personal = organization().get('defaults', {}), team_settings(team), read_json(kit/'overrides.json', {})
+    org_defaults, team_layer, personal = organization().get('defaults', {}), team_settings(team), personal_settings(kit)
     choices = {k: list(v) for k, v in (choices or {}).items()}
     if set(choices) - set(CHOICE_KEYS):
         raise KitError('Unknown choice: '+', '.join(sorted(set(choices) - set(CHOICE_KEYS))))
@@ -424,11 +438,11 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
             if name not in command_names:
                 raise KitError(key+': unknown command '+name+'. Kit commands: '+', '.join(command_names))
     # A command added in one line (extra_commands) also installs its skills.
-    # Skills renamed in 0.26 (a skill no longer shares a command's name): an old name in overrides.json still works.
+    # Skills renamed in 0.26 (a skill no longer shares a command's name): an old name in overrides.toml still works.
     for key in ('extra_skills', 'disabled_skills'):
         renamed = [name for name in overrides.get(key, []) if name in RENAMED_SKILLS]
         if renamed:
-            print('[Info] overrides.json '+key+': '+', '.join(n+' is now '+RENAMED_SKILLS[n] for n in renamed)+'; update the name when convenient.')
+            print('[Info] overrides.toml '+key+': '+', '.join(n+' is now '+RENAMED_SKILLS[n] for n in renamed)+'; update the name when convenient.')
             overrides[key] = [RENAMED_SKILLS.get(name, name) for name in overrides[key]]
     extra_command_skills = [s for c in manifest if c['name'] in overrides.get('extra_commands', []) for s in c['skills']]
     selected = resolve_skills({**profile, 'skills': list(profile['skills']) + extra_command_skills}, overrides, catalog)
@@ -436,19 +450,27 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     writes, deletes = {}, []
     # The schema is copied into ~/.ai-kit: the personal file never points to the extracted kit folder, which may be deleted.
     schema_uri = (kit/'schemas'/'overrides.schema.json').as_uri()
-    if not (kit/'overrides.json').exists():
-        # Created once, pointing to the schema so that editors complete and check the keys.
-        writes[kit/'overrides.json'] = json_bytes({'$schema': schema_uri, **read_json(ROOT/'templates/user-overrides.json')})
+    personal_path, legacy_path, personal_notices = kit/PERSONAL_FILE, kit/LEGACY_PERSONAL_FILE, []
+    if personal_path.exists():
+        text = personal_path.read_text(encoding='utf-8-sig')
+        if re.search(r'(?m)^#:schema .*schemas/overrides\.schema\.json\s*$', text):
+            text = set_schema(text, schema_uri)  # an earlier version may have pointed it to the kit folder
+        if legacy_path.exists():
+            personal_notices.append('[Check] ~/.ai-kit/overrides.json is no longer read: ~/.ai-kit/overrides.toml is. Move what you still '
+                                    'need from the JSON file, then delete it.')
+    elif legacy_path.exists():
+        # 0.37: the same settings in TOML, the _ explanations as # comments; checked by reading it back before anything is written.
+        text = dump_toml(read_json(legacy_path), schema_uri)
+        deletes.append(legacy_path)
+        personal_notices.append('[Info] ~/.ai-kit/overrides.json is now ~/.ai-kit/overrides.toml (0.37): the same settings, its _ explanations '
+                                'as # comments. The JSON file is in this update\'s backup.')
     else:
-        # Written by an earlier version towards the kit folder: only that value changes, the rest of the file stays as is.
-        text = (kit/'overrides.json').read_bytes().decode('utf-8', 'replace')
-        relinked = re.sub(r'("\$schema"\s*:\s*")[^"]*schemas/overrides\.schema\.json(")', lambda m: m.group(1)+schema_uri+m.group(2), text, count=1)
-        if relinked != text:
-            writes[kit/'overrides.json'] = relinked.encode('utf-8')
-    if choices:
-        # The person's own keys, comments (_ keys) and order stay; only the chosen lists change.
-        current = json.loads(writes[kit/'overrides.json'].decode('utf-8')) if kit/'overrides.json' in writes else read_json(kit/'overrides.json')
-        writes[kit/'overrides.json'] = json_bytes({**current, **choices})
+        # Created once, pointing to the schema so that editors complete and check the keys.
+        text = set_schema((ROOT/'templates/user-overrides.toml').read_text(encoding='utf-8'), schema_uri)
+    for key, values in choices.items():
+        # Only the chosen lists change; the person's other keys and comments stay.
+        text = set_list(text, key, values, '~/.ai-kit/overrides.toml')
+    writes[personal_path] = text.encode('utf-8')
     identity = dict(user) if user else dict(state.get('user', {}))
     if identity.get('email') and not EMAIL.fullmatch(identity['email']):
         raise KitError('Invalid email: '+identity['email'])
@@ -503,7 +525,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     if not isinstance(wanted_hooks, dict) or not all(isinstance(v, bool) for v in wanted_hooks.values()):
         raise KitError('hooks must be an object name → true/false.')
     enabled_hooks = {}
-    # A guardrail marked "default" in the manifest is on unless overrides.json sets it to false.
+    # A guardrail marked "default" in the manifest is on unless overrides.toml sets it to false.
     wanted_hooks = {**{n: True for n, spec in hook_manifest.items() if spec.get('default')}, **wanted_hooks}
     for name, flag in wanted_hooks.items():
         safe_id(name)
@@ -517,7 +539,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     # MCP: resolved from the three sources apart, not from the merged overrides ("github": true must not erase the server).
     servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
     enabled_mcp = {'ai-kit-'+name: server for name, server in servers.items()}
-    notices = []
+    notices = personal_notices
     unknown_names(overrides, catalog, agent_catalog, notices)
     notices += [retired_key_notice(key) for key in RETIRED_KEYS if key in overrides]
     p = Plan(active=[a.NAME for a in active], notices=notices,
@@ -685,11 +707,11 @@ def commit_changes(home, kit, writes, deletes, progress=None):
         raise
     return changed, backup
 
-PERSONAL_KEPT = ('.ai-kit/overrides.json', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learn/', '.ai-kit/runtime/')
+PERSONAL_KEPT = ('.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learn/', '.ai-kit/runtime/')
 
 def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
     """Removes what the kit installed and nothing else: the managed files it can recognise as unchanged, its blocks and
-    entries in the CLIs' settings, and its state. Kept: the personal context (30_USER.md), overrides.json, the backups,
+    entries in the CLIs' settings, and its state. Kept: the personal context (30_USER.md), overrides.toml, the backups,
     frictions, the CLIs' folders and the person's own settings; a managed file modified by hand is kept and named.
     No network, no model. confirm(report) -> bool is asked before any change (interactive); returns an exit code."""
     home = home.resolve()
@@ -729,7 +751,7 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
         print('  Clean the kit entries in: '+line)
     for line in kept:
         print('[Check] '+line)
-    print('Kept: your personal context, overrides.json, backups and frictions, the CLIs and their own settings.')
+    print('Kept: your personal context, overrides.toml, backups and frictions, the CLIs and their own settings.')
     if dry_run:
         print('Dry run: nothing changed.')
         return 0
@@ -769,7 +791,7 @@ def atomic_write(path,data):
 # A known case each guardrail must block; doctor runs it to prove the guardrail works, not just that its file exists.
 GUARDRAIL_PROBES = {
     'dbt-prod-guard': lambda home: {'tool_name': 'run_shell_command', 'tool_input': {'command': 'dbt run --target prod'}, 'cwd': str(home)},
-    'protected-paths': lambda home: {'tool_name': 'write_file', 'tool_input': {'file_path': str(home/'.ai-kit'/'overrides.json')}, 'cwd': str(home)},
+    'protected-paths': lambda home: {'tool_name': 'write_file', 'tool_input': {'file_path': str(home/'.ai-kit'/'overrides.toml')}, 'cwd': str(home)},
 }
 
 def command_parts(command):
@@ -881,15 +903,15 @@ def personal_context_step(user_file, reapply):
 def mcp_report(home, state):
     """MCP lines of the summaries, from the installer's own resolution: configured, chosen but not provided by the
     organization, or turned off. Never claims a connection: the kit does not call MCP servers."""
-    profile = read_json(ROOT/'profiles'/(safe_id(state['profile'])+'.json'))
+    profile = load_profile(state['profile'])
     servers, undefined = resolve_mcp(organization().get('defaults', {}).get('mcp', {}), profile.get('mcp', []),
-                                     read_json(home/'.ai-kit/overrides.json', {}).get('mcp', {}), team_settings(state.get('team')).get('mcp', {}))
+                                     personal_settings(home/'.ai-kit').get('mcp', {}), team_settings(state.get('team')).get('mcp', {}))
     off = [n for n in profile.get('mcp', []) if n not in servers and n not in undefined]
     lines = []
     if servers:
         lines.append('Data connections (MCP): '+', '.join(servers)+' configured; connection not verified (check it with your CLI\'s MCP command).')
     if undefined or off:
-        missing = [n+' not provided by your organization yet' for n in undefined] + [n+' turned off (in your overrides.json or by your team)' for n in off]
+        missing = [n+' not provided by your organization yet' for n in undefined] + [n+' turned off (in your overrides.toml or by your team)' for n in off]
         about = 'the SQL and dbt files' if {'bigquery', 'dbt'} & set(undefined + off) else 'the files'
         lines.append('Data connections (MCP): '+'; '.join(missing)+'. You can work on '+about+' of your repo with its usual tools;'
                      ' access to the data through MCP needs a connection provided by your company (platform team, docs/mcp.md).')
@@ -1035,7 +1057,7 @@ def doctor_checks(home, cwd=None, problems=None):
         print('Profile: '+state['profile']+' | version '+state['version'])
         identity = state.get('user', {})
         print('Recorded identity: '+(identity.get('email') or identity.get('name') or 'none')+(' (source '+identity['source']+')' if identity.get('source') else ''))
-        profile = read_json(ROOT/'profiles'/(safe_id(state['profile'])+'.json'))
+        profile = load_profile(state['profile'])
         profile = {**profile, 'practices': state.get('practices') or profile['practices']}  # with the person's team
         ctx = DoctorContext(profile=profile, load_commands=load_commands, managed_context_names=managed_context_names,
                                     allowed_domains=allowed_domains, domain_allowed=domain_allowed)
@@ -1047,9 +1069,9 @@ def doctor_checks(home, cwd=None, problems=None):
             status(not problem, problem or USER_CONTEXT+' is plain UTF-8 text')
             if not problem and SECRET.search(user_file.read_text(encoding='utf-8')):
                 status(False, USER_CONTEXT+' seems to contain a secret (key, token or password): remove it, the agent reads this file')
-        personal_file = home/'.ai-kit/overrides.json'
-        if personal_file.is_file() and SECRET.search(personal_file.read_text(encoding='utf-8', errors='replace')):
-            status(False, '~/.ai-kit/overrides.json seems to contain a secret: write ${VARIABLE} instead and define it in your environment (docs/mcp.md)')
+        for personal_file in (home/'.ai-kit'/PERSONAL_FILE, home/'.ai-kit'/LEGACY_PERSONAL_FILE):
+            if personal_file.is_file() and SECRET.search(personal_file.read_text(encoding='utf-8', errors='replace')):
+                status(False, '~/.ai-kit/'+personal_file.name+' seems to contain a secret: write ${VARIABLE} instead and define it in your environment (docs/mcp.md)')
         for rel,expected in state.get('files',{}).items():
             path = inside(home,rel)
             status(path.is_file() and digest(path.read_bytes())==expected,rel)
@@ -1059,22 +1081,22 @@ def doctor_checks(home, cwd=None, problems=None):
                + ('' if state.get('version') == folder_version else ': run update'))
         org_defaults = organization().get('defaults', {})
         team_layer = team_settings(state.get('team'))
-        personal = read_json(home/'.ai-kit/overrides.json', {})
-        layers = [('~/.ai-kit/overrides.json', personal), ('organization.json defaults', org_defaults)]
-        layers += [('organization.json teams.'+state['team'], team_layer)] if state.get('team') else []
+        personal = personal_settings(home/'.ai-kit')
+        layers = [('~/.ai-kit/overrides.toml', personal), ('organization.toml defaults', org_defaults)]
+        layers += [('organization.toml teams.'+state['team'], team_layer)] if state.get('team') else []
         for label, settings in layers:
             for key in RETIRED_KEYS:
                 if key in settings:
-                    print(retired_key_notice(key).replace('overrides.json', label, 1))
+                    print(retired_key_notice(key).replace('overrides.toml', label, 1))
             unknown = unknown_keys(settings)
             status(not unknown, label+': only known keys'+(' (unknown: '+', '.join(unknown)+'; a typo? keys are listed in schemas/overrides.schema.json)' if unknown else ''))
         shared = merge_settings(org_defaults, team_layer)
         changed = setting_differences({k: v for k, v in shared.items() if k != 'mcp'}, merge_settings(shared, personal))
         if changed:
-            print('[Info] Your overrides.json changes organization or team defaults: '+', '.join(changed))
+            print('[Info] Your overrides.toml changes organization or team defaults: '+', '.join(changed))
         if state.get('team'):
             sources = [s for s, present in (('practices/20-'+state['team']+'.md', (ROOT/'practices'/('20-'+state['team']+'.md')).is_file()),
-                                            ('organization.json teams.'+state['team'], bool(team_layer))) if present]
+                                            ('organization.toml teams.'+state['team'], bool(team_layer))) if present]
             print('[Info] Team: '+state['team']+' ('+(', '.join(sources) or 'nothing of its own yet')+')')
         root, overrides = repo_skill_overrides(state, cwd or os.getcwd())
         if overrides:
@@ -1090,7 +1112,7 @@ def doctor_checks(home, cwd=None, problems=None):
                 hints.append(adapter.doctor_hint())
         try:
             servers, undefined = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))
-            print('[Info] MCP servers: '+(', '.join(servers) or 'none')+(' | chosen but not defined in organization.json: '+', '.join(undefined) if undefined else ''))
+            print('[Info] MCP servers: '+(', '.join(servers) or 'none')+(' | chosen but not defined in organization.toml: '+', '.join(undefined) if undefined else ''))
         except KitError as exc:
             status(False, str(exc))
     print('Local diagnosis only: authentication, MCP connection and IAM rights not tested; doctor --live makes a real call to the model, which your provider may bill.')
@@ -1312,7 +1334,7 @@ def main(argv=None):
     parser.add_argument('--user',help='Work email to record, without interactive confirmation')
     parser.add_argument('--home',type=Path,default=Path.home(),help='Alternative home folder for an isolated trial')
     parser.add_argument('--dry-run',action='store_true',help='Show the plan without writing')
-    parser.add_argument('--team',help='setup: your team, when it has its own practices (practices/20-<team>.md) or tools (teams in organization.json); kept for update; none to leave it')
+    parser.add_argument('--team',help='setup: your team, when it has its own practices (practices/20-<team>.md) or tools (teams in organization.toml); kept for update; none to leave it')
     parser.add_argument('--target',choices=list(TARGETS),help='default: the CLIs chosen at the last installation (auto on the first one); auto: the CLIs present on the machine (Gemini if none); gemini, agy, codex, claude: that CLI only; both: Gemini and agy; all: every supported CLI')
     parser.add_argument('--live',action='store_true',help='doctor: make a real call to the model and diagnose (may be billed by your provider)')
     parser.add_argument('--no-live',action='store_true',help='accepted for compatibility: setup and update never call the model')

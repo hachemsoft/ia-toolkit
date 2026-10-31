@@ -11,6 +11,7 @@ from unittest import mock
 
 from installer import cli
 from installer.core import read_json
+from installer.toml_files import dump_toml
 
 FALSE_SUCCESS = re.compile(r'(?i)\b(connected|authenticated|signed in|ready to use)\b')
 
@@ -29,7 +30,7 @@ class SummaryTests(unittest.TestCase):
     def install(self, profile='data-analyst', target='all', overrides=None, org=None):
         if overrides is not None:
             (self.home/'.ai-kit').mkdir(parents=True, exist_ok=True)
-            (self.home/'.ai-kit/overrides.json').write_text(json.dumps(overrides), encoding='utf-8')
+            (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
         self.org = org or {}
         with mock.patch.object(cli, 'organization', return_value=self.org), contextlib.redirect_stdout(io.StringIO()):
             cli.apply(profile, self.home, False, {'email': 'a@example.org', 'source': 'test'}, target)
@@ -88,7 +89,7 @@ class SummaryTests(unittest.TestCase):
         self.install(overrides={'mcp': {'dbt': False}}, org=org)
         out = self.summary(found('gemini'))
         self.assertIn('bigquery configured; connection not verified', out)
-        self.assertIn('dbt turned off (in your overrides.json or by your team)', out)
+        self.assertIn('dbt turned off (in your overrides.toml or by your team)', out)
         self.assertNotRegex(out, FALSE_SUCCESS)
 
     def test_problems_come_first_in_the_next_step(self):
@@ -158,7 +159,7 @@ class AnalystReviewTests(unittest.TestCase):
     def install(self, overrides=None):
         if overrides is not None:
             (self.home/'.ai-kit').mkdir(parents=True, exist_ok=True)
-            (self.home/'.ai-kit/overrides.json').write_text(json.dumps(overrides), encoding='utf-8')
+            (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
         with contextlib.redirect_stdout(io.StringIO()):
             cli.apply('data-analyst', self.home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
         return read_json(self.home/'.ai-kit/state.json')['installed']['commands']

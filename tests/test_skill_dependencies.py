@@ -9,6 +9,7 @@ import unittest
 
 from installer.cli import apply, resolve_skills, ROOT
 from installer.core import KitError, read_json
+from installer.toml_files import dump_toml, read_toml
 
 CATALOG = read_json(ROOT/'skills/catalog.json')
 
@@ -45,7 +46,7 @@ class InstallTests(unittest.TestCase):
 
     def install(self, overrides, profile='general'):
         (self.home/'.ai-kit').mkdir(exist_ok=True)
-        (self.home/'.ai-kit/overrides.json').write_text(json.dumps(overrides), encoding='utf-8')
+        (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             notices = apply(profile, self.home, False, None, 'gemini')
@@ -62,7 +63,7 @@ class InstallTests(unittest.TestCase):
         self.assertNotIn('`codebase-design`:', (self.home/'.gemini/skills/python-js-change/SKILL.md').read_text(encoding='utf-8'))
 
     def test_each_playbook_installs_alone_on_general_without_duplicates(self):
-        general = read_json(ROOT/'profiles/general.json')
+        general = read_toml(ROOT/'profiles/general.toml')
         for skill, entry in CATALOG.items():
             if entry.get('category') != 'domain':
                 continue

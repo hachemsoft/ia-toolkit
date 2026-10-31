@@ -2,6 +2,7 @@ import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply
 from installer.core import KitError, read_json, START, ROOT
+from installer.toml_files import dump_toml, read_toml
 class InstallationTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory(prefix='kit space é ');self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
@@ -10,7 +11,7 @@ class InstallationTests(unittest.TestCase):
  def path(self,p):return self.home/p
  def write(self,p,text):
   f=self.path(p);f.parent.mkdir(parents=True,exist_ok=True);f.write_text(text,encoding='utf-8');return f
- def overrides(self,v):self.write('.ai-kit/overrides.json',json.dumps(v))
+ def overrides(self,v):self.write('.ai-kit/overrides.toml',dump_toml(v))
  def test_idempotence(self):
   self.run_kit();before={str(p):p.read_bytes() for p in self.home.rglob('*') if p.is_file()};self.run_kit();self.assertEqual(before,{str(p):p.read_bytes() for p in self.home.rglob('*') if p.is_file()})
  def test_existing_settings_and_context(self):

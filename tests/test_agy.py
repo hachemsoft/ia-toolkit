@@ -3,6 +3,7 @@ from pathlib import Path
 from installer.cli import apply
 from installer.core import KitError, read_json, load_commands, command_skill_text, ROOT
 from installer.adapters.agy import AGY_PLUGIN
+from installer.toml_files import dump_toml
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload,env=None):
  proc=subprocess.run([sys.executable,'-I',str(H/script)],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8',env={**os.environ,**(env or {})});return json.loads(proc.stdout or '{}')
@@ -13,7 +14,7 @@ class AgyAdapterTests(unittest.TestCase):
  def run_kit(self,role='data-analyst',target='both'):
   with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home,False,None,target)
  def overrides(self,v):
-  p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
+  p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def plugin(self):return self.home/AGY_PLUGIN
  def test_agy_settings_and_permissions_never_touched(self):
   st=self.home/'.gemini/antigravity-cli/settings.json';st.parent.mkdir(parents=True);before='{"permissions": {"allow": ["command(ls)"]}}';st.write_text(before,encoding='utf-8')

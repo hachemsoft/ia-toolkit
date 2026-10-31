@@ -2,13 +2,14 @@ import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply, doctor, selected_commands
 from installer.core import load_commands, KitError, read_json, ROOT
+from installer.toml_files import dump_toml, read_toml
 class CommandTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def run_kit(self,role='data-analyst'):
   with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home)
  def overrides(self,v):
-  p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
+  p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def cmd(self,name):return self.home/'.gemini/commands'/(name+'.toml')
  def test_manifest_consistent(self):
   catalog=read_json(ROOT/'skills/catalog.json');names=set()
@@ -29,7 +30,7 @@ class CommandTests(unittest.TestCase):
    self.assertIn(v['category'],('workflow','tool','domain','reference','setup'),k);self.assertIn(v['tier'],('core','optional','profile'),k)
    if v['tier']=='core':core.add(k)
   for pid in ('data-analyst','data-developer'):
-   skills=set(read_json(ROOT/'profiles'/(pid+'.json'))['skills']);(self.assertTrue(core<=skills,pid) if pid=='data-developer' else None);self.assertFalse({k for k in skills if catalog[k]['tier']=='optional' and catalog[k]['category']=='reference'}-{'codebase-design'})
+   skills=set(read_toml(ROOT/'profiles'/(pid+'.toml'))['skills']);(self.assertTrue(core<=skills,pid) if pid=='data-developer' else None);self.assertFalse({k for k in skills if catalog[k]['tier']=='optional' and catalog[k]['category']=='reference'}-{'codebase-design'})
  def test_commands_installed_per_profile(self):
   self.run_kit();self.assertTrue(self.cmd('intent').exists());self.assertTrue(self.cmd('learn').exists());self.assertFalse(self.cmd('ask').exists());self.assertTrue(self.cmd('review').exists());self.assertFalse(self.cmd('spec').exists());self.assertFalse(self.cmd('design').exists());self.assertFalse(self.cmd('triage').exists())
   self.assertEqual(sorted(p.stem for p in (self.home/'.gemini/commands').glob('*.toml')),['build','diagnose','friction','guide','intent','learn','review','ship','test'])

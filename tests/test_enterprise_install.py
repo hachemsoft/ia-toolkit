@@ -88,6 +88,7 @@ class LauncherTests(unittest.TestCase):
         user_file = self.home/'.gemini/30_USER.md'
         user_file.write_text(user_file.read_text(encoding='utf-8') + '\nMon rôle : ingénieure données, projet Été.\n', encoding='utf-8')
         personal = self.home/'.ai-kit/overrides.json'
+        (self.home/'.ai-kit/overrides.toml').unlink()  # as before 0.37: a JSON file only
         # As written by 0.26: the schema link pointed to the extracted folder.
         old_link = (self.kit/'schemas'/'overrides.schema.json').as_uri()
         personal.write_text('{\n  "$schema": "' + old_link + '",\n  "extra_skills": ["teach"],\n  "_mine": "kept"\n}\n', encoding='utf-8')
@@ -103,8 +104,10 @@ class LauncherTests(unittest.TestCase):
         self.assertIn('Mon rôle : ingénieure données', (self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
         self.assertTrue((self.home/'.gemini/skills/teach/SKILL.md').is_file())
         new_link = (self.home.resolve()/'.ai-kit'/'schemas'/'overrides.schema.json').as_uri()
-        self.assertEqual(personal.read_text(encoding='utf-8'),
-                         '{\n  "$schema": "' + new_link + '",\n  "extra_skills": ["teach"],\n  "_mine": "kept"\n}\n')
+        # 0.37: converted to TOML, the schema link to the copy in ~/.ai-kit, the _ explanation as a comment; the JSON file is in the backup.
+        self.assertFalse(personal.exists())
+        self.assertEqual((self.home/'.ai-kit/overrides.toml').read_text(encoding='utf-8'),
+                         '#:schema ' + new_link + '\n# kept\nextra_skills = ["teach"]\n')
 
     def python_free_path(self):
         """A PATH with the system tools the launcher needs, without any Python."""

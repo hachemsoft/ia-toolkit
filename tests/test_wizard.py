@@ -14,6 +14,7 @@ from unittest import mock
 from installer import cli, wizard
 from installer.core import read_json
 from installer.ui import Cancelled, PlainUI, libraries
+from installer.toml_files import dump_toml, read_toml
 
 ANSI = re.compile(r'\x1b\[')
 
@@ -153,16 +154,19 @@ class WizardFlowTests(unittest.TestCase):
         catalog = read_json(cli.ROOT/'skills/catalog.json')
         playbooks = [s for s, e in catalog.items() if e.get('category') == 'domain' and not e.get('replaced_by')]
         pick = str(playbooks.index('python-js-change')+1)
-        overrides = self.home/'.ai-kit/overrides.json'
+        overrides = self.home/'.ai-kit/overrides.toml'
         overrides.parent.mkdir()
-        overrides.write_text(json.dumps({'_mine': 'kept', 'frictions': 'off'}), encoding='utf-8')
+        mine = '# mine: kept\nfrictions = "off"  # quiet\n'
+        overrides.write_text(mine, encoding='utf-8')
         # Adjust: tick python-js-change (its number, then Enter), keep tools, commands and agents, then cancel: nothing written.
         self.run_wizard('', '', 'a@example.org', '2', pick, '', '', '', '', '3')
-        self.assertEqual(json.loads(overrides.read_text(encoding='utf-8')), {'_mine': 'kept', 'frictions': 'off'})
+        self.assertEqual(overrides.read_text(encoding='utf-8'), mine)
         code, out, _ = self.run_wizard('', '', 'a@example.org', '2', pick, '', '', '', '', '1', 'n')
         self.assertEqual(code, 0, out)
-        saved = json.loads(overrides.read_text(encoding='utf-8'))
-        self.assertEqual(saved['_mine'], 'kept')
+        text = overrides.read_text(encoding='utf-8')
+        self.assertIn('# mine: kept', text)  # the person's comments stay
+        self.assertIn('# quiet', text)
+        saved = read_toml(overrides)
         self.assertEqual(saved['frictions'], 'off')
         self.assertEqual(saved['extra_skills'], ['python-js-change'])
         self.assertIn('python-js-change', self.state()['installed']['skills'])
@@ -170,10 +174,8 @@ class WizardFlowTests(unittest.TestCase):
 
     def test_a_choice_turned_off_is_not_ticked_again(self):
         self.run_wizard(*self.FIRST)
-        overrides = self.home/'.ai-kit/overrides.json'
-        data = json.loads(overrides.read_text(encoding='utf-8'))
-        data['disabled_commands'] = ['retro']
-        overrides.write_text(json.dumps(data), encoding='utf-8')
+        overrides = self.home/'.ai-kit/overrides.toml'
+        overrides.write_text(overrides.read_text(encoding='utf-8') + 'disabled_commands = ["retro"]\n', encoding='utf-8')
         # Adjust, then accept every list as shown: retro appears unticked and stays off.
         ui, out, _ = plain('2', '', '', '', '')
         with contextlib.redirect_stdout(io.StringIO()):

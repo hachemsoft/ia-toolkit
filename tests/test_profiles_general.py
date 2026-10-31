@@ -3,6 +3,7 @@ from pathlib import Path
 from installer.cli import apply, profile_ids
 from installer.core import ROOT, read_json
 from installer.adapters.gemini import merge_context_filenames
+from installer.toml_files import read_toml
 class GeneralProfileTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
@@ -13,7 +14,7 @@ class GeneralProfileTests(unittest.TestCase):
   from installer.cli import profile_menu
   ids=profile_ids();self.assertIn('general',ids)
   for pid in ids:
-   p=read_json(ROOT/'profiles'/(pid+'.json'))
+   p=read_toml(ROOT/'profiles'/(pid+'.toml'))
    self.assertEqual(p['id'],pid);self.assertTrue(p.get('label'),pid);self.assertIsInstance(p.get('order'),int,pid)
   self.assertEqual(sorted(i for i,_ in profile_menu()),ids)
  def test_general_has_workflow_without_domain_playbooks(self):

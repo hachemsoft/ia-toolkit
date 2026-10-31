@@ -2,6 +2,7 @@ import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply, doctor, resolve_skills, command_lines, playbook_lines
 from installer.core import KitError, read_json, ROOT
+from installer.toml_files import dump_toml, read_toml
 FAKE={'a':{'path':'x','requires':['b']},'b':{'path':'x'},'c':{'path':'x','stage':'ship'},'old':{'replaced_by':['a','c']}}
 class SkillCatalogTests(unittest.TestCase):
  def setUp(self):
@@ -11,7 +12,7 @@ class SkillCatalogTests(unittest.TestCase):
   with contextlib.redirect_stdout(out):apply(role,self.home)
   return out.getvalue()
  def overrides(self,v):
-  p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
+  p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def test_requires_resolved_transitively(self):
   self.assertEqual(resolve_skills({'skills':['a']},{},FAKE,log=lambda m:None),['a','b'])
  def test_disabled_dependency_refused(self):
@@ -36,7 +37,7 @@ class SkillCatalogTests(unittest.TestCase):
    for r in e.get('requires',[]):self.assertIn(r,catalog)
    if e.get('origin')=='upstream':self.assertTrue((ROOT/e['license']).is_file(),name)
   for pid in ('data-analyst','data-developer'):
-   for s in read_json(ROOT/'profiles'/(pid+'.json'))['skills']:self.assertIn(s,catalog);self.assertNotIn('replaced_by',catalog[s],s)
+   for s in read_toml(ROOT/'profiles'/(pid+'.toml'))['skills']:self.assertIn(s,catalog);self.assertNotIn('replaced_by',catalog[s],s)
  def test_legacy_override_still_installs(self):
   self.overrides({'extra_skills':['clarify-request'],'disabled_skills':['debug-systematically']});out=self.run_kit()
   self.assertIn('Skill replaced: clarify-request → grilling',out);self.assertTrue((self.home/'.gemini/skills/grilling/SKILL.md').exists());self.assertFalse((self.home/'.gemini/skills/clarify-request').exists())
