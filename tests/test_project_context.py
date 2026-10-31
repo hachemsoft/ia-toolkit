@@ -14,7 +14,8 @@ class ProjectContextTests(unittest.TestCase):
    self.assertTrue((base/'writing-for-agents/SKILL.md').is_file());self.assertTrue((base/'domain-modeling/SKILL.md').is_file())
  def test_templates_follow_upstream_formats(self):
   g=(ROOT/'skills/internal/common/init-project-context/templates/GLOSSARY.md').read_text(encoding='utf-8')
-  self.assertIn('## Language',g);self.assertIn('**Grain**:',g);self.assertIn('_Avoid_:',g)
+  self.assertIn('## Language',g);self.assertIn('_Avoid_:',g);self.assertNotIn('**Grain**:',g)
+  d=(ROOT/'skills/internal/common/init-project-context/templates/GLOSSARY-DATA.md').read_text(encoding='utf-8');self.assertIn('**Grain**:',d);self.assertIn('_Avoid_:',d)
   a=(ROOT/'skills/internal/common/init-project-context/templates/AGENTS.md').read_text(encoding='utf-8')
   self.assertLess(a.count('\n'),60);self.assertIn('GLOSSARY.md',a);self.assertIn('docs/adr/',a)
  def test_skill_requires_declared(self):

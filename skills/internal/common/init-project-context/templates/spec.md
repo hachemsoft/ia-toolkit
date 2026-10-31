@@ -13,13 +13,14 @@ Status: draft | accepted · Reviewed by: <product owner> · Date: <YYYY-MM-DD> �
 Each requirement has a verifiable acceptance criterion.
 1. <Requirement> — Acceptance: <what you observe when it is done>.
 
-## Data contracts
-| Object | Grain | Key | Sources | Freshness | Rules (dates, exclusions, NULL) |
+## Contracts
+<What the change exposes or relies on, for others: an API, an event, a table, a file. Delete this section if it touches none.>
+| Object | Shape (fields, or one row per … for data) | Key | Sources | Freshness | Rules (compatibility, dates, exclusions, NULL) |
 | --- | --- | --- | --- | --- | --- |
-| <model or table> | <one row per …> | <columns> | <…> | <…> | <…> |
+| <endpoint, event, model or table> | <…> | <…> | <…> | <…> | <…> |
 
 ## Constraints and policies applied
-<Company practices and Data practices applied while writing, with the rule cited.>
+<Company, team and domain practices applied while writing, with the rule cited.>
 
 ## Areas of concern
 <Where two rules contradict each other, where a requirement cannot be met, where cost or risk is significant. Each point names who decides.>

@@ -46,7 +46,7 @@ In the repo, ask "Initialize the project context". The `init-project-context` sk
 
 ## Monorepo: several teams, one repo
 
-A repo shared by several teams (for example a dbt project shared by finance and marketing) is organized in zones: the root carries what is shared, each team folder carries what is its own.
+A repo shared by several teams (for example services owned by two teams, or a dbt project shared by finance and marketing) is organized in zones: the root carries what is shared, each team folder carries what is its own.
 
 | Where | What | Owner |
 | --- | --- | --- |
@@ -54,9 +54,9 @@ A repo shared by several teams (for example a dbt project shared by finance and 
 | `<zone>/` | the zone's `AGENTS.md`, its glossary if it has one, its artifacts in `<zone>/docs/sdlc/` | the zone team |
 
 - **Start the agent from your zone's folder** (`cd finance` then the CLI). It then reads the root `AGENTS.md` and the zone's. Started at the root, it asks which zone you are working in.
-- **Checks** follow the general rule: what changed and what depends on it, whatever the team. `/test`, `/review` and `/ship` name the other zones touched (for dbt, the models that depend on the changed models), so their owners review. With a production manifest, `dbt build --select state:modified+ --defer --state <manifest>` rebuilds only what changed and reads the rest from production.
+- **Checks** follow the general rule: what changed and what depends on it, whatever the team. `/test`, `/review` and `/ship` name the other zones touched (the callers of a changed API, the models downstream of a changed model), so their owners review. The command that tests only what changed is in each stack's row of the "Verifying your work" table of `AGENTS.md` (for example `mvn -pl <modules> -am test`, or `dbt build --select state:modified+` with a production manifest).
 - **The root's protected paths** also apply when the agent starts in a zone; a zone can add its own `.ai-kit/protected-paths`.
-- **A shared metric** has a single definition, in the shared glossary, with a named owner; zone glossaries point to it.
+- **A shared term** (a metric, an API, an event) has a single definition, in the shared glossary, with a named owner; zone glossaries point to it.
 - **Repo skills** live in `.agents/skills/` at the root and apply to everyone: prefix them with the zone (`finance-cloture-mensuelle`) and say in their description what they apply to.
 - **Too much context**: started at the root, the agent can also read the subfolders' `AGENTS.md` files; each CLI has its own way to limit what it scans (see its page).
 - **Who reviews what**: a `CODEOWNERS` file makes GitLab or GitHub enforce it.

@@ -1,11 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.33.0
 
 Neutral core, the domain in its playbooks:
 - The shared commands (`/build`, `/diagnose`, `/intent`, `/review`, `/learn`, `/test`, `/guide`, `/explain`) no longer carry SQL, dbt, BigQuery, KPI, Java or infrastructure clauses: they send to "the installed playbook matching the files or the task". Each domain playbook (the seven data ones, `java-change`, `python-js-change`, `infra-change`) gains a `## In the kit commands` section holding, word for word, what the commands used to say for its domain; a check confirms none was lost. `/review`'s Data pass becomes a Domain pass. `/build` and `/diagnose` are shorter for every profile.
 - The shared team practice (`20-team.md`) no longer has a data-only rule: a neutral one ("state what a component guarantees and keep it") replaces it; the grain, joins, dates and NULLs rule is in `sql-review`.
 - A test keeps the commands neutral; the docs tell maintainers to give each new playbook its section instead of editing the commands.
+- The repo templates of `init-project-context` are neutral: `GLOSSARY.md` holds the format and placeholder terms, the data starter terms move to `GLOSSARY-DATA.md` (proposed only for a data repo); `REVIEW.md` has a Domain pass with lines for services, data and infrastructure; the spec's "Data contracts" becomes "Contracts" (APIs, events or data); `AGENTS.md` lists Python, JS/TS, Java, dbt and Terraform rows and neutral architecture lines.
+- Doc examples varied: the diagnosis signal (test, assertion query, plan), the monorepo (services or dbt), shared terms beyond metrics.
 
 ## 0.32.0
 

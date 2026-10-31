@@ -123,7 +123,7 @@ The rule that avoids running everything: **ceremony matches the stakes**. A smal
 - `intent.md` and `plan.md` are local notes, ignored by git; `spec.md` and `REVIEW.md` are versioned. The agent never commits without your approval.
 - Your profile's domain playbooks (Java, infrastructure, architecture, SQL and dbt…) activate on their own when the task calls for them; you do not need to name them.
 - In agy, a permission request before a shell command is normal: answer it; "always allow" saves your choice in your agy settings, and the kit does not touch them.
-- Without a connected MCP server, the agent does not read your real data: provide the SQL and the authorized schemas, or have the platform team configure the connection.
+- Without a connected MCP server, the agent does not read your real data: provide the extracts, schemas or examples it needs, or have the platform team configure the connection.
 
 ## 5. Troubleshooting
 
