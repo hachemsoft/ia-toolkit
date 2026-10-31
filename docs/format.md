@@ -1,6 +1,6 @@
 # Command pivot format
 
-A kit command is written once, in `commands/<name>.md`, and each adapter derives its CLI's form from it (table below and [matrix](cli/matrice.md)). One more CLI means one more adapter ([add a CLI](cli/matrice.md#add-a-cli)); the source files do not change. Skills (`SKILL.md`) and agents (`agents/internal/<category>/*.json`) already follow this principle.
+A kit command is written once, in `commands/<name>.md`, and each adapter derives its CLI's form from it (table below and [matrix](cli/matrice.md)). One more CLI means one more adapter ([add a CLI](cli/matrice.md#add-a-cli)); the source files do not change. Skills (`SKILL.md`) and agents (`agents/internal/<category>/*.md`) already follow this principle.
 
 ## The file
 

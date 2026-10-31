@@ -31,14 +31,14 @@ Nobody activates the environment, runs pip, changes the `PATH` or needs administ
 - Prevalidates conflicts, backs up, then writes the files; attempts a restore on a write error.
 - Touches no project repository, starts no MCP server, calls no model. Downloads nothing from a ZIP; from a git clone, only what pip fetches from the configured package index.
 - Changes nothing on the system: no administrator rights, no registry, no system or user PATH, no execution policy, no Gatekeeper or quarantine setting, no shell startup file. Calls no model and needs no network: only `doctor --live`, on request, makes a real call to the model.
-- Installs nothing that points back to the extracted kit folder: the package and its content live in `~/.ai-kit/runtime`, the guardrails, the friction script and the `overrides.json` schema are copied to `~/.ai-kit`, and the guardrails run with the private environment's Python. The extracted folder can be deleted after installation; keep it, or the next ZIP, to run the installer again.
+- Installs nothing that points back to the extracted kit folder: the package and its content live in `~/.ai-kit/runtime`, the guardrails, the friction script and the `overrides.toml` schema are copied to `~/.ai-kit`, and the guardrails run with the private environment's Python. The extracted folder can be deleted after installation; keep it, or the next ZIP, to run the installer again.
 - Keeps the CLIs you chose: `update` never adds or removes one because a folder exists or disappears. Removing a CLI from your choice removes what the kit had put there and keeps your own settings.
 
 Existing settings must be strict JSON. An invalid JSON file or one with comments is refused without change. Symbolic links on managed paths are not supported.
 
 The context layers and `30_USER.md` are written to `~/.gemini/` when Gemini CLI is among the CLIs you chose (it reads only its own folder), otherwise to `~/.ai-kit/context/`, which the other CLIs include or copy. The guardrail scripts are in `~/.ai-kit/hooks/`.
 
-Before 0.19, the kit folder was called `~/.ai-toolkit`. The first `setup` or `update` renames it to `~/.ai-kit`, with `overrides.json`, the state and the backups, then rewrites the files that referenced the old path. If both folders exist, the kit stops without touching anything: keep `~/.ai-kit`, move what is missing into it, remove `~/.ai-toolkit`, then run `update`.
+Before 0.19, the kit folder was called `~/.ai-toolkit`. The first `setup` or `update` renames it to `~/.ai-kit`, with `overrides.toml`, the state and the backups, then rewrites the files that referenced the old path. If both folders exist, the kit stops without touching anything: keep `~/.ai-kit`, move what is missing into it, remove `~/.ai-toolkit`, then run `update`.
 
 ## Commands
 
@@ -46,7 +46,7 @@ Before 0.19, the kit folder was called `~/.ai-toolkit`. The first `setup` or `up
 | --- | --- | --- |
 | Install / change profile | `sh scripts/bootstrap.sh` | double-click `Installer.cmd`, or `Installer.cmd setup` |
 | New version | extract the new ZIP and run its installer | the same |
-| Reapply this version (after editing `overrides.json`; in a git clone, `git pull` first) | `sh scripts/bootstrap.sh update` | `Installer.cmd update` |
+| Reapply this version (after editing `overrides.toml`; in a git clone, `git pull` first) | `sh scripts/bootstrap.sh update` | `Installer.cmd update` |
 | Diagnose (local, free) | `sh scripts/bootstrap.sh doctor` | `Installer.cmd doctor` |
 | Uninstall (`--dry-run` to see the list, `--yes` for automation, `--remove-runtime` for the private environment too) | `sh scripts/bootstrap.sh uninstall` | `Installer.cmd uninstall` |
 | Check the connection (real call to the model, may be billed) | `sh scripts/bootstrap.sh doctor --live` | `Installer.cmd doctor --live` |
@@ -68,11 +68,11 @@ On Windows, replace `sh scripts/bootstrap.sh` with `Installer.cmd`. The private 
 
 ## MCP
 
-No server is defined in the public kit: endpoints, transports and authentication belong to the organization. `organization.json` defines the approved servers, each profile lists those it turns on, and each person adjusts or adds their own in `overrides.json`. See [MCP configuration](mcp.md).
+No server is defined in the public kit: endpoints, transports and authentication belong to the organization. `organization.toml` defines the approved servers, each profile lists those it turns on, and each person adjusts or adds their own in `overrides.toml`. See [MCP configuration](mcp.md).
 
 ## Uninstall
 
-`uninstall` removes what the kit installed and nothing else: the managed files it recognises as unchanged, its blocks and entries in the CLIs' settings (guardrails, MCP servers, layers in `context.fileName`, the Codex blocks), and its state. It keeps your personal context (`30_USER.md`), `overrides.json`, the backups and frictions, the CLIs' folders, your own settings, and the `~/.gemini/.env` lines an earlier version wrote (now yours); a managed file you edited is kept and named. Everything removed or cleaned is first copied to `~/.ai-kit/backups/`. No network, no model. Interactive: it shows the list and asks; automation: `--yes`; `--dry-run` shows the list without changing anything. The private environment stays unless the launcher is given `--remove-runtime`; it removes it only after the kit has exited, so no file in use is deleted.
+`uninstall` removes what the kit installed and nothing else: the managed files it recognises as unchanged, its blocks and entries in the CLIs' settings (guardrails, MCP servers, layers in `context.fileName`, the Codex blocks), and its state. It keeps your personal context (`30_USER.md`), `overrides.toml`, the backups and frictions, the CLIs' folders, your own settings, and the `~/.gemini/.env` lines an earlier version wrote (now yours); a managed file you edited is kept and named. Everything removed or cleaned is first copied to `~/.ai-kit/backups/`. No network, no model. Interactive: it shows the list and asks; automation: `--yes`; `--dry-run` shows the list without changing anything. The private environment stays unless the launcher is given `--remove-runtime`; it removes it only after the kit has exited, so no file in use is deleted.
 
 ## Limits
 

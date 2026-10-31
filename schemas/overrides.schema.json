@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "AI Kit: personal settings (~/.ai-kit/overrides.json)",
-  "description": "Applied on top of the organization defaults (organization.json): lists add up, objects combine, a single value is replaced. Run update after a change. Keys starting with _ are explanations.",
+  "title": "AI Kit: personal settings (~/.ai-kit/overrides.toml)",
+  "description": "Applied on top of the organization defaults (organization.toml): lists add up, objects combine, a single value is replaced. Run update after a change. Keys starting with _ are explanations.",
   "type": "object",
   "properties": {
     "$schema": {
@@ -76,7 +76,7 @@
     },
     "mcp": {
       "type": "object",
-      "description": "MCP servers by name. organization.json describes them; a profile lists those it activates; in overrides.json, true or false turns a server on or off for you, and {\"server\": {...}} adds your own. See docs/mcp.md.",
+      "description": "MCP servers by name. organization.toml describes them; a profile lists those it activates; in overrides.toml, true or false turns a server on or off for you, and {\"server\": {...}} adds your own. See docs/mcp.md.",
       "additionalProperties": {
         "oneOf": [
           {
@@ -88,7 +88,7 @@
             "properties": {
               "enabled": {
                 "type": "boolean",
-                "description": "organization.json: true = active for every profile. overrides.json: false = defined but off."
+                "description": "organization.toml: true = active for every profile. overrides.toml: false = defined but off."
               },
               "server": {
                 "type": "object",
@@ -142,7 +142,7 @@
               }
             },
             "additionalProperties": false,
-            "description": "A server: {\"server\": {...}}. In organization.json, active for the profiles that list it, or for everyone with \"enabled\": true. In overrides.json, active unless \"enabled\": false."
+            "description": "A server: a server table ([mcp.<name>.server]). In organization.toml, active for the profiles that list it, or for everyone with \"enabled\": true. In overrides.toml, active unless \"enabled\": false."
           }
         ]
       }

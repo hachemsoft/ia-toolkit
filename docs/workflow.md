@@ -16,7 +16,7 @@ A reply to a change opens with the level chosen, on a fixed first line (`Level: 
 
 ## The steps
 
-The installed commands depend on the profile: see the [profile table](getting-started.md#3-work-one-command-per-step). A missing command is added with one line, `extra_commands` in `~/.ai-kit/overrides.json`, then `update`.
+The installed commands depend on the profile: see the [profile table](getting-started.md#3-work-one-command-per-step). A missing command is added with one line, `extra_commands` in `~/.ai-kit/overrides.toml`, then `update`.
 
 | Step | Command | Artifact | What the command does |
 | --- | --- | --- | --- |
@@ -55,7 +55,7 @@ Domain skills, activated by the model when the task calls for them and chained b
 | `infra-change` | `/build`, `/diagnose` (DevOps) | blast radius, read-only evidence (plan, diff), never an apply or a deployment, rollback |
 | `architecture-decision` | `/spec` (Architect) | compared options, criteria, consequences, reversibility, ADR |
 
-The Data playbooks are in both Data profiles; `python-js-change`, `java-change`, `infra-change` and `architecture-decision` are each in the profile shown. A playbook from another profile is added with `extra_skills` in `overrides.json`. Rationalization tables, description triggers and "Forbidden" sections are what make a playbook activate at the right time.
+The Data playbooks are in both Data profiles; `python-js-change`, `java-change`, `infra-change` and `architecture-decision` are each in the profile shown. A playbook from another profile is added with `extra_skills` in `overrides.toml`. Rationalization tables, description triggers and "Forbidden" sections are what make a playbook activate at the right time.
 
 Each playbook ends with a "Rationalizations and rebuttals" table: the reasons an agent gives to skip a step, and the reply it gets. When the agent finds a new rationalization, it goes into the table.
 

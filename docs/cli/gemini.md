@@ -7,7 +7,7 @@ What the kit does for Gemini CLI, and what is specific to this CLI. Behavior ver
 - **Context**: `00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md` and `30_USER.md` in `~/.gemini/`, declared in `context.fileName` of `~/.gemini/settings.json`, followed by `GEMINI.md` and `AGENTS.md` for repositories. Personal names already present in `context.fileName` are kept.
 - **Skills** in `~/.gemini/skills/`, **commands** in `~/.gemini/commands/*.toml`, **agents** in `~/.gemini/agents/ai-kit-*.md`.
 - **Guardrails** that are enabled: scripts in `~/.ai-kit/hooks/` (shared by all CLIs), declared under `hooks.BeforeTool` in groups named `ai-kit-<name>`. Your own hooks are kept.
-- **MCP servers** enabled in `overrides.json`: `ai-kit-<name>` entries under `mcpServers`.
+- **MCP servers** enabled in `overrides.toml`: `ai-kit-<name>` entries under `mcpServers`.
 - **Default setting**: `skills.enabled`, only if it is missing.
 
 ## Authentication and model

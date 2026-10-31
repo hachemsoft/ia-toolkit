@@ -31,7 +31,7 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 - **Example**: `/explain the path of the orders table up to the sales mart`.
 
 ## `/ask` — questionnaire for a business owner
-- **When**: the information is neither in the code nor in the team. Option in every profile: `"extra_commands": ["ask"]` in `overrides.json`, then `update`.
+- **When**: the information is neither in the code nor in the team. Option in every profile: `"extra_commands": ["ask"]` in `overrides.toml`, then `update`.
 - **Command**: `/ask <recipient and decision to unblock>`.
 - **Output**: a questionnaire file, one idea per question, an answer to fill in under each; the answers feed `/intent`, `spec.md` or the glossary.
 - **Needs**: nothing.
@@ -76,14 +76,14 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 - **When**: something slowed you down, surprised you or forced you to work around the kit: a command that does not do what its description says, a skill that triggers for nothing, an annoying guardrail, a wrong page, a missing tool. Right away, in one sentence, without leaving your work.
 - **Command**: `/friction <one sentence>` or `/friction` alone, and the agent asks.
 - **Output**: a line (short id, date, category, current command, sentence, plus kit version, profile, CLI and OS, added automatically) appended to `~/.ai-kit/frictions.jsonl`, on the workstation only. The sentence goes through standard input, so the shell expands nothing in it. When a version fixes it, `usage` says so, by its id.
-- **What is recorded without you**: a `doctor --live` failure (authentication, quota, model) automatically becomes an `auth` line; the usage report also counts, from the logs, unknown commands typed and repeated requests within one session. The agent offers `/friction` when you correct it, when a check is red after "done", when you give up or repeat the same request, when it works around a skill or a guardrail, or when the ceremony was out of proportion; it writes nothing without you, unless you set `"frictions": "auto"` in `overrides.json` (`"off"` turns these offers off). `/retro` also offers to record what it finds about the kit. Nothing is sent. The usage report counts them; `usage --json` exports them when the person chooses to share; `scripts/usage-aggregate.py` groups them for the [usage review](usage-review.md), which turns them into tickets.
+- **What is recorded without you**: a `doctor --live` failure (authentication, quota, model) automatically becomes an `auth` line; the usage report also counts, from the logs, unknown commands typed and repeated requests within one session. The agent offers `/friction` when you correct it, when a check is red after "done", when you give up or repeat the same request, when it works around a skill or a guardrail, or when the ceremony was out of proportion; it writes nothing without you, unless you set `"frictions": "auto"` in `overrides.toml` (`"off"` turns these offers off). `/retro` also offers to record what it finds about the kit. Nothing is sent. The usage report counts them; `usage --json` exports them when the person chooses to share; `scripts/usage-aggregate.py` groups them for the [usage review](usage-review.md), which turns them into tickets.
 - **Needs**: Python (the `~/.ai-kit/bin/friction.py` script is installed by the kit); in some CLIs, an execution permission the first time.
 - **Skill**: none; the command is enough.
 - **Example**: `/friction /test reran the whole suite when I only wanted one model`.
 
 ## Enabling a tool marked "option"
 
-One line in `~/.ai-kit/overrides.json`, then `update`: `{"extra_commands": ["handoff", "research"]}`. The command and its skills are installed; `disabled_commands` does the opposite. See [customization](customization.md).
+One line in `~/.ai-kit/overrides.toml`, then `update`: `extra_commands = ["handoff", "research"]`. The command and its skills are installed; `disabled_commands` does the opposite. See [customization](customization.md).
 
 ## Adding a tool
 A skill folder, an entry in `skills/catalog.json` with `category: tool`, a `commands/<name>.md` file in the [pivot format](format.md), a sheet here, a case in `evals/cases/`.

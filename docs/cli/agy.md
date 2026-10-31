@@ -17,8 +17,8 @@ A plugin `~/.gemini/config/plugins/ai-kit/`, validated by `agy plugin validate` 
 | `plugin.json` | name, description, kit version |
 | `rules/AGENTS.md` | always-on rules that include the four layers by path (`@[00_kit](~/.gemini/00_KIT.md)`, …, `@[30_user](~/.gemini/30_USER.md)`, or `~/.ai-kit/context/` without Gemini): a single source, no copy |
 | `agents/ai-kit-*.md` | the same agents as Gemini, those of the profile; visible in agy |
-| `hooks.json` | the two guardrails, `enabled` following `overrides.json`; the scripts understand the agy payload (`toolCall.args.CommandLine`) |
-| `mcp_config.json` | the MCP servers enabled in `overrides.json`, when there are any |
+| `hooks.json` | the two guardrails, `enabled` following `overrides.toml`; the scripts understand the agy payload (`toolCall.args.CommandLine`) |
+| `mcp_config.json` | the MCP servers enabled in `overrides.toml`, when there are any |
 
 And **command skills** in the plugin (`~/.gemini/config/plugins/ai-kit/skills/`): agy has no command files, but every skill is a `/<name>` command. For each profile command, the kit generates a skill of the same name whose body is the command prompt. They live in the plugin, not in the shared `~/.gemini/skills/`, because Gemini CLI turns every skill it finds there into a `/command` and would show each kit command twice.
 

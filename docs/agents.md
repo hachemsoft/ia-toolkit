@@ -57,14 +57,14 @@ Future access to an MCP server must use explicitly allowed tools and be validate
 ## Layout
 
 - `agents/catalog.json`: shared catalog.
-- `agents/internal/<category>/<name>.json`: role and instructions, independent of any CLI.
+- `agents/internal/<category>/<name>.md`: role and instructions, independent of any CLI.
 - `agents/defaults.json`: default tools and settings, shared by all CLIs.
-- `profiles/*.json`: agents selected per role.
+- `profiles/*.toml`: agents selected per role.
 - Output: one file per agent, in the format and location each CLI reads: `ai-kit-<name>.md` for Gemini and agy, `~/.codex/ai-kit/agents/ai-kit-<name>.toml` declared in `config.toml` for Codex, `~/.claude/agents/ai-kit-<name>.md` for Claude Code ([matrix](cli/matrice.md)).
 
 The installer generates the files, records them in its state, protects local modifications and removes old untouched outputs when the profile changes.
 
-Customization in `~/.ai-kit/overrides.json`: add `extra_agents` and `disabled_agents` as lists of catalog names (without the ai-kit prefix). Keep the file's other keys.
+Customization in `~/.ai-kit/overrides.toml`: add `extra_agents` and `disabled_agents` as lists of catalog names (without the ai-kit prefix). Keep the file's other keys.
 
 Repo-specific agents stay in that repo (`.agents/`). The same agents are installed in the Antigravity plugin; see [agy](cli/agy.md).
 

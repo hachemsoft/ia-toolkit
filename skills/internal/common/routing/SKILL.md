@@ -17,7 +17,7 @@ A plain sentence is the normal way in; a command is a shortcut to the same step.
 
 Nothing to set up first: no ticket tracker, no document to write before a first simple task. When a repo has no AGENTS.md yet and it would help (the same question keeps coming back, the checks are unknown), offer once to initialise the project context, as one grouped proposal that keeps what already exists.
 
-Propose only the commands listed under "Commands" in the kit context (00_KIT.md): those are the ones installed for this profile. The tables below give the full map; when the command that would fit is not installed (for example `/spec`, `/review`, `/explain` for an analyst), say so in one line with how to enable it: `extra_commands` in `~/.ai-kit/overrides.json`, then `update`.
+Propose only the commands listed under "Commands" in the kit context (00_KIT.md): those are the ones installed for this profile. The tables below give the full map; when the command that would fit is not installed (for example `/spec`, `/review`, `/explain` for an analyst), say so in one line with how to enable it: `extra_commands` in `~/.ai-kit/overrides.toml`, then `update`.
 
 ## Ceremony level (quick, standard, full: defined in 00_KIT.md)
 | Stakes | Level | What to do | Commands |

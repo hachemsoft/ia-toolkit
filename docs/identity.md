@@ -22,13 +22,13 @@ The git name completes the CLI account's email when both exist. OAuth tokens are
 
 ## Profile and team
 
-`setup` asks for the profile, and for the team when the kit has teams (a practices file `practices/20-<team>.md` or settings in `organization.json` `teams`), unless `--profile` is given (then `--team`, or the recorded team, applies). Nothing personal is stored in the kit repository: IT hands each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile data-analyst --team finance`.
+`setup` asks for the profile, and for the team when the kit has teams (a practices file `practices/20-<team>.md` or settings in `organization.toml` `teams`), unless `--profile` is given (then `--team`, or the recorded team, applies). Nothing personal is stored in the kit repository: IT hands each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile data-analyst --team finance`.
 
 ## Doctor checks
 
 - Saved identity and its source.
 - Mismatch between the CLI's active account and the saved email.
-- CLI active account outside the domains listed in `organization.json` (`allowed_domains`). Empty list: no check.
+- CLI active account outside the domains listed in `organization.toml` (`allowed_domains`). Empty list: no check.
 
 ## Out of scope
 

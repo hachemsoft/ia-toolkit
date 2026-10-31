@@ -30,9 +30,9 @@ A foundation for working with a coding agent as a team, on Mac and Windows. It c
 
 Requirements: Python 3.9 or later (3.11 recommended) with its standard `venv` and `pip` modules, and your CLI, provided or approved by your company. The kit installs its own libraries (the terminal interface) in its private environment only: your Python, PATH, shell and security settings are not changed, and no network is needed except to talk to the model. If something is missing or blocked, the message says what to ask IT. The CLI, its authentication and the model come from your organization's procedure and are set in the CLI; the kit does not configure them. The full step-by-step guide: [getting started](docs/getting-started.md). For IT and pilots: [validation on enterprise workstations](docs/validation.md).
 
-**Update**: download and extract the new ZIP, then run its installer the same way. It keeps your CLIs, profile, team, choices, `overrides.json` and `30_USER.md`; the old folder can be deleted, nothing points back to it. Running the installer again also offers **Update**, **Change my choices**, **Check**, **Open my personal context** and **Uninstall**. In a git clone, `update` fetches the new version (`git pull --ff-only`, never over local changes), reinstalls the package, then applies the configuration, and says which step did not work if one fails.
+**Update**: download and extract the new ZIP, then run its installer the same way. It keeps your CLIs, profile, team, choices, `overrides.toml` and `30_USER.md`; the old folder can be deleted, nothing points back to it. Running the installer again also offers **Update**, **Change my choices**, **Check**, **Open my personal context** and **Uninstall**. In a git clone, `update` fetches the new version (`git pull --ff-only`, never over local changes), reinstalls the package, then applies the configuration, and says which step did not work if one fails.
 
-**Uninstall**: run the installer and choose **Uninstall**, or `uninstall --dry-run` to see the list first, `uninstall --yes` for automation, `--remove-runtime` to also remove the private environment. Only what the kit installed goes; your personal context, `overrides.json`, backups and the CLIs' own settings stay.
+**Uninstall**: run the installer and choose **Uninstall**, or `uninstall --dry-run` to see the list first, `uninstall --yes` for automation, `--remove-runtime` to also remove the private environment. Only what the kit installed goes; your personal context, `overrides.toml`, backups and the CLIs' own settings stay.
 
 ## Profiles
 
@@ -54,11 +54,11 @@ A profile is a starting point: the installer lets you add or remove a playbook, 
 | "Check this query and its joins" | no command needed: the SQL playbook applies |
 | "Review my changes before the merge request" | `/review` |
 
-Commands and agents installed per profile: [getting started](docs/getting-started.md#3-work-one-command-per-step). Everything can be adjusted per person in `~/.ai-kit/overrides.json` (a skill, command or agent from another profile, guardrails, MCP servers): [customization](docs/customization.md).
+Commands and agents installed per profile: [getting started](docs/getting-started.md#3-work-one-command-per-step). Everything can be adjusted per person in `~/.ai-kit/overrides.toml` (a skill, command or agent from another profile, guardrails, MCP servers): [customization](docs/customization.md).
 
 ## What it is
 
-A **framework** first: the kit installs a base on the workstation that decides nothing on the team's behalf. It sets up context layers (company practices, team practices, personal preferences), read before the repo context. It provides profiles, agents, guardrails, an overrides file (overrides.json), a usage review and evals. It is tooling and precedence rules, not a procedure.
+A **framework** first: the kit installs a base on the workstation that decides nothing on the team's behalf. It sets up context layers (company practices, team practices, personal preferences), read before the repo context. It provides profiles, agents, guardrails, an overrides file (overrides.toml), a usage review and evals. It is tooling and precedence rules, not a procedure.
 
 Within this framework, a **workflow**: one command per step of the development cycle (`/intent`, `/spec`, `/build`, `/test`, `/review`, `/ship`, `/diagnose`) and a chain of artifacts (`intent.md`, `spec.md`, `plan.md`, review findings, merge request (MR) description). Ceremony matches the stakes, in three levels the agent states on the first line of its reply (`Level: quick`, `standard` or `full`): a small local change is done and checked with no document, a small feature gets a short alignment then test-first, and only a large, fuzzy or production change runs intent, spec, plan and your acceptance before code. These are prompts and skills the model follows, plus two deterministic guardrails for what must be guaranteed. See [workflow](docs/workflow.md).
 

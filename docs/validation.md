@@ -13,7 +13,7 @@ The kit targets people working on Windows or macOS with a standard account: no a
 | `30_USER.md` | the installer shows its path and offers to open it in Notepad | the same, in the default text editor (TextEdit unless you chose another) |
 | Use | start a new session of your CLI | the same |
 
-Update: download and extract the new ZIP, then run the installer the same way. CLIs, profile, team, choices, `overrides.json` and `30_USER.md` are kept. The previous folder can be deleted: nothing installed points to it. Uninstall: run the installer and choose **Uninstall**.
+Update: download and extract the new ZIP, then run the installer the same way. CLIs, profile, team, choices, `overrides.toml` and `30_USER.md` are kept. The previous folder can be deleted: nothing installed points to it. Uninstall: run the installer and choose **Uninstall**.
 
 **No double-click launcher on macOS.** A file extracted from a ZIP downloaded with a browser carries the quarantine attribute. Gatekeeper refuses an unsigned script (`spctl --assess` answers "rejected, no usable signature"), and a script cannot be notarized on its own. Getting past this would mean changing a security decision ("Open Anyway"), which the kit never asks for. `sh scripts/bootstrap.sh` reads the file instead of opening it as an application, so quarantine does not apply and there is nothing to authorise. The terminal path is therefore the reliable one.
 
@@ -30,10 +30,10 @@ Update: download and extract the new ZIP, then run the installer the same way. C
 | No false success | a package that does not install configures nothing; an interrupted or failed installation is detected and started again; one run at a time | `test_failed_package_install_configures_nothing_and_is_detected_next_time`, `test_interrupted_install_is_started_again`, `test_a_second_run_waits_for_the_first` |
 | Python absent, too old or blocked: a precise message for IT | launcher message "What to ask IT support" | `test_python_absent_says_what_to_ask_it_support` (3 systems), `test_old_or_blocked_python_is_explained` (Mac, Linux) |
 | Paths with spaces and accents | no assumption on the kit or home folder path | the launcher tests run from `Mes documents é/Kit IA été/ai-kit 1` |
-| The extracted folder can be deleted | the package lives in the private environment; hooks, scripts and the `overrides.json` schema are copied to `~/.ai-kit` | `test_setup_then_the_extracted_folder_can_be_deleted` |
+| The extracted folder can be deleted | the package lives in the private environment; hooks, scripts and the `overrides.toml` schema are copied to `~/.ai-kit` | `test_setup_then_the_extracted_folder_can_be_deleted` |
 | Uninstall removes only the kit's files | managed files recognised as unchanged, kit entries and blocks; personal files and a hand-edited file kept | `UninstallTests` |
-| Existing configuration preserved: proxy, authentication, CLI settings, `30_USER.md`, `overrides.json` | managed keys and blocks only; a hand-edited managed file is refused, not overwritten; backup before writing | `test_new_version_from_another_folder_keeps_personal_settings` and the installation tests |
-| No secret kept or shown | frictions are redacted; `doctor` flags a key or token written in `30_USER.md` or `overrides.json` without printing it; diagnoses never print environment values | `SecretsAndNetworkTests` |
+| Existing configuration preserved: proxy, authentication, CLI settings, `30_USER.md`, `overrides.toml` | managed keys and blocks only; a hand-edited managed file is refused, not overwritten; backup before writing | `test_new_version_from_another_folder_keeps_personal_settings` and the installation tests |
+| No secret kept or shown | frictions are redacted; `doctor` flags a key or token written in `30_USER.md` or `overrides.toml` without printing it; diagnoses never print environment values | `SecretsAndNetworkTests` |
 | `30_USER.md` stays plain text | native plain-text editor; a file saved as rich text, renamed or not UTF-8 is detected and not applied | `PersonalContextTests` |
 
 ## What CI proves
@@ -53,7 +53,7 @@ To do on a Windows and a macOS workstation, with a **standard account**, for eac
 | # | Criterion | How | Expected |
 | --- | --- | --- | --- |
 | 1 | Standard account | install from the ZIP | no administrator prompt (UAC, macOS password) at any time |
-| 2 | Install and update without elevation | install version N, then N+1 from a new ZIP extracted elsewhere; delete the first folder | profile, team, `overrides.json`, `30_USER.md` kept; `doctor` green |
+| 2 | Install and update without elevation | install version N, then N+1 from a new ZIP extracted elsewhere; delete the first folder | profile, team, `overrides.toml`, `30_USER.md` kept; `doctor` green |
 | 3 | Spaces and accents | extract to `Documents\Kit IA été` (Windows), `Documents/Kit IA été` (macOS) | install OK |
 | 4 | Compatible Python present | the company Python | install OK |
 | 5 | Python absent | a workstation or session without Python | message "What to ask IT support", nothing written |
@@ -67,7 +67,7 @@ To do on a Windows and a macOS workstation, with a **standard account**, for eac
 | 13 | Python without `venv` or `pip` (some Linux or trimmed company builds) | run the installer | the message names the missing module and what to ask IT; nothing written in the CLIs' folders |
 | 14 | Guided screens | run the installer in the standard terminal (Windows Terminal or the Command Prompt, macOS Terminal); use the arrows, Space, Enter, then Ctrl+C at the review | readable, keys work; after Ctrl+C, no CLI configuration changed |
 | 15 | Git clone behind the company index | `git clone`, then the launcher, with the company's pip configuration | the package builds from the company index; nothing forced to PyPI |
-| 16 | Uninstall | run the installer, **Uninstall**, then `uninstall --remove-runtime --yes` | only the kit's files go; `30_USER.md`, `overrides.json` and the CLIs' own settings stay; then the private environment goes |
+| 16 | Uninstall | run the installer, **Uninstall**, then `uninstall --remove-runtime --yes` | only the kit's files go; `30_USER.md`, `overrides.toml` and the CLIs' own settings stay; then the private environment goes |
 
 ## What IT may have to provide or allow
 

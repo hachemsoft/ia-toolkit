@@ -38,6 +38,6 @@ Codex runs a hook only after it has been approved. The kit installs one by defau
 
 ## Codex troubleshooting
 
-- **"Kit block edited by hand"**: a line was changed between the `ai-kit` markers. Move the change outside the block (or into `30_USER.md` or `overrides.json`), remove the block, then run `update`.
+- **"Kit block edited by hand"**: a line was changed between the `ai-kit` markers. Move the change outside the block (or into `30_USER.md` or `overrides.toml`), remove the block, then run `update`.
 - **"hooks.PreToolUse already defined in another form"**: your `config.toml` declares its hooks in a form other than `[[hooks.PreToolUse]]`. The kit does not rewrite your settings; it refuses.
 - **The guardrails block nothing**: they were not approved. Restart Codex in interactive mode and answer "Trust".

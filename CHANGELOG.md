@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.37.0
+
+The files people write are easier to write:
+- Your settings are `~/.ai-kit/overrides.toml`, in TOML: real `#` comments, no comma to forget, sections for the guardrails and MCP servers (`[hooks]`, `[mcp.github.server]`). A new file starts from a commented template with examples. The editor still completes and checks the keys: the first line, `#:schema …`, names the schema copied in `~/.ai-kit/schemas/`.
+- Your `overrides.json` becomes `overrides.toml` at the next `setup` or `update`: the same settings (checked by reading them back before anything is written), its `_` explanations as `#` comments; the JSON file is kept in that update's backup. If both files exist, the TOML is read and the installer says so.
+- "Change my choices" in the installer now changes only the lists you chose in the file, and keeps your comments and your other keys.
+- `organization.toml` and the profiles (`profiles/*.toml`) are TOML too, with comments that say why; the CI checks them against the same schemas.
+- The agents are Markdown files with a front matter, like the skills and the commands (`agents/internal/<category>/<name>.md`): their instructions read and review as text. What each CLI receives is byte for byte the same.
+- A mistake in a TOML file is reported with its line, its column, the line itself and a plain hint (a text without quotes, a key written twice, a list not closed).
+- Before Python 3.11, the kit reads TOML with `tomli`, installed by the launcher and shipped in the release ZIP.
+- The markers of the managed blocks in `~/.codex/` and `~/.claude/CLAUDE.md` still say "overrides.json": they identify the blocks already installed and never change.
+
 ## 0.36.2
 
 Reported frictions fixed (frictions: 6d941d, d8a974, ebbdb2):
