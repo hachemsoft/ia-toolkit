@@ -27,13 +27,13 @@ Activated when the task fits; the commands chain them.
 
 ## Reading the base skills
 The base skills were written for other tools; map them silently:
-- "Skill tool", "activate the X skill": the skill activation tool, never `invoke_agent`; if it is missing, follow the command's instructions directly.
-- "sub-agent", "background agent", "dispatch": use the installed `ai-kit-*` agents; otherwise do the work yourself.
-- `CLAUDE.md`: read and write `AGENTS.md` (or `GEMINI.md` if the repo uses it). Never create a `CLAUDE.md`.
-- "PR", "pull request": the repo's term and flow (merge request on GitLab, pull request on GitHub, or as AGENTS.md says); "GitHub": the host and tracker the repo uses. No tracker is needed to work.
+- "Skill tool", "activate the X skill": the skill activation tool, never `invoke_agent`; if missing, follow the command's instructions directly.
+- "sub-agent", "background agent", "dispatch": the installed `ai-kit-*` agents, or do the work yourself.
+- `CLAUDE.md`: read and write `AGENTS.md` (or `GEMINI.md` if the repo has it). Never create a `CLAUDE.md`, except the one-line `@AGENTS.md` init-project-context proposes for Claude Code.
+- "PR", "pull request": the repo's term and flow (merge request on GitLab, pull request on GitHub, or as AGENTS.md says); "GitHub": the repo's host and tracker; none is needed.
 - `/setup-workflow`, `/pr`, `/tdd`, `/code-review`, `/implement-spec`: the skills `setup-workflow`, `mr`, `tdd`, `code-review`, `implement-spec`, not commands.
 - `disable-model-invocation: true`: the skill activates only when the person asks for it.
-- A bash script from a skill: on Windows, give the PowerShell equivalent or manual steps.
+- A skill's bash script, on Windows: give the PowerShell equivalent or manual steps.
 
 ## Artifacts and git
 The repo's conventions (AGENTS.md) come first. Otherwise: one folder per change, `docs/sdlc/<YYYY-MM-DD>-<slug>/`; `spec.md` and `REVIEW.md` committed, `intent.md` and `plan.md` local notes ignored by git. Commit or push only with the person's agreement in this session.

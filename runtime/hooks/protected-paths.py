@@ -89,9 +89,43 @@ SHELL_TOOLS = ('run_shell_command', 'run_command', 'shell', 'local_shell', 'exec
 WRITE_COMMANDS = re.compile(r'(\btee\b|\bsed\b[^|;&]*\s(-[a-z]*i\b|--in-place)|\b(cp|mv|rm|chmod|chown|truncate|ln|dd|install|del|erase)\b'
                             r'|\b(Set-Content|Add-Content|Out-File|Remove-Item|Move-Item|Copy-Item|Rename-Item)\b)', re.I)
 
+SHELLS = {'sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'pwsh', 'powershell'}
+HEREDOC = re.compile(r'<<-?\s*["\']?([A-Za-z_][A-Za-z0-9_]*)["\']?')
+
+def without_data_heredocs(text):
+    """The command without the bodies of heredocs given to a program that is not a shell (python3 - <<EOF): that text is
+    data or another language, not shell commands. A heredoc given to sh, bash, pwsh… is kept: it runs as commands."""
+    out, skip_until = [], None
+    for line in text.split('\n'):
+        if skip_until is not None:
+            if line.strip() == skip_until:
+                skip_until = None
+                out.append(line)
+            continue
+        out.append(line)
+        match = HEREDOC.search(line)
+        if match:
+            words = line[:match.start()].split()
+            # sudo bash <<EOF, cd x && sh <<EOF: any shell before the heredoc runs its body.
+            if not any(w.strip('"\'').rsplit('/', 1)[-1].lower() in SHELLS for w in words):
+                skip_until = match.group(1)
+    return '\n'.join(out)
+
+def shell_segments(command):
+    """The simple commands of a shell line: split on new lines, ;, &&, ||, | and &, after joining continued lines."""
+    text = re.sub(r'(\\|`)\r?\n', ' ', command)
+    return [s for s in re.split(r'\r?\n|;|&&|\|\||\||&', without_data_heredocs(text)) if s.strip()]
+
 def shell_config_write(command):
-    """Reason for refusal when a shell command writes to the kit or CLI configuration (simple cases: redirection, tee, sed -i, cp, mv, rm…)."""
-    text = command.replace('\\', '/')
+    """Reason for refusal when one simple command of a shell line writes to the kit or CLI configuration: a redirection to
+    it, or a writing command (tee, sed -i, cp, mv, rm…) naming it in the same simple command."""
+    for segment in shell_segments(command):
+        reason = segment_config_write(segment.replace('\\', '/'))
+        if reason:
+            return reason
+    return None
+
+def segment_config_write(text):
     for entry in CONFIG_PATHS + ('.ai-kit/protected-paths',):
         name = re.escape(entry.rstrip('/'))
         if not re.search(name, text, re.I):

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.36.1
+
+- The `protected-paths` guardrail judges a shell line one simple command at a time (split on `;`, `&&`, `||`, `|`, new lines), and the text of a heredoc given to a program that is not a shell is data: a command that only quotes a protected path next to an unrelated `sed -i` or `rm` is no longer refused. A write to the configuration in the same simple command, through a pipe, a continued line or a heredoc run by a shell is still blocked.
+- `00_KIT.md` no longer contradicts the Claude Code setup: "never create a `CLAUDE.md`" now names its one exception, the one-line `@AGENTS.md` that "Initialize the project context" proposes for Claude Code.
+- `/friction` works in Claude Code (the script refused `--cli claude`, so nothing was recorded).
+- Gemini CLI: one of your skills named like a kit command now gives the kit command the prefix too (Gemini makes a command of every skill, and both were renamed).
+- Documentation checked page by page against the code: changing CLIs (a plain `update` keeps the CLIs chosen; detection is for the first installation), what remained of authentication and model in overrides, names already taken, usage and eval examples, the Codex agent file names.
+
 ## 0.36.0
 
 Authentication and model left to each CLI:
