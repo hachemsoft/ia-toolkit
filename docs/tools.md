@@ -31,7 +31,7 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 - **Example**: `/explain the path of the orders table up to the sales mart`.
 
 ## `/ask` — questionnaire for a business owner
-- **When**: the information is neither in the code nor in the team. Option for both profiles: `"extra_commands": ["ask"]` in `overrides.json`, then `update`.
+- **When**: the information is neither in the code nor in the team. Option in every profile: `"extra_commands": ["ask"]` in `overrides.json`, then `update`.
 - **Command**: `/ask <recipient and decision to unblock>`.
 - **Output**: a questionnaire file, one idea per question, an answer to fill in under each; the answers feed `/intent`, `spec.md` or the glossary.
 - **Needs**: nothing.
@@ -52,7 +52,7 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 - **Output**: a handover file, `docs/sdlc/handoff-<date>.md` or the location the repo reserves for these notes (local note, not committed unless requested): goal, state, decisions and reasons, open questions, exact next steps.
 - **Skill**: `handover`.
 
-## `/research` — primary sources (option)
+## `/research` — primary sources (Architect; option elsewhere)
 - **When**: a documentation or API fact to establish, long reading to delegate.
 - **Command**: `/research <question>`.
 - **Output**: `docs/research/<topic>.md` with every claim sourced.
@@ -65,7 +65,7 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 - **Output**: an interactive bash script. On Windows, the kit asks the model to give the PowerShell equivalent or the manual steps.
 - **Skill**: `manual-steps`.
 
-## `/audit` — code health (option, developers)
+## `/audit` — code health (Architect; option elsewhere)
 - **When**: spare time to make the code easier for an agent to work with.
 - **Command**: `/audit [folder]`.
 - **Output**: HTML report in the temporary folder, top-priority recommendation, idea to pick up with `/intent`.
@@ -77,7 +77,7 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 - **Command**: `/friction <one sentence>` or `/friction` alone, and the agent asks.
 - **Output**: a line (short id, date, category, current command, sentence, plus kit version, profile, CLI and OS, added automatically) appended to `~/.ai-kit/frictions.jsonl`, on the workstation only. The sentence goes through standard input, so the shell expands nothing in it. When a version fixes it, `usage` says so, by its id.
 - **What is recorded without you**: a `doctor --live` failure (authentication, quota, model) automatically becomes an `auth` line; the usage report also counts, from the logs, unknown commands typed and repeated requests within one session. The agent offers `/friction` when you correct it, when a check is red after "done", when you give up or repeat the same request, when it works around a skill or a guardrail, or when the ceremony was out of proportion; it writes nothing without you, unless you set `"frictions": "auto"` in `overrides.json` (`"off"` turns these offers off). `/retro` also offers to record what it finds about the kit. Nothing is sent. The usage report counts them; `usage --json` exports them when the person chooses to share; `scripts/usage-aggregate.py` groups them for the [usage review](usage-review.md), which turns them into tickets.
-- **Needs**: Python (the `~/.ai-kit/bin/friction.py` script is installed by the kit); in agy, an execution permission the first time.
+- **Needs**: Python (the `~/.ai-kit/bin/friction.py` script is installed by the kit); in some CLIs, an execution permission the first time.
 - **Skill**: none; the command is enough.
 - **Example**: `/friction /test reran the whole suite when I only wanted one model`.
 

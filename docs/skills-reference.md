@@ -1,6 +1,6 @@
 # Skills reference
 
-Full list of the catalog (`skills/catalog.json`). Users do not need to know these names: they go through the commands. This page is for people who want to see what is underneath or extend the kit.
+Full list of the catalog (`skills/catalog.json`). Users do not need to know these names: they go through the commands. This page is for people who want to see what is underneath or extend the kit. On Claude Code the kit's skills are installed as `ai-kit-<name>` (`skill_prefix`); elsewhere a kit skill or command takes that prefix only when one of your own already has its name.
 
 Categories: `workflow` (an SDLC step), `tool` (utility outside the flow), `domain` (domain playbook: Java, infrastructure, architecture, Data…), `reference` (vocabulary consulted by other skills), `setup` (repository setup). Tiers: `core` installed in all profiles (checked by a test), `profile` depending on the profile, `optional` through `extra_skills` or `extra_commands`.
 
@@ -24,7 +24,7 @@ Categories: `workflow` (an SDLC step), `tool` (utility outside the flow), `domai
 | `wayfinder` | workflow | optional | `/map` | Map a body of work too large for one session into decision tickets, resolved one by one. |
 | `implement` | workflow | core | `/build` | Implement a ticket or a spec, with TDD, then review. |
 | `implement-spec` | workflow | optional | — | Implement a whole spec: tickets read as a graph, subagents in parallel, integration branch. |
-| `code-review` | workflow | core | `/review` | Review a diff from a fixed point on two axes: repository standards and compliance with the spec. |
+| `code-review` | workflow | core | `/review` | Review changes, committed or not (branch commits, staged, unstaged, new files), on bugs, security, standards and the spec when one exists; one severity scale. |
 | `ticket-sorting` | workflow | optional | `/triage` | Move incoming tickets through a triage state machine until they are ready for an agent. |
 | `retrospective` | tool | profile | `/retro` | Retrospective of a work session: improve the agent's environment, not the code. |
 | `handover` | tool | optional | `/handoff` | Compact the conversation into a handoff document for another agent or session. |
@@ -42,8 +42,8 @@ Categories: `workflow` (an SDLC step), `tool` (utility outside the flow), `domai
 | `java-change` | domain | profile | — | Develop or review a Java feature in an existing repository (Maven or Gradle, Spring or other). |
 | `infra-change` | domain | profile | — | Prepare or review an infrastructure or delivery change: Terraform, Kubernetes, Helm, CI/CD pipeline, Dockerfile, cloud configuration. |
 | `architecture-decision` | domain | profile | — | Investigate and document an architecture decision (ADR): options, criteria, consequences, reversibility. |
-| `sql-review` | domain | profile | — | Review BigQuery or dbt SQL and investigate suspicious aggregations, duplicates or business results. |
-| `dbt-model-change` | domain | profile | — | Create, change, test or document a dbt model on BigQuery. |
+| `sql-review` | domain | profile | — | Review SQL, plain or in dbt, on any warehouse, and investigate suspicious aggregations, duplicates or business results. |
+| `dbt-model-change` | domain | profile | — | Create, change, test or document a dbt model, on any adapter (BigQuery specifics when the project uses it). |
 | `bigquery-query-review` | domain | profile | — | Optimize a slow or costly BigQuery query and check scans, partitions, joins and plan. |
 | `kpi-definition` | domain | profile | — | Define or redefine a KPI before computing it: grain, population, period, exclusions, source of truth, owner. |
 | `incremental-replay` | domain | profile | — | Replay or fix an incremental model: unique key, late data, reprocessing window, idempotence. |

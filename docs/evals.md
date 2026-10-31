@@ -13,7 +13,7 @@ python3 evals/run.py --confirm-paid-run --home ./sandbox-user --only guide-route
 
 The run measures the kit installed in that home folder, not the repository: to evaluate a change, `update` from it first. The report's `installed_kit` says which version was measured.
 
-Each case runs in a temporary copy of a fixture (`evals/fixtures/`), in default approval mode with the `evals/policy.toml` policy (writes and shell denied): the agent writes no file. Options: `--cli gemini|agy|codex`, `--model`, `--approval-mode`, `--timeout`, `--retries` (0 by default, at most 2, only after an infrastructure error). Exit code 1 if a case fails, 2 if none could run; `--report` writes the details as JSON with the versions of the kit and the CLI, the model and the settings.
+Each case runs in a temporary copy of a fixture (`evals/fixtures/`), with writes and shell denied: Gemini CLI in default approval mode with the `evals/policy.toml` policy, Codex in a read-only, ephemeral `exec`, Claude Code in print mode without `Bash`, `Write` and `Edit`, agy in print mode where tools that need a permission are refused. The agent writes no file. Options: `--cli gemini|agy|codex|claude`, `--model`, `--approval-mode` (Gemini only), `--timeout`, `--retries` (0 by default, at most 2, only after an infrastructure error). Exit code 1 if a case fails, 2 if none could run; `--report` writes the details as JSON with the versions of the kit and the CLI, the model and the settings.
 
 Cost: every real run calls the model at least once per case and is billed by the provider. Without `--confirm-paid-run` the runner refuses; `AI_KIT_NO_LIVE=1` refuses even with it. A timeout or a turn limit bounds time, not cost: choose the cases (`--only`) before running.
 
@@ -27,11 +27,11 @@ One case per incident or repeated error: when the agent gets it wrong, the promp
 
 ## In CI
 
-`.github/workflows/agent-evals.yml` never runs on its own: no trigger on merge requests, pushes or a schedule. Someone starts it by hand (workflow_dispatch) and ticks `confirm_paid_run`, off by default; the job then installs the kit in a temporary folder and runs the suite on Gemini CLI, at the version given in `cli_version` for a reference campaign. It expects a `GEMINI_API_KEY` secret. The model-free tests run on every push in `portability.yml`, with `AI_KIT_NO_LIVE=1`. Changing the workflow in a branch does not change the copy already on the remote default branch: until the change is merged there, the old triggers stay active. agy and Codex are evaluated on a signed-in workstation, with `--cli agy` or `--cli codex`.
+`.github/workflows/agent-evals.yml` never runs on its own: no trigger on merge requests, pushes or a schedule. Someone starts it by hand (workflow_dispatch) and ticks `confirm_paid_run`, off by default; the job then installs the kit in a temporary folder and runs the suite on Gemini CLI, at the version given in `cli_version` for a reference campaign. It expects a `GEMINI_API_KEY` secret. The model-free tests run on every push in `portability.yml`, with `AI_KIT_NO_LIVE=1`. Changing the workflow in a branch does not change the copy already on the remote default branch: until the change is merged there, the old triggers stay active. agy, Codex and Claude Code are evaluated on a signed-in workstation, with `--cli agy`, `--cli codex` or `--cli claude`.
 
 ## Limits
 
-Gemini CLI ([its page](cli/gemini.md)): in non-interactive mode, version 0.65 does not expose the `activate_skill` tool, so the cases measure what the command prompts achieve on their own, not the skills. `plan` mode also blocks skills; the runner uses the default approval mode with `evals/policy.toml` (writes and shell denied). If the default model loops on your access ("Model fallback activated"), force the same model as in `overrides.json` with `--model`.
+Gemini CLI ([its page](cli/gemini.md)): in non-interactive mode, version 0.65 does not expose the `activate_skill` tool, so the cases measure what the command prompts achieve on their own, not the skills. `plan` mode also blocks skills; the runner uses the default approval mode with `evals/policy.toml` (writes and shell denied). If the default model loops on your access ("Model fallback activated"), force a model with `--model` (the kit sets none: the CLI's own setting applies otherwise).
 
 Model responses vary; the criteria are deliberately broad and check facts (a command cited, a term used, a file absent). A case that fails one time in ten says something about the prompt or the skill, not only about the model.
 

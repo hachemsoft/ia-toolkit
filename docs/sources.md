@@ -13,6 +13,8 @@ Documentation for the supported CLIs, to reread when a version changes. The veri
 
 **Codex CLI**: https://developers.openai.com/codex/ (`AGENTS.md` context, `config.toml`, skills, hooks); what the kit uses from it is described in [Codex CLI](cli/codex.md).
 
+**Claude Code**: https://code.claude.com/docs/ (`CLAUDE.md` memory and imports, skills, slash commands, subagents, hooks, MCP); what the kit uses from it is described in [Claude Code](cli/claude-code.md).
+
 ## Inspirations
 
 - **Workflow**: ["The AI-native SDLC playbook"](https://claude.com/resources/articles/the-ai-native-sdlc-playbook), Anthropic. Six steps (Plan, Design, Build, Test, Deploy, Maintain), each closed by a versioned artifact that the next step reads: `intent.md`, `spec.md`, `plan.md`, the diff and its tests, the merge request (MR) and its review findings, the incident report that becomes an `intent.md` again.

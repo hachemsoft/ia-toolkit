@@ -12,7 +12,7 @@ Three levels, defined once in the kit context (`00_KIT.md`) and used by every co
 | **standard** | small feature, a few files | a short alignment in the conversation, then test-first; no `plan.md` unless asked | `/build`, `/test`, `/ship` |
 | **full** | large or unclear change; production, irreversible or sensitive data | intent, spec, plan, acceptance before code, verification between phases; full review | `/intent`, `/spec`, `/build` per ticket, `/review full`, `/ship`, guardrails active |
 
-Each command opens its reply with the level it chose, on a fixed first line (`Level: quick`, `Level: standard` or `Level: full`, then why), even when it then asks a question or is blocked. A go-ahead already given in the conversation is not asked again. `/review` accepts `quick` or `full` as an argument.
+A reply to a change opens with the level chosen, on a fixed first line (`Level: quick`, `Level: standard` or `Level: full`, then why), even when the agent then asks a question or is blocked: the kit context requires it, and so do `/build` and `/intent`. The other steps state their level in one line. A go-ahead already given in the conversation is not asked again. `/review` accepts `quick` or `full` as an argument.
 
 ## The steps
 
@@ -31,7 +31,7 @@ The installed commands depend on the profile: see the [profile table](getting-st
 | Maintain | `/diagnose <symptom>` | proven cause, regression test | red/green signal before any fix (a failing test; for data, an assertion query; for infrastructure, a plan or a dry run); the finding can become an `intent.md` again |
 | Maintain | `/triage` (developers) | tickets ready for an agent | triage state machine for incoming tickets |
 
-The templates for `intent.md`, `spec.md`, `plan.md`, `REVIEW.md` and `AGENTS.md` are installed with the `init-project-context` skill. Location convention: one folder per change, `docs/sdlc/<AAAA-MM-JJ>-<slug>/`, holding the three artifacts. `REVIEW.md` stays at the root. A repo can document another convention in `AGENTS.md`.
+The templates for `intent.md`, `spec.md`, `plan.md`, `REVIEW.md` and `AGENTS.md` are installed with the `init-project-context` skill. Location convention: one folder per change, `docs/sdlc/<YYYY-MM-DD>-<slug>/`, holding the three artifacts. `REVIEW.md` stays at the root. A repo can document another convention in `AGENTS.md`.
 
 **What is versioned.** `spec.md` and `REVIEW.md` are committed: the spec is the contract the reviewer reads in the MR, and `REVIEW.md` holds its review axes. `intent.md` and `plan.md` are local working notes, ignored by git (`init-project-context` proposes the `.gitignore` lines): nobody wants to reread an interview or a work plan in the history, and they change at each iteration. A team that prefers to version everything says so in `AGENTS.md`, and `/review` then also compares against `plan.md`. In every case, the agent never commits without approval.
 
@@ -44,8 +44,8 @@ Domain skills, activated by the model when the task calls for them and chained b
 | Playbook | Chained by | Role |
 | --- | --- | --- |
 | `kpi-definition` | `/intent` | grain, population, period, exclusions, source of truth, owner, before any query |
-| `sql-review` | `/diagnose` | grain, join cardinalities, NULL, dates, suspicious results |
-| `dbt-model-change` | `/build` | test-first with `dbt test` on the development target |
+| `sql-review` | `/diagnose`, `/review` | grain, join cardinalities, NULL, dates, suspicious results |
+| `dbt-model-change` | `/build`, `/test`, `/review` | test-first with `dbt test` on the development target; descendants of changed models as cross-area impact |
 | `incremental-replay` | `/build`, `/diagnose` | unique key, late data, reprocessing window, replay idempotence |
 | `bigquery-query-review` | `/build`, `/diagnose` | preserved semantics, partitions, execution plan |
 | `bigquery-cost-review` | `/build`, `/diagnose` | bytes, slots, frequency, monthly cost, budget before execution |

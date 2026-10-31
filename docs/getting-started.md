@@ -124,6 +124,7 @@ The rule that avoids running everything: **ceremony matches the stakes**, in thr
 - `/help` lists the commands with English descriptions; the agent answers in your language. Artifacts keep English headings; their content is in the team's language.
 - `intent.md` and `plan.md` are local notes, ignored by git; `spec.md` and `REVIEW.md` are versioned, unless the repo's `AGENTS.md` sets another convention. The agent never commits without your approval.
 - A test changed by the agent is said and explained: it adapts a test only when you changed the expected behaviour on purpose, never to hide a regression.
+- If one of your own skills or commands already has a kit name, the kit's is installed with a prefix (`/ai-kit-review`, `ai-kit-tdd`); the installer says which, and the kit context names them. In Claude Code, the kit's skills always carry the prefix.
 - Your profile's domain playbooks (Java, infrastructure, architecture, SQL and dbt…) activate on their own when the task calls for them; you do not need to name them.
 - In agy, a permission request before a shell command is normal: answer it; "always allow" saves your choice in your agy settings, and the kit does not touch them.
 - Without a connected MCP server, the agent does not read your real data: provide the extracts, schemas or examples it needs, or have the platform team configure the connection.

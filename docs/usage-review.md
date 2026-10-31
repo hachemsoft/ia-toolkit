@@ -34,15 +34,15 @@ sh scripts/bootstrap.sh usage --min-sessions 5 --min-prompts 20
 The report reads, locally and without sending anything, the session logs each CLI already writes on the workstation (locations in the [matrix](cli/matrice.md)). Over the window, it counts:
 
 - kit commands typed, by name;
-- skills activated by the model, when the CLI logs them (see its page);
+- skills activated by the model;
 - kit agents called;
-- errors;
+- errors (when the CLI logs them, see the [matrix](cli/matrice.md));
 - frictions logged with `/friction` (`~/.ai-kit/frictions.jsonl`: date, category, command, one sentence), counted by category;
 - then, by difference, the installed commands, skills and agents that were never used.
 
 It contains neither prompt text, nor repo file names, nor the person's identity. The JSON can be shared as is.
 
-**What the logs can show.** Each CLI's adapter declares what its logs contain (`OBSERVES`; per CLI in the [matrix](cli/matrice.md)): some logs show the commands typed, the skills activated and the agents called; others hold the typed prompts only, so commands are visible but skills and agents are not. A skill or an agent is reported unused only when every session of the window comes from a CLI whose logs show it; otherwise the report lists it as "not observable" and recommends nothing about it. Ten sessions of a CLI that logs prompts only, without any skill event, say nothing about the skills.
+**What the logs can show.** Each CLI's adapter declares what its logs contain (`OBSERVES`; per CLI in the [matrix](cli/matrice.md)): every supported CLI's logs show the commands typed, the skills activated and the agents called; errors are not in every CLI's logs. A skill or an agent is reported unused only when every session of the window comes from a CLI whose logs show it; otherwise the report lists it as "not observable" and recommends nothing about it. Sessions of a CLI that would log prompts only, without any skill event, would say nothing about the skills.
 
 **Data threshold.** Below ten sessions and fifty prompts over the window (change with `--min-sessions` and `--min-prompts`), the report shows the counts but recommends nothing: too little data to conclude. Above it, it lists the candidates to move to optional: core skills of category `workflow` or `tool` that were never activated, and that are required neither by a typed command nor by an activated skill (the catalog's `requires` dependencies are followed). A skill never activated but required by `/intent`, which itself was typed, is not a candidate.
 
@@ -59,8 +59,9 @@ Commands typed: intent ×9, build ×7, test ×6, guide ×4, diagnose ×2, fricti
 Skills activated: grill-with-docs ×9, implement ×7, tdd ×6, dbt-model-change ×5, sql-review ×2
 Agents called: ai-kit-verifier ×5
 Never used: 2 commands, 9 skills, 2 agents.
+Unknown commands typed: /spec ×1 | requests repeated within one session: 1
 Frictions logged: 2 (docs ×1, command ×1); /friction to log one.
-Candidates to remove from the core (never activated, not required by a used command): retro
+Candidates to remove from the core (never activated, not required by a used command): teach
 Procedure: docs/usage-review.md. The logs read are local; nothing is sent.
 ```
 
@@ -68,9 +69,9 @@ Each person exports (`usage --json prenom.json`) and shares if they want to; the
 
 ```
 $ python3 scripts/usage-aggregate.py releves/*.json
-# Aggregated usage report
+# Aggregated usage summary
 
-6 workstations | 71 sessions | 412 prompts | 9 errors
+6 machines | 71 sessions | 412 prompts | 9 errors
 
 ### Commands typed
 | Name | Total |
@@ -79,20 +80,29 @@ $ python3 scripts/usage-aggregate.py releves/*.json
 | `build` | 33 |
 | `test` | 29 |
 ...
-### Core candidates never activated on any workstation
-`retrospective`
+### Core candidates never activated on any machine
+
+`teach`
 
 ### Frictions (7)
-| Category | Command | Friction |
+Groups of two or more frictions (same category, same command): one ticket each.
+
+| Category | Command | Count |
 | --- | --- | --- |
-| command | /test | reruns the whole suite when I wanted a single model |
-| command | /test | does not find the tests when AGENTS.md is missing |
-| docs | /intent | the page says "spec" but the command writes intent.md |
+| command | /test | 2 |
+
+Measured signals: unknown commands typed /spec ×2; requests repeated within one session: 3.
+
+| Id | Category | Command | Friction | Context |
+| --- | --- | --- | --- | --- |
+| `a1b2c3` | command | /test | reruns the whole suite when I wanted a single model | mac 0.36.0 data-analyst |
+| `d4e5f6` | command | /test | does not find the tests when AGENTS.md is missing | windows 0.36.0 data-developer |
+| `0a9b8c` | docs | /intent | the page says "spec" but the command writes intent.md | mac 0.36.0 general |
 ...
 By category: command ×4, docs ×2, guardrail ×1
 ```
 
-Reading: two frictions on `/test` say the same thing, so that is a ticket; `retrospective`, never activated on six workstations, is a candidate to move to optional, unless someone explains in one line why it stays.
+Reading: two frictions on `/test` say the same thing, so that is a ticket; `teach`, never activated on six machines, is a candidate to move to optional, unless someone explains in one line why it stays.
 
 ## When to hold it
 

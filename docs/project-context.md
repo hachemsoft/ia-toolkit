@@ -38,11 +38,11 @@ Keeping them current: ask the agent in the repo ("add this term to the glossary"
 | `docs/agents/issue-tracker.md` | issue tracker and triage labels, only when `setup-workflow` has been run | `setup-workflow`, `/map`, `/triage` |
 | `.agents/skills/<name>/` | repo-specific skills, with names of their own (a kit skill's name gives different results per CLI) | the repo team |
 
-A repo that already has a CLI-specific context file keeps it; that file points to `AGENTS.md` to avoid duplication (an `@AGENTS.md` line, for example; see the CLI's page in the [matrix](cli/matrice.md)).
+A repo that already has a CLI-specific context file keeps it; that file points to `AGENTS.md` to avoid duplication (an `@AGENTS.md` line, for example; see the CLI's page in the [matrix](cli/matrice.md)). For a CLI that does not read `AGENTS.md` on its own, "Initialize the project context" proposes that one-line file.
 
 ## First setup
 
-In the repo, ask "Initialize the project context". The `init-project-context` skill reads the repo, proposes `AGENTS.md`, `GLOSSARY.md` and `REVIEW.md` from its templates, proposes the `.gitignore` lines for `intent.md` and `plan.md`, waits for a confirmation per file and never replaces an existing file. It does not copy the artifact templates into the repo and does not create an empty ADR: the `docs/adr/` folder appears with the first decision.
+In the repo, ask "Initialize the project context". The `init-project-context` skill reads the repo, proposes `AGENTS.md`, `GLOSSARY.md` and `REVIEW.md` from its templates (and the one-line pointer file for a CLI that needs it), proposes the `.gitignore` lines for `intent.md` and `plan.md`, waits for a confirmation per file and never replaces an existing file. It does not copy the artifact templates into the repo and does not create an empty ADR: the `docs/adr/` folder appears with the first decision.
 
 ## Monorepo: several teams, one repo
 

@@ -54,7 +54,7 @@ Two folders, two levels of commitment. `skills/internal/`: shipped and maintaine
    }
    ```
    `category`: `workflow` (a step, behind a command), `tool` (utility, behind a command), `domain` (domain playbook, activated by the task), `reference` (vocabulary read by other skills), `setup`. `tier`: `core` (in all profiles, a test checks it), `profile` (depends on the profile), `optional` (through `extra_skills` or `extra_commands`). `requires` installs the skills it cannot work without, with it; `optional` maps a skill it cites but can do without to what to do instead (`{"codebase-design": "keep interfaces small…"}`): when that skill is not installed, the installed `SKILL.md` ends with a "Not installed here" section giving the alternative. A test checks that every skill a `SKILL.md` cites is in one of the two. `needs_agents: true` signals that it delegates to subagents.
-3. **The profiles** `profiles/*.json`: add it to the profiles that need it, or leave it `optional`. A domain playbook is never in the `general` profile. It ends with a `## In the kit commands` section (what it changes in `/build`, `/diagnose`, `/review`…): the commands stay neutral and send to the matching playbook.
+3. **The profiles** `profiles/*.json`: add it to the profiles that need it, or leave it `optional`. A domain playbook is never in the `general` profile. A playbook that a step chains ends with a `## In the kit commands` section (what it changes in `/build`, `/diagnose`, `/review`…): the commands stay neutral and send to the matching playbook.
 4. **A command, if it is a step or a tool**: a `commands/<name>.md` file, with a header (`name`, `description` in English, `category`, `stage` for a workflow, `skills`, `order`) and a prompt with `{{args}}`; see [the pivot format](format.md). Each adapter turns it into its CLI's command. Add an entry in `docs/tools.md` for a tool.
 5. **An eval case** `evals/cases/NN-<name>.json` with the prompt that must trigger the skill and an observable criterion, then `python3 scripts/offline_tests.py` and `python3 evals/run.py --dry-run` (a real run, `--confirm-paid-run`, is billed).
 6. **Distribute**: commit, merge request (MR), tag; workstations get it with the next version of the kit (a new ZIP, or `update` in a git clone, which pulls first).
@@ -112,18 +112,19 @@ The need: review a dashboard before publishing. One skill, one command, one eval
    Answer in the user's language. State in one line whether this is a quick check or a full review. Follow the skill's four steps and end with what blocks publication.
    ```
 
-4. The eval case, `evals/cases/05-dashboard-check-totals.json`:
+4. The eval case, `evals/cases/13-dashboard-check-totals.json`:
 
    ```json
    {
      "name": "dashboard-check-totals",
      "prompt": "/dashboard-check the monthly sales dashboard, October total 1,240 orders",
      "cwd": "dbt-mini",
+     "requires": { "commands": ["dashboard-check"] },
      "expect": { "regex": ["(total|1,240)", "(filter|period)"] }
    }
    ```
 
-5. Check and distribute: `python3 -m unittest discover -s tests`, `python3 evals/run.py --dry-run --only dashboard-check-totals` (then, if the maintainer decides it, `--confirm-paid-run`: billed), then commit, merge request (MR) and tag; workstations get it with the next version of the kit (a new ZIP, or `update` in a git clone, which pulls first). Anyone who wants the tool enables it with one line: `{"extra_commands": ["dashboard-check"]}` in `~/.ai-kit/overrides.json`, then `update`; `/dashboard-check` appears in every supported CLI.
+5. Check and distribute: `python3 scripts/offline_tests.py`, `python3 evals/run.py --dry-run --only dashboard-check-totals` (then, if the maintainer decides it, `--confirm-paid-run`: billed), then commit, merge request (MR) and tag; workstations get it with the next version of the kit (a new ZIP, or `update` in a git clone, which pulls first). Anyone who wants the tool enables it with one line: `{"extra_commands": ["dashboard-check"]}` in `~/.ai-kit/overrides.json`, then `update`; `/dashboard-check` appears in every supported CLI.
 
 ## Replace a kit skill for the organization
 
