@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.38.0
+
+Your personal context, by interview:
+- `/me` (`$me` in Codex), in every profile: the agent reads what it can (your current `30_USER.md`, operating system, repo languages, profile and team), asks two short rounds of questions with options and a recommendation (your domains, with your level and what you love kept apart; the format of the answers chosen by example; how much it does on its own; how to tell you that you are wrong; the tone by situation, such as simpler reviews; what annoys you), shows the difference and a before and after on one of your real questions, and writes only with your agreement. `/me <what to change>` asks only about that.
+- At the first installation, three quick questions (language and length of the answers, autonomy) and your role in one line fill `30_USER.md`, without any model; the installer then points to `/me`. They are written only while the file is still the one the kit created.
+- A lighter `30_USER.md` template: Me, Domains, Answers, Working with me, By situation, Report; the generic lines that repeated the kit are gone. It always keeps one line asking the agent to say plainly when your idea is risky or wrong (a personal profile makes assistants agree too easily). Existing files are not touched.
+- `docs/customization.md` says what makes a good personal context, from the studies of context files and personalization.
+
 ## 0.37.0
 
 The files people write are easier to write:

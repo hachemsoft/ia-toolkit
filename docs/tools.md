@@ -72,6 +72,14 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 - **Needs**: sub-agents preferably.
 - **Skill**: `improve-codebase-architecture`.
 
+## `/me` — your personal context, by interview
+- **When**: after installing, then whenever the way the agent answers you does not fit (too long, too basic in one domain, too harsh in reviews).
+- **Command**: `/me`, or `/me <what to change>` (for example `/me simpler answers in reviews`) to be asked only about that.
+- **Output**: `30_USER.md`, at most twenty lines of instructions: your role, your domains (level and interest, separately), answers, working with you, by situation, report. The agent first reads what it can (current file, operating system, repo languages, profile), asks two rounds of questions with options and a recommendation, shows the difference and a before and after on one of your real questions, and writes only with your agreement.
+- **Needs**: nothing; `update` after the change for a CLI that keeps a copy of the file ([matrix](cli/matrice.md)).
+- **Skill**: none; the command is enough.
+- **Example**: `/me I am new to Terraform but at ease with Python`.
+
 ## `/friction` — record what got in the way
 - **When**: something slowed you down, surprised you or forced you to work around the kit: a command that does not do what its description says, a skill that triggers for nothing, an annoying guardrail, a wrong page, a missing tool. Right away, in one sentence, without leaving your work.
 - **Command**: `/friction <one sentence>` or `/friction` alone, and the agent asks.

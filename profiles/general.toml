@@ -11,7 +11,4 @@ skills = [
 ]
 mcp = []
 agents = ["repo-investigator", "code-reviewer", "verifier", "doubter"]
-commands = [
-  "guide", "intent", "spec", "build", "test", "review", "ship", "diagnose", "learn", "explain",
-  "retro", "friction",
-]
+commands = ["guide", "intent", "spec", "build", "test", "review", "ship", "diagnose", "learn", "explain", "retro", "friction", "me"]

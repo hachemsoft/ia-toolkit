@@ -116,6 +116,17 @@ class WizardFlowTests(unittest.TestCase):
     # First run: CLIs (Enter: proposed), profile (Enter: General), email, keep the profile, review → Install, context later.
     FIRST = ('', '', 'a@example.org', '', '', 'n')
 
+    def test_first_run_quick_questions_fill_the_personal_context(self):
+        # Yes to the quick questions: French (2), detailed (3), ask first (3), then the role; /me is pointed to.
+        code, out, _ = self.run_wizard('', '', 'a@example.org', '', '', 'y', '2', '3', '3', 'Data engineer')
+        self.assertEqual(code, 0, out)
+        text = (self.home/'.gemini/30_USER.md').read_text(encoding='utf-8')
+        self.assertIn('Reply in French', text)
+        self.assertIn('Explain the why and the alternatives', text)
+        self.assertIn('Ask before acting', text)
+        self.assertIn('- Data engineer', text)
+        self.assertIn('/me', out)
+
     def test_first_run_installs_after_review_and_never_calls_the_model(self):
         code, out, _ = self.run_wizard(*self.FIRST)
         self.assertEqual(code, 0, out)

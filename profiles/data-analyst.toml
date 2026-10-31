@@ -12,4 +12,4 @@ skills = [
 ]
 mcp = ["bigquery", "dbt"]
 agents = ["repo-investigator", "sql-reviewer", "dbt-reviewer", "verifier"]
-commands = ["guide", "intent", "build", "test", "review", "ship", "diagnose", "learn", "friction"]
+commands = ["guide", "intent", "build", "test", "review", "ship", "diagnose", "learn", "friction", "me"]

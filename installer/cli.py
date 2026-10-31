@@ -303,11 +303,51 @@ def playbook_lines(selected, catalog):
     names = [s for s in selected if catalog[s].get('category') == 'domain']
     return '\n'.join('- '+s+' : '+catalog[s]['description'] for s in names) if names else '- No domain playbook installed.'
 
-def user_context_text(identity):
+# The installer's quick questions (no model needed): each answer is one line of 30_USER.md. /me in the CLI goes further.
+QUICK_QUESTIONS = {
+    'language': ('Language of the answers', 'answers', (
+        ('mine', 'The language I write in', 'Reply in the language I write in.'),
+        ('fr', 'French', 'Reply in French; code, comments and commit messages in English.'),
+        ('en', 'English', 'Reply in English.'))),
+    'length': ('Length of the answers', 'answers', (
+        ('short', 'Short first, details when I ask', 'Short answer first, five lines at most; details when I ask.'),
+        ('balanced', 'The answer and its main reason', 'Give the answer, then its main reason in a few lines.'),
+        ('detailed', 'The why and the alternatives', 'Explain the why and the alternatives: I like to understand.'))),
+    'autonomy': ('When the request is clear', 'working', (
+        ('do', 'Do it, then tell me what you did', 'When the request is clear, do it and tell me what you did; ask before anything irreversible.'),
+        ('announce', 'Say what you will do, then do it', 'Say in one line what you will do, then do it; ask before anything irreversible.'),
+        ('ask', 'Ask me first', 'Ask before acting, and wait for my go-ahead.'))),
+}
+QUICK_DEFAULTS = {'language': 'mine', 'length': 'short', 'autonomy': 'do'}
+ROLE_PLACEHOLDER = '<!-- One line: my role and what I work on these weeks. -->'
+
+def user_context_text(identity, answers=None, role=None):
+    """30_USER.md as the kit creates it: the template, with the quick answers (the defaults without them) and the role."""
     template = (ROOT/'templates/user-context.md').read_text(encoding='utf-8')
     parts = [identity.get('name'), '<'+identity['email']+'>' if identity.get('email') else None]
     line = ' '.join(p for p in parts if p)
-    return template.replace('{identity}\n', 'Person: '+line+'\n' if line else '')
+    chosen = {**QUICK_DEFAULTS, **(answers or {})}
+    sections = {'answers': [], 'working': []}
+    for key, (_, section, options) in QUICK_QUESTIONS.items():
+        sections[section].append('- '+next(text for value, _, text in options if value == chosen[key]))
+    text = template.replace('{identity}\n', 'Person: '+line+'\n' if line else '')
+    text = text.replace('{answers}', '\n'.join(sections['answers'])).replace('{working}', '\n'.join(sections['working']))
+    if role:
+        text = text.replace(ROLE_PLACEHOLDER, '- '+' '.join(str(role).split()))
+    return text
+
+def write_quick_context(home, answers, role=None):
+    """The quick answers written into 30_USER.md, only while the file is still the one the kit created (never over the
+    person's own text). Returns the file written, or None when it was left as is."""
+    state = read_json(home/'.ai-kit/state.json')
+    identity = state.get('user') or {}
+    user_file = home/state.get('context_dir', '.gemini')/USER_CONTEXT
+    if role and SECRET.search(str(role)):
+        raise KitError('This looks like a secret (key, token or password): it is not written in your personal context.')
+    if not user_file.is_file() or user_file.read_text(encoding='utf-8') != user_context_text(identity):
+        return None
+    atomic_write(user_file, user_context_text(identity, answers, role).encode('utf-8'))
+    return user_file
 
 
 def agent_instruction(definition):

@@ -1,22 +1,25 @@
 # My context
 {identity}
-This file belongs to me: the kit creates it once and never rewrites it. The current project's instructions take precedence over this file.
+Use these lines only when they change the answer; never quote them back. The current project's instructions take precedence.
+This file is mine: the kit never rewrites it. `/me` in the CLI ($me in Codex) interviews me to fill it in.
 
-## Language and style
-- Reply in the language I write in, with concise and concrete explanations.
-- Flag the assumptions that change the result.
+## Me
+<!-- One line: my role and what I work on these weeks. -->
 
-## My level and my domains
-- Adapt technical detail to my question: explain the choices, not the basic syntax.
-- Domains: to fill in (for example Java, Kubernetes, dbt, Python).
+## Domains
+<!-- Per domain, how deep to go and what I love; level and interest are separate. Examples:
+- Python: expert, skip the basics.
+- C4 diagrams in Mermaid: not an expert but passionate; go deeper and propose one when it helps. -->
 
-## My default workflow
-- Challenge me before a plan that touches a data model, a public contract or a KPI.
-- Diagnose before fixing; tests before code when the project has them.
+## Answers
+{answers}
+- When my idea is risky or wrong, say so plainly with the evidence before acting. My preferences are about form, never about conclusions.
+
+## Working with me
+{working}
+
+## By situation
+<!-- Only where I want another tone. Example: - Reviews: simpler and more teaching, one finding at a time. -->
 
 ## Report
-<Optional. How I want the end-of-run reports of /build, /test, /diagnose and /review; the repo's format takes precedence. Example: five lines at most, a table of checks, risks first.>
-
-## Personal context
-- Current projects: to fill in.
-- Tools: to fill in.
+<!-- Optional: how the end-of-run reports of /build, /test, /diagnose and /review look; the repo's format wins. -->

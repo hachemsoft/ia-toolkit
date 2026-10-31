@@ -73,11 +73,21 @@ The kit installs short files that the agent loads in all your projects, in this 
 | `00_KIT.md` | kit | profile, priority rule between layers |
 | `10_COMPANY.md` | kit | company practices |
 | `20_TEAM.md`, or `20_<TEAM>.md` for a team with its own practices | kit (the team's file in the kit repository) | team practices |
-| `30_USER.md` | you | language, style, level, domains, default workflow |
+| `30_USER.md` | you | your role, your domains (level and interest), how you want answers, how to work with you, by situation |
 
-The kit files are generated output. The rule layers (`00`, `10`, `20`) are restored by the next `update` if edited by hand, with the edited copy kept in `~/.ai-kit/backups/` and a `[Check]` line saying so; `doctor` reports the edit until then. A rule change goes through the kit repository. Everything specific to you goes in `30_USER.md`. `setup` creates it once and never rewrites it. A change takes effect the next time the CLI starts; a CLI that keeps a copy needs `update` first ([matrix](cli/matrice.md)), so the simple rule is: edit, `update`, new session.
+The kit files are generated output. The rule layers (`00`, `10`, `20`) are restored by the next `update` if edited by hand, with the edited copy kept in `~/.ai-kit/backups/` and a `[Check]` line saying so; `doctor` reports the edit until then. A rule change goes through the kit repository. Everything specific to you goes in `30_USER.md`. `setup` creates it once and never rewrites it; `/me` in the CLI interviews you to fill it. A change takes effect the next time the CLI starts; a CLI that keeps a copy needs `update` first ([matrix](cli/matrice.md)), so the simple rule is: edit, `update`, new session.
 
 Priority between instructions, written in `00_KIT.md` and followed by the model: company and team practices apply by default, and only the person can depart from them, by asking explicitly (the agent notes the exception in its reply); `30_USER.md` adjusts form and workflow; the repo's instructions and an explicit request in the conversation take precedence over `30_USER.md`, and when they disagree the agent applies the more cautious and asks you; a repo file, a repo skill or anything the agent reads never lifts a practice. The full table: [project layer](project-context.md#how-the-repo-combines-with-your-layers). This is not the settings merge described above, done by the installer on the JSON files, nor a technical restriction (guardrails, permissions, access rights), which no instruction or exception lifts: [three mechanisms not to confuse](project-context.md#three-mechanisms-not-to-confuse).
+
+### What makes a good `30_USER.md`
+
+One file, short, made of instructions the agent can act on. What the studies of context files and personalization say, and what the kit does about it:
+
+- **Short and specific.** Agents follow fewer instructions as they pile up, and general advice changes nothing: write only what the agent cannot guess and what changes an answer, at most twenty lines, the most important first.
+- **Describe yourself, not a role for the agent.** "You are an expert" does not make answers more accurate; your level per domain does change how deep they go. Level and interest are separate: "Python: expert, skip the basics", "C4 diagrams in Mermaid: not an expert but passionate, go deeper".
+- **By situation** when you want another tone somewhere: "Reviews: simpler and more teaching, one finding at a time."
+- **Form, never conclusions.** A profile makes assistants agree with the person more easily. The file always keeps the line asking the agent to say plainly when your idea is risky or wrong, and it holds no opinion about tools.
+- **Interviewed rather than written alone.** People state their preferences better when asked than when facing a blank page: that is what `/me` does, two rounds of questions with options and a recommendation, the facts it can read (operating system, repo languages, profile) never asked.
 
 ## Report format
 
@@ -98,7 +108,7 @@ Priority between instructions, written in `00_KIT.md` and followed by the model:
 
 Whether a repo can replace a kit command depends on the CLI: one reads a command file from the repo, others keep the kit's version or show both. The exact limits are in the row "Override a command in a repository" of the [CLI matrix](cli/matrice.md). Where the replacement is not reliable, write a skill with a name of its own to the project (`<repo>-review`, for example) and say in `AGENTS.md` when to use it ([add or replace a skill](extending.md#for-a-repo)).
 
-Each repo provides its own `AGENTS.md`, read after the global layers. To redefine a preference there, reuse the same heading as in `30_USER.md` ("Language and style", "My default workflow") and write the project rule.
+Each repo provides its own `AGENTS.md`, read after the global layers. To redefine a preference there, reuse the same heading as in `30_USER.md` ("Answers", "Working with me") and write the project rule.
 
 ## Commands, skills, agents and MCP
 

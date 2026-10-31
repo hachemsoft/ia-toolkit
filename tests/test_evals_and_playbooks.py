@@ -15,7 +15,7 @@ class PlaybookTests(unittest.TestCase):
  def test_new_playbooks_in_profiles(self):
   a=read_toml(ROOT/'profiles/data-analyst.toml')['skills'];d=read_toml(ROOT/'profiles/data-developer.toml')['skills']
   for s in ('kpi-definition','incremental-replay','bigquery-cost-review','perimeter-brief'):self.assertIn(s,a)
-  self.assertEqual(read_toml(ROOT/'profiles/data-analyst.toml')['commands'],['guide','intent','build','test','review','ship','diagnose','learn','friction'])
+  self.assertEqual(read_toml(ROOT/'profiles/data-analyst.toml')['commands'],['guide','intent','build','test','review','ship','diagnose','learn','friction','me'])
   for s in ('incremental-replay','bigquery-cost-review','perimeter-brief'):self.assertIn(s,d)
  def test_doubter_installed_read_only(self):
   with tempfile.TemporaryDirectory() as tmp:

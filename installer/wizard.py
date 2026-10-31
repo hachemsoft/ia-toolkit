@@ -231,6 +231,27 @@ def open_context(ui, home):
     return 0
 
 
+def quick_context(ui, home):
+    """The installer's quick questions, written into 30_USER.md while it is still the file the kit created; /me in the
+    CLI interviews further (domains, tone by situation, what annoys the person)."""
+    answers = {key: ui.select(title, [(value, label) for value, label, _ in options], cli.QUICK_DEFAULTS[key])
+               for key, (title, _, options) in cli.QUICK_QUESTIONS.items()}
+    role = ui.text('Your role and what you work on these weeks, in one line (empty to skip)', '')
+    try:
+        written = cli.write_quick_context(home, answers, role)
+    except KitError as exc:
+        ui.warn(str(exc))
+        return 1
+    if not written:
+        ui.print('Your personal context already has your own text: it was left as is.')
+    else:
+        state = read_json(home/'.ai-kit/state.json')
+        quietly(cli.apply, state['profile'], home, False, None)  # a CLI that keeps a copy gets it now
+        ui.print('Written in '+str(written)+'.')
+    ui.print('To go further (your domains, the tone you want in reviews, what annoys you), type /me in your CLI ($me in Codex).')
+    return 0
+
+
 def choose_and_install(ui, home, state):
     """The choices, the review, then the installation. Back returns to the choices with the answers kept."""
     plan = {'targets': None, 'profile': None, 'team': None, 'identity': None, 'choices': None}
@@ -244,8 +265,8 @@ def choose_and_install(ui, home, state):
         action = review(ui, home, plan)
         if action == 'install':
             install(ui, home, plan)
-            if not state and ui.confirm('Write a few lines about you and how you work, in your personal context, now?', default=False):
-                open_context(ui, home)
+            if not state and ui.confirm('Three quick questions on how you want answers, for your personal context (one minute)?', default=True):
+                quick_context(ui, home)
             return 0
         if action == 'cancel':
             ui.print('Cancelled: the agents\' configuration was not changed.')
