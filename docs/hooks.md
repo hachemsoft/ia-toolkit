@@ -13,7 +13,7 @@ A skill is an advisory control: it makes a violation rare. A guardrail is a scri
 }
 ```
 
-Then `update`. The scripts are installed once, in `~/.ai-kit/hooks/`, and declared to each CLI in the form it reads ([matrix](cli/matrice.md)); your own hooks are kept. The same scripts understand the tool call of each supported CLI. `doctor` shows the active guardrails. Hooks run with the Python that launched the installer.
+Then `update`. The scripts are installed once, in `~/.ai-kit/hooks/`, and declared to each CLI in the form it reads ([matrix](cli/matrice.md)); your own hooks are kept. The same scripts understand the tool call of each supported CLI. `doctor` shows the active guardrails. Hooks run with the kit's own Python (the private environment `~/.ai-kit/runtime/venv` when installed through the installer), isolated with `-I`: the extracted kit folder can be deleted.
 
 ## `dbt-prod-guard`
 
@@ -41,11 +41,11 @@ Whatever the repo declares, the guardrail always blocks writes to the configurat
 
 ## Checking that guardrails run
 
-`doctor` reports five different facts and never merges them: the guardrail is **present** (its Python and script exist), **configured** (declared in the CLI's settings), passes a **synthetic test** (run directly on a case it must block, `dbt run --target prod` or a write to `~/.ai-kit/overrides.json`; `[Check]` if it does not block), is **approved** where the CLI asks for it, and is **invoked** by the CLI. A synthetic test proves the script works, not that the CLI calls it; invocation by the CLI is only seen in a real session. For a CLI that runs hooks only after approval, `doctor` reports `[Check]` when no approval is recorded at all, and "approval not verifiable automatically" otherwise: the CLI records approvals with a hash the kit cannot check, possibly for other hooks, so a record is never reported as `[OK]` (details on the CLI's page). Guardrails run with `python -I`, which ignores `PYTHON*` variables and the current folder.
+Five different facts, never merged: the guardrail is **present** (its Python and script exist), **configured** (declared in the CLI's settings), passes a **synthetic test** (run directly on a case it must block, `dbt run --target prod` or a write to `~/.ai-kit/overrides.json`; `[Check]` if it does not block), is **approved** where the CLI asks for it, and is **invoked** by the CLI; `doctor` reports the first four. A synthetic test proves the script works, not that the CLI calls it; invocation by the CLI is only seen in a real session. For a CLI that runs hooks only after approval, `doctor` reports `[Check]` when no approval is recorded at all, and "approval not verifiable automatically" otherwise: the CLI records approvals with a hash the kit cannot check, possibly for other hooks, so a record is never reported as `[OK]` (details on the CLI's page). Guardrails run with `python -I`, which ignores `PYTHON*` variables and the current folder.
 
 ## Limits
 
-- **Comfort, not a security barrier.** The guardrails stop an honest mistake. They do not stop an agent that is determined or misled by planted content: a `make deploy`, a project script, or a write through the shell (`echo … >`, `sed -i`) is outside what a script reading a tool call can see. The real barriers are the CLI's own sandbox and permissions, the rights of the account, and keeping production credentials off workstations (production dbt profiles served by CI only).
+- **Comfort, not a security barrier.** The guardrails stop an honest mistake. They do not stop an agent that is determined or misled by planted content: a `make deploy`, a project script, a shell write to a path the repo protects (`echo … >`, `sed -i`: in shell commands only the kit's and the CLIs' configuration is checked), or a command in a form the script does not parse is outside what it can see. The real barriers are the CLI's own sandbox and permissions, the rights of the account, and keeping production credentials off workstations (production dbt profiles served by CI only).
 
 - Hooks only cover actions that go through the CLI's tools. A script run outside the CLI is not covered.
 - They protect one workstation. An organization's non-negotiable rules belong to policies administered on the platform side, not to the kit.

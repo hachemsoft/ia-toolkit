@@ -48,6 +48,14 @@ class GeminiTests(Base):
             cli.doctor_checks(self.home)
         self.assertNotIn('[Check] Command /build', out.getvalue())
 
+    def test_personal_skill_named_like_a_kit_command_renames_the_command(self):
+        # Gemini makes a /review of the person's review skill: the kit's /review command would collide with it.
+        self.mine('.gemini/skills/review/SKILL.md')
+        notices = self.run_kit('gemini')
+        self.assertTrue((self.home/'.gemini/commands/ai-kit-review.toml').is_file())
+        self.assertFalse((self.home/'.gemini/commands/review.toml').exists())
+        self.assertTrue(any('command /review as /ai-kit-review' in n for n in notices))
+
     def test_back_to_the_plain_name_when_the_persons_skill_is_gone(self):
         mine = self.mine('.gemini/skills/tdd/SKILL.md')
         self.run_kit('gemini')

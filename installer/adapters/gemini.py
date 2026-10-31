@@ -219,8 +219,10 @@ def install(p: Plan) -> None:
             else:
                 p.deletes.append(context_file)
     names = skill_names(p)
+    # Gemini turns every skill into a /command too: a personal skill takes the command's name as well.
+    personal_skill = ((lambda n: gemini/'skills'/n, lambda n: '.gemini/skills/'+n),)
     commands = {c['name']: free_name(c['name'], lambda n: gemini/'commands'/(n+'.toml'), lambda n: '.gemini/commands/'+n+'.toml', p.old_files,
-                                     skill_prefix(p.overrides), 'command') for c in p.commands}
+                                     skill_prefix(p.overrides), 'command', personal_skill) for c in p.commands}
     mapping = {**{o: n for o, n in names.items() if o != n}, **{o: n for o, n in commands.items() if o != n}}
     p.adapter_data.setdefault(NAME, {})['mapping'] = mapping
     write_skills(p)

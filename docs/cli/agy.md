@@ -1,6 +1,6 @@
 # Antigravity CLI (agy)
 
-The kit targets Gemini CLI and Antigravity CLI from a single source. When `agy` is present on the workstation (or the `~/.gemini/config/` folder exists), `setup` and `update` also install the Antigravity output. `--target gemini` prevents it, `--target both` forces it alongside Gemini, and `--target agy` installs it alone (the layers then go to `~/.ai-kit/context/`).
+agy shares `~/.gemini/skills` and the layers with Gemini CLI. The first `setup` installs the Antigravity output when `agy` is present (or the `~/.gemini/config/` folder exists, `--target auto`); afterwards `update` keeps the CLIs you chose. `--target both` installs it alongside Gemini, `--target agy` alone (the layers then go to `~/.ai-kit/context/`), `--target all` with every supported CLI.
 
 ## What is shared with no extra work
 
@@ -16,7 +16,7 @@ A plugin `~/.gemini/config/plugins/ai-kit/`, validated by `agy plugin validate` 
 | --- | --- |
 | `plugin.json` | name, description, kit version |
 | `rules/AGENTS.md` | always-on rules that include the four layers by path (`@[00_kit](~/.gemini/00_KIT.md)`, …, `@[30_user](~/.gemini/30_USER.md)`, or `~/.ai-kit/context/` without Gemini): a single source, no copy |
-| `agents/ai-kit-*.md` | the same agents as Gemini (verifier, adversarial review, SQL review, dbt, code); visible in agy |
+| `agents/ai-kit-*.md` | the same agents as Gemini, those of the profile; visible in agy |
 | `hooks.json` | the two guardrails, `enabled` following `overrides.json`; the scripts understand the agy payload (`toolCall.args.CommandLine`) |
 | `mcp_config.json` | the MCP servers enabled in `overrides.json`, when there are any |
 
@@ -24,9 +24,9 @@ And **command skills** in the plugin (`~/.gemini/config/plugins/ai-kit/skills/`)
 
 After installation, restart agy: it discovers a new plugin only at startup.
 
-## Verified on 25 October 2026 on agy 1.4.7 (agent tools and logs read again on 1.4.12)
+## Verified on agy 1.4.7 (agent tools and logs read again on 1.4.12)
 
-- `agy plugin validate` passes; `agy plugin list` shows `ai-kit` with the profile agents (6 for a developer, 4 for an analyst), 1 rule, 2 hooks.
+- `agy plugin validate` passes; `agy plugin list` shows `ai-kit` with the profile agents (6 for Data Developer, 4 for Data Analyst), 1 rule, 2 hooks.
 - In print mode, agy quotes word for word the "Priority between layers" section of `00_KIT.md`: path includes work.
 - agy lists the profile's `ai-kit-*` agents.
 - `/guide` and `/intent` work through the command skills; `/guide` routes to `/diagnose` for a dbt model that duplicates rows.
@@ -53,7 +53,7 @@ export AGY_ADC_AUTH=1   # in your shell profile to make it permanent
 agy
 ```
 
-A 403 "Agent Platform API has not been used in project …" means the API is not enabled on this quota project: `gcloud services enable aiplatform.googleapis.com --project my-gcp-project`. The models offered by `/model` then depend on what the project can use. The kit does not set this variable: it belongs to the workstation and the organization, as with Vertex on the Gemini CLI side (`vertex` in `overrides.json`).
+A 403 "Agent Platform API has not been used in project …" means the API is not enabled on this quota project: `gcloud services enable aiplatform.googleapis.com --project my-gcp-project`. The models offered by `/model` then depend on what the project can use. The kit does not set this variable: it belongs to the workstation and the organization, like authentication on every CLI (see [customization](../customization.md#authentication-and-model)).
 
 ## Permissions: up to each person, never the kit
 

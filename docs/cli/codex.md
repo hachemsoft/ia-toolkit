@@ -4,7 +4,7 @@ What the kit does for Codex CLI, and what is specific to this CLI. Verified on C
 
 ## Install for Codex
 
-`setup` and `update` install for Codex when the `codex` command is present or `~/.codex` exists (`--target auto`). `--target all` forces it alongside the other CLIs, `--target codex` installs it alone, and `--target gemini` or `both` excludes it. Codex signs in with its own account (`codex login`, ChatGPT account or OpenAI key): the kit does not touch it.
+The first `setup` installs for Codex when the `codex` command is present or `~/.codex` exists (`--target auto`); afterwards `update` keeps the CLIs you chose. `--target all` forces it alongside the other CLIs, `--target codex` installs it alone, and `--target gemini`, `agy`, `claude` or `both` exclude it. Codex signs in with its own account (`codex login`, ChatGPT account or OpenAI key): the kit does not touch it.
 
 ## What the kit installs
 
@@ -15,7 +15,7 @@ What the kit does for Codex CLI, and what is specific to this CLI. Verified on C
 - **Guardrails** that are enabled: declared under `[[hooks.PreToolUse]]` in the same block. The scripts understand the Codex call format, including the paths of an `apply_patch`.
 - **MCP servers** that are enabled: `[mcp_servers.ai-kit-<name>]` in the same block.
 
-The `config.toml` block is appended to the end of the file and checked before writing (the file must stay valid TOML). Your own settings do not move. Both files are backed up on every change.
+The `config.toml` block is appended to the end of the file and checked before writing with Python 3.11 or later (the file must stay valid TOML). Your own settings do not move. Both files are backed up on every change.
 
 ## Approve the guardrails
 
@@ -25,7 +25,7 @@ Codex runs a hook only after it has been approved. The kit installs one by defau
 `doctor` reports `[Check]` when no approval is recorded at all (no `[hooks.state."…config.toml:pre_tool_use:…"]` entry). When records exist, it says "approval not verifiable automatically": Codex records each approval with a `trusted_hash` the kit cannot recompute, under group indexes that other hooks share, so a record is never taken as proof that the kit's guardrails are approved. `/hooks` in Codex shows what is approved; Codex asks again when a guardrail command changes after an update. The `protected-paths` guardrail always blocks agent writes to `~/.codex/config.toml` and `~/.codex/AGENTS.md`.
 ## Check in Codex
 
-`codex doctor` (configuration loaded, `config.toml parse ok`), `/skills` in Codex, then `$guide I need to …` in a repository.
+`codex doctor` (configuration loaded, `config.toml parse ok`), `/skills` and `/agents` (the `ai-kit-*` roles) in Codex, then `$guide I need to …` in a repository.
 
 ## Specifics
 

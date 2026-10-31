@@ -14,14 +14,14 @@ A page for people moving from Gemini CLI to agy. A two-minute read.
 - **Launch**: `agy` instead of `gemini`, still from the repository folder.
 - **See what is installed**: `/help` in agy lists the commands, which are skills; `agy plugin list` shows the `ai-kit` plugin.
 - **A restart** of agy after each kit `update`, so it rediscovers the plugin.
-- **Permissions**: agy asks for approval before a shell command or a write. Answer it; "always allow" saves the rule in your agy settings, which the kit never changes. In automatic mode (`agy -p`), denied tools stop the response.
+- **Permissions**: agy asks for approval before a shell command or a write. Answer it; "always allow" saves the rule in your agy settings, which the kit never changes. In print mode (`agy -p`), denied tools stop the response.
 
 ## Troubleshooting
 
-1. `sh scripts/bootstrap.sh doctor --live` (Mac) or `Installer.cmd doctor --live` (Windows): it tells you what to do.
+1. `sh scripts/bootstrap.sh doctor` (Mac) or `Installer.cmd doctor` (Windows), local; then `doctor --live`, one real call to each chosen CLI that your provider may bill: it tells you what to do.
 2. The [Troubleshooting](../troubleshooting.md) page.
 3. Otherwise, a ticket: it will become a `doctor` check, a line on the page, or an eval case, never a repeated verbal explanation.
 
 ## Install or update
 
-From the kit folder: `sh scripts/bootstrap.sh update` (Mac) or `Installer.cmd update` (Windows). The kit detects Gemini and agy and installs for both.
+From the kit folder: `sh scripts/bootstrap.sh update --target both` (Mac) or `Installer.cmd update --target both` (Windows), or run the installer, choose **Change my choices** and tick Antigravity. A plain `update` keeps the CLIs chosen at the last installation; detection only applies the first time.

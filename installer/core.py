@@ -176,9 +176,10 @@ def taken(path, rel, old_files):
         return not any(r.startswith(rel+'/') for r in old_files)
     return rel not in old_files
 
-def free_name(name, path_for, rel_for, old_files, prefix, what):
-    """name if the kit can use it, prefix+name when one of the person's own skills or commands already has it."""
-    if not taken(path_for(name), rel_for(name), old_files):
+def free_name(name, path_for, rel_for, old_files, prefix, what, also=()):
+    """name if the kit can use it, prefix+name when one of the person's own skills or commands already has it. also: other
+    (path_for, rel_for) places whose name the CLI turns into the same command."""
+    if not any(taken(path(name), rel(name), old_files) for path, rel in ((path_for, rel_for), *also)):
         return name
     if not prefix:
         raise KitError('The kit '+what+' '+name+' has the name of one of your own, and skill_prefix is empty: set a prefix (for example "ai-kit-").')

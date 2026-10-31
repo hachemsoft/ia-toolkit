@@ -166,11 +166,5 @@
       "description": "Explanation, ignored by the kit."
     }
   },
-  "additionalProperties": false,
-  "not": {
-    "required": [
-      "code_assist",
-      "vertex"
-    ]
-  }
+  "additionalProperties": false
 }

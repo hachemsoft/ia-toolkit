@@ -1,6 +1,6 @@
 # Claude Code
 
-What the kit does for Claude Code, and what is specific to this CLI. Formats read on Claude Code 2.1.316; the checks inside a session (below) are still to do on each new version. Shared concepts are in the [CLI matrix](matrice.md).
+What the kit does for Claude Code, and what is specific to this CLI. Formats read and evals run (`claude -p`) on Claude Code 2.1.316; the interactive checks (below) are still to do on each new version. Shared concepts are in the [CLI matrix](matrice.md).
 
 ## Install for Claude Code
 

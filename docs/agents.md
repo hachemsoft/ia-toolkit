@@ -31,7 +31,7 @@ Examples:
 @ai-kit-architecture-reviewer Review this ADR and its options.
 ```
 
-The agent can also choose to delegate based on the description. These instructions guide the model; they do not guarantee an invocation. Availability depends on the CLI version and company policies. The kit forces no sub-agent activation setting; `doctor` reports when they are disabled.
+The agent can also choose to delegate based on the description. These instructions guide the model; they do not guarantee an invocation. Availability depends on the CLI version and company policies. The kit forces no sub-agent activation setting; Where a CLI has a setting that disables them, `doctor` reports it (see the CLI's page).
 
 ## Tools and limits
 
@@ -50,7 +50,7 @@ Where it is only an instruction, the kit never claims a reviewer cannot write: t
 
 Company and team practices are included in their prompt at install time: we do not assume an isolated agent receives the parent's full context. Personal context (`30_USER.md`) is not copied there: it shapes the parent's answers, not the delegated mission. Project instructions must be read and missing facts reported. Skills are not assumed to be automatically available in sub-agents. When a base skill mentions a "sub-agent" or "background agent", `00_KIT.md` tells the model to use these `ai-kit-*` agents, or to do the work itself if they are absent.
 
-Agents inherit the model of the session: the kit names no model. Each agent has a limit of 12 turns and 5 minutes, except the verifier (15 turns, 10 minutes), which must leave time for tests to run. Delegation adds model calls and can increase latency and usage: keep it for missions that benefit from this separation.
+Agents inherit the model of the session: the kit names no model. Where the CLI reads limits in the agent's header, each agent has 12 turns and 5 minutes, except the verifier (15 turns, 10 minutes), which must leave time for tests to run; elsewhere the CLI's own limits apply ([matrix](cli/matrice.md)). Delegation adds model calls and can increase latency and usage: keep it for missions that benefit from this separation.
 
 Future access to an MCP server must use explicitly allowed tools and be validated for each agent. Do not widen to `*` to fix a configuration problem.
 
@@ -60,7 +60,7 @@ Future access to an MCP server must use explicitly allowed tools and be validate
 - `agents/internal/<category>/<name>.json`: role and instructions, independent of any CLI.
 - `agents/defaults.json`: default tools and settings, shared by all CLIs.
 - `profiles/*.json`: agents selected per role.
-- Output: one file per agent, in the format and location each CLI reads: `ai-kit-<name>.md` for Gemini and agy, `~/.codex/ai-kit/agents/<name>.toml` declared in `config.toml` for Codex, `~/.claude/agents/ai-kit-<name>.md` for Claude Code ([matrix](cli/matrice.md)).
+- Output: one file per agent, in the format and location each CLI reads: `ai-kit-<name>.md` for Gemini and agy, `~/.codex/ai-kit/agents/ai-kit-<name>.toml` declared in `config.toml` for Codex, `~/.claude/agents/ai-kit-<name>.md` for Claude Code ([matrix](cli/matrice.md)).
 
 The installer generates the files, records them in its state, protects local modifications and removes old untouched outputs when the profile changes.
 

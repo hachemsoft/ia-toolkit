@@ -39,8 +39,8 @@ In `organization.json`, under `defaults`, describe each server once. A server li
 ```
 
 - `"enabled": true` (here `docs`) turns a server on for **every** profile.
-- `server` has a single transport. Use `httpUrl` (streamable HTTP) or `url` (SSE), always `https://`, for a remote server. Use `command`, with `args` and `env`, for a local server.
-- **Never write a secret.** Write `${VARIABLE}`, and each person defines the variable in their environment. `doctor` flags a key or token written in plain text.
+- `server` has a single transport. Use `httpUrl` (streamable HTTP) or `url` (SSE), always `https://`, for a remote server. Use `command`, with `args` and `env`, for a local server. Do not use `cwd`: not every CLI has it, and the kit refuses it there; give the full path in `command`.
+- **Never write a secret.** Write `${VARIABLE}`, and each person defines the variable in their environment. `doctor` flags a key or token written in plain text in `~/.ai-kit/overrides.json`; nothing checks `organization.json`, so review it in the merge request.
 - Pin image and package versions (`:1.2.3`, not `:latest`): a new version should arrive by your choice, not by itself.
 - A local server needs its executable on the workstation (`docker`, `dbt-mcp`…), installed by the IT procedure. The kit does not install it. Prefer a remote server when one exists: nothing to install on the workstations.
 - `trust: true` is refused: the CLI must keep asking before a server's tools act.
@@ -63,7 +63,7 @@ In `~/.ai-kit/overrides.json`, under `mcp`, one line per exception:
 | --- | --- |
 | a server of the organization that your profile does not turn on | `"github": true` |
 | to turn off a server your profile turns on | `"dbt": false` |
-| your own server, for the three CLIs | `"mine": {"server": {"command": "my-mcp", "env": {"TOKEN": "${MY_TOKEN}"}}}` |
+| your own server, for every installed CLI | `"mine": {"server": {"command": "my-mcp", "env": {"TOKEN": "${MY_TOKEN}"}}}` |
 | to keep your server's definition but turn it off for now | `"mine": {"enabled": false, "server": {…}}` |
 
 Full example:
@@ -82,7 +82,7 @@ Then `update`, and restart the CLI (Claude Code: close its sessions before `upda
 
 The older format, `{"enabled": true, "server": {…}}` for a server of your own or `{"enabled": true}` for one of the organization, still works.
 
-**A server for one CLI only:** add it directly in that CLI's own settings ([CLI matrix](cli/matrice.md)). The kit only manages the servers named `ai-kit-<name>` and never touches the others.
+**A server for one CLI only:** add it directly in that CLI's own settings ([CLI matrix](cli/matrice.md)), never in a file the kit manages (it rewrites them). The kit only manages the servers named `ai-kit-<name>` and never touches the others.
 
 ## Removing
 
@@ -96,4 +96,4 @@ Remove the name from the profile or from `organization.json`, or write `"<name>"
 - Check that the dbt tools match your versions and your deployment mode.
 - Test discovery, connection and allowed operations from each CLI on a development environment.
 
-`doctor` checks that the configuration is written, and that a local server's executable exists. It does not call the server, check the identity or test permissions.
+`doctor` checks that the configuration is written (and, for some CLIs, that a local server's executable is on the PATH). It does not call the server, check the identity or test permissions.

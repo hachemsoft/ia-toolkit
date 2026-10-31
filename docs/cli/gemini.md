@@ -38,6 +38,6 @@ The `protected-paths` guardrail always blocks agent writes to `~/.gemini/setting
 - **Context not loaded**: run `/memory show` in a repository. If layers are missing, check `context.fileName` and any managed policy.
 - **Vertex variables ignored**: `selectedType` is still `gemini-api-key`. Choose Vertex AI with `/auth`, or set `security.auth.selectedType` to `vertex-ai` in `~/.gemini/settings.json`.
 - **Legacy block in `GEMINI.md`** (0.0.x installs): copy your additions to `~/.gemini/30_USER.md`, remove the block between the `ai-kit` markers in `~/.gemini/GEMINI.md`, then run `update`.
-- **Skill installed outside the kit** (for example `gemini skills install`): remove it, or add it to `disabled_skills`.
+- **Name already taken**: when one of your skills in `~/.gemini/skills/` or commands in `~/.gemini/commands/` has the name of a kit skill or command, yours is kept and the kit's is installed as `ai-kit-<name>` (`skill_prefix`); a skill of yours named like a kit command counts too, since Gemini makes a command of every skill. The installer says which, and the next `update` takes the plain name back once yours is gone.
 
 Moving to agy: [what changes, what does not](gemini-to-agy.md).
