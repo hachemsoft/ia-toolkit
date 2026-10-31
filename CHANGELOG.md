@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.32.0
 
 Discovery and installation, for a data analyst in particular:
 - **End of setup**: a summary instead of loose lines: the kit configuration, each targeted CLI (found, or not found with its configuration prepared), the data connections (MCP) and the next step. A connection is "verified" only after a real call to the model; otherwise "connection not verified". No invitation to start a CLI that is not found; a missing CLI no longer hides one that is there. Exit codes and the network policy of setup are unchanged.
