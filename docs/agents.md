@@ -33,16 +33,6 @@ Examples:
 
 The agent can also choose to delegate based on the description. These instructions guide the model; they do not guarantee an invocation. Availability depends on the CLI version and company policies. The kit forces no sub-agent activation setting; `doctor` reports when they are disabled.
 
-## Capability profiles
-
-An agent never names a model: at most, it declares what it needs (`"capability": "fast"` for the verifier, which runs tests and must answer quickly; `"deep"` for the doubter agent, which must reason). The organization provides the mapping, if it wants to, in `organization.json` under `defaults` (a team under `teams.<team>`, a person in `~/.ai-kit/overrides.json`):
-
-```json
-{ "models": { "fast": "gemini-2.5-flash", "deep": "gemini-2.5-pro" } }
-```
-
-`update` then writes `model:` in the header of the agents concerned; whether this field is honoured depends on the CLI (see its page). Without this key, nothing is written and each agent inherits the parent's model, as before. An agent without `capability` always inherits. Model names are never in the kit: they change by organization and by quarter.
-
 ## Tools and limits
 
 Review agents are read-only: they read and search files, without modifying or running anything. `ai-kit-verifier` is the exception: it can also list folders and run commands, because its role is to run the check commands declared in `AGENTS.md` (build, tests, lint, `dbt test` on the development target) and report their real output at the end of a `/build`. It fixes nothing; the `dbt-prod-guard` guardrail also applies to it. They propose checks to the main agent.
@@ -60,7 +50,7 @@ Where it is only an instruction, the kit never claims a reviewer cannot write: t
 
 Company and team practices are included in their prompt at install time: we do not assume an isolated agent receives the parent's full context. Personal context (`30_USER.md`) is not copied there: it shapes the parent's answers, not the delegated mission. Project instructions must be read and missing facts reported. Skills are not assumed to be automatically available in sub-agents. When a base skill mentions a "sub-agent" or "background agent", `00_KIT.md` tells the model to use these `ai-kit-*` agents, or to do the work itself if they are absent.
 
-Without a capability mapping (see above), the model is inherited from the parent. Each agent has a limit of 12 turns and 5 minutes, except the verifier (15 turns, 10 minutes), which must leave time for tests to run. Delegation adds model calls and can increase latency and usage: keep it for missions that benefit from this separation.
+Agents inherit the model of the session: the kit names no model. Each agent has a limit of 12 turns and 5 minutes, except the verifier (15 turns, 10 minutes), which must leave time for tests to run. Delegation adds model calls and can increase latency and usage: keep it for missions that benefit from this separation.
 
 Future access to an MCP server must use explicitly allowed tools and be validated for each agent. Do not widen to `*` to fix a configuration problem.
 

@@ -10,26 +10,19 @@ import tempfile
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (ROOT, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, PROJECT_ID, KitError, read_json, json_bytes,
+from ..core import (ROOT, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes,
                     digest, merge_defaults, run_timed,
                     record_auto_friction, _ts)
 
 PROJECT_CONTEXT = ('GEMINI.md', 'AGENTS.md')  # repo context files Gemini must read
 
 ENV_MARKER = '# ai-kit : '
+HANDED_OVER = '# Set by the AI Kit before 0.36, now yours: the kit no longer writes authentication; edit these lines here.'
 
-ENV_KEYS = ('GOOGLE_GENAI_USE_VERTEXAI', 'GOOGLE_CLOUD_PROJECT', 'GOOGLE_CLOUD_LOCATION')
-
-def env_text(env_file, managed):
-    """Content of ~/.gemini/.env: the user's lines are kept, the kit lines (marker + managed variables) replaced or removed."""
-    lines = env_file.read_text(encoding='utf-8').splitlines() if env_file.exists() else []
-    kept = [line for line in lines if line.split('=',1)[0].strip() not in ENV_KEYS and not line.strip().startswith(ENV_MARKER)]
-    if managed is not None:
-        label, variables = managed
-        kept += [ENV_MARKER + label + ' (managed by the kit, edit overrides.json)'] + [k+'='+v for k,v in variables.items()]
-    if not kept and not lines:
-        return None
-    return '\n'.join(kept) + '\n' if kept else ''
+def handed_over(text):
+    """~/.gemini/.env as an earlier version wrote it: the values stay (removing them would cut access to the model),
+    only the kit's marker line is reworded, so the file says it is the person's now."""
+    return '\n'.join(HANDED_OVER if line.strip().startswith(ENV_MARKER) else line for line in text.splitlines()) + '\n'
 
 def merge_context_filenames(settings, managed=(), retired=()):
     """Ensure the kit and project context, without removing personal files; remove the layers the kit used to manage and no longer produces."""
@@ -97,7 +90,7 @@ def diagnose_live(returncode, output, timed_out, settings):
         return network
     if timed_out:
         return ('Gemini does not answer in time: the default model is probably unavailable for your access and Gemini is looping on a fallback.',
-                'Pin a model: "model": "gemini-2.5-flash" in ~/.ai-kit/overrides.json then update (or model.name in ~/.gemini/settings.json).')
+                'Choose a model your access allows: /model in gemini, or model.name in ~/.gemini/settings.json (ask IT which one).')
     if 'prepayment credits are depleted' in output or ('402' in output and 'credits' in output):
         return ('AI Studio credits depleted: the configured API key has no balance left (HTTP 402).',
                 'Top up the AI Studio project, or switch to Google sign-in (/auth in gemini), or to Vertex AI (selectedType vertex-ai, GOOGLE_GENAI_USE_VERTEXAI=true, GOOGLE_CLOUD_PROJECT).')
@@ -111,10 +104,10 @@ def diagnose_live(returncode, output, timed_out, settings):
                 'gcloud services enable aiplatform.googleapis.com --project ' + project)
     if 'When using Vertex AI, you must specify' in output:
         return ('Vertex AI authentication without a project or region.',
-                'Declare the project in ~/.ai-kit/overrides.json: "vertex": {"project": "<project>", "location": "<region>"} then update; or export GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION.')
+                'Set GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION in ~/.gemini/.env or in your environment, as your IT procedure says.')
     if 'requires setting the GOOGLE_CLOUD_PROJECT' in output:
         return ('Your Gemini Code Assist account (Standard or Enterprise licence) requires a Google Cloud project.',
-                'Declare "code_assist": {"project": "<project>"} in ~/.ai-kit/overrides.json then update; or export GOOGLE_CLOUD_PROJECT.')
+                'Set GOOGLE_CLOUD_PROJECT in ~/.gemini/.env or in your environment, as your IT procedure says.')
     if 'Please set an Auth method' in output:
         return ('No Gemini authentication configured.',
                 'Run gemini then /auth, or set GEMINI_API_KEY, or GOOGLE_GENAI_USE_VERTEXAI=true with GOOGLE_CLOUD_PROJECT.')
@@ -258,12 +251,10 @@ def write_skills(p: Plan) -> None:
 def agent_markdown(p: Plan, agent: str, definition: dict) -> bytes:
     """Agent in Markdown with front matter, shared by Gemini and agy."""
     agent_defaults = read_json(ROOT/'agents/defaults.json')
-    capability = definition.get('capability', 'default')
     # Identifiers are validated slugs; a JSON string is also a valid YAML string.
     header = ['---', 'name: ai-kit-'+agent, 'description: '+json.dumps(definition['description'], ensure_ascii=False),
               'kind: local', 'tools: '+json.dumps(definition.get('tools', agent_defaults['tools'])),
               'max_turns: '+str(definition.get('max_turns', agent_defaults['max_turns']))]
-    header += (['model: '+p.models[capability]] if capability in p.models else [])
     header += ['timeout_mins: '+str(definition.get('timeout_mins', agent_defaults['timeout_mins'])), '---']
     return ('\n'.join(header)+'\n\n'+p.agent_body(definition)).encode('utf-8')
 
@@ -276,7 +267,7 @@ def was_installed(state):
 
 def remove_kit_settings(p: Plan) -> None:
     """Gemini no longer a target: its settings lose what the kit added (guardrail groups, kit MCP servers, the kit layers
-    in context.fileName, the kit lines of .env); the person's own settings stay. A kit entry edited by hand stops the update."""
+    in context.fileName); the person's own settings stay, and so does what an earlier version wrote in .env. A kit entry edited by hand stops the update."""
     gemini = p.home/'.gemini'
     settings_file = gemini/'settings.json'
     if settings_file.is_file():
@@ -307,55 +298,29 @@ def remove_kit_settings(p: Plan) -> None:
             layers = {rel.split('/', 1)[1] for rel in p.old_files if re.fullmatch(r'\.gemini/\d\d_[A-Z_]+\.md', rel)}
             context['fileName'] = [n for n in context['fileName'] if n not in layers or n == USER_CONTEXT]
         p.writes[settings_file] = json_bytes(settings)
-    env_file = gemini/'.env'
-    if env_file.is_file() and ENV_MARKER in env_file.read_text(encoding='utf-8'):
-        content = env_text(env_file, None)
-        if content:
-            p.writes[env_file] = content.encode('utf-8')
-        else:
-            p.deletes.append(env_file)
+    hand_over_env(p)
+
+def hand_over_env(p: Plan) -> None:
+    env_file = p.home/'.gemini'/'.env'
+    if env_file.is_file():
+        text = env_file.read_text(encoding='utf-8')
+        if ENV_MARKER in text:
+            p.writes[env_file] = handed_over(text).encode('utf-8')
 
 def finalize(p: Plan, active: bool = True) -> None:
-    """Settings ~/.gemini/settings.json (defaults, declared authentication, layers, guardrails, MCP) and ~/.gemini/.env.
+    """Settings ~/.gemini/settings.json (defaults, layers, guardrails, MCP); authentication and model are left to the person.
     Inactive: removes what a previous installation had added there."""
     if not active:
         if was_installed(p.state):
             remove_kit_settings(p)
         return
     gemini = p.home/'.gemini'
-    overrides, state = p.overrides, p.state
+    state = p.state
     settings_file = gemini/'settings.json'
     settings = read_json(settings_file)
     merge_defaults(settings, read_json(Path(__file__).resolve().parent/'gemini_defaults.json'))
-    # Authentication: the kit only touches it when explicitly declared in overrides.json (vertex or code_assist).
-    vertex, code_assist, model = overrides.get('vertex'), overrides.get('code_assist'), overrides.get('model')
-    if vertex is not None and code_assist is not None:
-        raise KitError('overrides.json: declare vertex or code_assist, not both.')
-    if model is not None:
-        if not isinstance(model, str) or not re.fullmatch(r'[a-z0-9][a-z0-9.-]{1,60}', model):
-            raise KitError('model must be a Gemini model name, for example gemini-2.5-flash.')
-        settings.setdefault('model', {})['name'] = model
-    env_managed = None
-    if vertex is not None:
-        if not isinstance(vertex, dict) or not isinstance(vertex.get('project'), str) or not re.fullmatch(PROJECT_ID, vertex['project']):
-            raise KitError('vertex.project must be a Google Cloud project ID.')
-        location = vertex.get('location', 'us-central1')
-        if not isinstance(location, str) or not re.fullmatch(r'[a-z0-9-]+|global', location):
-            raise KitError('Invalid vertex.location.')
-        settings.setdefault('security', {}).setdefault('auth', {})['selectedType'] = 'vertex-ai'
-        env_managed = ('Vertex AI', {'GOOGLE_GENAI_USE_VERTEXAI': 'true', 'GOOGLE_CLOUD_PROJECT': vertex['project'], 'GOOGLE_CLOUD_LOCATION': location})
-    elif code_assist is not None:
-        if not isinstance(code_assist, dict) or not isinstance(code_assist.get('project'), str) or not re.fullmatch(PROJECT_ID, code_assist['project']):
-            raise KitError('code_assist.project must be a Google Cloud project ID.')
-        settings.setdefault('security', {}).setdefault('auth', {})['selectedType'] = 'oauth-personal'
-        env_managed = ('Gemini Code Assist', {'GOOGLE_CLOUD_PROJECT': code_assist['project']})
-    env_file = gemini/'.env'
-    if env_managed is not None or (env_file.exists() and ENV_MARKER in env_file.read_text(encoding='utf-8')):
-        content = env_text(env_file, env_managed)
-        if content == '' and env_file.exists():
-            p.deletes.append(env_file)
-        elif content:
-            p.writes[env_file] = content.encode('utf-8')
+    # Authentication and model belong to the CLI and the IT procedure (0.36): the kit writes neither; what it wrote before stays.
+    hand_over_env(p)
     retired = [rel.split('/',1)[1] for rel in p.old_files if re.fullmatch(r'\.gemini/\d\d_[A-Z_]+\.md', rel)]
     merge_context_filenames(settings, p.context_names, retired)
     original_hooks = settings.get('hooks')

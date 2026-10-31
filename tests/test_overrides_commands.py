@@ -26,7 +26,7 @@ class ExtraCommandsTests(unittest.TestCase):
  def test_prune_keeps_structural_dirs(self):
   self.run_kit('data-analyst','both');self.run_kit('data-analyst','gemini')
   self.assertTrue((self.home/'.gemini/config').is_dir());self.assertFalse((self.home/'.gemini/config/plugins/ai-kit').exists())
- def test_env_file_removed_when_kit_only(self):
-  self.overrides({'vertex':{'project':'demo-project-01'}});self.run_kit();self.assertTrue((self.home/'.gemini/.env').exists())
-  self.overrides({});self.run_kit();self.assertFalse((self.home/'.gemini/.env').exists())
+ def test_no_env_file_written_for_authentication(self):
+  # 0.36: authentication belongs to the CLI; a "vertex" key writes nothing.
+  self.overrides({'vertex':{'project':'demo-project-01'}});self.run_kit();self.assertFalse((self.home/'.gemini/.env').exists())
 if __name__=='__main__':unittest.main()

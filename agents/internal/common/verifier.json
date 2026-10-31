@@ -9,6 +9,5 @@
     "run_shell_command"
   ],
   "max_turns": 15,
-  "timeout_mins": 10,
-  "capability": "fast"
+  "timeout_mins": 10
 }

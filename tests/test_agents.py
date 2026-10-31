@@ -16,12 +16,10 @@ class AgentTests(unittest.TestCase):
   p=self.home/'.ai-kit/overrides.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(v),encoding='utf-8')
  def test_analyst_selection(self):
   self.run_kit();self.assertTrue(self.agent('repo-investigator').exists());self.assertTrue(self.agent('sql-reviewer').exists());self.assertTrue(self.agent('dbt-reviewer').exists());self.assertFalse(self.agent('code-reviewer').exists())
- def test_capability_profiles_map_to_models_only_when_declared(self):
-  self.run_kit('data-developer');self.assertNotIn('model:',self.agent('verifier').read_text(encoding='utf-8'))
+ def test_agents_inherit_the_session_model(self):
+  # 0.36: the kit no longer chooses models; "models" in overrides.json is ignored (and reported), every agent inherits.
   self.overrides({'models':{'fast':'gemini-2.5-flash','deep':'gemini-2.5-pro'}});self.run_kit('data-developer')
-  self.assertIn('model: gemini-2.5-flash',self.agent('verifier').read_text(encoding='utf-8'));self.assertIn('model: gemini-2.5-pro',self.agent('doubter').read_text(encoding='utf-8'));self.assertNotIn('model:',self.agent('sql-reviewer').read_text(encoding='utf-8'))
-  self.overrides({'models':{'fast':'Not A Model'}})
-  with self.assertRaises(KitError):self.run_kit('data-developer')
+  for name in ('verifier','doubter','sql-reviewer'):self.assertNotIn('model:',self.agent(name).read_text(encoding='utf-8'))
  def test_developer_and_switch(self):
   self.run_kit();self.assertFalse(self.agent('doubter').exists());self.run_kit('data-developer');self.assertTrue(self.agent('code-reviewer').exists());self.assertTrue(self.agent('sql-reviewer').exists());self.assertTrue(self.agent('doubter').exists());self.assertTrue(self.agent('repo-investigator').exists())
  def test_extra_and_disable(self):

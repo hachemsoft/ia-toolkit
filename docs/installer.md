@@ -22,7 +22,7 @@ Nobody activates the environment, runs pip, changes the `PATH` or needs administ
 
 ## What it does
 
-- Does not choose the authentication mode or the model: Google sign-in, licensed Code Assist (`code_assist`), Vertex AI (`vertex`) or API key, and `model` only if you declare them in `overrides.json`. See [customization](customization.md#authentication-and-model).
+- Does not configure authentication or the model: they belong to each CLI and to your IT procedure. See [customization](customization.md#authentication-and-model).
 - Detects a declarative identity (active CLI account, git, OS session), asks you to confirm it and writes it at the top of `30_USER.md` when it creates the file. See [identity](identity.md).
 - Stores profile, identity, overrides, fingerprints and backups in `~/.ai-kit`.
 - Refuses to overwrite managed layers, skills, agents or MCP servers that were edited by hand.

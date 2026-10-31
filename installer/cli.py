@@ -170,7 +170,7 @@ def merge_settings(base, extra):
 def unknown_keys(settings):
     """Keys of an overrides.json (or organization defaults) the kit does not know: usually a typo. The schema is the list."""
     known = set(read_json(ROOT/'schemas'/'overrides.schema.json').get('properties', {}))
-    return sorted(k for k in settings if not str(k).startswith(('_', '$')) and k not in known)
+    return sorted(k for k in settings if not str(k).startswith(('_', '$')) and k not in known and k not in RETIRED_KEYS)
 
 def setting_differences(base, effective, prefix=''):
     """Single values the person's overrides change compared with the organization defaults (for doctor)."""
@@ -244,6 +244,13 @@ def skill_note(skill, selected, catalog):
         return ''
     return ('## Not installed here\nThis text cites skills this installation does not have; do not look for them. Instead:\n'
             + ''.join('- `'+name+'`: '+alternative+'.\n' for name, alternative in sorted(missing.items())))
+
+# Authentication and model belong to each CLI and to the IT procedure: the kit stopped writing them in 0.36.
+RETIRED_KEYS = ('vertex', 'code_assist', 'model', 'models')
+
+def retired_key_notice(key):
+    return ('[Info] overrides.json: "'+key+'" is no longer handled by the kit (0.36): what it set before stays in your CLI\'s'
+            ' configuration; change authentication or model in the CLI itself (docs/customization.md#authentication-and-model).')
 
 def unknown_names(overrides, catalog, agent_catalog, notices):
     """disabled_skills and disabled_agents naming nothing the kit knows: a typo, reported, never silently ignored."""
@@ -406,9 +413,6 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     overrides = merge_settings(merge_settings(org_defaults, team_layer), personal)
     if overrides.get('frictions', 'propose') not in ('propose', 'auto', 'off'):
         raise KitError('frictions must be propose (default), auto or off.')
-    models = overrides.get('models', {})
-    if not isinstance(models, dict) or not all(isinstance(k, str) and k in ('fast', 'deep', 'default') and isinstance(v, str) and re.fullmatch(r'[a-z0-9][a-z0-9.-]{1,60}', v) for k, v in models.items()):
-        raise KitError('models must be an object {"fast"|"deep"|"default": "<model name>"}.')
     for key in ('extra_skills','disabled_skills','extra_agents','disabled_agents','extra_commands','disabled_commands'):
         if not isinstance(overrides.get(key,[]),list) or not all(isinstance(x,str) for x in overrides.get(key,[])):
             raise KitError(key+' must be a list of names.')
@@ -515,12 +519,13 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     enabled_mcp = {'ai-kit-'+name: server for name, server in servers.items()}
     notices = []
     unknown_names(overrides, catalog, agent_catalog, notices)
+    notices += [retired_key_notice(key) for key in RETIRED_KEYS if key in overrides]
     p = Plan(active=[a.NAME for a in active], notices=notices,
         skill_notes={skill: skill_note(skill, selected, catalog) for skill in selected},
         home=home, kit=kit, state=state, old_files=old_files, overrides=overrides, profile_id=profile_id, profile=profile,
         catalog=catalog, selected=selected, skill_sources=skill_sources, commands=commands, context_names=context_names,
         kit_text=kit_text, practice_names=practice_names, practice_texts=practice_texts, user_file=context_dir/USER_CONTEXT, context_dir=context_dir,
-        user_context_text=user_context_text(identity), agents=agents, models=models, hooks_dir=hooks_dir,
+        user_context_text=user_context_text(identity), agents=agents, hooks_dir=hooks_dir,
         hook_manifest=hook_manifest, enabled_hooks=enabled_hooks, enabled_mcp=enabled_mcp, writes=writes, deletes=deletes,
         managed_write=managed_write, 
         agent_body=lambda definition: practices+'\n'+agent_instruction(definition)+'\n'+definition['instructions']+'\n')
@@ -1058,6 +1063,9 @@ def doctor_checks(home, cwd=None, problems=None):
         layers = [('~/.ai-kit/overrides.json', personal), ('organization.json defaults', org_defaults)]
         layers += [('organization.json teams.'+state['team'], team_layer)] if state.get('team') else []
         for label, settings in layers:
+            for key in RETIRED_KEYS:
+                if key in settings:
+                    print(retired_key_notice(key).replace('overrides.json', label, 1))
             unknown = unknown_keys(settings)
             status(not unknown, label+': only known keys'+(' (unknown: '+', '.join(unknown)+'; a typo? keys are listed in schemas/overrides.schema.json)' if unknown else ''))
         shared = merge_settings(org_defaults, team_layer)

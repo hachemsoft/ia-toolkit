@@ -6,13 +6,13 @@ First step, always: `sh scripts/bootstrap.sh doctor` (Mac) or `Installer.cmd doc
 
 | Symptom | Cause | What to do |
 | --- | --- | --- |
-| "Your prepayment credits are depleted", HTTP 402 | the AI Studio key has no balance left | top up, or switch to Vertex: `"vertex": {"project": "<project>"}` in `overrides.json`, then `update` |
-| "API Keys are Disallowed" | Google Cloud policy forbids keys | `gcloud auth application-default login`, Vertex in `overrides.json`, remove `GEMINI_API_KEY` from the environment |
+| "Your prepayment credits are depleted", HTTP 402 | the AI Studio key has no balance left | top up, or switch to Google sign-in or Vertex AI with `/auth` in Gemini, as your IT procedure says |
+| "API Keys are Disallowed" | Google Cloud policy forbids keys | `gcloud auth application-default login`, Vertex AI with `/auth` in Gemini, remove `GEMINI_API_KEY` from the environment |
 | "aiplatform.googleapis.com has not been used", HTTP 403 | Vertex API not enabled on the project | `gcloud services enable aiplatform.googleapis.com --project <project>` |
-| Gemini never answers, "Model fallback activated" in a loop | default model unavailable on your access | `"model": "gemini-2.5-flash"` (or another model available to you) in `overrides.json`, then `update` |
-| "This account requires setting the GOOGLE_CLOUD_PROJECT…" | Code Assist Standard or Enterprise licence with no project declared | `"code_assist": {"project": "<project>"}` in `overrides.json`, then `update` |
-| "When using Vertex AI, you must specify…" | project and region missing | `"vertex": {"project": "<project>", "location": "<region>"}` in `overrides.json`, then `update` |
-| Vertex variables are ignored | `selectedType` is still `gemini-api-key` | `update` with `vertex` in `overrides.json` fixes it; otherwise `/auth` in Gemini |
+| Gemini never answers, "Model fallback activated" in a loop | default model unavailable on your access | choose a model available to you: `/model` in Gemini, or `model.name` in `~/.gemini/settings.json` |
+| "This account requires setting the GOOGLE_CLOUD_PROJECT…" | Code Assist Standard or Enterprise licence with no project declared | `GOOGLE_CLOUD_PROJECT=<project>` in `~/.gemini/.env` or your environment |
+| "When using Vertex AI, you must specify…" | project and region missing | `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION` in `~/.gemini/.env` or your environment |
+| Vertex variables are ignored | `selectedType` is still `gemini-api-key` | choose Vertex AI with `/auth` in Gemini |
 | "Skill conflict detected" at startup, the command does not do what the docs say | a personal copy with the same name in `~/.agents/skills` hides the kit's skill | `doctor` lists hidden skills; remove or rename the personal copy |
 | in one repo, a command behaves differently from the docs, or differently from one CLI to another | the repo has a skill named like a kit skill (`.agents/skills/<name>`): depending on the CLI, the repo's, the kit's or both are used | `doctor`, run from the repo ([how](getting-started.md#run-the-kit)), lists the clashes; rename the repo skill and point to it from `AGENTS.md` ([project layer](project-context.md#how-the-repo-combines-with-your-layers)) |
 | agy asks for permission on every shell command | normal behaviour: agy permissions belong to each person | answer; "always allow" saves the rule in your agy settings, and the kit does not touch them |

@@ -147,22 +147,6 @@
         ]
       }
     },
-    "models": {
-      "type": "object",
-      "description": "Model per agent capability; without it, agents use the main model.",
-      "properties": {
-        "fast": {
-          "type": "string"
-        },
-        "deep": {
-          "type": "string"
-        },
-        "default": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
     "skill_prefix": {
       "description": "Claude Code: prefix of the kit's skills, and of a kit command whose name one of your own skills or commands already has (default \"ai-kit-\"; \"\" for none, refused if a name collides).",
       "type": "string",
@@ -175,39 +159,6 @@
         "off"
       ],
       "description": "On a friction signal: propose /friction (default), log it automatically, or say nothing."
-    },
-    "code_assist": {
-      "type": "object",
-      "description": "Gemini Code Assist licence: its Google Cloud project. Not with vertex.",
-      "properties": {
-        "project": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "project"
-      ],
-      "additionalProperties": false
-    },
-    "vertex": {
-      "type": "object",
-      "description": "Gemini through Vertex AI: project and region. Not with code_assist.",
-      "properties": {
-        "project": {
-          "type": "string"
-        },
-        "location": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "project"
-      ],
-      "additionalProperties": false
-    },
-    "model": {
-      "type": "string",
-      "description": "Main model imposed on the CLI, for example gemini-2.5-flash."
     }
   },
   "patternProperties": {

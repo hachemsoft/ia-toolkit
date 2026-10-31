@@ -16,8 +16,7 @@ IDENTITY = {'email': 'test@example.org', 'name': 'Test', 'source': 'option'}
 FULL_OVERRIDES = {
     'extra_commands': ['ask', 'handoff'], 'extra_skills': ['prototype'], 'disabled_skills': [],
     'extra_agents': [], 'disabled_agents': [], 'mcp': {}, 'hooks': {'dbt-prod-guard': True, 'protected-paths': True},
-    'models': {'fast': 'gemini-2.5-flash', 'deep': 'gemini-2.5-pro'}, 'frictions': 'auto',
-    'vertex': {'project': 'demo-project-01', 'location': 'europe-west1'}, 'model': 'gemini-2.5-flash',
+    'frictions': 'auto', 'skill_prefix': 'kit-',
 }
 SCENARIOS = [(p, t, None) for p in ('data-analyst', 'data-developer', 'general') for t in ('gemini', 'both', 'all')] + [('data-developer', 'both', FULL_OVERRIDES), ('data-developer', 'all', FULL_OVERRIDES)] + [('data-developer', 'codex', None), ('data-analyst', 'agy', None)] + [(p, 'all', None) for p in profile_ids() if p not in ('data-analyst', 'data-developer', 'general')]
 

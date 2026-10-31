@@ -5,5 +5,5 @@
   "defaults": {
     "frictions": "propose"
   },
-  "_defaults_doc": "Organization defaults (same keys as ~/.ai-kit/overrides.json: code_assist, vertex, model, models, hooks, mcp, extra_skills, disabled_commands, frictions...). Each person's overrides.json is applied on top: lists add up, objects combine, the person's value wins for a single value."
+  "_defaults_doc": "Organization defaults (same keys as ~/.ai-kit/overrides.json: hooks, mcp, extra_skills, disabled_commands, frictions, skill_prefix...). Each person's overrides.json is applied on top: lists add up, objects combine, the person's value wins for a single value."
 }

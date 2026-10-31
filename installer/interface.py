@@ -35,7 +35,6 @@ class Plan:
     user_file: Path
     user_context_text: str
     agents: List[Tuple[str, Dict[str, Any]]]  # (name, definition)
-    models: Dict[str, Any]
     hooks_dir: Path
     hook_manifest: Dict[str, Any]
     enabled_hooks: Dict[str, Any]

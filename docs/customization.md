@@ -17,7 +17,7 @@ Settings are combined at every `setup` and `update`, in this order, each on top 
 ```json
 {
   "allowed_domains": ["company.com"],
-  "defaults": { "code_assist": { "project": "my-gcp-project" }, "hooks": { "dbt-prod-guard": true } }
+  "defaults": { "hooks": { "dbt-prod-guard": true } }
 }
 ```
 
@@ -144,28 +144,24 @@ A General-profile developer who wants `/ask` and `/handoff`, prototyping, no `/r
   "disabled_agents": [],
   "mcp": { "github": true },
   "hooks": { "dbt-prod-guard": true },
-  "code_assist": { "project": "my-gcp-project" },
-  "model": "gemini-2.5-flash",
-  "models": { "fast": "gemini-2.5-flash", "deep": "gemini-2.5-pro" },
   "frictions": "propose"
 }
 ```
 
-`frictions` sets what the agent does on the six friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. `models` sets a model per agent capability (`fast`, `deep`); see [agents](agents.md#capability-profiles). `model` and `models` take effect only in the CLIs that support them ([matrix](cli/matrice.md)); elsewhere they are ignored. Then `update`. Every key is optional; a missing key changes nothing. A skill added through `extra_commands` comes with its dependencies; a skill required by another one cannot be disabled on its own, and `update` says so.
+`frictions` sets what the agent does on the six friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. Then `update`. Every key is optional; a missing key changes nothing. A skill added through `extra_commands` comes with its dependencies; a skill required by another one cannot be disabled on its own, and `update` says so.
 
 ## Authentication and model
 
-The kit chooses neither the authentication mode nor the model: each organization has its own. Without a declaration in `overrides.json`, the kit touches no authentication or model setting; you configure the CLI as usual. The keys below apply to CLIs that go through Google Cloud; their exact effect per CLI is on its page ([Gemini CLI](cli/gemini.md#authentication-and-model)). `doctor --live` recognizes the failures of each mode and gives the key to write.
+The kit configures neither: signing in to the model provider and choosing a model belong to each CLI and to the company's IT procedure (personal account, licence, cloud project, API key…). Configure them in the CLI as usual; `doctor --live` still recognizes the usual failures and says what to set, in the CLI or in its own files, never in `overrides.json`. The agents inherit the model of the session.
 
-| Your situation | In `overrides.json` | What `update` does |
+| CLI | Authentication | Model |
 | --- | --- | --- |
-| Google sign-in, individual account (free Gemini Code Assist) | nothing | nothing |
-| Google sign-in, Code Assist Standard or Enterprise license ("This account requires setting the GOOGLE_CLOUD_PROJECT…") | `"code_assist": {"project": "<gcp-project>"}` | `selectedType` set to `oauth-personal`, `GOOGLE_CLOUD_PROJECT` in `~/.gemini/.env` |
-| Vertex AI with application default credentials (`gcloud auth application-default login`) | `"vertex": {"project": "<gcp-project>", "location": "<region>"}` | `selectedType` set to `vertex-ai`, `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` in `~/.gemini/.env` |
-| AI Studio API key | nothing | nothing: `GEMINI_API_KEY` stays yours |
-| The default model loops ("Model fallback activated") or is not available on your access | `"model": "<model name>"` | `model.name` in `~/.gemini/settings.json` |
+| Gemini CLI | `/auth`; a project or Vertex AI through `~/.gemini/.env` or the environment ([its page](cli/gemini.md#authentication-and-model)) | `/model` |
+| Antigravity CLI | Google account, or `AGY_ADC_AUTH=1` for a cloud project ([its page](cli/agy.md#authentication-google-account-or-google-cloud-project)) | its own choice |
+| Codex CLI | `codex login` | the session model |
+| Claude Code | `/login`, or the provider's variables ([its page](cli/claude-code.md)) | `/model` |
 
-For agy, the Vertex equivalent is the environment variable `AGY_ADC_AUTH=1` (see [agy](cli/agy.md#authentication-google-account-or-google-cloud-project)); the kit does not set it. `vertex` and `code_assist` are mutually exclusive. The Vertex region defaults to `us-central1` if omitted. In `~/.gemini/.env`, your lines are kept; the kit's lines are marked with a `# ai-kit :` comment and removed if you delete the key from `overrides.json` (`selectedType` then stays as is; change it with `/auth` if needed). Credentials themselves (Google sign-in, `gcloud`, key) never go through the kit.
+Before 0.36 the kit could write some of these settings for the first CLI of the table (`vertex`, `code_assist`, `model`, `models` in `overrides.json`). What it wrote stays, now yours: the lines of its `.env` file (their `# ai-kit :` comment says so) and the authentication type or model name in its settings. These keys are ignored if they remain in `overrides.json`, and `update` and `doctor` say so.
 
 ## Guardrails
 

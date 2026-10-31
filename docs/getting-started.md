@@ -64,7 +64,7 @@ To run `doctor` for a repo (it then also lists the repo skills named like kit sk
 
 Download and extract the new ZIP, then run its installer, as for the first time, and choose **Update**. CLIs, profile, team, choices, `overrides.json` and `30_USER.md` are kept. The new folder is now your kit folder; the old one can be deleted, since nothing installed depends on it. `update` alone re-applies the version of the folder you have. In a git clone, it works in three steps and reports each one: fetch the new version (`git pull --ff-only`; never over local changes, never a reset or a merge), reinstall the kit package in the private environment, apply the configuration; if the fetch fails, it says the update is incomplete.
 
-If your organization requires a Google Cloud project or a model, that is one line in `~/.ai-kit/overrides.json`, provided by your platform team; see [customization](customization.md#authentication-and-model). Otherwise there is nothing to declare.
+Signing in to the model and choosing it are done in your CLI, following your IT procedure; the kit does not configure them ([customization](customization.md#authentication-and-model)). Otherwise there is nothing to declare.
 
 ## 2. First session (five minutes)
 

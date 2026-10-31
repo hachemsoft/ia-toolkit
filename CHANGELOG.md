@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.36.0
+
+Authentication and model left to each CLI:
+- The kit no longer writes authentication or models: `vertex`, `code_assist`, `model` and `models` in `overrides.json` (or the organization's defaults) are ignored, and `update` and `doctor` say so. Signing in and choosing a model are done in each CLI, following the IT procedure; `docs/customization.md` says where, CLI by CLI.
+- Nothing that worked stops working: what an earlier version wrote stays, now the person's. The lines of `~/.gemini/.env` are kept (their `# ai-kit :` comment now says they are yours), and so are `selectedType` and `model.name` in `~/.gemini/settings.json`; `uninstall` keeps them too.
+- Agents no longer get a `model:` header: they inherit the session model on every CLI (the `capability` field of the agents is gone).
+- `doctor --live` still diagnoses Gemini's authentication failures, and now says what to set in the CLI or its own files, never in `overrides.json`.
+
 ## 0.35.0
 
 Claude Code, the fourth supported CLI, with everything the others get:

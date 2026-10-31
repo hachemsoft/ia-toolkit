@@ -33,7 +33,6 @@ Codex runs a hook only after it has been approved. The kit installs one by defau
 - **Repository context**: Codex natively reads the `AGENTS.md` of the repository and its folders, as the kit organizes it.
 - **Logs read by `usage`**: `~/.codex/history.jsonl` (typed prompts, `$intent` or `/intent` commands).
 - **Evals**: `python3 evals/run.py --cli codex` runs `codex exec` in a read-only sandbox; `/intent` in a case becomes `$intent`.
-- **Capability profiles**: the `models` key of `overrides.json` holds Gemini model names and is not applied to Codex agents, which keep the session model.
 
 ## Codex troubleshooting
 

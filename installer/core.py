@@ -98,8 +98,6 @@ def inside(base, relative):
         raise KitError('Path outside the allowed scope: ' + str(path))
     return path
 
-PROJECT_ID = r'[a-z][a-z0-9-]{4,28}[a-z0-9]'
-
 def merge_defaults(current, defaults):
     for key, value in defaults.items():
         if key not in current:

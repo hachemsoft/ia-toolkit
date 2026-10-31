@@ -12,15 +12,7 @@ What the kit does for Gemini CLI, and what is specific to this CLI. Behavior ver
 
 ## Authentication and model
 
-The kit touches these only when declared in `overrides.json`; details in [customization](../customization.md#authentication-and-model).
-
-| Declaration | Effect in Gemini |
-| --- | --- |
-| `vertex` | `security.auth.selectedType` set to `vertex-ai`; `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` in `~/.gemini/.env` |
-| `code_assist` | `selectedType` set to `oauth-personal`; `GOOGLE_CLOUD_PROJECT` in `~/.gemini/.env` |
-| `model` | `model.name` in `settings.json` |
-
-The kit lines in `.env` carry the comment `# ai-kit :` and disappear when the key is removed.
+The kit does not set them: use `/auth` and `/model` in Gemini, or `~/.gemini/settings.json` and `~/.gemini/.env` as your IT procedure says (for example `GOOGLE_CLOUD_PROJECT` for a Code Assist Standard or Enterprise licence, `GOOGLE_GENAI_USE_VERTEXAI`, `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION` with `selectedType: vertex-ai` for Vertex AI). What a version before 0.36 wrote there stays, now yours; see [customization](../customization.md#authentication-and-model). `doctor --live` names the missing setting when the call fails.
 
 ## Check in Gemini
 
@@ -37,14 +29,14 @@ The `protected-paths` guardrail always blocks agent writes to `~/.gemini/setting
 - **`~/.agents/skills` alias**: Gemini reads it too, and it wins over `~/.gemini/skills` when names match ("Skill conflict detected" at startup). `doctor` lists the kit skills hidden this way.
 - **Subfolder context**: when launched at the root of a repository, Gemini also reads the `AGENTS.md` and `GEMINI.md` of subfolders; a `.geminiignore` limits what it walks.
 - **Non-interactive mode (`gemini -p`)**: the skill activation tool is not exposed; the kit commands say what to do without it. `plan` mode also blocks skills.
-- **Subagents**: enabled by default since 0.65. An `experimental.enableAgents` set to `false` disables them; the kit respects it and `doctor` reports it. The `model:` header of an agent is read (capability profiles, see [agents](../agents.md)).
+- **Subagents**: enabled by default since 0.65. An `experimental.enableAgents` set to `false` disables them; the kit respects it and `doctor` reports it. The kit's agents carry no `model:` header: they inherit the session model.
 - **Identity**: the active Google account is read from `~/.gemini/google_accounts.json` (`active` field), never the tokens.
 
 ## Gemini troubleshooting
 
 - **Gemini missing**: the kit prepares the files but does not install Gemini. Use the IT procedure, then sign in.
 - **Context not loaded**: run `/memory show` in a repository. If layers are missing, check `context.fileName` and any managed policy.
-- **Vertex variables ignored**: `selectedType` is still `gemini-api-key`. Declare `vertex` in `overrides.json` then run `update`, or use `/auth`.
+- **Vertex variables ignored**: `selectedType` is still `gemini-api-key`. Choose Vertex AI with `/auth`, or set `security.auth.selectedType` to `vertex-ai` in `~/.gemini/settings.json`.
 - **Legacy block in `GEMINI.md`** (0.0.x installs): copy your additions to `~/.gemini/30_USER.md`, remove the block between the `ai-kit` markers in `~/.gemini/GEMINI.md`, then run `update`.
 - **Skill installed outside the kit** (for example `gemini skills install`): remove it, or add it to `disabled_skills`.
 
