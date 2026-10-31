@@ -16,3 +16,7 @@ Get the SQL, the schemas and the authorized scope. Examine partition filters, co
 
 ## Forbidden
 No run of an expensive query without a set budget and without a dry run when one is available. No rewrite that changes semantics without verifying it on a known scope. Never two changes between two measurements.
+
+## In the kit commands
+- `/build`: a BigQuery query follows this playbook (and bigquery-cost-review, if installed, before and after).
+- `/diagnose`: cost or slowness in BigQuery starts with the query plan, as above.

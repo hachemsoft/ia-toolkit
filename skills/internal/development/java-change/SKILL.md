@@ -14,3 +14,6 @@ Read the repo instructions, the `pom.xml` or `build.gradle`, the Java and framew
 | "I'll add Lombok, it will be shorter" | A new dependency is a team decision; follow the repo's style. |
 | "I'll mock everything, it's faster" | One mock per external boundary; test business logic with real objects. |
 | "I'll rename this JSON field while I'm at it" | That is a contract change; decide and version it separately. |
+
+## In the kit commands
+- `/build`: a Java change follows this playbook.

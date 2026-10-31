@@ -14,3 +14,6 @@ Read the repo's instructions, dependencies and neighbouring examples. Identify A
 | "I tested it by hand" | A manual run is not repeatable; turn it into a test or paste the exact output. |
 | "I'll migrate the framework along the way" | Out of scope; a migration is a change in its own right with its own plan. |
 | "The existing tests already cover this" | Name them; if you cannot, they do not cover it. |
+
+## In the kit commands
+- `/build`: a Python or JavaScript change follows this playbook.

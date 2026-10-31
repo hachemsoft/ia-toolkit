@@ -17,3 +17,8 @@ Identify the grain of each CTE and of the output. Check keys and cardinality bef
 
 ## Forbidden
 No DISTINCT to hide row multiplication. No fix proposed without the assertion query that proves it. No write or delete operation on tables: the review reads and proposes, and the person applies.
+
+## In the kit commands
+- Before changing a transformation or a query: establish the grain, join cardinalities, date rules and NULLs.
+- `/diagnose`: for a wrong result in SQL or dbt, check grain and cardinality first; the pass/fail signal is usually an assertion query (duplicates on the key, NULLs, a total) or a dbt test.
+- `/review`: the Domain pass checks grain preserved through each join and aggregation, join cardinality, NULL and date rules, partition filters and cost, with the repo's conventions; delegate it to the ai-kit-sql-reviewer agent when it is available.

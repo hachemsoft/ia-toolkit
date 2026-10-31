@@ -54,7 +54,7 @@ Two folders, two levels of commitment. `skills/internal/`: shipped and maintaine
    }
    ```
    `category`: `workflow` (a step, behind a command), `tool` (utility, behind a command), `domain` (domain playbook, activated by the task), `reference` (vocabulary read by other skills), `setup`. `tier`: `core` (in all profiles, a test checks it), `profile` (depends on the profile), `optional` (through `extra_skills` or `extra_commands`). `requires` installs the dependencies with it; `needs_agents: true` signals that it delegates to subagents.
-3. **The profiles** `profiles/*.json`: add it to the profiles that need it, or leave it `optional`. A domain playbook is never in the `general` profile.
+3. **The profiles** `profiles/*.json`: add it to the profiles that need it, or leave it `optional`. A domain playbook is never in the `general` profile. It ends with a `## In the kit commands` section (what it changes in `/build`, `/diagnose`, `/review`…): the commands stay neutral and send to the matching playbook.
 4. **A command, if it is a step or a tool**: a `commands/<name>.md` file, with a header (`name`, `description` in English, `category`, `stage` for a workflow, `skills`, `order`) and a prompt with `{{args}}`; see [the pivot format](format.md). Each adapter turns it into its CLI's command. Add an entry in `docs/tools.md` for a tool.
 5. **An eval case** `evals/cases/NN-<name>.json` with the prompt that must trigger the skill and an observable criterion, then `python3 -m unittest discover -s tests` and `python3 evals/run.py`.
 6. **Distribute**: commit, merge request (MR), tag; workstations get it with the next version of the kit (a new ZIP, or `update` in a git clone, which pulls first).

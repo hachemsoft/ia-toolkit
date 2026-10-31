@@ -25,3 +25,7 @@ A KPI without a written definition produces two different numbers as soon as a s
 
 ## Forbidden
 No production query before the written definition. No new term when the glossary already has one. No published number without an assertion on a known case.
+
+## In the kit commands
+- `/intent`: when the intent concerns a KPI or a metric, settle grain, population, period and exclusions before closing the interview.
+- `/guide`: a KPI or metric definition starts with `/intent`, then `/build`.

@@ -26,3 +26,6 @@ Cost is measured, not eyeballed. One change between two measurements.
 
 ## Forbidden
 No recommendation without a before and after measurement. No run beyond the set budget. No semantic change presented as an optimization.
+
+## In the kit commands
+- `/build` and `/diagnose`: measure before and after the change, as above.

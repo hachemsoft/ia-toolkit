@@ -10,6 +10,6 @@ Answer in the user's language (where wait-what asks for Simplified Technical Eng
 
 Input: {{args}}
 
-Read-only: use the file-reading and search tools only; never run shell commands, dbt or queries for this command.
+Read-only: use the file-reading and search tools only; never run shell commands, builds or queries for this command.
 
 When the explanation is worth keeping, offer to save it as a reference sheet under docs/learn/<topic-slug>/reference/.

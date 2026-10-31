@@ -14,3 +14,7 @@ Read `AGENTS.md`, the environment layout (folders, workspaces, overlays, Helm va
 | "I'll apply in dev, it won't break anything" | A shared environment is still shared; propose the command, do not run it. |
 | "I'll use `latest`, it will always be up to date" | An unpinned version changes without review; pin it and bump the version through a merge request (MR). |
 | "Rollback, we'll see if it breaks" | Without a written rollback, the incident lasts as long as it takes to invent one. |
+
+## In the kit commands
+- `/build`: infrastructure or delivery (Terraform, Kubernetes, Helm, a CI/CD pipeline, a Dockerfile) follows this playbook; never apply or deploy yourself.
+- `/diagnose`: a failed deployment, pipeline or infrastructure change is investigated with read-only evidence only.

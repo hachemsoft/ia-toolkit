@@ -26,3 +26,7 @@ An incremental model is defined by its replay: if you cannot say what happens wh
 
 ## Forbidden
 No incremental model without a key verified unique. No replay untested on the development target. No `--full-refresh` in production without a written instruction.
+
+## In the kit commands
+- `/build`: an incremental model or a replay follows this playbook.
+- `/diagnose`: an incremental model that duplicates or loses rows follows this playbook.

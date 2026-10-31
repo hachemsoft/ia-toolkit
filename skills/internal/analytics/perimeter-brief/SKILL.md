@@ -26,3 +26,6 @@ The document you give to someone joining a perimeter, and the first lesson of `/
 
 ## Forbidden
 No statement without a supporting file path. No writing to the repo without agreement. No quiz on anything that is not in the brief.
+
+## In the kit commands
+- `/learn`: when the topic is a data perimeter (sources, models, KPIs, rules, owners), start with a one-page perimeter brief and a ten-question quiz grounded in the repo's models and docs.

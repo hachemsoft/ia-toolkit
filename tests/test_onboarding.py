@@ -165,9 +165,12 @@ class AnalystReviewTests(unittest.TestCase):
 
     def test_review_in_the_data_analyst_profile_with_sql_and_dbt(self):
         self.assertIn('review', self.install())
-        prompt = (self.home/'.gemini/commands/review.toml').read_text(encoding='utf-8')
-        for name in ('sql-review', 'dbt-model-change', 'ai-kit-sql-reviewer', 'ai-kit-dbt-reviewer'):
-            self.assertIn(name, prompt)
+        # The command stays neutral; the analyst's installed SQL and dbt playbooks carry the review checks.
+        self.assertIn('"In the kit commands" section', (self.home/'.gemini/commands/review.toml').read_text(encoding='utf-8'))
+        for skill, agent in (('sql-review', 'ai-kit-sql-reviewer'), ('dbt-model-change', 'ai-kit-dbt-reviewer')):
+            text = (self.home/'.gemini/skills'/skill/'SKILL.md').read_text(encoding='utf-8')
+            self.assertIn('`/review`', text)
+            self.assertIn(agent, text)
 
     def test_personal_choice_kept(self):
         self.assertNotIn('review', self.install({'disabled_commands': ['review']}))

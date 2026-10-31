@@ -17,3 +17,8 @@ Read dbt_project.yml, the versions and neighbouring models. Define the grain, so
 
 ## Forbidden
 No `dbt run`, `dbt build` or `--full-refresh` on a production target. No change to the model before the dbt test that describes it. No test deleted or weakened to make a run pass.
+
+## In the kit commands
+- `/build`: `dbt test` is the red-green loop, on the development target.
+- `/test`: when AGENTS.md has no "Verifying your work" table, run `dbt build --select <changed models>+` on the development target; build everything when a shared file changed (macros, `dbt_project.yml`, packages, seeds).
+- `/review` and `/test`: the cross-area impact is the descendants of the changed models; delegate the dbt review to the ai-kit-dbt-reviewer agent when it is available.

@@ -22,9 +22,17 @@ class PlaybookTests(unittest.TestCase):
    with contextlib.redirect_stdout(io.StringIO()):apply('data-developer',home)
    text=(home/'.gemini/agents/ai-kit-doubter.md').read_text(encoding='utf-8');header=text.split('---')[1]
    self.assertIn('tools: ["read_file", "grep_search"]',header);self.assertIn('unproven',text)
- def test_commands_reference_playbooks(self):
+ def test_commands_stay_neutral_and_playbooks_carry_their_steps(self):
+  # Commands name no domain: they send to the matching installed playbook, whose "In the kit commands" section holds the details.
+  import re
   cmds={c['name']:c['prompt'] for c in load_commands()}
-  self.assertIn('kpi-definition',cmds['intent']);self.assertIn('incremental-replay',cmds['build']);self.assertIn('bigquery-cost-review',cmds['diagnose']);self.assertIn('ai-kit-doubter',cmds['review']);self.assertIn('ai-kit-verifier',cmds['build'])
+  for name in ('build','diagnose','intent','review','learn'):self.assertIn('"In the kit commands" section',cmds[name],name)
+  domain=re.compile(r'(?i)\b(bigquery|kpi|incremental|terraform|kubernetes|helm|java)\b|dbt test|dbt build|kpi-definition|sql-review|dbt-model-change')
+  for name,prompt in cmds.items():self.assertIsNone(domain.search(prompt),name)
+  catalog=read_json(ROOT/'skills/catalog.json')
+  for skill in ('sql-review','dbt-model-change','bigquery-query-review','bigquery-cost-review','kpi-definition','incremental-replay','perimeter-brief','infra-change','java-change','python-js-change'):
+   self.assertIn('## In the kit commands',(ROOT/catalog[skill]['path']/'SKILL.md').read_text(encoding='utf-8'),skill)
+  self.assertIn('ai-kit-doubter',cmds['review']);self.assertIn('ai-kit-verifier',cmds['build'])
 
 class EvalSuiteTests(unittest.TestCase):
  def test_cases_valid_and_reference_installed_commands(self):
