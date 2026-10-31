@@ -4,6 +4,6 @@ Adapter (required), ContextHost and LiveCheck (optional capabilities).
 The first of ADAPTERS is the default CLI, installed when no CLI is detected.
 Adding a CLI = writing a module here and adding it to ADAPTERS; see docs/cli/matrice.md.
 """
-from . import gemini, agy, codex
+from . import gemini, agy, codex, claude
 
-ADAPTERS = (gemini, agy, codex)
+ADAPTERS = (gemini, agy, codex, claude)

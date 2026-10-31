@@ -26,7 +26,7 @@ Running the installer again once the kit is installed opens a menu: **Update**, 
    | --- | --- |
    | none | those chosen at the last installation; the first time, those present on the workstation (Gemini CLI if none) |
    | `auto` | those present on the workstation; Gemini CLI if none |
-   | `gemini`, `agy`, `codex` | that CLI only |
+   | `gemini`, `agy`, `codex`, `claude` | that CLI only |
    | `both` | Gemini CLI and Antigravity CLI |
    | `all` | all three |
 
@@ -78,7 +78,7 @@ If your organization requires a Google Cloud project or a model, that is one lin
 | a skill for this project, or a project variant of a kit skill | `<repo>/.agents/skills/<name>/SKILL.md`: give it a name of its own (for example `<repo>-sql-review`) and say in `AGENTS.md` when to use it; a kit skill's name gives different results per CLI ([matrix](cli/matrice.md)) | a new CLI session in the repo; the CLI may ask you to trust the folder first |
 
 1. Go to your repo: `cd <repo folder>`. Without this, the agent does not see the project context.
-2. Start your CLI: `gemini`, `agy` or `codex`. In Gemini and agy, commands are written `/guide`; in Codex, `$guide`. This page writes them with `/`. The first time, Codex asks you to review the kit's hooks: answer "Trust all and continue" (they keep the agent from changing its own configuration).
+2. Start your CLI: `gemini`, `agy`, `codex` or `claude`. In Gemini, agy and Claude Code, commands are written `/guide`; in Codex, `$guide`. This page writes them with `/`. The first time, Codex asks you to review the kit's hooks: answer "Trust all and continue" (they keep the agent from changing its own configuration).
 3. Type: **"Initialize the project context"**. The agent proposes, file by file and with your approval, `AGENTS.md` (one page about the repo), `GLOSSARY.md` (the domain terms), `REVIEW.md` (what a review checks) and two `.gitignore` lines for working notes. If someone has already done this in the repo, skip it.
 4. Type: `/guide I need to …` with today's need. It answers: which level of ceremony, which command, what it produces, an example prompt.
 

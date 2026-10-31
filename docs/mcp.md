@@ -78,7 +78,7 @@ Full example:
 }
 ```
 
-Then `update`, and restart the CLI. Check with the CLI's own MCP command that the server answers (each CLI's command and settings file: [CLI matrix](cli/matrice.md)). Then run `doctor`: its line `[Info] MCP servers: …` lists what is installed.
+Then `update`, and restart the CLI (Claude Code: close its sessions before `update`, see [its page](cli/claude-code.md#close-claude-code-before-an-update)). Check with the CLI's own MCP command that the server answers (each CLI's command and settings file: [CLI matrix](cli/matrice.md)). Then run `doctor`: its line `[Info] MCP servers: …` lists what is installed.
 
 The older format, `{"enabled": true, "server": {…}}` for a server of your own or `{"enabled": true}` for one of the organization, still works.
 

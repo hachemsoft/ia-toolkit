@@ -18,7 +18,7 @@ A skill describes a procedure. An agent receives a bounded mission in a separate
 
 ## Usage
 
-After setup or update, restart the CLI, then list the agents with its command (see its page: [Gemini CLI](cli/gemini.md), [Antigravity CLI](cli/agy.md), [Codex CLI](cli/codex.md)).
+After setup or update, restart the CLI, then list the agents with its command (see its page: [Gemini CLI](cli/gemini.md), [Antigravity CLI](cli/agy.md), [Codex CLI](cli/codex.md), [Claude Code](cli/claude-code.md)).
 
 Examples:
 
@@ -54,6 +54,7 @@ How far the tool list holds depends on the CLI (the `AGENT_TOOLS` contract of ea
 | Gemini CLI | native | the agent only gets the tools listed in its header: a reviewer cannot write or run the shell |
 | Antigravity CLI | instruction | the header carries the list, but agy applying it is not verified: the prompt says "read only", nothing technical prevents a write |
 | Codex CLI | instruction | a role holds instructions only; the session's sandbox and approvals apply, as for the main agent |
+| Claude Code | native | the agent only gets the tools in its header (`Read`, `Grep`, plus `Glob` and `Bash` for the verifier) |
 
 Where it is only an instruction, the kit never claims a reviewer cannot write: the prompt asks it, the CLI's sandbox and approvals are the barrier. The parent must provide the diff or relevant results when they are not accessible.
 
@@ -69,7 +70,7 @@ Future access to an MCP server must use explicitly allowed tools and be validate
 - `agents/internal/<category>/<name>.json`: role and instructions, independent of any CLI.
 - `agents/defaults.json`: default tools and settings, shared by all CLIs.
 - `profiles/*.json`: agents selected per role.
-- Output: one file per agent, in the format and location each CLI reads: `ai-kit-<name>.md` for Gemini and agy, `~/.codex/ai-kit/agents/<name>.toml` declared in `config.toml` for Codex ([matrix](cli/matrice.md)).
+- Output: one file per agent, in the format and location each CLI reads: `ai-kit-<name>.md` for Gemini and agy, `~/.codex/ai-kit/agents/<name>.toml` declared in `config.toml` for Codex, `~/.claude/agents/ai-kit-<name>.md` for Claude Code ([matrix](cli/matrice.md)).
 
 The installer generates the files, records them in its state, protects local modifications and removes old untouched outputs when the profile changes.
 

@@ -45,9 +45,9 @@ class SummaryTests(unittest.TestCase):
     def test_no_cli_available(self):
         self.install()
         out = self.summary(found())
-        for label in ('Gemini CLI', 'Antigravity CLI', 'Codex CLI'):
+        for label in ('Gemini CLI', 'Antigravity CLI', 'Codex CLI', 'Claude Code'):
             self.assertIn(label+': not found on this workstation; its configuration is prepared', out)
-        self.assertIn('Next step: install Gemini CLI or Antigravity CLI or Codex CLI following your IT procedure', out)
+        self.assertIn('Next step: install Gemini CLI or Antigravity CLI or Codex CLI or Claude Code following your IT procedure', out)
         self.assertNotIn('start `', out)
         self.assertNotRegex(out, FALSE_SUCCESS)
 

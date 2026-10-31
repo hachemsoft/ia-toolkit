@@ -26,7 +26,7 @@ First step, always: `sh scripts/bootstrap.sh doctor` (Mac) or `Installer.cmd doc
 
 ## Other cases
 
-CLI-specific issues are on each CLI's page: [Gemini CLI](cli/gemini.md#gemini-troubleshooting), [Antigravity CLI](cli/agy.md#troubleshooting), [Codex CLI](cli/codex.md).
+CLI-specific issues are on each CLI's page: [Gemini CLI](cli/gemini.md#gemini-troubleshooting), [Antigravity CLI](cli/agy.md#troubleshooting), [Codex CLI](cli/codex.md), [Claude Code](cli/claude-code.md).
 
 - **Python missing, too old or blocked**: the launcher says which, and what to ask IT: Python 3.9 or newer (3.11 recommended), usable by a standard account, provided or approved by the company. On Windows, the Microsoft Store alias without Python counts as missing; on a Mac, `/usr/bin/python3` without the developer tools too (the launcher does not trigger their installation). Do not change company policies.
 - **`Installer.cmd` blocked, or Windows asks to confirm a downloaded file**: follow your company's rule; if it is blocked, ask IT. The launcher only finds Python and runs `scripts\launcher.py`, which installs the kit in its private environment from the ZIP's own files; that helps IT decide. Do not unblock the file or change the policy yourself.

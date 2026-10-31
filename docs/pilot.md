@@ -7,7 +7,7 @@ Goal: fix the kit on real tickets before opening it to the whole team, and check
 1. Get the kit: download `ai-kit-<version>.zip` from the Releases page and extract it into `Documents`.
 2. If the organization requires an authentication mode (Code Assist with a project, Vertex AI) or a model, write the matching key in `~/.ai-kit/overrides.json` before the next step; see [customization › Authentication and model](customization.md#authentication-and-model). Otherwise, nothing to do.
 3. Run the installer: double-click `Installer.cmd` (Windows), or in Terminal `sh scripts/bootstrap.sh` from the extracted folder (Mac). Confirm your identity, choose the profile. Installation makes no call to the model. Then run `doctor --live` once: one real call (your provider may bill it); if it is not green, follow the remedy shown, do not call for help.
-4. Open your usual repo, start your CLI (`gemini`, `agy` or `codex`), type `/guide where do I start?` (`$guide` in Codex).
+4. Open your usual repo, start your CLI (`gemini`, `agy`, `codex` or `claude`), type `/guide where do I start?` (`$guide` in Codex).
 5. First time in the repo: "Initialize the project context", then `setup-workflow` to declare the team's ticket tracker.
 
 ## During the pilot

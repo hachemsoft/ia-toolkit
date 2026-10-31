@@ -53,7 +53,7 @@ Before 0.19, the kit folder was called `~/.ai-toolkit`. The first `setup` or `up
 
 Windows: to get a Command Prompt in the kit folder, type `cmd` in the Explorer address bar and press Enter. The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) look for Python 3.9 or newer, then run `python -m installer` from the kit folder; without a usable Python they say what to ask IT. They need neither PowerShell nor administrator rights.
 
-Options for `setup` and `update`: `--profile <id>`, `--user <email>`, `--team <team>`, `--target auto|gemini|agy|codex|both|all` (without it: the CLIs chosen last time; see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--plain` (`--no-live` is still accepted and changes nothing). `scripts\bootstrap.ps1` remains for older instructions: it only runs `Installer.cmd`, where the workstation's script policy already allows it, and changes nothing about that policy. `AI_KIT_NO_PAUSE=1` keeps `Installer.cmd` from waiting for a key when it is started without arguments by a script. Non-interactive example: `sh scripts/bootstrap.sh setup --profile general --user first.last@company.com`. If a company policy blocks a launcher, IT decides: the launcher is equivalent to `python -m installer` run from the kit folder. Never change the policy yourself.
+Options for `setup` and `update`: `--profile <id>`, `--user <email>`, `--team <team>`, `--target auto|gemini|agy|codex|claude|both|all` (without it: the CLIs chosen last time; see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--plain` (`--no-live` is still accepted and changes nothing). `scripts\bootstrap.ps1` remains for older instructions: it only runs `Installer.cmd`, where the workstation's script policy already allows it, and changes nothing about that policy. `AI_KIT_NO_PAUSE=1` keeps `Installer.cmd` from waiting for a key when it is started without arguments by a script. Non-interactive example: `sh scripts/bootstrap.sh setup --profile general --user first.last@company.com`. If a company policy blocks a launcher, IT decides: the launcher is equivalent to `python -m installer` run from the kit folder. Never change the policy yourself.
 
 ## Try it without touching your account
 
@@ -75,7 +75,7 @@ No server is defined in the public kit: endpoints, transports and authentication
 
 ## Limits
 
-- Each CLI has its own limits, described on its page: [Gemini CLI](cli/gemini.md), [Antigravity CLI](cli/agy.md), [Codex CLI](cli/codex.md).
+- Each CLI has its own limits, described on its page: [Gemini CLI](cli/gemini.md), [Antigravity CLI](cli/agy.md), [Codex CLI](cli/codex.md), [Claude Code](cli/claude-code.md).
 - Company and team practices are offered as a baseline, to be validated by each organization before rollout.
 - The core skills come from an upstream repository under the MIT licence (`skills/LICENSE-UPSTREAM-MIT`), in English; they are updated by hand.
 - `research` and `implement-spec` (optional) delegate to CLI subagents; without them, they run in degraded mode. `/map`, `/triage` and `to-tickets` expect a ticket tracker declared per repository with `setup-workflow`.

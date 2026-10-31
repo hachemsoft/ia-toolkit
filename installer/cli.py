@@ -315,7 +315,7 @@ def context_location(home, active):
     host = next((a for a in active if isinstance(a, ContextHost)), None)
     return host.context_dir(home) if host else home/'.ai-kit'/'context'
 
-TARGETS = {'auto': None, 'gemini': ('gemini',), 'agy': ('agy',), 'codex': ('codex',), 'both': ('gemini', 'agy'), 'all': tuple(a.NAME for a in ADAPTERS)}
+TARGETS = {'auto': None, **{a.NAME: (a.NAME,) for a in ADAPTERS}, 'both': ('gemini', 'agy'), 'all': tuple(a.NAME for a in ADAPTERS)}
 
 def selected_adapters(target, home, recorded=None):
     """Adapters to install: those the target names (a --target value, or a list of CLI names); without a target, the CLIs
@@ -1248,8 +1248,10 @@ def live_checks(home, results=None):
     """Real call to the model by each installed CLI that supports it (doctor --live only); 1 if one does not answer.
     results, when given, receives {cli name: 0 if the model answered}: the summaries say "verified" only from it."""
     code = 0
+    chosen = set(recorded_targets(read_json(home/'.ai-kit/state.json')) or [a.NAME for a in ADAPTERS])
     for adapter in ADAPTERS:
-        if isinstance(adapter, LiveCheck) and shutil.which(adapter.COMMAND):
+        # Only the CLIs the person chose: a billed call never goes to a CLI merely present on the workstation.
+        if isinstance(adapter, LiveCheck) and adapter.NAME in chosen and shutil.which(adapter.COMMAND):
             answer = adapter.live(home)
             if results is not None:
                 results[adapter.NAME] = answer
@@ -1303,7 +1305,7 @@ def main(argv=None):
     parser.add_argument('--home',type=Path,default=Path.home(),help='Alternative home folder for an isolated trial')
     parser.add_argument('--dry-run',action='store_true',help='Show the plan without writing')
     parser.add_argument('--team',help='setup: your team, when it has its own practices (practices/20-<team>.md) or tools (teams in organization.json); kept for update; none to leave it')
-    parser.add_argument('--target',choices=list(TARGETS),help='default: the CLIs chosen at the last installation (auto on the first one); auto: the CLIs present on the machine (Gemini if none); gemini, agy, codex: that CLI only; both: Gemini and agy; all: every supported CLI')
+    parser.add_argument('--target',choices=list(TARGETS),help='default: the CLIs chosen at the last installation (auto on the first one); auto: the CLIs present on the machine (Gemini if none); gemini, agy, codex, claude: that CLI only; both: Gemini and agy; all: every supported CLI')
     parser.add_argument('--live',action='store_true',help='doctor: make a real call to the model and diagnose (may be billed by your provider)')
     parser.add_argument('--no-live',action='store_true',help='accepted for compatibility: setup and update never call the model')
     parser.add_argument('--yes',action='store_true',help='uninstall: confirm without a question (automation)')

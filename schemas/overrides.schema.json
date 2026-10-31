@@ -163,6 +163,11 @@
       },
       "additionalProperties": false
     },
+    "skill_prefix": {
+      "description": "Claude Code: prefix of the kit's skills, and of a kit command whose name one of your own skills or commands already has (default \"ai-kit-\"; \"\" for none, refused if a name collides).",
+      "type": "string",
+      "pattern": "^([a-z0-9][a-z0-9-]{0,19})?$"
+    },
     "frictions": {
       "enum": [
         "propose",

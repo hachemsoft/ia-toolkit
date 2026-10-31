@@ -25,10 +25,11 @@ def stand_in(folder, name, log):
         script.chmod(0o755)
 
 def clean_path():
-    """The current PATH without the folders that hold a real CLI."""
+    """The current PATH without the folders that hold a real CLI, or an installed copy of the kit (an `ai-kit` command that
+    doctor would report: the tests must not depend on what this workstation has installed)."""
     kept = []
     for folder in os.environ.get('PATH', '').split(os.pathsep):
-        if folder and not any(shutil.which(name, path=folder) for name in CLIS):
+        if folder and not any(shutil.which(name, path=folder) for name in CLIS + ('ai-kit',)):
             kept.append(folder)
     return kept
 

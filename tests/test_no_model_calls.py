@@ -11,7 +11,7 @@ from unittest import mock
 
 from installer import cli
 
-CLIS = ('gemini', 'agy', 'codex')
+CLIS = ('gemini', 'agy', 'codex', 'claude')
 
 
 def stand_ins(folder, log):
@@ -83,6 +83,7 @@ class NoModelCallTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn('may bill', out)
         self.assertTrue(any(c.startswith('gemini ') for c in self.calls()))
+        self.assertFalse(any(c.startswith('claude ') for c in self.calls()))  # present, but not chosen: never called
 
 
 if __name__ == '__main__':

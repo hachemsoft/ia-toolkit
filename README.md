@@ -6,7 +6,7 @@
 [![Platforms](https://img.shields.io/badge/platforms-Mac%20%7C%20Windows%20%7C%20Linux-informational)](docs/getting-started.md)
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-A foundation for working with a coding agent as a team, on Mac and Windows. It configures the agent CLIs present on the workstation (**Gemini CLI**, **Antigravity CLI** and **Codex CLI**) with the same content: layered context, a command-based workflow, domain playbooks, review agents and guardrails. Technical and domain context stays in each repo.
+A foundation for working with a coding agent as a team, on Mac and Windows. It configures the agent CLIs present on the workstation (**Gemini CLI**, **Antigravity CLI**, **Codex CLI** and **Claude Code**) with the same content: layered context, a command-based workflow, domain playbooks, review agents and guardrails. Technical and domain context stays in each repo.
 
 ## Getting started
 
@@ -16,7 +16,7 @@ A foundation for working with a coding agent as a team, on Mac and Windows. It c
 
    The installer first sets up its own private Python environment in your home folder (`.ai-kit/runtime`), from the files of the ZIP: no download, no administrator rights, nothing to activate. Then a short guided screen: the CLIs you use (found or not on this workstation), the profile closest to your job (if in doubt, **General**), optional adjustments, and a summary of what will change before **Install**. Arrow keys and Space choose; Ctrl+C leaves without changing your configuration.
 2. **Check**: installation ends with a summary: what is ready, which CLI is found or missing, which data connections are configured, and your next step. Installation never calls the model, so the summary says "connection not verified"; `doctor --live` checks the connection on request, with a real call your provider may bill.
-3. **Use**: open your repo (`cd` into it), start your CLI (`gemini`, `agy` or `codex`) and ask in plain words. Four everyday uses:
+3. **Use**: open your repo (`cd` into it), start your CLI (`gemini`, `agy`, `codex` or `claude`) and ask in plain words. Four everyday uses:
 
    | You say | Shortcut |
    | --- | --- |
@@ -73,6 +73,7 @@ The project's four requirements: simple installation, Mac and Windows, extension
 | Gemini CLI | ✅ | `/guide` |
 | Antigravity CLI (`agy`) | ✅ | `/guide` |
 | Codex CLI | ✅ | `$guide` |
+| Claude Code | ✅ | `/guide` |
 
 Verified versions, where each file is placed, and what differs between CLIs: [CLI matrix](docs/cli/matrice.md).
 
@@ -80,7 +81,7 @@ Verified versions, where each file is placed, and what differs between CLIs: [CL
 
 - **Use**: [getting started](docs/getting-started.md), [workflow](docs/workflow.md), [tools](docs/tools.md), [agents](docs/agents.md), [project layer](docs/project-context.md), [Troubleshooting](docs/troubleshooting.md).
 - **Customize**: [customization](docs/customization.md), [add or replace a skill](docs/extending.md), [guardrails](docs/hooks.md), [MCP](docs/mcp.md), [identity](docs/identity.md).
-- **Per CLI**: [matrix](docs/cli/matrice.md), [Gemini CLI](docs/cli/gemini.md), [Antigravity CLI](docs/cli/agy.md), [Codex CLI](docs/cli/codex.md), [moving from Gemini to agy](docs/cli/gemini-to-agy.md).
+- **Per CLI**: [matrix](docs/cli/matrice.md), [Gemini CLI](docs/cli/gemini.md), [Antigravity CLI](docs/cli/agy.md), [Codex CLI](docs/cli/codex.md), [Claude Code](docs/cli/claude-code.md), [moving from Gemini to agy](docs/cli/gemini-to-agy.md).
 - **Deploy and maintain**: [the installer](docs/installer.md), [validation on enterprise workstations](docs/validation.md), [compliance and governance](docs/compliance.md), [contributing](docs/contributing.md), [command format](docs/format.md), [skills reference](docs/skills-reference.md), [evals](docs/evals.md), [usage review](docs/usage-review.md), [pilot](docs/pilot.md), [sources](docs/sources.md), [changelog](CHANGELOG.md).
 
 ## Credits and inspiration

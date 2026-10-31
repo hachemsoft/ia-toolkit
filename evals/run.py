@@ -5,7 +5,7 @@ AI_KIT_NO_LIVE=1 refuses it. Without a model: --dry-run lists the cases and chec
 --stand-in PATH replays them against a stand-in executable (tests of the runner itself).
 
 Usage: python3 evals/run.py [--home DIR] [--cases evals/cases] [--only name] [--dry-run] [--report path.json]
-       [--cli gemini|agy|codex] [--model NAME] [--approval-mode MODE] [--timeout S] [--retries N] [--confirm-paid-run | --stand-in PATH]
+       [--cli gemini|agy|codex|claude] [--model NAME] [--approval-mode MODE] [--timeout S] [--retries N] [--confirm-paid-run | --stand-in PATH]
 Each case is a JSON file: {"name", "prompt", "cwd" (fixture relative to evals/fixtures, optional), "subdir" (launch subfolder, optional),
 "requires": {"profile": ..., "commands": [...], "skills": [...]} (optional, checked against the installed kit),
 "git": {"commit": true, "uncommitted": {"path": "text"}} (optional: a real repository, the fixture committed, then these files changed),
@@ -135,6 +135,9 @@ def cli_command(cli, executable, case, timeout, model, approval_mode):
         if prompt.startswith('/'):
             prompt = '$' + prompt[1:]
         return [executable, 'exec', '--skip-git-repo-check', '--ephemeral', '--color', 'never', '-s', 'read-only'] + (['-m', model] if model else []) + [prompt]
+    if cli == 'claude':
+        # Claude Code: print mode, no shell and no file write, as the Gemini policy does; skills and agents stay available.
+        return [executable, '-p', case['prompt'], '--disallowedTools', 'Bash,Write,Edit,MultiEdit,NotebookEdit'] + (['--model', model] if model else [])
     if cli == 'agy':
         # Antigravity: print mode; tools that ask for permission are refused for lack of a prompt, skills still activate.
         return [executable, '-p', case['prompt'], '--print-timeout', str(timeout) + 's'] + (['--model', model] if model else [])
@@ -205,7 +208,7 @@ def main(argv=None):
     parser.add_argument('--report', type=Path)
     parser.add_argument('--model', help='model to force (for example gemini-2.5-flash on Vertex)')
     parser.add_argument('--approval-mode', default='default', choices=['default', 'plan'], help='plan blocks skills in Gemini 0.65; default only refuses writes in non-interactive mode')
-    parser.add_argument('--cli', default='gemini', choices=['gemini', 'agy', 'codex'], help='CLI to evaluate: gemini (default), agy (Antigravity) or codex')
+    parser.add_argument('--cli', default='gemini', choices=['gemini', 'agy', 'codex', 'claude'], help='CLI to evaluate: gemini (default), agy (Antigravity), codex or claude (Claude Code)')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--confirm-paid-run', action='store_true', help='required for a real run: each case calls the model and is billed')
     mode.add_argument('--stand-in', type=Path, help='executable that replaces the CLI (tests of the runner, no model)')

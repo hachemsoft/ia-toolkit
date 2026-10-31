@@ -1,6 +1,6 @@
 # Evals
 
-Context, skills, commands and agents drive the agent's behavior: they are tested like code. The `evals/` suite replays real prompts against each supported CLI (`--cli gemini`, `--cli agy` or `--cli codex`), in non-interactive mode, and checks deterministic criteria on the response and on the files.
+Context, skills, commands and agents drive the agent's behavior: they are tested like code. The `evals/` suite replays real prompts against each supported CLI (`--cli gemini`, `--cli agy`, `--cli codex` or `--cli claude`), in non-interactive mode, and checks deterministic criteria on the response and on the files.
 
 ## Run
 

@@ -21,7 +21,7 @@ Update: download and extract the new ZIP, then run the installer the same way. C
 
 | Commitment | How it is held | Proof |
 | --- | --- | --- |
-| No administrator rights, no `sudo`, no elevation | everything is written under the person's home folder: `~/.ai-kit`, `~/.gemini`, `~/.codex` | static test: no elevation command; manual check below (CI runners are administrators) |
+| No administrator rights, no `sudo`, no elevation | everything is written under the person's home folder: `~/.ai-kit`, `~/.gemini`, `~/.codex`, `~/.claude` and `~/.claude.json` | static test: no elevation command; manual check below (CI runners are administrators) |
 | No system change: registry, system or user PATH, execution policy, Gatekeeper, quarantine attributes, shell startup files, the global Python | the launchers only find Python; `scripts/launcher.py` creates the kit's private environment in `~/.ai-kit/runtime` with the standard `venv` and `pip` | `test_no_system_change_in_installer_and_launchers` |
 | From a ZIP, nothing downloaded | pip installs the kit and its libraries from the ZIP's `wheels/` folder with `--no-index`; all wheels are pure Python, one ZIP for every system | `test_zip_installs_with_no_index_and_no_network_then_the_folder_can_go`, `test_launchers_download_nothing` |
 | From a git clone, the company's package index | pip uses the index, proxy and certificates already configured; the kit adds no index or trust setting | `test_clone_installs_with_the_configured_index_and_no_editable` |
@@ -72,7 +72,7 @@ To do on a Windows and a macOS workstation, with a **standard account**, for eac
 ## What IT may have to provide or allow
 
 - Python 3.9 or newer (3.11 recommended) with its standard `venv` and `pip` modules, usable by a standard account from a command prompt or the Terminal.
-- The CLI (Gemini CLI, Antigravity CLI or Codex CLI) and its authentication, following the company procedure.
+- The CLI (Gemini CLI, Antigravity CLI, Codex CLI or Claude Code) and its authentication, following the company procedure.
 - Network access to the model through the company proxy. With HTTPS inspection, the company root certificate, which Node.js reads from `NODE_EXTRA_CA_CERTS`.
 - Windows: running `Installer.cmd` from the folder where the person extracted the ZIP. The launcher only finds Python, then runs `scripts\launcher.py`, which installs the kit in `%USERPROFILE%\.ai-kit\runtime` from the ZIP's own wheels.
 - For a git clone only: pip's access to the company package index (it fetches the build tool and the libraries there).

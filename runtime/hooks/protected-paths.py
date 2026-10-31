@@ -61,10 +61,10 @@ def as_text(value):
 PATCH_HEADER = re.compile(r'^\*\*\* (?:Add|Update|Delete) File: (.+)$|^\*\*\* Move to: (.+)$|^\+\+\+ b/(.+)$', re.M)
 
 def target_paths(tool, args):
-    """Files a tool call will write: a direct path (Gemini, agy, CLIs using the Write/Edit format) or the headers of a patch (Codex apply_patch)."""
+    """Files a tool call will write: a direct path (Gemini, agy, Claude Code's Write/Edit/MultiEdit/NotebookEdit) or the headers of a patch (Codex apply_patch)."""
     if not isinstance(args, dict):
         args = {'input': args}
-    for key in ('file_path', 'TargetFile', 'AbsolutePath', 'FilePath', 'path', 'Path'):
+    for key in ('file_path', 'notebook_path', 'TargetFile', 'AbsolutePath', 'FilePath', 'path', 'Path'):
         if isinstance(args.get(key), str) and args.get(key):
             return [args[key]]
     if 'patch' in tool.lower():
@@ -142,7 +142,7 @@ def main():
 # The kit layers 00, 10 and 20 live in ~/.ai-kit/context/ or, with Gemini CLI installed, in ~/.gemini/: both are protected.
 CONFIG_PATHS = ('.ai-kit/overrides.json', '.ai-kit/state.json', '.ai-kit/hooks/', '.ai-kit/bin/', '.ai-kit/backups/', '.ai-kit/runtime/', '.ai-kit/context/00_',
                 '.ai-kit/context/10_', '.ai-kit/context/20_', '.gemini/00_', '.gemini/10_', '.gemini/20_', '.gemini/settings.json', '.gemini/.env', '.gemini/config/plugins/ai-kit/',
-                '.codex/config.toml', '.codex/AGENTS.md')
+                '.codex/config.toml', '.codex/AGENTS.md', '.claude/settings.json', '.claude/CLAUDE.md', '.claude/agents/ai-kit-', '.claude.json')
 
 def real(path):
     """Absolute path with symbolic links resolved (a link to a protected folder is that folder)."""

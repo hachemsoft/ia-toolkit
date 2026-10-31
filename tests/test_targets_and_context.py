@@ -63,7 +63,7 @@ class TargetTests(Base):
         self.assertEqual(self.state()['targets'], ['codex'])
 
     def test_every_transition_and_back(self):
-        names = ['gemini', 'agy', 'codex', 'both', 'all']
+        names = ['gemini', 'agy', 'codex', 'claude', 'both', 'all']
         for first, second in itertools.permutations(names, 2):
             with self.subTest(first=first, second=second):
                 for path in sorted(self.home.iterdir()):

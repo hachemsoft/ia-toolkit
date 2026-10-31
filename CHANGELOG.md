@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.35.0
+
+Claude Code, the fourth supported CLI, with everything the others get:
+- Context: a managed block at the top of `~/.claude/CLAUDE.md` imports the kit layers and `30_USER.md` by path (nothing copied); it asks Claude Code to read the repository's `AGENTS.md`, and "Initialize the project context" proposes a one-line `CLAUDE.md`, `@AGENTS.md`, for a repository used with Claude Code.
+- Skills in `~/.claude/skills/` with a prefix, `ai-kit-` by default, set with `skill_prefix` in `overrides.json` (or the organization's or team's defaults): Claude Code ships its own `code-review` and people often keep personal skills with the kit's names. The texts the kit installs name its skills with the prefix. `""` installs without a prefix and is refused when a name collides; changing the prefix renames the kit's files at the next update.
+- Commands in `~/.claude/commands/` under their usual names; one whose name a personal skill or command already has is installed with the prefix, and the installer says so. Agents in `~/.claude/agents/ai-kit-*.md` with their tool list applied natively.
+- Guardrails under `hooks.PreToolUse` in `~/.claude/settings.json`, next to the person's own hooks; the scripts understand Claude Code's tool calls (`Bash`, `Write`, `Edit`, `MultiEdit`, `NotebookEdit`). `protected-paths` also protects `~/.claude/settings.json`, `~/.claude/CLAUDE.md`, the kit's agents and `~/.claude.json`.
+- MCP servers as `ai-kit-*` entries of `~/.claude.json`, translated from the kit's form (`stdio`, `http`, `sse`); a server with `cwd` is refused. Close Claude Code before an update: it rewrites that file.
+- A kit entry edited by hand (block, guardrail group, MCP entry) stops the update; removing Claude Code from the choice or `uninstall` removes only the kit's entries and files.
+- `doctor` checks the block, the imported files, the guardrails and the MCP entries; `usage` reads the session transcripts (skills and agents observable); `doctor --live` makes one real call with `claude -p`; `evals/run.py --cli claude`.
+- `doctor --live` now calls only the CLIs the person chose, never one merely present on the workstation.
+- `docs/cli/claude-code.md` (named so that it is never read as a `CLAUDE.md` on a case-insensitive file system), a Claude Code column in the matrix.
+
 ## 0.34.0
 
 No call to a model unless asked:
