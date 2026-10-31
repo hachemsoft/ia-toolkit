@@ -44,4 +44,26 @@ class UsageTests(unittest.TestCase):
  def test_malformed_log_ignored(self):
   p=self.home/'.gemini/tmp/proj/chats/bad.json';p.parent.mkdir(parents=True);p.write_text('{broken',encoding='utf-8')
   text,rep=self.run_usage();self.assertEqual(rep['sessions'],0)
+class ObservabilityTests(unittest.TestCase):
+ """A CLI whose logs hold only the prompts says nothing about skills or agents: no removal is ever recommended from that silence."""
+ def setUp(self):
+  self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
+  with contextlib.redirect_stdout(io.StringIO()):apply('general',self.home,False,None,'codex')
+ def codex_history(self,sessions,prompts_each):
+  import time;now=int(time.time())
+  lines=[json.dumps({'session_id':'s'+str(s),'ts':now,'text':('/intent idea' if p==0 else 'plain request '+str(p))}) for s in range(sessions) for p in range(prompts_each)]
+  h=self.home/'.codex/history.jsonl';h.write_text('\n'.join(lines),encoding='utf-8')
+ def test_ten_codex_sessions_fifty_prompts_without_skill_events_recommend_nothing(self):
+  self.codex_history(10,5)
+  out=io.StringIO();rep_file=self.home/'r.json'
+  with contextlib.redirect_stdout(out):usage(self.home,as_json=rep_file)
+  rep=json.loads(rep_file.read_text(encoding='utf-8'));text=out.getvalue()
+  self.assertEqual((rep['sessions'],rep['prompts']),(10,50));self.assertTrue(rep['enough_data'])
+  self.assertEqual(rep['core_candidates_to_demote'],[]);self.assertEqual(rep['unused_skills'],[]);self.assertEqual(rep['unused_agents'],[])
+  self.assertIn('tdd',rep['not_observable']['skills']);self.assertIn('ai-kit-verifier',rep['not_observable']['agents'])
+  self.assertEqual(rep['commands'],{'intent':10});self.assertIn('ship',rep['unused_commands'])  # commands are visible in the prompts
+  self.assertIn('Not observable: skills',text);self.assertNotIn('Candidates to remove',text)
+ def test_each_adapter_declares_what_it_observes(self):
+  from installer.adapters import ADAPTERS
+  for a in ADAPTERS:self.assertTrue(a.OBSERVES<={'prompt','skill','agent','error'} and 'prompt' in a.OBSERVES,a.NAME)
 if __name__=='__main__':unittest.main()

@@ -140,7 +140,7 @@ def main():
 # Configuration of the kit and of the CLIs, always protected: an agent must not be able to switch off its own guardrails.
 # Relative to the home folder; a trailing / protects a whole folder. ~/.ai-kit/learn/ (personal /learn progress) stays writable.
 # The kit layers 00, 10 and 20 live in ~/.ai-kit/context/ or, with Gemini CLI installed, in ~/.gemini/: both are protected.
-CONFIG_PATHS = ('.ai-kit/overrides.json', '.ai-kit/state.json', '.ai-kit/hooks/', '.ai-kit/bin/', '.ai-kit/backups/', '.ai-kit/context/00_',
+CONFIG_PATHS = ('.ai-kit/overrides.json', '.ai-kit/state.json', '.ai-kit/hooks/', '.ai-kit/bin/', '.ai-kit/backups/', '.ai-kit/runtime/', '.ai-kit/context/00_',
                 '.ai-kit/context/10_', '.ai-kit/context/20_', '.gemini/00_', '.gemini/10_', '.gemini/20_', '.gemini/settings.json', '.gemini/.env', '.gemini/config/plugins/ai-kit/',
                 '.codex/config.toml', '.codex/AGENTS.md')
 

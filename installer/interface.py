@@ -48,7 +48,16 @@ class Plan:
     agent_markdown: Dict[str, str] = field(default_factory=dict)  # agents rendered by Gemini, reused by agy
     blocks: Dict[str, str] = field(default_factory=dict)  # digests of the managed blocks in user files
     migrated_prefs: bool = False
+    notices: List[str] = field(default_factory=list)  # lines for the person: a refused synchronisation, a moved file
     adapter_data: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # private data of an adapter, by NAME
+    skill_notes: Dict[str, str] = field(default_factory=dict)  # appended to a skill's SKILL.md: optional skills not installed
+
+    def skill_file(self, skill: str, source: Path, src: Path) -> bytes:
+        """Bytes of a skill file as installed: the source, plus for SKILL.md what to do without its optional skills."""
+        data = src.read_bytes()
+        if src == source/'SKILL.md' and self.skill_notes.get(skill):
+            data = data.rstrip(b'\n') + b'\n\n' + self.skill_notes[skill].encode('utf-8')
+        return data
 
 
 @dataclass
@@ -71,6 +80,12 @@ class Adapter(Protocol):
     HOME_DIR: str  # CLI folder, relative to the home folder
     BUILTIN_COMMANDS: Set[str]  # built-in commands, ignored by usage
     MANAGED_PREFIXES: Tuple[str, ...]
+    # How the CLI applies an agent's tool list (agents/*.json "tools"): 'native' (the CLI restricts the tools),
+    # 'instruction' (only the agent's prompt says it; nothing technical prevents a write) or 'unavailable' (no agents).
+    AGENT_TOOLS: str
+    # What history() can really see in the CLI's logs: 'prompt' (so commands typed), 'skill', 'agent', 'error'.
+    # The usage report never counts as unused what no log of the person's CLIs can show.
+    OBSERVES: Set[str]
 
     def present(self, home: Path) -> bool: ...
     def is_managed(self, rel: str) -> bool: ...

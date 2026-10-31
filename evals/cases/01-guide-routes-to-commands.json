@@ -2,6 +2,11 @@
   "name": "guide-routes-to-commands",
   "prompt": "/guide I need to change the definition of the active customer KPI, where do I start?",
   "cwd": "dbt-mini",
+  "requires": {
+    "commands": [
+      "guide"
+    ]
+  },
   "expect": {
     "contains": [],
     "not_contains": [

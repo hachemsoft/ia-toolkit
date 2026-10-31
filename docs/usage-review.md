@@ -26,9 +26,9 @@ Data playbooks and vocabulary skills (`domain`, `reference`) are never proposed 
 ## The report
 
 ```sh
-python3 -m installer usage                           # 42-day window
-python3 -m installer usage --since 90 --json releve.json
-python3 -m installer usage --min-sessions 5 --min-prompts 20
+sh scripts/bootstrap.sh usage                        # 42-day window (Windows: Installer.cmd usage)
+sh scripts/bootstrap.sh usage --since 90 --json releve.json
+sh scripts/bootstrap.sh usage --min-sessions 5 --min-prompts 20
 ```
 
 The report reads, locally and without sending anything, the session logs each CLI already writes on the workstation (locations in the [matrix](cli/matrice.md)). Over the window, it counts:
@@ -42,6 +42,8 @@ The report reads, locally and without sending anything, the session logs each CL
 
 It contains neither prompt text, nor repo file names, nor the person's identity. The JSON can be shared as is.
 
+**What the logs can show.** Each CLI's adapter declares what its logs contain (`OBSERVES`; per CLI in the [matrix](cli/matrice.md)): some logs show the commands typed, the skills activated and the agents called; others hold the typed prompts only, so commands are visible but skills and agents are not. A skill or an agent is reported unused only when every session of the window comes from a CLI whose logs show it; otherwise the report lists it as "not observable" and recommends nothing about it. Ten sessions of a CLI that logs prompts only, without any skill event, say nothing about the skills.
+
 **Data threshold.** Below ten sessions and fifty prompts over the window (change with `--min-sessions` and `--min-prompts`), the report shows the counts but recommends nothing: too little data to conclude. Above it, it lists the candidates to move to optional: core skills of category `workflow` or `tool` that were never activated, and that are required neither by a typed command nor by an activated skill (the catalog's `requires` dependencies are followed). A skill never activated but required by `/intent`, which itself was typed, is not a candidate.
 
 **What the report does not measure.** Quality. A skill activated once may have saved a day of work; a skill activated twenty times may have got in the way twenty times. The report says "never", "rarely", "often"; the review says "useful" or "not useful". That is why the review stays human.
@@ -51,7 +53,7 @@ It contains neither prompt text, nor repo file names, nor the person's identity.
 On one workstation, after three weeks:
 
 ```
-$ python3 -m installer usage
+$ sh scripts/bootstrap.sh usage
 Window: 42 days | 14 sessions | 86 prompts | 2 errors
 Commands typed: intent ×9, build ×7, test ×6, guide ×4, diagnose ×2, friction ×2
 Skills activated: grill-with-docs ×9, implement ×7, tdd ×6, dbt-model-change ×5, sql-review ×2
@@ -106,7 +108,7 @@ The kit sets no date. A review makes sense when several workstations have passed
 6. **Promote a rule that is not enough.** A rule already written (an `AGENTS.md` line, a kit practice, a rationalization table row) that frictions of category `rule` show broken again becomes a check: an eval case, a guardrail, or a `doctor` check. Text the agent ignores twice is not going to work a third time.
 7. **Remove a rule that no longer serves.** Each "Things the agent gets wrong" line carries its date (`since YYYY-MM`). A line older than six months with no friction since is removed, or kept with one line explaining why. Rules only ever added make the context grow until the agent stops reading it.
 8. An upstream skill the team departs from is rewritten as a short in-house version, same name, same command; the old one stays available through `extra_skills`. A widely used contributed skill (`skills/contrib/`) moves to `skills/internal/`; a contributed skill without a reachable owner is removed.
-9. Rerun the tests and `evals/run.py`, publish the version, and record in the `CHANGELOG` what changed and why.
+9. Rerun the tests (`scripts/offline_tests.py`), and the evals only when the maintainer accepts their cost (`evals/run.py --confirm-paid-run`), publish the version, and record in the `CHANGELOG` what changed and why.
 10. When a fix answers frictions, say so in one line in the `CHANGELOG` with their ids: "`/test` no longer reruns the whole suite (frictions: a1b2c3, d4e5f6)". After `update`, `usage` tells each person which of their frictions a version fixed: people log more when they see it helps.
 
 ## Data and privacy

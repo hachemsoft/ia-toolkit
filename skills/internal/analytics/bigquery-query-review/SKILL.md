@@ -1,6 +1,6 @@
 ---
 name: bigquery-query-review
-description: "Optimize a slow or expensive BigQuery query and check scans, partitions, joins and plan. Triggers: slow query, too expensive, bytes read, partition filter, execution plan, slots, this query scans everything."
+description: "Optimize a slow or expensive BigQuery query and check scans, partitions, joins and plan. Triggers: slow query, too expensive, bytes read, partition filter, execution plan, slots, this query scans everything. Not for: a wrong result, which is a correctness review."
 ---
 
 # bigquery-query-review

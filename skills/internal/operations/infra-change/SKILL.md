@@ -1,6 +1,6 @@
 ---
 name: infra-change
-description: "Prepare or review an infrastructure or delivery change: Terraform, Kubernetes, Helm, CI/CD pipeline, Dockerfile, cloud configuration. Triggers: modify the pipeline, add a resource, change a deployment, open a port, bump an image version, review this Terraform plan."
+description: "Prepare or review an infrastructure or delivery change: Terraform, Kubernetes, Helm, CI/CD pipeline, Dockerfile, cloud configuration. Triggers: modify the pipeline, add a resource, change a deployment, open a port, bump an image version, review this Terraform plan. Not for: application code."
 ---
 
 # infra-change

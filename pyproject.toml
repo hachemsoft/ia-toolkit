@@ -1,16 +1,17 @@
 [build-system]
-requires = ["hatchling>=1.24"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
 name = "ai-kit"
-version = "0.33.0"
+version = "0.34.0"
 description = "AI Kit: layered context, a six-step workflow, domain playbooks and review agents for Gemini CLI, Antigravity CLI and Codex CLI, on Mac and Windows."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
 license-files = ["LICENSE", "skills/LICENSE-UPSTREAM-MIT"]
-dependencies = []
+# Runtime: the terminal interface. Ranges here; the exact tested versions are in packaging/runtime.txt.
+dependencies = ["rich>=13.7,<16", "questionary>=2.0.1,<3"]
 keywords = ["gemini-cli", "antigravity", "codex", "agents", "skills", "sdlc"]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -27,8 +28,9 @@ classifiers = [
 [project.scripts]
 ai-kit = "ai_kit.cli:main"
 
-# The code lives in installer/ (python3 -m installer from the kit folder); the published package calls it ai_kit
-# to avoid clashing with the PyPI package "installer". The kit content travels under ai_kit/kit/.
+# The code lives in installer/ (python3 -m installer from the kit folder); the installed package calls it ai_kit
+# to avoid clashing with the PyPI package "installer". The kit content travels under ai_kit/kit/, so the installed
+# package never reads the clone or the extracted ZIP.
 [tool.hatch.build.targets.wheel]
 only-include = ["installer"]
 sources = { "installer" = "ai_kit" }

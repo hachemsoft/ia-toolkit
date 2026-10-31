@@ -1,6 +1,6 @@
 ---
 name: sql-review
-description: "Review BigQuery or dbt SQL and investigate suspicious aggregations, duplicates or business results. Triggers: the number is wrong, duplicates, total that doesn't add up, review this query, join that multiplies rows, unexpected NULLs."
+description: "Review SQL, plain or in a dbt project, on any warehouse, and investigate suspicious aggregations, duplicates or business results. Triggers: the number is wrong, duplicates, total that doesn't add up, review this query, join that multiplies rows, unexpected NULLs. Not for: a query that is only slow or expensive, or a metric still to define."
 ---
 
 # sql-review

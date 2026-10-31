@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (USER_CONTEXT, KitError, digest, hook_command, split_block, place_block, command_skill_text)
+from ..core import (USER_CONTEXT, KitError, digest, hook_command, split_block, place_block, command_skill_text, redact, user_context_refusal)
 
 CODEX_DIR = '.codex'
 # Managed block markers: no path, so they never change when a folder is renamed.
@@ -62,13 +62,21 @@ def toml_value(value):
         return '['+', '.join(toml_value(v) for v in value)+']'
     return json.dumps(str(value), ensure_ascii=False)
 
+USER_COPY = '<!-- Copy of 30_USER.md, refreshed by update. -->'
+
+def copied_user_text(block):
+    """The copy of 30_USER.md inside a kit block of ~/.codex/AGENTS.md, or ''."""
+    if not block or USER_COPY not in block:
+        return ''
+    return block.split(USER_COPY, 1)[1].rsplit(CODEX_MD[1], 1)[0].strip()
+
 def codex_context_block(kit_text, practice_texts, user_text):
     lines = [CODEX_MD[0], '# AI Kit (Codex)', '',
              'In Codex, the kit commands are skills: they are called with `$intent`, `$build`, `$test`… (`/skills` lists them). Wherever this context or a skill writes `/intent`, read `$intent`, and in your answers always write kit commands with `$` (`$intent`), never with `/`.',
              '', kit_text.strip(), '']
     lines += [t.strip()+'\n' for t in practice_texts]
     if user_text.strip():
-        lines += ['<!-- Copy of 30_USER.md, refreshed by update. -->', user_text.strip(), '']
+        lines += [USER_COPY, user_text.strip(), '']
     lines.append(CODEX_MD[1])
     return '\n'.join(lines)
 
@@ -97,6 +105,8 @@ COMMAND = 'codex'
 HOME_DIR = CODEX_DIR
 BUILTIN_COMMANDS = {'skills', 'model', 'review', 'init', 'new', 'compact', 'diff', 'mention', 'status', 'mcp', 'approvals', 'logout', 'quit', 'exit', 'hooks', 'agents', 'resume'}
 MANAGED_PREFIXES = (CODEX_DIR+'/skills/', CODEX_DIR+'/ai-kit/')
+AGENT_TOOLS = 'instruction'
+OBSERVES = {'prompt'}  # history.jsonl holds the typed prompts only: skills and agents are not visible  # a role file holds developer_instructions only: the session's sandbox and approvals apply
 
 def is_managed(rel):
     return rel.startswith(MANAGED_PREFIXES)
@@ -118,7 +128,7 @@ def install(p: Plan) -> None:
     for skill, source in p.skill_sources:
         for src in source.rglob('*'):
             if src.is_file():
-                p.managed_write(codex/'skills'/skill/src.relative_to(source), src.read_bytes(), 'Codex skill')
+                p.managed_write(codex/'skills'/skill/src.relative_to(source), p.skill_file(skill, source, src), 'Codex skill')
         # Codex honours "on command only" through agents/openai.yaml.
         if explicit_only((source/'SKILL.md').read_text(encoding='utf-8')) and not (source/'agents'/'openai.yaml').exists():
             p.managed_write(codex/'skills'/skill/'agents'/'openai.yaml', CODEX_EXPLICIT_ONLY.encode('utf-8'), 'Codex skill')
@@ -146,7 +156,15 @@ def finalize(p: Plan, active: bool = True) -> None:
         outside = before.rstrip('\n')+('\n' if before.strip() and after.strip() else '')+after.lstrip('\n')
         block = None
         if active and rel.endswith('AGENTS.md'):
-            user_text = p.user_file.read_text(encoding='utf-8') if p.user_file.exists() else (p.writes.get(p.user_file) or b'').decode('utf-8')
+            data = p.writes.get(p.user_file) or (p.user_file.read_bytes() if p.user_file.exists() else b'')
+            refusal = user_context_refusal(data)
+            if refusal:
+                # The source stays as it is; Codex keeps the last copy it had, and the person is told why.
+                user_text = copied_user_text(old_block)
+                p.notices.append('[Check] '+USER_CONTEXT+' not copied into ~/.codex/AGENTS.md: '+refusal+'. Codex keeps its previous copy'
+                                 ' until the file is fixed and update runs again. The kit configuration itself is installed.')
+            else:
+                user_text = data.decode('utf-8')
             block = codex_context_block(p.kit_text, p.practice_texts, user_text)
         elif active:
             if p.enabled_hooks and re.search(r'^\s*(hooks\.)?PreToolUse\s*=', outside, re.M):
@@ -168,7 +186,7 @@ def finalize(p: Plan, active: bool = True) -> None:
                 try:
                     tomllib.loads(new_text)
                 except ValueError as exc:
-                    raise KitError('~/.codex/config.toml would become invalid with the kit block ('+str(exc)+'); nothing is written.')
+                    raise KitError('~/.codex/config.toml would become invalid with the kit block ('+redact(str(exc))+'); nothing is written.')
         if block is not None:
             p.blocks[rel] = digest(block.encode('utf-8'))
         if new_text != original and (block is not None or old_block is not None):
@@ -198,15 +216,28 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     if (home/CODEX_DIR/'AGENTS.override.md').exists():
         status(False, '~/.codex/AGENTS.override.md exists: Codex reads it instead of AGENTS.md, the kit context is ignored')
     if state.get('hooks'):
-        config = home/CODEX_DIR/'config.toml'
-        text = config.read_text(encoding='utf-8') if config.is_file() else ''
-        # Codex records each approved hook under [hooks.state."<config file>:pre_tool_use:<group>:<hook>"] with a trusted_hash.
-        approved = len(re.findall(r'^\[hooks\.state\."(?![^"]*<session-flags>)[^"]*config\.toml:pre_tool_use:\d+:\d+"\]', text, re.M))
-        status(approved >= len(state['hooks']), 'Codex: kit guardrails approved in Codex'+('' if approved >= len(state['hooks']) else ' (not yet: start codex and answer "Trust all and continue", otherwise they never run)'))
-        if approved:
-            print('[Info] If Codex asks again after an update ("Hooks need review"), the guardrail command changed: answer Trust again.')
+        recorded, message = hook_approval(home)
+        if recorded:
+            print(message)  # never [OK]: a record found does not prove the kit's guardrails are the ones approved
+        else:
+            status(False, message)
     if not shutil.which('codex'):
         print('[Info] Codex set up by the kit but not on the PATH.')
+
+def hook_approval(home):
+    """(records found, message) about Codex approving the kit guardrails, never more than can be said. Codex records an
+    approval under [hooks.state."<config file>:pre_tool_use:<group>:<hook>"] with a trusted_hash; the kit does not know how
+    that hash is computed, nor which group indexes are its own when other hooks exist, so a record found is not proof that
+    the kit's guardrails are the ones approved. No record at all means they are not approved."""
+    config = home/CODEX_DIR/'config.toml'
+    text = config.read_text(encoding='utf-8') if config.is_file() else ''
+    records = re.findall(r'^\[hooks\.state\."(?![^"]*<session-flags>)[^"]*config\.toml:pre_tool_use:\d+:\d+"\]', text, re.M)
+    if not records:
+        return False, ('Codex: kit guardrails approved in Codex (not yet: no approval recorded; start codex and answer'
+                       ' "Trust all and continue", otherwise they never run)')
+    return True, ('[Info] Codex guardrails: approval not verifiable automatically ('+str(len(records))+' approval record(s) found,'
+                  ' which may belong to other hooks). In Codex, /hooks shows what is approved; after an update that changed a'
+                  ' guardrail command, Codex asks again ("Hooks need review"): answer Trust.')
 
 def history(home, state):
     """~/.codex/history.jsonl: one line per prompt (session_id, ts in seconds, text); commands typed as $intent or /intent."""

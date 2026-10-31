@@ -1,0 +1,29 @@
+{
+  "name": "review-sees-uncommitted-changes",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "review"
+    ]
+  },
+  "git": {
+    "commit": true,
+    "uncommitted": {
+      "orders.py": "ORDERS = {1: [{\"price\": 10.0, \"qty\": 2}, {\"price\": 2.5, \"qty\": 1}]}\n\n\ndef total(items):\n    \"\"\"Total of an order, in euros.\"\"\"\n    return sum(item[\"price\"] for item in items)\n\n\ndef get_order(order_id):\n    if order_id not in ORDERS:\n        raise KeyError(\"Not found\")\n    return ORDERS[order_id]\n"
+    }
+  },
+  "prompt": "/review",
+  "expect": {
+    "contains": [
+      "orders.py"
+    ],
+    "regex": [
+      "(?i)qty|quantity|quantit"
+    ],
+    "not_contains": [
+      "nothing to review",
+      "rien à relire"
+    ]
+  },
+  "_doc": "The only change is uncommitted (the quantity was dropped from total()): the review must find it, not conclude from the commits alone."
+}

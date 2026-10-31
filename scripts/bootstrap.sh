@@ -1,5 +1,6 @@
 #!/bin/sh
-# AI Kit launcher for macOS and Linux: finds Python 3.9 or newer, then runs the installer (setup when no argument is given).
+# AI Kit launcher for macOS and Linux: finds Python 3.9 or newer, then hands over to scripts/launcher.py, which installs the
+# kit in its private environment (~/.ai-kit/runtime) and opens the installer (the menu when no argument is given).
 # No sudo, no change to the system, to the PATH or to the shell startup files.
 set -eu
 KIT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -25,18 +26,10 @@ if [ -z "$KIT_PYTHON" ]; then
     blocked) echo 'Python is present but could not be started: a security policy or an incomplete installation may prevent it.' >&2 ;;
     *) echo 'Python 3.9 or newer was not found (commands python3, python).' >&2 ;;
   esac
-  echo 'What to ask IT support: Python 3.9 or newer (3.11 recommended), usable by your standard account from the Terminal,' >&2
+  echo 'What to ask IT support: Python 3.9 or newer (3.11 recommended) with its standard venv and pip modules, usable by your standard account from the Terminal,' >&2
   echo 'as provided or approved by the company (software centre). Then run this command again.' >&2
   exit 2
 fi
 # The current folder stays the user's: a relative path (--json, --home) resolves there, not in the kit.
-if [ "$#" -eq 0 ]; then set -- setup; fi
-# update: first fetch the new version when the kit folder is a git clone without local changes; never blocks the update.
-if [ "$1" = "update" ] && [ -d "$KIT_DIR/.git" ] && command -v git >/dev/null 2>&1; then
-  if git -C "$KIT_DIR" diff --quiet && git -C "$KIT_DIR" diff --cached --quiet; then
-    git -C "$KIT_DIR" pull --ff-only --quiet || echo 'Could not fetch the new version (network or diverging history): updating from the current folder.' >&2
-  else
-    echo 'Local changes in the kit folder: no git pull; updating from the current folder.' >&2
-  fi
-fi
-PYTHONPATH="$KIT_DIR${PYTHONPATH:+:$PYTHONPATH}" exec "$KIT_PYTHON" -m installer "$@"
+# -I: no foreign module from the current folder or PYTHONPATH. update in a git clone fetches the new version first (launcher.py).
+exec "$KIT_PYTHON" -I "$KIT_DIR/scripts/launcher.py" "$@"

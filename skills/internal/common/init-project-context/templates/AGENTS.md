@@ -13,7 +13,7 @@ Test what changed and what depends on it, whoever owns it. The full suite runs i
 
 1. Changed files: `git diff --name-only <base branch>...HEAD` plus `git status --short`. Base branch: `<main>`.
 2. Run the "Changed" command of each stack touched. Run its "Full" command instead when a shared file changed: `<shared files: lockfiles, shared config, shared test setup such as conftest.py; for dbt, macros/, dbt_project.yml, packages.yml, seeds/>`.
-3. Say in one line which scope you ran and why. Paste the real output. If a test fails, fix the code, never the test; never skip or delete one.
+3. Say in one line which scope you ran and why. Paste the real output. If a test fails, fix the code; never weaken, skip or delete a test to hide a regression. When the expected behaviour changes on purpose, update the test to the new contract and say why.
 4. Never run against production: development target `<dev target or environment>` only.
 
 | Stack | Changed | Full |

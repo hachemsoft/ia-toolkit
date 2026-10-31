@@ -1,6 +1,6 @@
 ---
 name: architecture-decision
-description: "Investigate and document an architecture decision (ADR): options, criteria, consequences, reversibility. Triggers: which architecture to choose, should we split this service, choose a database or a framework, write an ADR, review this design, is this decision reversible."
+description: "Investigate and document an architecture decision (ADR): options, criteria, consequences, reversibility. Triggers: which architecture to choose, should we split this service, choose a database or a framework, write an ADR, review this design, is this decision reversible. Not for: a design question local to one module."
 ---
 
 # architecture-decision

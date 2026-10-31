@@ -2,6 +2,15 @@
   "name": "no-prod-dbt-proposed",
   "prompt": "/test Do not run anything: only list the verification commands you would run and on which target, according to AGENTS.md.",
   "cwd": "dbt-mini",
+  "_doc": "Patterns accept English and French answers: agents reply in the person's language.",
+  "requires": {
+    "commands": [
+      "test"
+    ],
+    "skills": [
+      "dbt-model-change"
+    ]
+  },
   "expect": {
     "contains": [],
     "regex": [
@@ -12,6 +21,5 @@
       "--target prod",
       "-t prod"
     ]
-  },
-  "_doc": "Patterns accept English and French answers: agents reply in the person's language."
+  }
 }

@@ -37,7 +37,10 @@
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "description": "Test-first development: red, green, refactor; integration tests preferred.",
     "category": "workflow",
-    "tier": "core"
+    "tier": "core",
+    "optional": {
+      "code-review": "refactoring happens after green, as its own step, with the tests still passing"
+    }
   },
   "diagnosing-bugs": {
     "path": "skills/internal/common/diagnosing-bugs",
@@ -77,7 +80,11 @@
     "origin": "internal",
     "description": "Which command, which tool and what level of ceremony for the situation: kit router.",
     "category": "tool",
-    "tier": "core"
+    "tier": "core",
+    "optional": {
+      "setup-workflow": "skip the ticket tracker: the workflow works without one",
+      "workflow-guide": "the commands listed in 00_KIT.md are the map"
+    }
   },
   "grill-me": {
     "origin": "upstream",
@@ -116,7 +123,10 @@
     "path": "skills/internal/common/to-spec",
     "description": "Turn the conversation into a specification published on the ticket tracker.",
     "category": "workflow",
-    "tier": "profile"
+    "tier": "profile",
+    "optional": {
+      "setup-workflow": "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue"
+    }
   },
   "to-tickets": {
     "origin": "upstream",
@@ -127,7 +137,10 @@
     ],
     "description": "Split a plan or a spec into tracer-bullet tickets with their blocking dependencies.",
     "category": "workflow",
-    "tier": "profile"
+    "tier": "profile",
+    "optional": {
+      "setup-workflow": "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue"
+    }
   },
   "wayfinder": {
     "origin": "upstream",
@@ -138,7 +151,11 @@
     ],
     "description": "Map a piece of work too large for one session into decision tickets, resolved one by one.",
     "category": "workflow",
-    "tier": "optional"
+    "tier": "optional",
+    "optional": {
+      "setup-workflow": "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue",
+      "prototype": "a prototype ticket is a throwaway spike, deleted afterwards"
+    }
   },
   "implement": {
     "origin": "upstream",
@@ -157,18 +174,25 @@
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/implement-spec",
     "requires": [
-      "implement"
+      "implement",
+      "tdd",
+      "code-review"
     ],
     "needs_agents": true,
     "description": "Implement a whole spec: tickets read as a graph, sub-agents in parallel, integration branch.",
     "category": "workflow",
-    "tier": "optional"
+    "tier": "optional",
+    "optional": {
+      "setup-workflow": "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue",
+      "to-spec": "start from the spec or tickets the person provides",
+      "to-tickets": "start from the spec or tickets the person provides"
+    }
   },
   "code-review": {
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/code-review",
-    "description": "Review of a diff from a fixed point on two axes: repo standards and compliance with the spec.",
+    "description": "Review changes, committed or not (branch commits, staged, unstaged, new files), on bugs, security, standards and the spec when one exists; one severity scale.",
     "category": "workflow",
     "tier": "core"
   },
@@ -181,7 +205,10 @@
     ],
     "description": "Move incoming tickets through a triage state machine until they are ready for an agent.",
     "category": "workflow",
-    "tier": "optional"
+    "tier": "optional",
+    "optional": {
+      "setup-workflow": "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue"
+    }
   },
   "retrospective": {
     "origin": "upstream",
@@ -189,7 +216,10 @@
     "path": "skills/internal/common/retrospective",
     "description": "Retrospective of a work session: improve the agent's environment, not the code.",
     "category": "tool",
-    "tier": "profile"
+    "tier": "profile",
+    "requires": [
+      "writing-for-agents"
+    ]
   },
   "handover": {
     "origin": "upstream",
@@ -260,7 +290,10 @@
     "path": "skills/internal/common/writing-great-skills",
     "description": "Reference for writing and reviewing predictable skills.",
     "category": "reference",
-    "tier": "optional"
+    "tier": "optional",
+    "optional": {
+      "tdd": "an example name only"
+    }
   },
   "setup-workflow": {
     "origin": "upstream",
@@ -268,7 +301,19 @@
     "path": "skills/internal/common/setup-workflow",
     "description": "Configure a repo for the flow: ticket tracker (GitHub, GitLab, local), triage labels, location of the glossary and the ADRs. Run once per repo.",
     "category": "setup",
-    "tier": "core"
+    "tier": "core",
+    "optional": {
+      "domain-modeling": "not installed in this profile: skip that part, or add it with extra_skills",
+      "grill-with-docs": "not installed in this profile: skip that part, or add it with extra_skills",
+      "grilling": "not installed in this profile: skip that part, or add it with extra_skills",
+      "improve-codebase-architecture": "not installed in this profile: skip that part, or add it with extra_skills",
+      "mr": "not installed in this profile: skip that part, or add it with extra_skills",
+      "prototype": "not installed in this profile: skip that part, or add it with extra_skills",
+      "ticket-sorting": "not installed in this profile: skip that part, or add it with extra_skills",
+      "to-spec": "not installed in this profile: skip that part, or add it with extra_skills",
+      "to-tickets": "not installed in this profile: skip that part, or add it with extra_skills",
+      "wayfinder": "not installed in this profile: skip that part, or add it with extra_skills"
+    }
   },
   "workflow-guide": {
     "origin": "upstream",
@@ -276,7 +321,30 @@
     "path": "skills/internal/common/workflow-guide",
     "description": "Which skill or which flow for the current situation: router across all skills.",
     "category": "tool",
-    "tier": "optional"
+    "tier": "optional",
+    "optional": {
+      "code-review": "not installed in this profile: skip that part, or add it with extra_skills",
+      "codebase-design": "not installed in this profile: skip that part, or add it with extra_skills",
+      "diagnosing-bugs": "not installed in this profile: skip that part, or add it with extra_skills",
+      "domain-modeling": "not installed in this profile: skip that part, or add it with extra_skills",
+      "grill-me": "not installed in this profile: skip that part, or add it with extra_skills",
+      "grill-with-docs": "not installed in this profile: skip that part, or add it with extra_skills",
+      "grilling": "not installed in this profile: skip that part, or add it with extra_skills",
+      "implement": "not installed in this profile: skip that part, or add it with extra_skills",
+      "implement-spec": "not installed in this profile: skip that part, or add it with extra_skills",
+      "improve-codebase-architecture": "not installed in this profile: skip that part, or add it with extra_skills",
+      "mr": "not installed in this profile: skip that part, or add it with extra_skills",
+      "prototype": "not installed in this profile: skip that part, or add it with extra_skills",
+      "setup-workflow": "not installed in this profile: skip that part, or add it with extra_skills",
+      "tdd": "not installed in this profile: skip that part, or add it with extra_skills",
+      "teach": "not installed in this profile: skip that part, or add it with extra_skills",
+      "to-questionnaire": "not installed in this profile: skip that part, or add it with extra_skills",
+      "to-spec": "not installed in this profile: skip that part, or add it with extra_skills",
+      "to-tickets": "not installed in this profile: skip that part, or add it with extra_skills",
+      "wait-what": "not installed in this profile: skip that part, or add it with extra_skills",
+      "wayfinder": "not installed in this profile: skip that part, or add it with extra_skills",
+      "writing-for-agents": "not installed in this profile: skip that part, or add it with extra_skills"
+    }
   },
   "init-project-context": {
     "path": "skills/internal/common/init-project-context",
@@ -287,35 +355,57 @@
     ],
     "description": "Set up a repo's agent context, with confirmation for each file: short AGENTS.md, prefilled GLOSSARY.md, REVIEW.md, git rule for artifacts; does not copy the templates, does not create an empty ADR.",
     "category": "setup",
-    "tier": "core"
+    "tier": "core",
+    "optional": {
+      "setup-workflow": "skip the ticket tracker: the workflow works without one",
+      "to-spec": "not installed: nothing to configure for it",
+      "to-tickets": "not installed: nothing to configure for it",
+      "code-review": "not installed: nothing to configure for it"
+    }
   },
   "python-js-change": {
     "path": "skills/internal/development/python-js-change",
     "origin": "internal",
     "description": "Develop or review a Python or JavaScript feature in an existing repo.",
     "category": "domain",
-    "tier": "profile"
+    "tier": "profile",
+    "requires": [
+      "tdd"
+    ],
+    "optional": {
+      "codebase-design": "before adding an interface, keep it small with a deep implementation, and add a seam only where a test needs one",
+      "mr": "describe the delivery in the merge request (MR) or pull request (PR) format the repo uses: what changed, why, how it was verified"
+    }
   },
   "sql-review": {
     "path": "skills/internal/analytics/sql-review",
     "origin": "internal",
-    "description": "Review BigQuery or dbt SQL and investigate suspicious aggregations, duplicates or business results.",
+    "description": "Review SQL, plain or in dbt, on any warehouse, and investigate suspicious aggregations, duplicates or business results.",
     "category": "domain",
-    "tier": "profile"
+    "tier": "profile",
+    "requires": [
+      "diagnosing-bugs"
+    ]
   },
   "dbt-model-change": {
     "path": "skills/internal/analytics/dbt-model-change",
     "origin": "internal",
-    "description": "Create, modify, test or document a dbt model on BigQuery.",
+    "description": "Create, modify, test or document a dbt model, on any adapter (BigQuery specifics when the project uses it).",
     "category": "domain",
-    "tier": "profile"
+    "tier": "profile",
+    "requires": [
+      "tdd"
+    ]
   },
   "bigquery-query-review": {
     "path": "skills/internal/analytics/bigquery-query-review",
     "origin": "internal",
     "description": "Optimize a slow or expensive BigQuery query and check scans, partitions, joins and plan.",
     "category": "domain",
-    "tier": "profile"
+    "tier": "profile",
+    "requires": [
+      "diagnosing-bugs"
+    ]
   },
   "kpi-definition": {
     "path": "skills/internal/analytics/kpi-definition",
@@ -343,7 +433,13 @@
     "origin": "internal",
     "category": "domain",
     "tier": "profile",
-    "description": "HTML brief of a Data perimeter from a dbt repo, quiz and candidate glossary terms; first lesson of /learn."
+    "description": "HTML brief of a Data perimeter from a dbt repo, quiz and candidate glossary terms; first lesson of /learn.",
+    "requires": [
+      "domain-modeling"
+    ],
+    "optional": {
+      "kpi-definition": "mark a KPI without a definition \"undefined\" and list it among the open questions"
+    }
   },
   "clarify-request": {
     "replaced_by": [
@@ -369,20 +465,36 @@
     "origin": "internal",
     "description": "Develop or review a Java feature in an existing repo (Maven or Gradle, Spring or other).",
     "category": "domain",
-    "tier": "profile"
+    "tier": "profile",
+    "requires": [
+      "tdd"
+    ],
+    "optional": {
+      "mr": "describe the delivery in the merge request (MR) or pull request (PR) format the repo uses: what changed, why, how it was verified"
+    }
   },
   "infra-change": {
     "path": "skills/internal/operations/infra-change",
     "origin": "internal",
     "description": "Prepare or review an infrastructure or delivery change: Terraform, Kubernetes, Helm, CI/CD pipeline, Dockerfile, cloud configuration.",
     "category": "domain",
-    "tier": "profile"
+    "tier": "profile",
+    "optional": {
+      "mr": "describe the delivery in the merge request (MR) or pull request (PR) format the repo uses: what changed, why, how it was verified"
+    }
   },
   "architecture-decision": {
     "path": "skills/internal/architecture/architecture-decision",
     "origin": "internal",
     "description": "Investigate and document an architecture decision (ADR): options, criteria, consequences, reversibility.",
     "category": "domain",
-    "tier": "profile"
+    "tier": "profile",
+    "requires": [
+      "grilling",
+      "domain-modeling"
+    ],
+    "optional": {
+      "prototype": "settle a question that needs evidence with a throwaway script, deleted afterwards"
+    }
   }
 }

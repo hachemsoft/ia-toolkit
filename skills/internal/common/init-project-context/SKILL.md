@@ -5,7 +5,7 @@ description: "Set up a repo's agent context: a short AGENTS.md, a GLOSSARY.md pr
 
 # init-project-context
 
-The kit never writes to a repo. This skill does, on request, with confirmation before each file.
+The kit never writes to a repo. This skill does, on request, after one grouped confirmation. Offer it when it becomes useful (the same question comes back, the checks are unknown), never as a prerequisite to a first task.
 
 ## Before writing
 1. Read the repo: README, its project or build files (`pom.xml`, `build.gradle`, `pyproject.toml`, `package.json`, `dbt_project.yml`, Terraform files…), test commands, CI, main folders. Note the actual commands, not assumed ones.
@@ -16,15 +16,15 @@ The kit never writes to a repo. This skill does, on request, with confirmation b
 - "Verifying your work" block: generic, the same for a Data repo and an application repo, inferred automatically. Identify the stacks in use by reading, in this order, the CI first (`.gitlab-ci.yml`, `.github/workflows/`, `Jenkinsfile`), which already runs the real commands; then the stack files (`dbt_project.yml`, `pyproject.toml`, `setup.cfg`, `pytest.ini`, `package.json` and its scripts, `go.mod`, `pom.xml`, `build.gradle`, `Cargo.toml`); then `Makefile`, `justfile` or `Taskfile` and the README. For each stack found, fill in the command on the changed scope and the full command, the base branch, the shared files that require the full suite, the development target; delete the rows of absent stacks. Offer to run each command once, with agreement, and write only those that pass; report those that fail. If no stack or test command can be inferred from the repo, invent nothing: leave the block with its `<…>`, say so clearly, and ask the person to write the repo's test commands in it themselves (or to give them, so the agent writes them).
 - `AGENTS.md` from `templates/AGENTS.md`: one page, structured like the SDLC playbook's context file: Commands, Verifying your work, Conventions, Architecture, Things the agent gets wrong, Where the rest lives. Replace each `<…>` with facts read from the repo; delete lines without a fact. Each "Things the agent gets wrong" line keeps the form `rule (since YYYY-MM: what happened)`; when the repo already has such rules, add the month you found them. If the repo already uses `GEMINI.md`, keep it and add `@AGENTS.md` to it rather than duplicating.
 - `GLOSSARY.md` in the `domain-modeling` format (example: `templates/GLOSSARY.md`). Collect the business terms found in the code, the APIs and the docs. For a data repo (dbt, SQL, pipelines), also propose the starter terms of `templates/GLOSSARY-DATA.md` that the repo really uses. Each term with its synonyms to avoid.
-- `REVIEW.md` from `templates/REVIEW.md`: the review passes `/review` follows (bugs, security, data, compliance), what Important means, the nit cap. Adapt the data pass to the scope, or remove it if the repo does not handle data.
+- `REVIEW.md` from `templates/REVIEW.md`: the review passes `/review` follows (bugs, security, domain, standards, compliance with a spec when there is one), what Important means, the nit cap. Adapt the data pass to the scope, or remove it if the repo does not handle data.
 - Git rule for artifacts, with confirmation: add to `.gitignore` the lines `docs/sdlc/**/intent.md`, `docs/sdlc/**/plan.md` and `docs/sdlc/handoff-*.md` (local working notes); `spec.md` and `REVIEW.md` stay committed. If the team prefers to commit everything, write it in `AGENTS.md` and do not touch `.gitignore`.
-- Artifact templates `templates/intent.md`, `templates/spec.md`, `templates/plan.md`: do not copy them into the repo; `/intent`, `/spec` and `/build` read them from this skill and write the filled artifact at the right time. Convention: one folder per change, `docs/sdlc/<YYYY-MM-DD>-<slug>/` containing `intent.md`, `spec.md`, `plan.md`; the folder's git history is the audit trail. Write this in `AGENTS.md`.
+- Artifact templates `templates/intent.md`, `templates/spec.md`, `templates/plan.md`: do not copy them into the repo; `/intent`, `/spec` and `/build` read them from this skill and write the filled artifact at the right time. Convention, unless the repo already has one (keep it and write it in `AGENTS.md`): one folder per change, `docs/sdlc/<YYYY-MM-DD>-<slug>/` containing `intent.md`, `spec.md`, `plan.md`; the folder's git history is the audit trail.
 - `docs/adr/`: do not create an empty file. If a structuring decision is already visible in the repo (a layer or module convention, a mandated tool, a storage or materialization choice), propose a first ADR following `ADR-FORMAT.md`; otherwise say the folder will be created with the first decision.
 
 ## Steps
-1. Present the plan: files to create, a summary of each.
-2. For each file, show the full content and wait for confirmation.
-3. Then propose `setup-workflow` to declare the ticket tracker (GitLab via `glab`, GitHub or local markdown) and the triage labels that `to-spec`, `to-tickets` and `code-review` expect.
+1. Present one grouped proposal: each file to create or to add to (an existing file gets an addition, never a replacement), a summary of each, and its full content below. The person accepts it as a whole, drops some files, or asks for changes: one confirmation, not one per file.
+2. Write what was accepted.
+3. Only if the team wants the agent to read and create tickets, mention `setup-workflow` (GitLab via `glab`, GitHub or local markdown, and triage labels for `to-spec` and `to-tickets`); the rest of the kit works without a tracker.
 4. After writing, test: ask the agent to perform a common task in the repo reading only these files. Add what was missing, remove what was not used.
 
 ## Forbidden

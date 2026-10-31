@@ -1,6 +1,6 @@
 ---
 name: dbt-model-change
-description: "Create, modify, test or document a dbt model on BigQuery. Triggers: new model, modify this model, add a column or a dbt test, materialization, incremental, ref and source, dbt run or dbt test."
+description: "Create, modify, test or document a dbt model, on any adapter (BigQuery specifics when the project uses it). Triggers: new model, modify this model, add a column or a dbt test, materialization, incremental, ref and source, dbt run or dbt test. Not for: ad hoc SQL outside a dbt project."
 ---
 
 # dbt-model-change

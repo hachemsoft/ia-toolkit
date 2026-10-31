@@ -1,6 +1,6 @@
 ---
 name: bigquery-cost-review
-description: "Review the cost of a BigQuery query, model or job before and after a change: bytes read, partitions, clustering, slots, frequency. Triggers: BigQuery cost, bill, bytes scanned, expensive query, optimize cost, why does this cost so much."
+description: "Review the cost of a BigQuery query, model or job before and after a change: bytes read, partitions, clustering, slots, frequency. Triggers: BigQuery cost, bill, bytes scanned, expensive query, optimize cost, why does this cost so much. Not for: a slow query whose cost is not the question."
 ---
 
 # bigquery-cost-review

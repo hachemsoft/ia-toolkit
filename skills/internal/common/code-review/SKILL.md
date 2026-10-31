@@ -1,41 +1,40 @@
 ---
 name: code-review
-description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\"."
+description: "Review changes, committed or not: the branch's commits, the staged and unstaged changes and the new files, by default; or a narrower scope the person names. Finds bugs, security issues, breaks of the repo's standards and of the spec when there is one, ranked on one severity scale. Use when the person asks to review their work, a branch, a PR or MR, or \"what changed since X\"; /review runs it."
 ---
 
-Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
+The kit's single review behaviour: `/review` and a plain request ("review my changes") both follow it, with the same scope rule, passes and severities. Report only: fix nothing.
 
-- **Standards**: does the code conform to this repo's documented coding standards?
-- **Spec**: does the code faithfully implement the originating issue / spec?
+## 1. Scope: everything that changed, unless the person narrows it
 
-Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
+By default, review all of these, against the base (the branch the work will merge into: what the person names, otherwise the repo's default branch):
 
-The issue tracker should have been provided to you. If not, tell the user to run `/setup-workflow`.
+```sh
+git rev-parse --abbrev-ref origin/HEAD                 # default base, e.g. origin/main (else main or master)
+git merge-base <base> HEAD                             # where the branch started
+git log --oneline <merge-base>..HEAD                   # commits of the branch
+git diff <merge-base>                                  # committed + staged + unstaged changes to tracked files
+git diff --cached --stat                               # what is staged
+git ls-files --others --exclude-standard               # new files not yet added
+```
 
-## Process
+Read the new files that matter (source, tests, configuration); skip generated output, data dumps and binaries, and say so. State the scope in one line before the findings: "Reviewing N commits since <base>, staged and unstaged changes, K new files". The person can narrow it: "only staged" (`git diff --cached`), "only my local changes" (`git diff HEAD` plus new files), "since <ref>", a path, a commit. Conclude "nothing to review" only when all of the above are empty, never from the commits alone.
 
-### 1. Pin the fixed point
+## 2. What the change should do
 
-Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one, ask for it.
+Use what exists, in this order: a spec, intent or plan the person points to; `spec.md`, `intent.md` or `plan.md` in the change folder; a ticket the commits or the person cite, when a tracker is reachable. None of them is required: for a small change without a written spec, the expected behaviour is what the person said; skip the Compliance pass and say so in one line. Never ask for a spec or a tracker before reviewing.
 
-Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
+## 3. Passes
 
-Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside two parallel sub-agents.
+Run them in sequence, or delegate them to the installed `ai-kit-*` review agents when available (give them the scope commands and the files):
 
-### 2. Identify the spec source
+- **Bugs**: logic, edge cases, error handling, regressions in callers.
+- **Security**: secrets, injection, unsafe paths, personal data in logs or outputs, permissions.
+- **Domain**: the checks of the installed playbooks matching the files (listed in 00_KIT.md).
+- **Standards**: `REVIEW.md` when it exists (its passes, severity rule, nit cap and exclusions win), `AGENTS.md`, `CONTRIBUTING.md` or `CODING_STANDARDS.md`, the practices in your context, and the smell baseline below.
+- **Compliance**: matches the spec, intent or plan from step 2; skipped without one.
 
-Look for the originating spec, in this order:
-
-1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), fetched via the workflow in the tracker doc.
-2. A path the user passed as an argument.
-3. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
-4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
-
-### 3. Identify the standards sources
-
-Search the repo for every file that documents how code should be written. When `CODING_STANDARDS.md` or `CONTRIBUTING.md` exists, it must be on the list.
-
-On top of whatever the repo documents, the Standards axis always carries the **smell baseline** below: a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Two rules bind it:
+On top of whatever the repo documents, the Standards pass always carries the **smell baseline** below: a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Two rules bind it:
 
 - **The repo overrides.** A documented repo standard always wins; where it endorses something the baseline would flag, suppress the smell.
 - **Always a judgement call.** Each smell is a labelled heuristic ("possible Feature Envy"), never a hard violation. Like any standard here, skip anything tooling already enforces.
@@ -55,35 +54,14 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 - **Middle Man**: a class or function that mostly just delegates onward. → cut it, call the real target direct.
 - **Refused Bequest**: a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
 
-### 4. Spawn both sub-agents in parallel
+## 4. Severity, the same wherever the review starts
 
-Issue both sub-agent calls together, in the foreground, and aggregate the reports they return.
+- **Important**: breaks behaviour, data, security or a written policy; must be fixed before merging.
+- **Minor**: a real defect with limited impact, or a missing test for changed behaviour.
+- **Nit**: style or naming; at most five, the rest dropped.
 
-**Standards sub-agent prompt** should include:
+A smell from the baseline is at most Minor and always worded as a judgement call. Tag each finding with its pass, severity, file and line, and the evidence (the hunk, the failing input). Rank by severity.
 
-- The full diff command and commit list.
-- The list of standards-source files you found in step 3, **plus the smell baseline from step 3** pasted in full (the sub-agent has no other access to it).
-- The brief: "Report, per file/hunk where relevant, (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) any baseline smell you spot: name it and quote the hunk. Distinguish hard violations from judgement calls: documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Under 400 words."
+## 5. Report
 
-**Spec sub-agent prompt** should include:
-
-- The diff command and commit list.
-- The path or fetched contents of the spec.
-- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
-
-If the spec is missing, skip the Spec sub-agent and note this in the final report.
-
-### 5. Aggregate
-
-Present the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings, because the two axes are deliberately separate (see _Why two axes_).
-
-End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes: that's the reranking the separation exists to prevent.
-
-## Why two axes
-
-A change can pass one axis and fail the other:
-
-- Code that follows every standard but implements the wrong thing → **Standards pass, Spec fail.**
-- Code that does exactly what the issue asked but breaks the project's conventions → **Spec pass, Standards fail.**
-
-Reporting them separately stops one axis from masking the other.
+The scope line, the findings ranked, then the limits (what was not reviewed and why). If the repo's `AGENTS.md` or the person's `30_USER.md` has a "## Report" section, shape the report as it says.

@@ -1,6 +1,6 @@
 ---
 name: python-js-change
-description: "Develop or review a Python or JavaScript feature in an existing repo."
+description: "Develop or review a Python or JavaScript feature in an existing repo. Triggers: add a feature in Python or JavaScript or TypeScript, fix this function, an API endpoint, review this Python or JS code. Not for: SQL in a dbt project, or infrastructure files."
 ---
 
 # python-js-change

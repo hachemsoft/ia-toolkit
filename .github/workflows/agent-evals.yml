@@ -1,29 +1,45 @@
-name: Agent evals
+name: Agent evals (real model calls, billed)
+# Never runs on its own: no pull_request, push or schedule trigger. Each run calls the model once per case (plus at most
+# --retries extra attempts on an infrastructure error) and is billed to the GEMINI_API_KEY secret's account.
+# The job timeout limits time, not money. The model-free tests run in portability.yml.
 on:
-  pull_request:
-    paths: ['practices/**', 'skills/**', 'templates/**', 'runtime/**', 'commands/**', 'installer/**', 'agents/**', 'evals/**']
   workflow_dispatch:
-  schedule:
-    - cron: '0 2 * * 1'
+    inputs:
+      confirm_paid_run:
+        description: 'I understand this run makes real, billed calls to the model'
+        type: boolean
+        default: false
+      only:
+        description: 'Run a single case (its name), empty for all'
+        type: string
+        default: ''
+      cli_version:
+        description: 'Gemini CLI version to install (fixed for a reference campaign; empty: latest)'
+        type: string
+        default: ''
 permissions:
   contents: read
 jobs:
   evals:
     runs-on: ubuntu-latest
-    # Le secret est vide sur une PR venant d'un fork : la suite ne peut pas tourner.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'workflow_dispatch' && inputs.confirm_paid_run == true
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install -g @google/gemini-cli
+      # A reference campaign pins the CLI version (input cli_version): runs compare like with like; the report records it.
+      - env:
+          CLI_VERSION: ${{ inputs.cli_version }}
+        run: npm install -g "@google/gemini-cli${CLI_VERSION:+@$CLI_VERSION}"
       - name: Install the kit into a temporary home
-        run: python3 -m installer setup --profile data-analyst --home "$RUNNER_TEMP/home" --user evals@example.org --no-live
+        run: python3 -m installer setup --profile data-analyst --home "$RUNNER_TEMP/home" --user evals@example.org
       - name: Run evals
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python3 evals/run.py --home "$RUNNER_TEMP/home" --report "$RUNNER_TEMP/evals.json"
+          ONLY: ${{ inputs.only }}
+        run: python3 evals/run.py --confirm-paid-run --retries 0 --home "$RUNNER_TEMP/home" --report "$RUNNER_TEMP/evals.json" ${ONLY:+--only "$ONLY"}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

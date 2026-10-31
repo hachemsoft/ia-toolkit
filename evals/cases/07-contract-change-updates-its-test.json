@@ -1,0 +1,21 @@
+{
+  "name": "contract-change-updates-its-test",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ]
+  },
+  "prompt": "/build total() must now return an integer number of cents instead of a float in euros. This contract change is decided.",
+  "expect": {
+    "regex": [
+      "test_orders",
+      "(?i)(update|adapt|change|rewrite|modif)[^.\\n]{0,80}test|test[^.\\n]{0,80}(update|adapt|change|new contract)"
+    ],
+    "not_contains": [
+      "never change the test",
+      "never modify the test"
+    ]
+  },
+  "_doc": "A legitimate test adaptation: the expected behaviour changes on purpose, so the test follows the new contract, with the reason said."
+}

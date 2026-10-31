@@ -1,0 +1,22 @@
+{
+  "name": "mixed-dbt-and-python",
+  "cwd": "mixed-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ],
+    "skills": [
+      "dbt-model-change",
+      "python-js-change"
+    ]
+  },
+  "prompt": "/build add a currency column to the orders model and return it from the orders API",
+  "expect": {
+    "regex": [
+      "(?i)dbt",
+      "orders_api",
+      "(?i)--target dev|target dev|development target"
+    ]
+  },
+  "_doc": "Two domains in one change: both playbooks apply, each stack is verified with its own command, dbt on the development target."
+}

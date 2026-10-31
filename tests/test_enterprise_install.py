@@ -21,6 +21,7 @@ from unittest import mock
 from installer import cli
 from installer.core import ROOT, SECRET, read_json, redact
 from installer.adapters.gemini import diagnose_live
+import wheelhouse
 
 RELEASE_ZIP = os.environ.get('AI_KIT_RELEASE_ZIP')
 WINDOWS = os.name == 'nt'
@@ -50,13 +51,20 @@ class LauncherTests(unittest.TestCase):
         self.base = Path(self.temp.name)/'Mes documents é'
         self.kit = kit_copy(self.base/'Kit IA été'/'ai-kit 1')
         self.home = self.base/'Home à'
-        self.env = {**os.environ, 'AI_KIT_NO_LIVE': '1'}
+        # A copy of the repository is installed by pip from source: its build backend and libraries come from the local
+        # wheelhouse (no network); the release ZIP needs nothing.
+        self.env = {**os.environ, 'AI_KIT_NO_LIVE': '1', **({} if RELEASE_ZIP else wheelhouse.pip_env())}
+
+    def needs_wheels(self):
+        if not RELEASE_ZIP and not wheelhouse.AVAILABLE:
+            self.skipTest(wheelhouse.WHY)
 
     def run_launcher(self, kit, *args, env=None):
         return subprocess.run(launcher(kit) + list(args), cwd=self.base, capture_output=True, text=True, encoding='utf-8',
                               errors='replace', env=env or self.env, stdin=subprocess.DEVNULL)
 
     def setup_kit(self, kit, *extra):
+        self.needs_wheels()
         proc = self.run_launcher(kit, 'setup', '--home', str(self.home), '--no-live', *extra)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         return proc
@@ -67,8 +75,10 @@ class LauncherTests(unittest.TestCase):
         shutil.rmtree(self.base/'Kit IA été')
         # Nothing installed points back to the extracted folder: hooks, scripts and schema live in ~/.ai-kit.
         markers = {str(self.kit), self.kit.as_uri(), str(self.kit).replace('\\', '/'), str(self.kit).replace('\\', '\\\\')}
+        # The private environment is left out: pip records there where the package came from (direct_url.json), a note
+        # nothing reads; that the kit runs without the folder is checked by running it after the deletion (test_launcher).
         for path in self.home.rglob('*'):
-            if path.is_file() and '/backups/' not in path.as_posix():
+            if path.is_file() and '/backups/' not in path.as_posix() and '/.ai-kit/runtime/' not in path.as_posix():
                 text = path.read_text(encoding='utf-8', errors='replace')
                 self.assertFalse([m for m in markers if m in text], path)
         self.assertTrue((self.home/'.ai-kit/schemas/overrides.schema.json').is_file())
@@ -134,20 +144,25 @@ class ReleaseFilesTests(unittest.TestCase):
         commands = [line for line in data.decode('ascii').splitlines() if not line.lower().startswith('rem ')]
         self.assertFalse([line for line in commands if 'powershell' in line.lower()])
 
-    @unittest.skipUnless(RELEASE_ZIP, 'Release ZIP built by scripts/package.sh (CI release job)')
+    @unittest.skipUnless(RELEASE_ZIP, 'Release ZIP built by scripts/build_release.py (CI release job)')
     def test_release_zip_content(self):
         with zipfile.ZipFile(RELEASE_ZIP) as archive:
             names = archive.namelist()
             self.assertIn('Installer.cmd', names)  # at the root: no top folder, extraction gives a single folder
             self.assertIn('scripts/bootstrap.sh', names)
-            self.assertFalse([n for n in names if n.startswith(('tests/', 'evals/', '.github/', '.git/', 'build/', 'dist/'))])
+            self.assertIn('scripts/launcher.py', names)
+            self.assertIn('INSTALL.txt', names)
+            wheels = [n for n in names if n.startswith('wheels/')]
+            self.assertTrue([n for n in wheels if n.startswith('wheels/ai_kit-')])
+            self.assertTrue(all(n.endswith(('-py3-none-any.whl', '-py2.py3-none-any.whl')) for n in wheels), wheels)
+            self.assertFalse([n for n in names if n.startswith(('tests/', 'evals/', '.github/', '.git/', 'build/', 'dist/', 'installer/'))])
             self.assertEqual(archive.read('Installer.cmd').count(b'\n'), archive.read('Installer.cmd').count(b'\r\n'))
 
     def test_no_system_change_in_installer_and_launchers(self):
         # Registry, system or user PATH, execution policy, Gatekeeper and quarantine, elevation, shell startup files.
         forbidden = re.compile(r'winreg|\bsetx\b|reg add|ExecutionPolicy|\bxattr\b|\bspctl\b|\bsudo\b|\brunas\b|HKEY_|Set-ItemProperty'
                                r'|\.zshrc|\.bashrc|\.bash_profile|\.zprofile|/etc/|launchctl|defaults write', re.I)
-        sources = list((ROOT/'installer').rglob('*.py')) + [ROOT/'Installer.cmd', ROOT/'scripts/bootstrap.sh', ROOT/'runtime/friction.py']
+        sources = list((ROOT/'installer').rglob('*.py')) + [ROOT/'Installer.cmd', ROOT/'scripts/bootstrap.sh', ROOT/'scripts/launcher.py', ROOT/'runtime/friction.py']
         found = []
         for source in sources:
             for number, line in enumerate(source.read_text(encoding='utf-8').splitlines(), 1):
@@ -156,11 +171,24 @@ class ReleaseFilesTests(unittest.TestCase):
                     found.append(source.name + ':' + str(number))
         self.assertEqual(found, [])
 
+    def test_bootstrap_ps1_only_hands_over_to_installer_cmd(self):
+        data = (ROOT/'scripts/bootstrap.ps1').read_bytes()
+        data.decode('ascii')
+        self.assertEqual(data.count(b'\n'), data.count(b'\r\n'))
+        code = [line for line in data.decode('ascii').splitlines() if not line.lstrip().startswith('#')]
+        self.assertIn('Installer.cmd', '\n'.join(code))
+        for word in ('executionpolicy', 'bypass', 'set-itemproperty', 'invoke-webrequest', 'start-process -verb'):
+            self.assertNotIn(word, '\n'.join(code).lower())
+
     def test_launchers_download_nothing(self):
         for source in (ROOT/'Installer.cmd', ROOT/'scripts/bootstrap.sh'):
             text = source.read_text(encoding='utf-8').lower()
             for word in ('curl ', 'wget ', 'bitsadmin', 'invoke-webrequest', 'pip install', 'winget', 'brew '):
                 self.assertNotIn(word, text, source.name)
+        # The launcher installs with pip only: no bootstrap script fetched, no index or certificate setting forced.
+        launcher_text = (ROOT/'scripts/launcher.py').read_text(encoding='utf-8')
+        for word in ('get-pip', 'urllib', 'http://', 'https://', '--trusted-host', '--index-url', '--extra-index-url', 'ExecutionPolicy', '--editable', ' -e '):
+            self.assertNotIn(word, launcher_text)
 
 
 class Console(io.StringIO):
@@ -175,9 +203,9 @@ class PersonalContextTests(unittest.TestCase):
         self.file = Path(self.temp.name)/'30_USER.md'
         self.file.write_text('# My context\n', encoding='utf-8')
 
-    def step(self, answers, saved):
+    def step(self, answers, saved, notices=()):
         """Runs the step with the editor replaced by a write of `saved` (what the person saves)."""
-        reapply = mock.Mock()
+        reapply = mock.Mock(return_value=list(notices))
         def editor(*args, **kwargs):
             if isinstance(saved, bytes):
                 self.file.write_bytes(saved)
@@ -194,6 +222,13 @@ class PersonalContextTests(unittest.TestCase):
         popen.assert_called_once()
         reapply.assert_called_once()
         self.assertIn('Start a new session of your CLI', out)
+
+    def test_a_refused_synchronisation_is_said_not_hidden(self):
+        refusal = '[Check] 30_USER.md not copied into ~/.codex/AGENTS.md: it seems to contain a secret (key, token or password).'
+        out, reapply, _ = self.step(['y', ''], b'# My context\n', notices=[refusal])
+        reapply.assert_called_once()
+        self.assertIn(refusal, out)
+        self.assertNotIn('Personal context applied', out)
 
     def test_declined_leaves_everything_as_is(self):
         out, reapply, popen = self.step([''], None)

@@ -6,7 +6,7 @@ Goal: fix the kit on real tickets before opening it to the whole team, and check
 
 1. Get the kit: download `ai-kit-<version>.zip` from the Releases page and extract it into `Documents`.
 2. If the organization requires an authentication mode (Code Assist with a project, Vertex AI) or a model, write the matching key in `~/.ai-kit/overrides.json` before the next step; see [customization › Authentication and model](customization.md#authentication-and-model). Otherwise, nothing to do.
-3. Run the installer: double-click `Installer.cmd` (Windows), or in Terminal `sh scripts/bootstrap.sh` from the extracted folder (Mac). Confirm your identity, choose the profile. Installation ends with a real call to the model: if it is not green, follow the remedy shown, do not call for help.
+3. Run the installer: double-click `Installer.cmd` (Windows), or in Terminal `sh scripts/bootstrap.sh` from the extracted folder (Mac). Confirm your identity, choose the profile. Installation makes no call to the model. Then run `doctor --live` once: one real call (your provider may bill it); if it is not green, follow the remedy shown, do not call for help.
 4. Open your usual repo, start your CLI (`gemini`, `agy` or `codex`), type `/guide where do I start?` (`$guide` in Codex).
 5. First time in the repo: "Initialize the project context", then `setup-workflow` to declare the team's ticket tracker.
 
@@ -30,7 +30,7 @@ Each ticket is handled by the rule: a `doctor` check, a line in "Troubleshooting
 
 ## End of pilot
 
-1. `python3 -m installer usage --json <workstation>.json` on each workstation; aggregated by the team.
+1. `sh scripts/bootstrap.sh usage --json <workstation>.json` (Windows: `Installer.cmd usage --json <workstation>.json`) on each workstation; aggregated by the team.
 2. The eval cases run on each CLI from a pilot workstation.
 3. Ticket review: what was turned into a check, a page or a case.
 4. Decision: opening to the whole team confirmed or not, scope of analyst commands confirmed or adjusted, first [usage review](usage-review.md) if the report has enough material.

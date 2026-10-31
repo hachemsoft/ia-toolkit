@@ -1,6 +1,6 @@
 ---
 name: java-change
-description: "Develop or review a Java feature in an existing repo (Maven or Gradle, Spring or other). Triggers: add an endpoint, modify a Java service, fix a Spring bug, migrate a dependency, review this Java code."
+description: "Develop or review a Java feature in an existing repo (Maven or Gradle, Spring or other). Triggers: add an endpoint, modify a Java service, fix a Spring bug, migrate a dependency, review this Java code. Not for: the build pipeline or deployment files."
 ---
 
 # java-change

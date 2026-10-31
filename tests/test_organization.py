@@ -12,6 +12,7 @@ from unittest import mock
 
 from installer import cli
 from installer.cli import apply, doctor, merge_settings, setting_differences
+import wheelhouse
 from installer.core import KitError, ROOT, read_json
 
 IDENTITY = {'email': 'first.last@example.com', 'source': 'test'}
@@ -259,7 +260,7 @@ class McpTests(unittest.TestCase):
             self.assertNotIn('changes organization defaults', out.getvalue())
 
 
-@unittest.skipIf(os.name == 'nt' or not shutil.which('git'), 'POSIX launcher and git required')
+@unittest.skipIf(os.name == 'nt' or not shutil.which('git') or not wheelhouse.AVAILABLE, 'POSIX launcher, git and a local wheelhouse required')
 class UpdatePullsTests(unittest.TestCase):
     def git(self, *args, cwd):
         subprocess.run(['git', *args], cwd=cwd, check=True, capture_output=True)
@@ -270,7 +271,7 @@ class UpdatePullsTests(unittest.TestCase):
             # A fresh repository built from the current files: independent of how CI checked the kit out
             # (a tag gives a detached HEAD with a single commit, which cannot be pushed as is).
             dev = base/'dev'
-            files = subprocess.run(['git', 'ls-files'], cwd=ROOT, capture_output=True, text=True, check=True).stdout.splitlines()
+            files = subprocess.run(['git', 'ls-files', '--cached', '--others', '--exclude-standard'], cwd=ROOT, capture_output=True, text=True, check=True).stdout.splitlines()
             for rel in files:
                 if (ROOT/rel).is_file():
                     (dev/rel).parent.mkdir(parents=True, exist_ok=True)
@@ -289,17 +290,21 @@ class UpdatePullsTests(unittest.TestCase):
             self.git('commit', '--quiet', '-m', 'new', cwd=base/'dev')
             self.git('push', '--quiet', 'origin', 'main', cwd=base/'dev')
             home = base/'home'
+            env = {**{k: v for k, v in os.environ.items() if not k.startswith('PIP_')}, **wheelhouse.pip_env()}
             run = lambda action, *extra: subprocess.run(['sh', str(base/'kit/scripts/bootstrap.sh'), action, *extra, '--home', str(home), '--no-live'],
-                                                        capture_output=True, text=True, encoding='utf-8', cwd=base)
+                                                        capture_output=True, text=True, encoding='utf-8', cwd=base, env=env)
             self.assertEqual(run('setup', '--profile', 'general', '--user', 'a@example.org').returncode, 0)
             proc = run('update')
-            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(proc.returncode, 0, proc.stdout+proc.stderr)
             self.assertTrue((base/'kit/NEW_FILE.md').is_file())
-            # A local change in the kit folder: no pull, the update still runs.
+            # A local change in the kit folder: no pull, the configuration is reapplied, and the update is reported
+            # incomplete (0.34: before, it ended with code 0 as if the new version had been fetched).
             (base/'kit/README.md').write_text('changed\n', encoding='utf-8')
             proc = run('update')
-            self.assertEqual(proc.returncode, 0, proc.stderr)
-            self.assertIn('Local changes in the kit folder', proc.stderr)
+            self.assertEqual(proc.returncode, 1, proc.stdout+proc.stderr)
+            self.assertIn('local changes', proc.stdout)
+            self.assertIn('Update incomplete', proc.stdout)
+            self.assertEqual((base/'kit/README.md').read_text(encoding='utf-8'), 'changed\n')
 
 
 if __name__ == '__main__':
