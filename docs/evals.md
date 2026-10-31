@@ -11,6 +11,8 @@ python3 evals/run.py --confirm-paid-run               # real run against the kit
 python3 evals/run.py --confirm-paid-run --home ./sandbox-user --only guide-routes-to-commands
 ```
 
+The run measures the kit installed in that home folder, not the repository: to evaluate a change, `update` from it first. The report's `installed_kit` says which version was measured.
+
 Each case runs in a temporary copy of a fixture (`evals/fixtures/`), in default approval mode with the `evals/policy.toml` policy (writes and shell denied): the agent writes no file. Options: `--cli gemini|agy|codex`, `--model`, `--approval-mode`, `--timeout`, `--retries` (0 by default, at most 2, only after an infrastructure error). Exit code 1 if a case fails, 2 if none could run; `--report` writes the details as JSON with the versions of the kit and the CLI, the model and the settings.
 
 Cost: every real run calls the model at least once per case and is billed by the provider. Without `--confirm-paid-run` the runner refuses; `AI_KIT_NO_LIVE=1` refuses even with it. A timeout or a turn limit bounds time, not cost: choose the cases (`--only`) before running.
@@ -37,13 +39,13 @@ Model responses vary; the criteria are deliberately broad and check facts (a com
 
 The case asks `/test`, in the dbt fixture, to list the checks and their target based on `AGENTS.md`, which requires the development target. On Gemini CLI ([its page](cli/gemini.md)) in non-interactive mode, one run in two failed the same way: the model writes "I'm reading AGENTS.md" without calling the read tool, so it never sees the rule, and suggests `dbt test` without a target. Nothing is broken in the kit or the repository; the model skips a step it announces. Two countermeasures, both in place: the `/test` prompt now requires reading `AGENTS.md` with the read tool before any suggestion and forbids assuming its content; and the `dbt-prod-guard` guardrail, when enabled, blocks any dbt command on a production target anyway. If the case still fails now and then, it measures model variance, to note, not a ticket.
 
-## Prepared cases (not run yet)
+## Cases added in 0.34
 
-Prepared in 0.34 and checked without a model (`--dry-run`, and the runner's tests with a stand-in executable); their real behaviour is measured only when the maintainer decides a billed run. A reference campaign pins the CLI version and records the kit, CLI and model versions in the report.
+Prepared in 0.34 and checked without a model (`--dry-run`, and the runner's tests with a stand-in executable); their real behaviour is measured only when the maintainer decides a billed run. First billed run on Claude Code 2.1.316 with the general profile (0.36): every case whose preconditions hold passes, after the fixed `Level:` first line was added; the cases that need a Data or infrastructure playbook were skipped. A reference campaign pins the CLI version and records the kit, CLI and model versions in the report.
 
 | Case | Area | What is observed |
 | --- | --- | --- |
-| `small-change-without-ceremony` | backend, small task | the quick level, no `plan.md` or `intent.md`, no new acceptance after a go-ahead |
+| `small-change-without-ceremony` | backend, small task | a `Level: quick` line, no `plan.md` or `intent.md`, no new acceptance after a go-ahead |
 | `contract-change-updates-its-test` | backend, contract change | the test follows the new contract, the change of test is said |
 | `review-sees-uncommitted-changes` | backend, review | an uncommitted bug is found; never "nothing to review" |
 | `frontend-diagnose` | frontend | the cause in the component, not a guess |

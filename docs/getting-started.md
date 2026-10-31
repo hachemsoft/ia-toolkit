@@ -117,7 +117,7 @@ What each profile installs:
 
 `/design` shapes an interface or answers a design question with a throwaway prototype; `/map` splits a large piece of work into decision tickets; `/triage` moves incoming tickets forward; `/research` investigates a question using primary sources; `/audit` finds modules worth deepening. `/ask`, `/handoff`, `/research`, `/wizard` and `/audit` can be added to any profile that lacks them: `{"extra_commands": ["handoff"]}` in `~/.ai-kit/overrides.json`, then `update`. Agent details: [agents](agents.md).
 
-The rule that avoids running everything: **ceremony matches the stakes**, in three levels the agent states in one line. **quick**: a small local change, done and checked, no document. **standard**: a small feature, a short alignment in the conversation, then test-first. **full**: a large or fuzzy change, or production data: intent, spec, plan, and your acceptance before code. A go-ahead you already gave is not asked again.
+The rule that avoids running everything: **ceremony matches the stakes**, in three levels; the agent names the one it chose on the first line of its reply (`Level: quick`). **quick**: a small local change, done and checked, no document. **standard**: a small feature, a short alignment in the conversation, then test-first. **full**: a large or fuzzy change, or production data: intent, spec, plan, and your acceptance before code. A go-ahead you already gave is not asked again.
 
 ## 4. What you will see, and what is normal
 

@@ -28,7 +28,7 @@ description: "Review a dashboard before publishing: filters, periods, totals, la
 
 Create `<name>/SKILL.md` in your CLI's skills folder ([matrix](cli/matrice.md)), with a **name that does not exist in the kit**. The CLI reads it at the next start; `update` leaves it as is. To check, list the skills in the CLI (the command is on its page, see the [matrix](cli/matrice.md)).
 
-Two traps. A folder in that location with the same name as a kit skill blocks `update` ("existing file not managed by the kit"): the kit refuses to overwrite what it did not install. And some CLIs read a second skills folder that wins on equal names and hides the kit skill (see your CLI's page); `doctor` lists skills hidden this way. To replace a kit skill without these effects, go through a repo or the kit, below.
+Two things to know. If a folder in that location has the name of a kit skill, the kit never overwrites it: it keeps yours and installs its own as `ai-kit-<name>` (`skill_prefix`), and `update` says so. And some CLIs read a second skills folder that wins on equal names and hides the kit skill (see your CLI's page); `doctor` lists skills hidden this way. To replace a kit skill without these effects, go through a repo or the kit, below.
 
 ## For a repo
 

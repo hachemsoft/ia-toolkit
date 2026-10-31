@@ -12,7 +12,7 @@ Three levels, defined once in the kit context (`00_KIT.md`) and used by every co
 | **standard** | small feature, a few files | a short alignment in the conversation, then test-first; no `plan.md` unless asked | `/build`, `/test`, `/ship` |
 | **full** | large or unclear change; production, irreversible or sensitive data | intent, spec, plan, acceptance before code, verification between phases; full review | `/intent`, `/spec`, `/build` per ticket, `/review full`, `/ship`, guardrails active |
 
-Each command states in one line the level it chose. A go-ahead already given in the conversation is not asked again. `/review` accepts `quick` or `full` as an argument.
+Each command opens its reply with the level it chose, on a fixed first line (`Level: quick`, `Level: standard` or `Level: full`, then why), even when it then asks a question or is blocked. A go-ahead already given in the conversation is not asked again. `/review` accepts `quick` or `full` as an argument.
 
 ## The steps
 
