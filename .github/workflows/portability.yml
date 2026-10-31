@@ -27,6 +27,8 @@ jobs:
         shell: bash
         run: |
           python -m pip download --quiet --only-binary=:all: --no-deps -d build/wheelhouse -r packaging/runtime.txt hatchling==1.27.0 packaging pathspec pluggy trove-classifiers tomli
+          # The pure-Python tomli the release ZIP ships (on 3.11 to 3.13, pip would only fetch a compiled one).
+          python -m pip download --quiet --only-binary=:all: --no-deps --python-version 3.9 -d build/wheelhouse tomli==2.2.1
           python -m pip install --quiet --no-index --find-links build/wheelhouse -r packaging/runtime.txt
       - name: Native unit and integration tests (no model CLI reachable)
         shell: bash
@@ -95,6 +97,8 @@ jobs:
           export AI_KIT_RELEASE_ZIP="$zip"
           # No package index reachable: the ZIP must install from its own wheels.
           export PIP_INDEX_URL=http://127.0.0.1:9/simple
+          # Some tests call the installer in this Python: before 3.11 it needs tomli, taken from the ZIP's own wheels.
+          python -c "import sys, zipfile, subprocess, tempfile, pathlib; d = pathlib.Path(tempfile.mkdtemp()); zipfile.ZipFile(sys.argv[1]).extractall(d); w = next(d.rglob('wheels')); sys.version_info < (3, 11) and subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--quiet', '--no-index', '--find-links', str(w), 'tomli'])" "$zip"
           python -m unittest discover -s tests -p test_enterprise_install.py -v 2>&1 | tee test-output.txt
       - name: Failed tests as annotations
         if: failure()
