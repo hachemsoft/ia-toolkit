@@ -9,5 +9,12 @@
       "catalog_origin": "upstream"
     }
   ],
-  "note": "Skills marked origin: upstream in skills/catalog.json, adapted for the kit. Original commit not recorded: note it at the next upstream sync."
+  "note": "Skills marked origin: upstream in skills/catalog.json, adapted for the kit. Original commit not recorded: note it at the next upstream sync.",
+  "local_adaptations": {
+    "code-review": "Rewritten as the kit's single review behaviour (0.34): scope = branch commits, staged, unstaged and new files; spec and tracker optional; passes and one severity scale. The upstream smell baseline is kept verbatim.",
+    "implement": "Commit only with the person's agreement in the session or the repo's instructions (0.34); upstream committed unconditionally.",
+    "prototype": "Committing the prototype needs the person's agreement (0.34).",
+    "manual-steps": "Committing the wizard is proposed, with the person's agreement (0.34).",
+    "workflow-guide": "The code-review line describes the kit's review (0.34)."
+  }
 }

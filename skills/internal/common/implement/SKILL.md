@@ -14,4 +14,4 @@ Run typechecking regularly, single test files regularly, and the full test suite
 
 Once done, call the Skill tool with "code-review" to review the work.
 
-Commit your work to the current branch.
+Commit only when the person agreed to commits in this session, or the repo's instructions say so; otherwise leave the changes uncommitted and say so in your report.

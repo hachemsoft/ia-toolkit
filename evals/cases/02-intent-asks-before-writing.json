@@ -2,6 +2,12 @@
   "name": "intent-asks-before-writing",
   "prompt": "/intent analysts do not know which customers to count as active in the sales dashboard",
   "cwd": "dbt-mini",
+  "_doc": "Patterns accept English and French answers: agents reply in the person's language.",
+  "requires": {
+    "commands": [
+      "intent"
+    ]
+  },
   "expect": {
     "regex": [
       "\\?",
@@ -10,6 +16,5 @@
     "files_absent": [
       "intent.md"
     ]
-  },
-  "_doc": "Patterns accept English and French answers: agents reply in the person's language."
+  }
 }

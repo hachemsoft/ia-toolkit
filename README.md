@@ -14,24 +14,25 @@ A foundation for working with a coding agent as a team, on Mac and Windows. It c
    - **Windows**: double-click `Installer.cmd`.
    - **Mac**: open Terminal, type `sh ` (with a space), drag the `scripts/bootstrap.sh` file of the extracted folder into the window, press Enter.
 
-   Confirm your identity, then choose the profile closest to your job; if in doubt, **General**. The installer then shows your personal context file, `30_USER.md`, and offers to open it.
-2. **Check**: installation ends with a summary: what is ready, which CLI is found or missing, which data connections are configured, and your next step. When a CLI is found, a real call to the model checks the connection; otherwise the summary says "connection not verified".
-3. **Use**: open your repo (`cd` into it), start your CLI (`gemini`, `agy` or `codex`), type `/guide I need to …` (`$guide` in Codex): it tells you which command to type. The first time in a repo: "Initialize the project context".
-   What you can ask, for example as a **Data Analyst**:
+   The installer first sets up its own private Python environment in your home folder (`.ai-kit/runtime`), from the files of the ZIP: no download, no administrator rights, nothing to activate. Then a short guided screen: the CLIs you use (found or not on this workstation), the profile closest to your job (if in doubt, **General**), optional adjustments, and a summary of what will change before **Install**. Arrow keys and Space choose; Ctrl+C leaves without changing your configuration.
+2. **Check**: installation ends with a summary: what is ready, which CLI is found or missing, which data connections are configured, and your next step. Installation never calls the model, so the summary says "connection not verified"; `doctor --live` checks the connection on request, with a real call your provider may bill.
+3. **Use**: open your repo (`cd` into it), start your CLI (`gemini`, `agy` or `codex`) and ask in plain words. Four everyday uses:
 
-   | You say | What happens |
+   | You say | Shortcut |
    | --- | --- |
-   | "My number differs from the business figure" | `/diagnose`: proven cause, fix, regression test |
-   | "I need to change a dbt model" | `/intent` to frame it, then `/build` |
-   | "Check this query and its joins" | no command needed: ask in plain words |
-   | "Review my changes before the merge request" | `/review` |
+   | "Explain how orders are validated in this repo" | `/explain` |
+   | "Make the export skip archived customers" | `/build` |
+   | "The nightly job fails since Monday with this error: …" | `/diagnose` |
+   | "Review my changes before I open the merge request" (committed or not) | `/review` |
 
-   Plain-language requests always work; the playbooks of your profile (SQL, dbt, BigQuery, KPIs) activate when the task calls for them. Commands structure a piece of work, they are not needed for every question. In Codex, type `$` instead of `/`. More: [getting started › Work](docs/getting-started.md#3-work-one-command-per-step).
-4. **Troubleshooting** ([how to open a terminal in the kit folder](docs/getting-started.md#run-the-kit)): Mac: `sh scripts/bootstrap.sh doctor --live` from the kit folder; Windows: in the kit folder, type `cmd` in the Explorer address bar and press Enter, then `Installer.cmd doctor --live`. Then the [Troubleshooting](docs/troubleshooting.md) page.
+   Commands are shortcuts to the same steps; `/guide I need to …` tells you which one fits (`$` instead of `/` in Codex). Nothing to set up before a first task; the agent offers to prepare the repo's context (`AGENTS.md`) when it becomes useful. More: [getting started › Work](docs/getting-started.md#3-work-one-command-per-step).
+4. **Troubleshooting** ([how to open a terminal in the kit folder](docs/getting-started.md#run-the-kit)): run the installer again and choose **Check the installation**, or `sh scripts/bootstrap.sh doctor` (Mac) / `Installer.cmd doctor` (Windows) from the kit folder. Add `--live` only to check the connection to the model: it makes a real call, which your provider may bill. Then the [Troubleshooting](docs/troubleshooting.md) page.
 
-Requirements: Python 3.9 or later (3.11 recommended) and your CLI, provided or approved by your company. The kit checks them and installs nothing else: no dependencies, no administrator rights, no change to the system or its security settings, no network needed except to talk to the model. If something is missing or blocked, the message says what to ask IT. The CLI and its authentication come from your organization's procedure; if it requires a cloud project or a model, that is one line in `~/.ai-kit/overrides.json`. The full step-by-step guide: [getting started](docs/getting-started.md). For IT and pilots: [validation on enterprise workstations](docs/validation.md).
+Requirements: Python 3.9 or later (3.11 recommended) with its standard `venv` and `pip` modules, and your CLI, provided or approved by your company. The kit installs its own libraries (the terminal interface) in its private environment only: your Python, PATH, shell and security settings are not changed, and no network is needed except to talk to the model. If something is missing or blocked, the message says what to ask IT. The CLI and its authentication come from your organization's procedure; if it requires a cloud project or a model, that is one line in `~/.ai-kit/overrides.json`. The full step-by-step guide: [getting started](docs/getting-started.md). For IT and pilots: [validation on enterprise workstations](docs/validation.md).
 
-Update: download and extract the new ZIP, then run the installer again the same way. It keeps your profile, team, `overrides.json` and `30_USER.md`; the new folder becomes your kit folder and the old one can be deleted. In a git clone, `update` runs `git pull` first. Running `setup`, `update` and `doctor`, and where your files are: [getting started](docs/getting-started.md#run-the-kit).
+**Update**: download and extract the new ZIP, then run its installer the same way. It keeps your CLIs, profile, team, choices, `overrides.json` and `30_USER.md`; the old folder can be deleted, nothing points back to it. Running the installer again also offers **Update**, **Change my choices**, **Check**, **Open my personal context** and **Uninstall**. In a git clone, `update` fetches the new version (`git pull --ff-only`, never over local changes), reinstalls the package, then applies the configuration, and says which step did not work if one fails.
+
+**Uninstall**: run the installer and choose **Uninstall**, or `uninstall --dry-run` to see the list first, `uninstall --yes` for automation, `--remove-runtime` to also remove the private environment. Only what the kit installed goes; your personal context, `overrides.json`, backups and the CLIs' own settings stay.
 
 ## Profiles
 
@@ -43,6 +44,15 @@ Update: download and extract the new ZIP, then run the installer again the same 
 | **Architect** | architecture decisions, design | `architecture-decision` playbook (ADR), architecture review |
 | **Data Analyst** | SQL, dbt, BigQuery, KPIs | SQL, dbt, BigQuery and KPI playbooks, SQL and dbt reviews |
 | **Data Developer** | the same, plus Python and JavaScript | the same, plus `python-js-change` and code review |
+
+A profile is a starting point: the installer lets you add or remove a playbook, a command or an agent without editing any file. For example, in the **Data Analyst** profile:
+
+| You say | What happens |
+| --- | --- |
+| "My number differs from the business figure" | `/diagnose`: proven cause, fix, regression test |
+| "I need to change a dbt model" | `/build`, with `/intent` first when the need is fuzzy |
+| "Check this query and its joins" | no command needed: the SQL playbook applies |
+| "Review my changes before the merge request" | `/review` |
 
 Commands and agents installed per profile: [getting started](docs/getting-started.md#3-work-one-command-per-step). Everything can be adjusted per person in `~/.ai-kit/overrides.json` (a skill, command or agent from another profile, guardrails, MCP servers): [customization](docs/customization.md).
 

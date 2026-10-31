@@ -123,7 +123,7 @@ class HookInstallTests(unittest.TestCase):
   # Audit : un garde-fou déclaré doit être prouvé, pas seulement présent.
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':True}});self.run_kit()
   text=self.doctor_text()
-  self.assertIn('[OK] Guardrail dbt-prod-guard: blocks a known case when run',text);self.assertIn('[OK] Guardrail protected-paths: blocks a known case when run',text)
+  self.assertIn('[OK] Guardrail dbt-prod-guard: synthetic test, the script blocks a known case when run',text);self.assertIn('[OK] Guardrail protected-paths: synthetic test, the script blocks a known case when run',text)
  def test_doctor_flags_missing_interpreter(self):
   self.overrides({'hooks':{'dbt-prod-guard':True}});self.run_kit()
   sp=self.home/'.ai-kit/state.json';st=read_json(sp)
@@ -136,7 +136,8 @@ class HookInstallTests(unittest.TestCase):
   self.assertIn('[Check] Codex: kit guardrails approved in Codex (not yet',self.doctor_text())
   cfg=self.home/'.codex/config.toml'
   for i in range(2):cfg.write_text(cfg.read_text(encoding='utf-8')+'\n[hooks.state."'+str(cfg).replace('\\','/')+':pre_tool_use:'+str(i)+':0"]\ntrusted_hash = "sha256:00"\n',encoding='utf-8')  # dbt-prod-guard + protected-paths (on by default)
-  self.assertIn('[OK] Codex: kit guardrails approved in Codex',self.doctor_text())
+  # 0.34: approval records cannot be tied to the kit's guardrails (unknown hash, shared indexes): never reported as OK.
+  text=self.doctor_text();self.assertNotIn('[OK] Codex: kit guardrails approved',text);self.assertIn('approval not verifiable automatically',text)
  def test_defaults_protect_configuration_only(self):
   # protected-paths is on by default (configuration of the kit and CLIs); dbt-prod-guard stays opt-in.
   self.run_kit();self.assertEqual(sorted(read_json(self.home/'.ai-kit/state.json')['hooks']),['protected-paths'])
@@ -164,7 +165,7 @@ class HookInstallTests(unittest.TestCase):
  def test_doctor_reports(self):
   self.overrides({'hooks':{'dbt-prod-guard':True}});self.run_kit();out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
-  self.assertIn('[OK] Guardrail active: dbt-prod-guard',out.getvalue())
+  self.assertIn('[OK] Guardrail configured in settings.json: dbt-prod-guard',out.getvalue())
   self.overrides({'hooks':{'protected-paths':False}});self.run_kit();out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
   self.assertIn('No guardrail enabled',out.getvalue())

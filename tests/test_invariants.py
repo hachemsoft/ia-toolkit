@@ -91,12 +91,13 @@ class InvariantTests(unittest.TestCase):
         self.assertTrue(outside.is_dir())
 
     def test_merge_request_wording(self):
-        """The team works with MRs: what the agent reads (commands, practices, templates) does not mention pull requests."""
+        """The agent follows the repo's convention, merge request or pull request: what it reads (commands, practices,
+        templates) never names one without the other. 0.34: before, pull requests could not be named at all (an MR-only team)."""
         files = [p for d in ('commands', 'practices', 'templates') for p in (ROOT/d).rglob('*.md')]
         for path in files:
             for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
                 if 'merge request' in line:
-                    continue  # the translation rule itself (00_KIT.md)
+                    continue  # names both, or the merge request only (the repo's term decides, 00_KIT.md)
                 self.assertNotRegex(line, r'(?i:pull request)|\bPRs?\b', f'{path.relative_to(ROOT)}:{number}')
 
     def test_adapters_respect_the_contract(self):

@@ -1,6 +1,6 @@
 ---
 name: kpi-definition
-description: "Define or redefine a KPI before computing it: grain, population, period, exclusions, source of truth, owner. Triggers: define an indicator, the KPI doesn't match, two different numbers for the same measure, new metric."
+description: "Define or redefine a KPI before computing it: grain, population, period, exclusions, source of truth, owner. Triggers: define an indicator, the KPI doesn't match, two different numbers for the same measure, new metric. Not for: debugging the SQL of a metric already defined."
 ---
 
 # kpi-definition

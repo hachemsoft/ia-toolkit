@@ -14,10 +14,11 @@ import subprocess
 import sys
 import tempfile
 import uuid
+from types import SimpleNamespace
 from datetime import datetime, timezone
 
 from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, read_json, json_bytes, digest,
-                   safe_id, inside, hook_command, load_commands, _ts, friction_id, fixed_frictions)
+                   safe_id, inside, hook_command, load_commands, _ts, friction_id, fixed_frictions, redact, user_context_refusal)
 from .adapters import ADAPTERS
 from .interface import ContextHost, DoctorContext, LiveCheck, Plan
 
@@ -236,6 +237,21 @@ def resolve_skills(profile, overrides, catalog, log=print):
         add(name)
     return selected
 
+def skill_note(skill, selected, catalog):
+    """What the installed SKILL.md says about the optional skills it cites that this installation does not have."""
+    missing = {name: alternative for name, alternative in catalog[skill].get('optional', {}).items() if name not in selected}
+    if not missing:
+        return ''
+    return ('## Not installed here\nThis text cites skills this installation does not have; do not look for them. Instead:\n'
+            + ''.join('- `'+name+'`: '+alternative+'.\n' for name, alternative in sorted(missing.items())))
+
+def unknown_names(overrides, catalog, agent_catalog, notices):
+    """disabled_skills and disabled_agents naming nothing the kit knows: a typo, reported, never silently ignored."""
+    for key, known in (('disabled_skills', catalog), ('disabled_agents', agent_catalog)):
+        unknown = [name for name in overrides.get(key, []) if name not in known]
+        if unknown:
+            notices.append('[Check] overrides.json '+key+': unknown name '+', '.join(unknown)+' (a typo?); it has no effect.')
+
 def allowed_commands(profile_commands, overrides, command_names):
     """Allowed commands: the profile list (or all), plus extra_commands, minus disabled_commands; None when nothing restricts."""
     extra, disabled = overrides.get('extra_commands', []), set(overrides.get('disabled_commands', []))
@@ -279,9 +295,15 @@ def user_context_text(identity):
     return template.replace('{identity}\n', 'Person: '+line+'\n' if line else '')
 
 
-AGENT_INSTRUCTION = ('Read the instructions and context of the current repo. Do not assume that the skills, '
-                     'the MCP tools or the full parent history are available. '
-                     'Ask the parent for anything missing. Use only the allowed read tools.\n')
+def agent_instruction(definition):
+    """Shared opening of every agent prompt. Reviewers only read; an agent whose tools include the shell (the verifier)
+    runs the checks its own instructions allow, and modifies nothing."""
+    tools = definition.get('tools') or read_json(ROOT/'agents/defaults.json').get('tools', [])
+    scope = ('Modify no file; run only the commands your instructions below allow.' if 'run_shell_command' in tools
+             else 'Read and search only: modify no file and run no command.')
+    return ('Read the instructions and context of the current repo. Do not assume that the skills, '
+            'the MCP tools or the full parent history are available. '
+            'Ask the parent for anything missing. '+scope+'\n')
 
 def context_locations():
     """Possible context folders, relative to the home folder: those of the CLIs that host it, then the kit's own."""
@@ -295,9 +317,20 @@ def context_location(home, active):
 
 TARGETS = {'auto': None, 'gemini': ('gemini',), 'agy': ('agy',), 'codex': ('codex',), 'both': ('gemini', 'agy'), 'all': tuple(a.NAME for a in ADAPTERS)}
 
-def selected_adapters(target, home):
-    """Adapters to install: those the target names; in auto, those whose CLI is present on the machine,
-    or the first of ADAPTERS (default CLI) if none is detected, for a machine where the CLI will be installed later."""
+def selected_adapters(target, home, recorded=None):
+    """Adapters to install: those the target names (a --target value, or a list of CLI names); without a target, the CLIs
+    recorded by the previous installation (an update keeps the person's choice, whatever folders exist); in auto, those whose
+    CLI is present on the machine, or the first of ADAPTERS (default CLI) if none is detected."""
+    if target is None:
+        if recorded:
+            target = list(recorded)
+        else:
+            target = 'auto'
+    if isinstance(target, (list, tuple)):
+        unknown = [name for name in target if name not in [a.NAME for a in ADAPTERS]]
+        if unknown or not target:
+            raise KitError('Unknown CLI: '+', '.join(unknown or ['none'])+'. CLIs: '+', '.join(a.NAME for a in ADAPTERS)+'.')
+        return [a for a in ADAPTERS if a.NAME in target]
     if target not in TARGETS:
         raise KitError('--target must be one of '+', '.join(TARGETS)+'.')
     wanted = TARGETS[target]
@@ -313,12 +346,19 @@ def migrate_kit_dir(home, dry_run=False):
     old, new = home/LEGACY_KIT_DIR, home/'.ai-kit'
     if not old.is_dir():
         return False
-    if new.exists():
+    # The launcher creates ~/.ai-kit/runtime before the kit runs: a folder holding only that is not a second installation.
+    only_runtime = new.is_dir() and {c.name for c in new.iterdir()} <= {'runtime'}
+    if new.exists() and not only_runtime:
         raise KitError('~/'+LEGACY_KIT_DIR+' and ~/.ai-kit both exist: keep ~/.ai-kit, copy over what is missing (overrides.json, backups), remove ~/'+LEGACY_KIT_DIR+', then update.')
     if dry_run:
         print('The ~/'+LEGACY_KIT_DIR+' folder will be renamed to ~/.ai-kit on the next setup or update; --dry-run does not do it.')
         return True
-    os.replace(old, new)
+    if only_runtime:
+        for child in old.iterdir():
+            os.replace(child, new/child.name)
+        old.rmdir()
+    else:
+        os.replace(old, new)
     state = read_json(new/'state.json')
     if state:
         prefix = LEGACY_KIT_DIR+'/'
@@ -329,25 +369,40 @@ def migrate_kit_dir(home, dry_run=False):
     print('Kit folder renamed: ~/'+LEGACY_KIT_DIR+' becomes ~/.ai-kit.')
     return False
 
-def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
-    """Full prevalidation, neutral plan, adapters, backup, then atomic write file by file."""
+def recorded_targets(state):
+    """The CLIs the person chose at the last installation."""
+    return state.get('targets') or (state.get('installed') or {}).get('clis') or None
+
+CHOICE_KEYS = ('extra_skills', 'disabled_skills', 'extra_commands', 'disabled_commands', 'extra_agents', 'disabled_agents')
+
+def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None):
+    """Full prevalidation, neutral plan, adapters, backup, then atomic write file by file.
+    target: a --target value or a list of CLI names; None keeps the CLIs recorded by the previous installation.
+    choices: new values for keys of the person's overrides.json (CHOICE_KEYS), written with the rest of the installation,
+    never before: a preview (dry_run) or a cancelled run leaves the file as it was.
+    report: a dict filled with what the plan writes and removes (the interface's summary). progress(step, done, total):
+    called as the files are really written. Returns the notices shown to the person (also printed)."""
     home = home.resolve()
     if migrate_kit_dir(home, dry_run):
-        return  # --dry-run: the old folder is not renamed yet, the plan would be wrong
+        return []  # --dry-run: the old folder is not renamed yet, the plan would be wrong
     kit = home / '.ai-kit'
-    active = selected_adapters(target, home)
+    state = read_json(kit/'state.json')
+    active = selected_adapters(target, home, recorded_targets(state))
     context_dir = context_location(home, active)
     profile_id = safe_id(profile_id)
     profile_path = ROOT/'profiles'/(profile_id+'.json')
     if not profile_path.exists():
         raise KitError('Unknown profile: '+profile_id)
     profile = read_json(profile_path)
-    state = read_json(kit/'state.json')
     # Team: chosen at setup (--team or the setup question), then kept for update.
     # 'none' (setup --team none) leaves the team; no value keeps the recorded one.
     team = None if team == 'none' else safe_id(team) if team else state.get('team')
     # Organization defaults, then the team's settings, then the person's own overrides on top (never replaced wholesale).
     org_defaults, team_layer, personal = organization().get('defaults', {}), team_settings(team), read_json(kit/'overrides.json', {})
+    choices = {k: list(v) for k, v in (choices or {}).items()}
+    if set(choices) - set(CHOICE_KEYS):
+        raise KitError('Unknown choice: '+', '.join(sorted(set(choices) - set(CHOICE_KEYS))))
+    personal = {**personal, **choices}
     overrides = merge_settings(merge_settings(org_defaults, team_layer), personal)
     if overrides.get('frictions', 'propose') not in ('propose', 'auto', 'off'):
         raise KitError('frictions must be propose (default), auto or off.')
@@ -386,6 +441,10 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
         relinked = re.sub(r'("\$schema"\s*:\s*")[^"]*schemas/overrides\.schema\.json(")', lambda m: m.group(1)+schema_uri+m.group(2), text, count=1)
         if relinked != text:
             writes[kit/'overrides.json'] = relinked.encode('utf-8')
+    if choices:
+        # The person's own keys, comments (_ keys) and order stay; only the chosen lists change.
+        current = json.loads(writes[kit/'overrides.json'].decode('utf-8')) if kit/'overrides.json' in writes else read_json(kit/'overrides.json')
+        writes[kit/'overrides.json'] = json_bytes({**current, **choices})
     identity = dict(user) if user else dict(state.get('user', {}))
     if identity.get('email') and not EMAIL.fullmatch(identity['email']):
         raise KitError('Invalid email: '+identity['email'])
@@ -454,14 +513,17 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     # MCP: resolved from the three sources apart, not from the merged overrides ("github": true must not erase the server).
     servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
     enabled_mcp = {'ai-kit-'+name: server for name, server in servers.items()}
-    p = Plan(active=[a.NAME for a in active],
+    notices = []
+    unknown_names(overrides, catalog, agent_catalog, notices)
+    p = Plan(active=[a.NAME for a in active], notices=notices,
+        skill_notes={skill: skill_note(skill, selected, catalog) for skill in selected},
         home=home, kit=kit, state=state, old_files=old_files, overrides=overrides, profile_id=profile_id, profile=profile,
         catalog=catalog, selected=selected, skill_sources=skill_sources, commands=commands, context_names=context_names,
         kit_text=kit_text, practice_names=practice_names, practice_texts=practice_texts, user_file=context_dir/USER_CONTEXT, context_dir=context_dir,
         user_context_text=user_context_text(identity), agents=agents, models=models, hooks_dir=hooks_dir,
         hook_manifest=hook_manifest, enabled_hooks=enabled_hooks, enabled_mcp=enabled_mcp, writes=writes, deletes=deletes,
         managed_write=managed_write, 
-        agent_body=lambda definition: practices+'\n'+AGENT_INSTRUCTION+'\n'+definition['instructions']+'\n')
+        agent_body=lambda definition: practices+'\n'+agent_instruction(definition)+'\n'+definition['instructions']+'\n')
     # Scripts shared by all CLIs: frictions and enabled guardrails.
     managed_write(kit/'bin'/'friction.py', (ROOT/'runtime/friction.py').read_bytes(), 'Kit script')
     managed_write(kit/'schemas'/'overrides.schema.json', (ROOT/'schemas/overrides.schema.json').read_bytes(), 'Kit schema')
@@ -473,11 +535,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
     for name, text in zip(practice_names, practice_texts):
         managed_write(context_dir/name, text.encode('utf-8'), 'Context file', restore=True)
     user_file = context_dir/USER_CONTEXT
-    if not user_file.exists():
-        # Created once, never rewritten or tracked. If the location changed, copy the existing version: the original stays in place.
-        previous = next((f for f in (home/d/USER_CONTEXT for d in context_locations()) if f != user_file and f.is_file()), None)
-        legacy_prefs = kit/'preferences.md'
-        writes[user_file] = previous.read_bytes() if previous else legacy_prefs.read_bytes() if legacy_prefs.exists() else p.user_context_text.encode('utf-8')
+    relocate_user_context(p, home, state, user_file, kit)
     if (kit/'preferences.md').exists():
         writes[kit/'preferences.md.migrated'] = (kit/'preferences.md').read_bytes()
         deletes.append(kit/'preferences.md')
@@ -497,7 +555,7 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
             deletes.append(target_path)
     for adapter in ADAPTERS:
         adapter.finalize(p, active=adapter in active)  # inactive: removes what a previous installation had put in place
-    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'practices':profile['practices'],
+    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],
                  'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active]}}
     writes[kit/'state.json'] = json_bytes(new_state)
     writes = {path:b for path,b in writes.items() if not path.exists() or path.read_bytes()!=b}
@@ -508,47 +566,26 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
                 break
             if part.is_symlink():
                 raise KitError('Symbolic link in a managed path: '+str(part))
+    if report is not None:
+        def rel(path):
+            return path.relative_to(home).as_posix()
+        report.update({'profile': profile_id, 'team': team, 'targets': [a.NAME for a in active], 'skills': selected,
+                       'commands': [c['name'] for c in commands], 'agents': ['ai-kit-'+a for a, _ in agents], 'hooks': sorted(enabled_hooks),
+                       'created': sorted(rel(w) for w in writes if not w.exists()), 'modified': sorted(rel(w) for w in writes if w.exists()),
+                       'removed': sorted(rel(d) for d in deletes), 'restored': [rel(r) for r in restored], 'notices': p.notices,
+                       'context_file': str(p.user_file), 'home': str(home), 'identity': identity})
     print('Profile: '+profile_id+(' | team '+team if team else '')+' | '+str(len(selected))+' skills | '+str(len(agents))+' agents | '+str(len(enabled_hooks))+' guardrails')
     if identity.get('email'):
         print('Identity: '+identity['email']+' (source '+identity.get('source','?')+')')
     if dry_run:
         for target in restored:
             print('[Check] '+target.name+' was modified by hand: it would be restored, your copy kept in ~/.ai-kit/backups/.')
+        for notice in p.notices:
+            print(notice)
         print('Dry run: '+str(len(writes))+' files to write, '+str(len(deletes))+' to remove. Nothing changed.')
-        return
+        return p.notices
     # No download, dependency installation or MCP execution.
-    changed = list(writes)+deletes
-    backup = kit/'backups'/(datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')+'-'+uuid.uuid4().hex[:8])
-    originals = {}
-    for path in changed:
-        originals[path] = path.read_bytes() if path.exists() else None
-    if changed:
-        backup.mkdir(parents=True,exist_ok=True)
-        try:
-            if os.name != 'nt':
-                backup.chmod(0o700)
-            for path,data in originals.items():
-                if data is not None:
-                    dest = backup/path.relative_to(home)
-                    dest.parent.mkdir(parents=True,exist_ok=True)
-                    dest.write_bytes(data)
-                    if os.name != 'nt':
-                        dest.chmod(0o600)
-            (backup/'manifest.json').write_bytes(json_bytes({'created':[p.relative_to(home).as_posix() for p,b in originals.items() if b is None],'restore':'Copy the backed-up files to the home folder; remove the created files only if unchanged.'}))
-            if os.name != 'nt':
-                (backup/'manifest.json').chmod(0o600)
-            for path,data in writes.items():
-                atomic_write(path,data)
-            for path in deletes:
-                path.unlink()
-                prune_empty_dirs(path.parent, next((home/d for d in managed_roots(home) if path.is_relative_to(home/d)), home/'.ai-kit'))
-        except OSError:
-            for path,data in originals.items():
-                if data is None:
-                    path.unlink(missing_ok=True)
-                else:
-                    atomic_write(path,data)
-            raise
+    changed, backup = commit_changes(home, kit, writes, deletes, progress)
     print('Kit configuration installed.' if changed else 'Kit configuration already up to date.')
     print('Your personal context: '+str(p.user_file))
     for target in restored:
@@ -560,6 +597,145 @@ def apply(profile_id, home, dry_run=False, user=None, target='auto', team=None):
         line = adapter.summary(p)
         if line:
             print(line)
+    for notice in p.notices:
+        print(notice)
+    return p.notices
+
+def relocate_user_context(p, home, state, user_file, kit):
+    """30_USER.md belongs to the person: never rewritten in place. When the context folder changes (another CLI chosen),
+    the version in effect is the one at the previous recorded location, whatever other copies exist or their dates: it is
+    copied to the new place; a different copy already there is kept beside it, and the person is told which file is in effect."""
+    previous_dir = home/state['context_dir'] if state.get('context_dir') else None
+    source = previous_dir/USER_CONTEXT if previous_dir and previous_dir != user_file.parent else None
+    if source is not None and source.is_file():
+        data = source.read_bytes()
+        refusal = user_context_refusal(data)
+        if refusal:
+            p.notices.append('[Check] Personal context not copied from '+str(source)+' to '+str(user_file)+': '+refusal+'. '
+                             'Fix the file, then run update. The kit configuration itself is installed.')
+            if not user_file.exists():
+                p.writes[user_file] = p.user_context_text.encode('utf-8')
+            return
+        if user_file.exists() and user_file.read_bytes() != data:
+            kept = user_file.with_name(USER_CONTEXT+'.before-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S'))
+            p.writes[kept] = user_file.read_bytes()
+            p.notices.append('[Check] An older, different '+USER_CONTEXT+' was in '+str(user_file.parent)+': kept as '+kept.name+'.')
+        if not user_file.exists() or user_file.read_bytes() != data:
+            p.writes[user_file] = data
+            p.notices.append('[Info] Personal context moved: '+str(user_file)+' is now the file in effect; '+str(source)+' is no longer read (left in place).')
+        return
+    if not user_file.exists():
+        # First installation, or a state from before context_dir was recorded: an existing copy is reused, the original stays in place.
+        previous = next((f for f in (home/d/USER_CONTEXT for d in context_locations()) if f != user_file and f.is_file()), None)
+        legacy_prefs = kit/'preferences.md'
+        data = previous.read_bytes() if previous else legacy_prefs.read_bytes() if legacy_prefs.exists() else p.user_context_text.encode('utf-8')
+        if previous and user_context_refusal(data):
+            p.notices.append('[Check] Personal context not copied from '+str(previous)+': '+user_context_refusal(data)+'. A new one is created; fix the old one and move its content by hand.')
+            data = p.user_context_text.encode('utf-8')
+        p.writes[user_file] = data
+
+def commit_changes(home, kit, writes, deletes, progress=None):
+    """Backs up every file about to change, then writes and removes them; on any error or interruption, puts everything
+    back. Returns (changed paths, backup folder)."""
+    changed = list(writes)+deletes
+    backup = kit/'backups'/(datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')+'-'+uuid.uuid4().hex[:8])
+    originals = {}
+    for path in changed:
+        originals[path] = path.read_bytes() if path.exists() else None
+    step = progress or (lambda *_: None)
+    if not changed:
+        return changed, backup
+    backup.mkdir(parents=True,exist_ok=True)
+    try:
+        if os.name != 'nt':
+            backup.chmod(0o700)
+        existing = sum(1 for data in originals.values() if data is not None)
+        done = 0
+        for path, data in originals.items():
+            if data is not None:
+                done += 1
+                step('backup', done, existing)
+                dest = backup/path.relative_to(home)
+                dest.parent.mkdir(parents=True,exist_ok=True)
+                dest.write_bytes(data)
+                if os.name != 'nt':
+                    dest.chmod(0o600)
+        (backup/'manifest.json').write_bytes(json_bytes({'created':[p.relative_to(home).as_posix() for p,b in originals.items() if b is None],'restore':'Copy the backed-up files to the home folder; remove the created files only if unchanged.'}))
+        if os.name != 'nt':
+            (backup/'manifest.json').chmod(0o600)
+        for done, (path, data) in enumerate(writes.items(), 1):
+            step('write', done, len(writes))
+            atomic_write(path,data)
+        for done, path in enumerate(deletes, 1):
+            step('remove', done, len(deletes))
+            path.unlink()
+            prune_empty_dirs(path.parent, next((home/d for d in managed_roots(home) if path.is_relative_to(home/d)), home/'.ai-kit'))
+    except BaseException:
+        # A write error, Ctrl+C or a closed terminal during the writes: everything goes back as it was.
+        for path,data in originals.items():
+            if data is None:
+                path.unlink(missing_ok=True)
+            else:
+                atomic_write(path,data)
+        raise
+    return changed, backup
+
+PERSONAL_KEPT = ('.ai-kit/overrides.json', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learn/', '.ai-kit/runtime/')
+
+def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
+    """Removes what the kit installed and nothing else: the managed files it can recognise as unchanged, its blocks and
+    entries in the CLIs' settings, and its state. Kept: the personal context (30_USER.md), overrides.json, the backups,
+    frictions, the CLIs' folders and the person's own settings; a managed file modified by hand is kept and named.
+    No network, no model. confirm(report) -> bool is asked before any change (interactive); returns an exit code."""
+    home = home.resolve()
+    kit = home/'.ai-kit'
+    state = read_json(kit/'state.json')
+    if not state:
+        raise KitError('The kit configuration is not installed in '+str(home)+': nothing to remove.')
+    old_files = state.get('files', {})
+    writes, deletes, kept = {}, [], []
+    for rel, expected in sorted(old_files.items()):
+        if not (rel.startswith(KIT_MANAGED) or any(a.is_managed(rel) for a in ADAPTERS)):
+            raise KitError('Invalid state: deletion outside the managed scope ('+rel+').')
+        path = inside(home, rel)
+        if not path.is_file():
+            continue
+        if digest(path.read_bytes()) != expected:
+            kept.append(rel+': modified since the kit installed it, kept; remove it yourself if you no longer need it')
+            continue
+        deletes.append(path)
+    cleanup = SimpleNamespace(home=home, state=state, old_files=old_files, writes=writes, deletes=deletes, blocks={}, notices=[], active=[])
+    for adapter in ADAPTERS:
+        try:
+            adapter.finalize(cleanup, active=False)
+        except KitError as exc:
+            kept.append(adapter.LABEL+': '+str(exc))
+    deletes.append(kit/'state.json')
+    writes = {path: data for path, data in writes.items() if not path.exists() or path.read_bytes() != data}
+    personal = [str(home/state.get('context_dir', '.gemini')/USER_CONTEXT)] + [str(home/rel) for rel in PERSONAL_KEPT if (home/rel).exists()]
+    def rel(path):
+        return path.relative_to(home).as_posix()
+    summary = {'removed': [rel(d) for d in deletes], 'rewritten': sorted(rel(w) for w in writes), 'kept_modified': kept,
+               'personal': personal, 'home': str(home)}
+    if report is not None:
+        report.update(summary)
+    print('Uninstall from '+str(home)+': '+str(len(deletes))+' kit files to remove, '+str(len(writes))+' settings files to clean.')
+    for line in summary['rewritten']:
+        print('  Clean the kit entries in: '+line)
+    for line in kept:
+        print('[Check] '+line)
+    print('Kept: your personal context, overrides.json, backups and frictions, the CLIs and their own settings.')
+    if dry_run:
+        print('Dry run: nothing changed.')
+        return 0
+    if confirm is not None and not confirm(summary):
+        print('Uninstall cancelled: nothing changed.')
+        return 1
+    changed, backup = commit_changes(home, kit, writes, deletes, progress)
+    print('Kit configuration removed. Backup of every removed or cleaned file: '+str(backup))
+    print('Your files kept: '+', '.join(personal))
+    print('The kit\'s private Python environment ('+str(kit/'runtime')+') stays; the launcher removes it with uninstall --remove-runtime.')
+    return 0
 
 KIT_MANAGED = ('.ai-kit/bin/', '.ai-kit/hooks/', '.ai-kit/context/', '.ai-kit/schemas/')
 
@@ -618,7 +794,7 @@ def guardrail_checks(home, state, status):
         except (OSError, ValueError, subprocess.SubprocessError):
             answer = {}
         blocked = answer.get('decision') == 'deny' or answer.get('hookSpecificOutput', {}).get('permissionDecision') == 'deny'
-        status(blocked, 'Guardrail '+name+': blocks a known case when run')
+        status(blocked, 'Guardrail '+name+': synthetic test, the script blocks a known case when run (this does not prove the CLI calls it)')
 
 REPO_SKILL_DIRS = ('.agents/skills', '.gemini/skills', '.codex/skills')
 
@@ -689,7 +865,12 @@ def personal_context_step(user_file, reapply):
     if problem:
         print('[Check] '+problem+' Then run update.')
         return
-    reapply()
+    notices = reapply()
+    refused = [n for n in notices if n.startswith('[Check]')] if isinstance(notices, list) else []
+    for notice in refused:
+        print(notice)
+    if refused:
+        return
     print('Personal context applied. Start a new session of your CLI: it reads 30_USER.md when it starts.')
 
 def mcp_report(home, state):
@@ -747,7 +928,7 @@ def print_summary(home, state, live=None, problems=()):
         names = ' or '.join('`'+a.COMMAND+'`' for a in found)
         step = 'open a terminal in your repo, start '+names+' and type /guide'+(' ($guide in Codex)' if any(a.NAME == 'codex' for a in found) else '')+'.'
         if not live or any((live or {}).get(a.NAME) != 0 for a in found):
-            step += ' Connection not verified yet: if the CLI asks you to sign in, follow your IT procedure; doctor --live checks it where supported.'
+            step += ' Connection not verified: if the CLI asks you to sign in, follow your IT procedure. doctor --live checks it with a real call to the model, which your provider may bill.'
     print('Next step: '+step)
 
 def doctor(home, cwd=None, live=False):
@@ -756,7 +937,7 @@ def doctor(home, cwd=None, live=False):
     live call fails."""
     problems, results, details = [], {}, io.StringIO()
     if live:
-        print('Checking the connection with a real call to the model (up to 90 s)…')
+        print('Checking the connection with a real call to the model (up to 90 s; your provider may bill it)…')
     with contextlib.redirect_stdout(details):
         code = doctor_checks(home, cwd, problems)
         if live:
@@ -765,6 +946,69 @@ def doctor(home, cwd=None, live=False):
     print_summary(home, read_json(home/'.ai-kit/state.json'), results if live else None, problems)
     print('\nDetails\n'+details.getvalue(), end='')
     return code
+
+def kit_version():
+    return (ROOT/'VERSION').read_text(encoding='utf-8').strip()
+
+def source_folder():
+    """The kit folder the launcher was started from (release ZIP or clone), or None when the kit runs otherwise."""
+    folder = os.environ.get('AI_KIT_SOURCE_DIR')
+    return Path(folder) if folder and (Path(folder)/'VERSION').is_file() else None
+
+def version_line():
+    """ai-kit --version: which copy of the kit is running, so a stale copy on the PATH is easy to spot."""
+    return 'AI Kit '+kit_version()+' — '+str(_PACKAGE_DIR)+' (Python '+sys.version.split()[0]+', '+sys.executable+')'
+
+SCRIPT_INTERPRETER = re.compile(rb'^#!\s*"?([^"\r\n]*python[^"\r\n ]*)"?|^\'\'\'exec\' "([^"]+)"', re.M)
+
+def kit_commands_on_path():
+    """Every `ai-kit` command on the PATH, in the order the shell tries them: (path, version or None). The version is read
+    from the command's own Python (its first line names it), never by running the command itself."""
+    found, seen = [], set()
+    for folder in os.environ.get('PATH', '').split(os.pathsep):
+        command = shutil.which('ai-kit', path=folder) if folder else None
+        if not command or os.path.realpath(command) in seen:
+            continue
+        seen.add(os.path.realpath(command))
+        version = None
+        try:
+            with open(command, 'rb') as handle:
+                head = handle.read(4096) if not command.lower().endswith('.exe') else handle.read()[-4096:]
+            match = SCRIPT_INTERPRETER.search(head)
+            interpreter = (match.group(1) or match.group(2)).decode('utf-8', 'replace') if match else None
+            if interpreter and os.path.isfile(interpreter):
+                proc = subprocess.run([interpreter, '-I', '-c', 'import importlib.metadata as m; print(m.version("ai-kit"))'],
+                                      capture_output=True, text=True, timeout=20)
+                version = proc.stdout.strip() or None
+        except (OSError, subprocess.SubprocessError):
+            pass
+        found.append((command, version))
+    return found
+
+def runtime_checks(home, status):
+    """The private environment the launcher installs the kit in, and the copies of the kit a person may run instead."""
+    record = read_json(home/'.ai-kit/runtime/install.json', {})
+    if record.get('status') == 'ready':
+        print('[OK] Kit runtime ready: version '+str(record.get('version'))+', '+str(home/'.ai-kit/runtime/venv'))
+    elif record.get('status') in ('installing', 'failed'):
+        status(False, 'Kit runtime '+('interrupted during its installation' if record['status'] == 'installing' else 'failed to install')
+               + ': run the installer again, it starts it over')
+    else:
+        print('[Info] No private kit environment in this home folder: the kit runs from '+str(_PACKAGE_DIR))
+    source = source_folder()
+    if source is not None:
+        folder_version = (source/'VERSION').read_text(encoding='utf-8').strip()
+        status(folder_version == kit_version(), 'The kit folder ('+folder_version+') and the installed kit package ('+kit_version()+') are the same version'
+               + ('' if folder_version == kit_version() else ': run the installer from that folder, Update'))
+    commands = kit_commands_on_path()
+    if commands:
+        first, version = commands[0]
+        if version != kit_version():
+            status(False, 'The `ai-kit` command on your PATH is another copy of the kit ('+first+', version '+str(version or 'unknown')
+                   + ', this kit '+kit_version()+'): typing ai-kit runs that one. Remove it (pipx uninstall ai-kit, or pip uninstall ai-kit'
+                   + ' with its Python), or run the launcher of the kit folder')
+        for other, other_version in commands[1:]:
+            print('[Info] Another `ai-kit` command, not used because an earlier one comes first on the PATH: '+other+' (version '+str(other_version or 'unknown')+')')
 
 def doctor_checks(home, cwd=None, problems=None):
     issues = 0
@@ -776,6 +1020,7 @@ def doctor_checks(home, cwd=None, problems=None):
             if problems is not None:
                 problems.append(message)
     status(sys.version_info >= (3,9),'Python 3.9 minimum')
+    runtime_checks(home, status)
     if (home/LEGACY_KIT_DIR).exists():
         status(False,'Old ~/'+LEGACY_KIT_DIR+' folder present: run update, which renames it to ~/.ai-kit')
     state = read_json(home/'.ai-kit/state.json')
@@ -804,8 +1049,9 @@ def doctor_checks(home, cwd=None, problems=None):
             path = inside(home,rel)
             status(path.is_file() and digest(path.read_bytes())==expected,rel)
         guardrail_checks(home, state, status)
-        folder_version = (ROOT/'VERSION').read_text(encoding='utf-8').strip()
-        status(state.get('version') == folder_version, 'Installed version '+str(state.get('version'))+' matches the kit folder'+('' if state.get('version') == folder_version else ' ('+folder_version+'): run update'))
+        folder_version = kit_version()
+        status(state.get('version') == folder_version, 'Configuration applied by version '+str(state.get('version'))+', the kit running is '+folder_version
+               + ('' if state.get('version') == folder_version else ': run update'))
         org_defaults = organization().get('defaults', {})
         team_layer = team_settings(state.get('team'))
         personal = read_json(home/'.ai-kit/overrides.json', {})
@@ -839,7 +1085,7 @@ def doctor_checks(home, cwd=None, problems=None):
             print('[Info] MCP servers: '+(', '.join(servers) or 'none')+(' | chosen but not defined in organization.json: '+', '.join(undefined) if undefined else ''))
         except KitError as exc:
             status(False, str(exc))
-    print('Local diagnosis only: authentication, MCP connection and IAM rights not tested; doctor --live makes a real call to the model.')
+    print('Local diagnosis only: authentication, MCP connection and IAM rights not tested; doctor --live makes a real call to the model, which your provider may bill.')
     for hint in hints:
         if hint:
             print(hint)
@@ -861,6 +1107,7 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
     unknown_commands = Counter()
     repeated = errors = prompts = 0
     sessions_seen, seen_texts = set(), {}
+    sessions_by, prompts_by = {a.NAME: set() for a in ADAPTERS}, {a.NAME: 0 for a in ADAPTERS}
     # Each adapter reads its CLI's logs and returns neutral events (prompt, skill, agent, error).
     for adapter in ADAPTERS:
         for event in adapter.history(home, state):
@@ -869,6 +1116,9 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
             session = event.get('session')
             if session:
                 sessions_seen.add(session)
+                sessions_by[adapter.NAME].add(session)
+            if event['kind'] == 'prompt':
+                prompts_by[adapter.NAME] += 1
             kind = event['kind']
             if kind == 'error':
                 errors += 1
@@ -892,9 +1142,18 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
                         repeated += 1
                     seen.add(text)
     sessions = len(sessions_seen)
+    # What the logs can show: a skill or an agent counts as unused only when every session of the window comes from a CLI
+    # whose logs show it; otherwise its absence proves nothing and nothing is recommended about it.
+    used_clis = [a for a in ADAPTERS if sessions_by[a.NAME]]
+    def measurable(kind):
+        return bool(used_clis) and all(kind in a.OBSERVES for a in used_clis)
+    def observing(kind):
+        return [a.LABEL for a in ADAPTERS if kind in a.OBSERVES]
     unused_commands = [c for c in installed_commands if commands[c] == 0]
-    unused_skills = [s for s in installed_skills if skills[s] == 0 and s not in installed_commands]  # a skill named after a command is measured by the command
-    unused_agents = [a for a in installed_agents if agents[a] == 0]
+    skill_names = [s for s in installed_skills if s not in installed_commands]  # a skill named after a command is measured by the command
+    unused_skills = [s for s in skill_names if skills[s] == 0] if measurable('skill') else []
+    unused_agents = [a for a in installed_agents if agents[a] == 0] if measurable('agent') else []
+    not_observable = {kind: names for kind, names in (('skills', skill_names), ('agents', installed_agents)) if not measurable(kind[:-1])}
     by_name = {c['name']: c for c in load_commands()}
     required_by_used = set(skills)
     for name in commands:
@@ -934,16 +1193,25 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
     frictions_by_category = Counter(str(f.get('category')) for f in frictions)
     enough = sessions >= min_sessions and prompts >= min_prompts
     report = {'window_days': since_days, 'sessions': sessions, 'prompts': prompts, 'errors': errors,
+              'sessions_by_cli': {name: len(s) for name, s in sessions_by.items() if s},
+              'observed_by': {kind: observing(kind) for kind in ('prompt', 'skill', 'agent')},
+              'not_observable': not_observable,
               'commands': dict(commands), 'skills': dict(skills), 'agents': dict(agents),
               'unused_commands': unused_commands, 'unused_skills': unused_skills, 'unused_agents': unused_agents,
-              'core_candidates_to_demote': core_candidates() if enough else [], 'enough_data': enough,
+              'core_candidates_to_demote': core_candidates() if enough and measurable('skill') else [], 'enough_data': enough,
               'frictions': frictions, 'frictions_by_category': dict(frictions_by_category),
               'unknown_commands': dict(unknown_commands), 'repeated_prompts': repeated, 'frictions_fixed': fixed_own}
     print('Window: '+str(since_days)+' days | '+str(sessions)+' sessions | '+str(prompts)+' prompts | '+str(errors)+' errors')
     print('Commands typed: '+(', '.join(k+' ×'+str(v) for k,v in commands.most_common()) or 'none'))
     print('Skills activated: '+(', '.join(k+' ×'+str(v) for k,v in skills.most_common()) or 'none'))
     print('Agents called: '+(', '.join(k+' ×'+str(v) for k,v in agents.most_common()) or 'none'))
-    print('Never used: '+str(len(unused_commands))+' commands, '+str(len(unused_skills))+' skills, '+str(len(unused_agents))+' agents.')
+    print('Never used: '+str(len(unused_commands))+' commands'+('' if 'skills' in not_observable else ', '+str(len(unused_skills))+' skills')
+          + ('' if 'agents' in not_observable else ', '+str(len(unused_agents))+' agents')+'.')
+    if not used_clis:
+        print('No session in the window: skills and agents not measurable.')
+    for kind in not_observable if used_clis else ():
+        print('Not observable: '+kind+' activations do not appear in the logs of '+', '.join(a.LABEL for a in used_clis if kind[:-1] not in a.OBSERVES)
+              + (' (only in '+', '.join(observing(kind[:-1]))+'\'s)' if observing(kind[:-1]) else '')+'; no recommendation about '+kind+'.')
     print('Unknown commands typed: '+(', '.join('/'+k+' ×'+str(v) for k,v in unknown_commands.most_common()) or 'none')+' | requests repeated within one session: '+str(repeated))
     if fixed_own:
         print('Your frictions fixed by the kit: '+', '.join(fid+' in '+str(version) for fid, version in fixed_own.items()))
@@ -960,28 +1228,28 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
     return 0
 
 def release_check():
-    """doctor --live: a newer published version of the kit (git tags of the kit folder's remote), without blocking anything."""
-    if not (ROOT/'.git').exists() or not shutil.which('git'):
+    """doctor --live: a newer published version of the kit (git tags of the kit folder's remote), without blocking anything.
+    The kit folder is the clone the launcher was started from (the installed package has no .git), else the code's own folder."""
+    folder = source_folder() or ROOT
+    if not (folder/'.git').exists() or not shutil.which('git'):
         return
     try:
-        subprocess.run(['git', '-C', str(ROOT), 'fetch', '--tags', '--quiet'], capture_output=True, timeout=20)
-        tags = subprocess.run(['git', '-C', str(ROOT), 'tag', '--list', 'v*', '--sort=-v:refname'], capture_output=True, text=True, timeout=10).stdout.split()
+        subprocess.run(['git', '-C', str(folder), 'fetch', '--tags', '--quiet'], capture_output=True, timeout=20)
+        tags = subprocess.run(['git', '-C', str(folder), 'tag', '--list', 'v*', '--sort=-v:refname'], capture_output=True, text=True, timeout=10).stdout.split()
     except (OSError, subprocess.SubprocessError):
         return
-    current = (ROOT/'VERSION').read_text(encoding='utf-8').strip()
+    current = (folder/'VERSION').read_text(encoding='utf-8').strip()
     def key(version):
         return tuple(int(x) for x in re.findall(r'\d+', version)[:3])
     if tags and key(tags[0]) > key(current):
         print('[Info] AI Kit '+tags[0].lstrip('v')+' is published (this folder: '+current+'): run update, which fetches it.')
 
-def live_checks(home, announce=False, results=None):
-    """Real call to the model by each installed CLI that supports it (live); 1 if one does not answer.
+def live_checks(home, results=None):
+    """Real call to the model by each installed CLI that supports it (doctor --live only); 1 if one does not answer.
     results, when given, receives {cli name: 0 if the model answered}: the summaries say "verified" only from it."""
     code = 0
     for adapter in ADAPTERS:
         if isinstance(adapter, LiveCheck) and shutil.which(adapter.COMMAND):
-            if announce:
-                print('Checking with a real call to the model, '+adapter.LABEL+' (--no-live to skip):')
             answer = adapter.live(home)
             if results is not None:
                 results[adapter.NAME] = answer
@@ -1024,7 +1292,8 @@ def main(argv=None):
         print('Python 3.9 minimum required (3.11 or newer recommended).',file=sys.stderr)
         return 2
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
-    parser.add_argument('action',choices=['setup','update','doctor','usage'])
+    parser.add_argument('action',nargs='?',choices=['setup','update','doctor','usage','uninstall'],
+                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices')
     parser.add_argument('--since',type=int,default=42,help='usage: window in days (default 42)')
     parser.add_argument('--json',type=Path,help='usage: write the report to this file')
     parser.add_argument('--min-sessions',type=int,default=10,help='usage: minimum sessions before recommending (default 10)')
@@ -1034,13 +1303,39 @@ def main(argv=None):
     parser.add_argument('--home',type=Path,default=Path.home(),help='Alternative home folder for an isolated trial')
     parser.add_argument('--dry-run',action='store_true',help='Show the plan without writing')
     parser.add_argument('--team',help='setup: your team, when it has its own practices (practices/20-<team>.md) or tools (teams in organization.json); kept for update; none to leave it')
-    parser.add_argument('--target',choices=list(TARGETS),default='auto',help='auto: the CLIs present on the machine (Gemini if none); gemini, agy, codex: that CLI only; both: Gemini and agy; all: every supported CLI')
-    parser.add_argument('--live',action='store_true',help='doctor: make a real call to the model and diagnose')
-    parser.add_argument('--no-live',action='store_true',help='setup/update: do not check with a real call to the model')
+    parser.add_argument('--target',choices=list(TARGETS),help='default: the CLIs chosen at the last installation (auto on the first one); auto: the CLIs present on the machine (Gemini if none); gemini, agy, codex: that CLI only; both: Gemini and agy; all: every supported CLI')
+    parser.add_argument('--live',action='store_true',help='doctor: make a real call to the model and diagnose (may be billed by your provider)')
+    parser.add_argument('--no-live',action='store_true',help='accepted for compatibility: setup and update never call the model')
+    parser.add_argument('--yes',action='store_true',help='uninstall: confirm without a question (automation)')
+    parser.add_argument('--plain',action='store_true',help='plain text questions and output, without colours or arrow-key menus')
+    parser.add_argument('--version',action='store_true',help='which copy of the kit runs, and with which Python')
     args = parser.parse_args(argv)
+    if args.version:
+        print(version_line())
+        return 0
     try:
         home = args.home.resolve()
+        # Guided: no action, or setup without --profile at a terminal. Without a terminal, setup reuses the recorded choices.
+        guided = args.action is None or (args.action == 'setup' and not args.profile and not args.dry_run and interactive())
+        if guided:
+            if not interactive():
+                # No terminal to ask in: never wait for an answer that cannot come.
+                raise KitError('no terminal to ask your choices in: give them as options, for example '
+                               'setup --profile general --user <email> (profiles: '+', '.join(profile_ids())+').')
+            from .wizard import start
+            from .ui import make_ui
+            return start(make_ui(args.plain), home, setup=args.action == 'setup')
+        if args.action == 'uninstall':
+            if args.dry_run or args.yes:
+                return uninstall(home, dry_run=args.dry_run)
+            if not interactive():
+                raise KitError('uninstall needs a confirmation: add --yes, or --dry-run to see what would be removed.')
+            from .ui import make_ui
+            ui = make_ui(args.plain)
+            return uninstall(home, confirm=lambda summary: ui.confirm('Remove the kit configuration listed above? A backup is kept.', default=False))
         if args.action == 'doctor':
+            if args.live and os.environ.get('AI_KIT_NO_LIVE') == '1':
+                raise KitError('doctor --live makes a real call to the model, refused because AI_KIT_NO_LIVE=1 is set.')
             return doctor(home, live=args.live)
         if args.action == 'usage':
             return usage(home, args.since, args.json, args.min_sessions, args.min_prompts)
@@ -1050,34 +1345,16 @@ def main(argv=None):
         identity = resolve_identity(args, home, state)
         role = args.profile or state.get('profile')
         if not role:
-            if args.action == 'update':
-                raise KitError('Kit not installed: run setup.')
-            if not interactive():
-                raise KitError('Specify --profile among: '+', '.join(profile_ids())+'.')
-            choices = profile_menu()
-            print('Welcome to the AI Kit\n'+'\n'.join(str(i+1)+'. '+label for i,(_,label) in enumerate(choices)))
-            answer = input('Your profile [1-'+str(len(choices))+']: ').strip()
-            if answer not in [str(i+1) for i in range(len(choices))]:
-                raise KitError('Choose a number between 1 and '+str(len(choices))+'.')
-            role = choices[int(answer)-1][0]
+            raise KitError('Kit not installed: run setup.' if args.action == 'update' else 'Specify --profile among: '+', '.join(profile_ids())+'.')
         team = args.team or state.get('team')
-        if not team and args.action == 'setup' and team_ids() and interactive():
-            teams = team_ids()
-            print('Teams:\n'+'\n'.join(str(i+1)+'. '+t for i, t in enumerate(teams))+'\n'+str(len(teams)+1)+'. none of these (shared team practices)')
-            answer = input('Your team [1-'+str(len(teams)+1)+'] (Enter = none): ').strip()
-            if answer and answer not in [str(i+1) for i in range(len(teams)+1)]:
-                raise KitError('Choose a number between 1 and '+str(len(teams)+1)+'.')
-            team = teams[int(answer)-1] if answer and int(answer) <= len(teams) else None
         apply(role,home,args.dry_run,identity,args.target,team)
-        live = None  # None: no real call made, so the summary says "connection not verified"
-        if not args.dry_run and not args.no_live and os.environ.get('AI_KIT_NO_LIVE') != '1':
-            live = {}
-            live_checks(home, announce=True, results=live)
+        # setup and update never call the model: the summary says "connection not verified"; doctor --live is the only real call.
+        live = None
         if args.action == 'setup' and not args.dry_run and interactive():
             state = read_json(home/'.ai-kit/state.json')
             def reapply():
                 with contextlib.redirect_stdout(io.StringIO()):
-                    apply(role, home, False, None, args.target, team)
+                    return apply(role, home, False, None, args.target, team)
             try:
                 personal_context_step(home/state.get('context_dir', '.gemini')/USER_CONTEXT, reapply)
             except EOFError:
@@ -1086,7 +1363,7 @@ def main(argv=None):
             print_summary(home, read_json(home/'.ai-kit/state.json'), live)
         return 0
     except (KitError,OSError,UnicodeError) as exc:
-        print('Error: '+str(exc),file=sys.stderr)
+        print('Error: '+redact(str(exc)),file=sys.stderr)
         return 2
     except (EOFError,KeyboardInterrupt):
         print('\nOperation cancelled.',file=sys.stderr)

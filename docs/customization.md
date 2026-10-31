@@ -4,6 +4,8 @@
 
 > `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
 
+**Without editing any file.** The usual choices (CLIs, profile, domain playbooks, optional tools, commands, review agents) are made in the installer: run it again and choose **Change my choices**. It writes the corresponding lists of `overrides.json` (`extra_skills`, `disabled_skills`, `extra_commands`, `disabled_commands`, `extra_agents`, `disabled_agents`) only when you confirm **Install**, and keeps your other keys and `_` comments. The file stays the single place for these choices: what you edit by hand and what the installer writes are the same lists, the last one written wins. The rest of this page is for what the installer does not ask (MCP servers, guardrails, models, authentication) and for organizations. A name that the kit does not know in `disabled_skills` or `disabled_agents` is reported at the next update (a typo has no effect).
+
 ## Organization, team and person
 
 Settings are combined at every `setup` and `update`, in this order, each on top of the previous one: **organization**, **profile** (the skills, commands, agents and MCP servers of your job, `profiles/<profile>.json`), **team**, **you**. The person keeps the last word.

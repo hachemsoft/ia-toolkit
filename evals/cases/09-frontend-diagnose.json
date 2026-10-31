@@ -1,0 +1,19 @@
+{
+  "name": "frontend-diagnose",
+  "cwd": "web-mini",
+  "requires": {
+    "commands": [
+      "diagnose"
+    ]
+  },
+  "prompt": "/diagnose the Sign up button stays enabled when the email field is empty",
+  "expect": {
+    "contains": [
+      "SubmitButton"
+    ],
+    "regex": [
+      "(?i)email[^.\\n]{0,80}(empty|''|\"\"|undefined)|(empty|''|\"\")[^.\\n]{0,80}email"
+    ]
+  },
+  "_doc": "Frontend: the cause is the readiness test (undefined instead of empty); a regression test is proposed before the fix."
+}

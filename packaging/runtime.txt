@@ -1,0 +1,10 @@
+# Exact versions of the runtime dependencies (pyproject.toml gives the accepted ranges). Used as constraints by the
+# launcher in a git clone and to fill the release ZIP's wheels/ folder: both install what was tested.
+# All are pure-Python wheels (py3-none-any) that support Python 3.9 to 3.14: one ZIP for Mac, Windows and Linux.
+rich==14.2.0
+markdown-it-py==3.0.0
+mdurl==0.1.2
+pygments==2.19.2
+questionary==2.1.1
+prompt_toolkit==3.0.52
+wcwidth==0.2.14

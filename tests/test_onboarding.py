@@ -146,7 +146,7 @@ class HomeWithSpacesTests(unittest.TestCase):
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
                 cli.doctor(home)
-            self.assertIn('[OK] Guardrail active: protected-paths', out.getvalue())
+            self.assertIn('[OK] Guardrail configured in settings.json: protected-paths', out.getvalue())
 
 
 class AnalystReviewTests(unittest.TestCase):

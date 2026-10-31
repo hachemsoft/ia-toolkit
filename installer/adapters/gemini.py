@@ -200,6 +200,8 @@ NAME = 'gemini'
 LABEL = 'Gemini CLI'
 COMMAND = 'gemini'
 HOME_DIR = '.gemini'
+OBSERVES = {'prompt', 'skill', 'agent', 'error'}  # chat logs hold every tool call, activate_skill and agents included
+AGENT_TOOLS = 'native'  # the agent's front matter "tools" list is the only set of tools Gemini gives it
 MANAGED_PREFIXES = ('.gemini/skills/', '.gemini/agents/', '.gemini/commands/', '.gemini/hooks/ai-kit/')  # the last one: former location of the guardrails
 
 # Built-in commands: not counted as unknown commands in the usage report.
@@ -251,7 +253,7 @@ def write_skills(p: Plan) -> None:
     for skill, source in p.skill_sources:
         for src in source.rglob('*'):
             if src.is_file():
-                p.managed_write(p.home/'.gemini'/'skills'/skill/src.relative_to(source), src.read_bytes(), 'Skill')
+                p.managed_write(p.home/'.gemini'/'skills'/skill/src.relative_to(source), p.skill_file(skill, source, src), 'Skill')
 
 def agent_markdown(p: Plan, agent: str, definition: dict) -> bytes:
     """Agent in Markdown with front matter, shared by Gemini and agy."""
@@ -265,9 +267,60 @@ def agent_markdown(p: Plan, agent: str, definition: dict) -> bytes:
     header += ['timeout_mins: '+str(definition.get('timeout_mins', agent_defaults['timeout_mins'])), '---']
     return ('\n'.join(header)+'\n\n'+p.agent_body(definition)).encode('utf-8')
 
+def was_installed(state):
+    """Gemini was a target of the previous installation (states before 0.17 only have the files)."""
+    clis = (state.get('installed') or {}).get('clis')
+    if clis is not None:
+        return NAME in clis
+    return any(rel.startswith('.gemini/commands/') for rel in state.get('files', {}))
+
+def remove_kit_settings(p: Plan) -> None:
+    """Gemini no longer a target: its settings lose what the kit added (guardrail groups, kit MCP servers, the kit layers
+    in context.fileName, the kit lines of .env); the person's own settings stay. A kit entry edited by hand stops the update."""
+    gemini = p.home/'.gemini'
+    settings_file = gemini/'settings.json'
+    if settings_file.is_file():
+        settings = read_json(settings_file)
+        hooks = settings.get('hooks')
+        if isinstance(hooks, dict):
+            for name, old in p.state.get('hooks', {}).items():
+                groups = hooks.get(old['event'], [])
+                if isinstance(groups, list) and any(any(h.get('name') == 'ai-kit-'+name for h in g.get('hooks', [])) and g != old['group'] for g in (groups[i] for i in kit_hook_groups(groups))):
+                    raise KitError('Kit guardrail modified in settings.json: '+name)
+            for event, groups in list(hooks.items()):
+                if isinstance(groups, list) and kit_hook_groups(groups):
+                    kept = [g for i, g in enumerate(groups) if i not in kit_hook_groups(groups)]
+                    if kept:
+                        hooks[event] = kept
+                    else:
+                        hooks.pop(event)
+            if not hooks:
+                settings.pop('hooks')
+        servers = settings.get('mcpServers')
+        if isinstance(servers, dict):
+            for name, old in p.state.get('mcp', {}).items():
+                if name in servers and servers[name] != old:
+                    raise KitError('Kit MCP modified in settings.json: '+name)
+                servers.pop(name, None)
+        context = settings.get('context')
+        if isinstance(context, dict) and isinstance(context.get('fileName'), list):
+            layers = {rel.split('/', 1)[1] for rel in p.old_files if re.fullmatch(r'\.gemini/\d\d_[A-Z_]+\.md', rel)}
+            context['fileName'] = [n for n in context['fileName'] if n not in layers or n == USER_CONTEXT]
+        p.writes[settings_file] = json_bytes(settings)
+    env_file = gemini/'.env'
+    if env_file.is_file() and ENV_MARKER in env_file.read_text(encoding='utf-8'):
+        content = env_text(env_file, None)
+        if content:
+            p.writes[env_file] = content.encode('utf-8')
+        else:
+            p.deletes.append(env_file)
+
 def finalize(p: Plan, active: bool = True) -> None:
-    """Settings ~/.gemini/settings.json (defaults, declared authentication, layers, guardrails, MCP) and ~/.gemini/.env."""
+    """Settings ~/.gemini/settings.json (defaults, declared authentication, layers, guardrails, MCP) and ~/.gemini/.env.
+    Inactive: removes what a previous installation had added there."""
     if not active:
+        if was_installed(p.state):
+            remove_kit_settings(p)
         return
     gemini = p.home/'.gemini'
     overrides, state = p.overrides, p.state
@@ -404,7 +457,7 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
         # The command is "<python> -I <script>" (core.hook_command), each part quoted: split on " -I ", not on spaces,
         # so that a home folder with spaces ("Home à") gives the right path.
         script = Path(hook['group']['hooks'][0]['command'].split(' -I ', 1)[-1].strip().strip('"\''))
-        status(isinstance(groups,list) and hook['group'] in groups and script.is_file(),'Guardrail active: '+name)
+        status(isinstance(groups,list) and hook['group'] in groups and script.is_file(),'Guardrail configured in settings.json: '+name)
     if not state.get('hooks'):
         print('[Info] No guardrail enabled; see docs/hooks.md (dbt-prod-guard, protected-paths).')
     for name,server in state.get('mcp',{}).items():

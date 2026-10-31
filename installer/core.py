@@ -32,6 +32,18 @@ def redact(text):
 class KitError(Exception):
     pass
 
+def user_context_refusal(data):
+    """Why a 30_USER.md must not be copied elsewhere (secret, not plain UTF-8 text), or None. The value is never quoted."""
+    if data.lstrip().startswith(b'{\\rtf'):
+        return 'it was saved as rich text, not plain text'
+    try:
+        text = data.decode('utf-8')
+    except UnicodeDecodeError:
+        return 'it is not UTF-8 text'
+    if SECRET.search(text):
+        return 'it seems to contain a secret (key, token or password)'
+    return None
+
 def read_json(path, default=None):
     if not path.exists():
         return {} if default is None else default
@@ -61,12 +73,12 @@ JSON_HINTS = (
 )
 
 def json_error(path, text, exc):
-    """One message that says where (line, column, the line itself) and what (in plain words) is wrong in a JSON file."""
+    """One message that says where (line, column, the line itself, any secret in it redacted) and what (in plain words) is wrong in a JSON file."""
     hint = next((plain for raw, plain in JSON_HINTS if exc.msg.startswith(raw)), exc.msg)
     lines = text.splitlines() or ['']
     line = lines[min(exc.lineno, len(lines)) - 1]
     return (str(path) + ', line ' + str(exc.lineno) + ', column ' + str(exc.colno) + ': ' + hint + '.\n'
-            + '    ' + line.rstrip() + '\n    ' + ' ' * max(exc.colno - 1, 0) + '^\n'
+            + '    ' + redact(line.rstrip()) + '\n    ' + ' ' * max(exc.colno - 1, 0) + '^\n'
             + 'JSON allows no comments; keys starting with _ can hold explanations. A valid example: docs/customization.md.')
 
 def json_bytes(value):
@@ -136,7 +148,7 @@ def parse_frontmatter(text):
             continue
         key, sep, value = line.partition(':')
         if not sep or not re.fullmatch(r'[a-z_]+', key.strip()):
-            raise KitError('Unreadable front matter line: ' + line)
+            raise KitError('Unreadable front matter line: ' + redact(line))
         value = value.strip()
         if value.startswith('[') and value.endswith(']'):
             meta[key.strip()] = [v.strip().strip('"\'') for v in value[1:-1].split(',') if v.strip()]

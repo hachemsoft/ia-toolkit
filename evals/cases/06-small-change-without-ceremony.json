@@ -1,0 +1,24 @@
+{
+  "name": "small-change-without-ceremony",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ]
+  },
+  "prompt": "/build in orders.py, change the error message 'Not found' to 'Order not found'. Go ahead.",
+  "expect": {
+    "regex": [
+      "(?i)\\bquick\\b|\\brapide\\b"
+    ],
+    "not_contains": [
+      "accept the plan",
+      "plan.md"
+    ],
+    "files_absent": [
+      "plan.md",
+      "intent.md"
+    ]
+  },
+  "_doc": "Backend, small task: the quick level, no plan.md, no new acceptance round after an explicit go-ahead. Writes are refused by the eval policy: the observable is the answer and the absence of artifacts."
+}

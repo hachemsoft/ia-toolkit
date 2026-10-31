@@ -1,0 +1,20 @@
+{
+  "name": "project-context-respected",
+  "cwd": "context-mini",
+  "requires": {
+    "commands": [
+      "test"
+    ]
+  },
+  "prompt": "/test Do not run anything: list the verification commands you would run for a change in src/app.py.",
+  "expect": {
+    "contains": [
+      "make check"
+    ],
+    "not_contains": [
+      "ruff check src",
+      "python -m pytest tests"
+    ]
+  },
+  "_doc": "The repo's AGENTS.md wins: its make targets, not the tools they wrap."
+}

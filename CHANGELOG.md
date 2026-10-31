@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.34.0
+
+No call to a model unless asked:
+- `setup` and `update` never call the model any more: the summary says "connection not verified". `doctor --live` is the only real call, announced as possibly billed; `AI_KIT_NO_LIVE=1` refuses it. `--no-live` is still accepted and changes nothing.
+- The paid evals (`agent-evals.yml`) no longer run on merge requests or every Monday: started by hand only, with a `confirm_paid_run` box unticked by default and a `cli_version` input for a reference campaign. The model-free tests run on every push, with `AI_KIT_NO_LIVE=1`. A workflow changed in a branch keeps its old triggers on the remote default branch until merged.
+- `evals/run.py` refuses a real run without `--confirm-paid-run`; `--dry-run` checks the cases' preconditions, `--stand-in` replays them against a stand-in executable; a non-zero exit code is an execution failure whatever the output; preconditions (`requires`) skip a case instead of failing it; artifacts are looked for where the commands write them; `--retries` (0 to 2, infrastructure errors only); the report records the kit, CLI and model versions. Seven cases prepared, not run: small change, contract change with its test, uncommitted review, frontend, infrastructure, project context, Data and backend in one change.
+- `scripts/offline_tests.py` runs the tests with every model CLI taken off the PATH and fails if a test reaches one.
+
+One launcher, a private Python environment, two distributions:
+- `Installer.cmd` and `scripts/bootstrap.sh` find Python, then `scripts/launcher.py` (run with `python -I`) creates `~/.ai-kit/runtime/venv` and installs the kit there with pip: no activation, no change to the global Python, the PATH or the policy, no administrator rights. A Python without `venv` or `pip` gets a message for IT.
+- The release ZIP carries the kit's wheel and the wheels of its libraries (all pure Python: one ZIP for Mac, Windows and Linux, Python 3.9 to 3.14) and installs with `--no-index`: nothing downloaded. Built by `scripts/build_release.py` (`--worktree` for a test build of uncommitted files).
+- A git clone is installed by pip from the clone (not editable), with the exact versions of `packaging/runtime.txt`, from the package index pip is configured for. `update` there works in three reported steps: fetch (`git pull --ff-only`, refused over local changes: nothing is overwritten, stashed or reset), reinstall, apply; a failed fetch ends with "Update incomplete" and a non-zero code.
+- An interrupted or failed installation is detected and started again; a package that does not install configures nothing; one run at a time per home folder. The guardrails run with the private environment's Python: the extracted folder can be deleted.
+- Which copy runs: `ai-kit --version` names the version, the folder and the Python of the copy that runs. `doctor` reports the private environment's state (ready, interrupted, failed), a kit folder newer than the installed package, and another `ai-kit` command first on the PATH (for example an earlier `pipx install`, which the docs proposed to developers until 0.33): typing `ai-kit` runs that copy, whatever `pip install .` updated. If you installed the kit with `pipx`, remove it: `pipx uninstall ai-kit`. `doctor --live` again announces a newer published version for a git clone run through the launcher. In the installer's menu, the next steps name menu choices ("choose Update") instead of commands.
+- `scripts/bootstrap.ps1` is back as a thin wrapper of `Installer.cmd` for older instructions; it changes no policy. `AI_KIT_NO_PAUSE=1` for scripts that start `Installer.cmd` without arguments.
+
+A guided installer (Rich and Questionary):
+- Without options at a terminal: the workstation (Python, CLIs found, kit, connection not checked), the CLIs to configure (detected the first time, the recorded choice afterwards, a missing CLI can be prepared for IT), the profile, the email, optional adjustments (playbooks, tools, commands, agents, dependencies said, what you turned off stays off), a review of what will change, then Install, Back or Cancel; a progress bar follows the real writes; the summary and the next step.
+- Once installed: a menu with Update, Change my choices, Check the installation (local), Open my personal context, Uninstall, and, under Advanced, the billed connection check behind its own confirmation.
+- Plain numbered questions with `--plain`, `AI_KIT_PLAIN=1` or without the libraries; nothing asked without a terminal or with an action and options. Ctrl+C, end of input or an interface error before Install changes nothing; during the writes, every file is put back.
+- `uninstall`: removes only what the kit installed (unchanged managed files, kit blocks and entries in the CLIs' settings, its state), keeps `30_USER.md`, `overrides.json`, the backups and a managed file edited by hand (named); `--dry-run`, `--yes` for automation, a question otherwise; `--remove-runtime` (launcher) removes the private environment after the kit has exited.
+
+Engine fixes:
+- The CLIs chosen are recorded and kept by `update`, whatever folders exist; removing one cleans its settings (guardrails, MCP servers, kit layers in `context.fileName`, `.env` lines) and keeps the person's own; every transition between `gemini`, `agy`, `codex`, `both` and `all` is tested, back and forth.
+- Personal context: when the context folder changes, the version in effect is the one at the previously recorded place (Gemini with A, Codex with B, back to Gemini: B), a different older copy is kept beside it, and the file in effect is named.
+- A `30_USER.md` that seems to hold a secret, or is not plain UTF-8 text, is never copied (new location, Codex block): the source stays, Codex keeps its last valid copy, and the refusal is said apart from the installation result. JSON, TOML and front matter errors no longer repeat a secret found on the faulty line; every printed error is redacted.
+- Codex guardrails: an approval record is never reported as `[OK]` ("approval not verifiable automatically"); no record at all stays a `[Check]`.
+- Agents: each adapter declares how it applies an agent's tool list (`AGENT_TOOLS`: native in Gemini CLI, an instruction only in agy and Codex); the verifier's prompt no longer forbids the checks it must run.
+- Skills: every skill a `SKILL.md` cites is declared, in `requires` or in `optional` with what to do without it; a missing optional skill adds a "Not installed here" section to the installed `SKILL.md`. Unknown names in `disabled_skills` and `disabled_agents` are reported.
+- `usage`: each adapter declares what its logs show (`OBSERVES`); skills and agents are reported unused only when every session comes from a CLI whose logs show them, otherwise "not observable", and nothing is recommended from that silence.
+
+Consistent instructions:
+- Three ceremony levels, quick, standard and full, defined once in `00_KIT.md` and used by `/build`, `/intent`, `/guide` and the router: a small change needs no `plan.md` and no new acceptance; a go-ahead already given stands.
+- Tests: never weakened to hide a regression; adapted, and said, when the person changes a contract on purpose.
+- Commits only with the person's agreement: `implement` no longer commits unconditionally; `prototype` and `manual-steps` aligned. The repo's conventions come first (merge or pull request, where documents go).
+- One review behaviour for `/review` and "review my changes": the branch's commits, staged and unstaged changes and new files by default, the scope stated, narrower on request; no spec or tracker required; one severity scale. Upstream adaptations recorded in `skills/upstream.lock.json`.
+- The router starts with four everyday uses (understand a repo, change a behaviour, diagnose, review); plain sentences are the normal path; no tracker or document before a first task; the project context is offered when useful, as one grouped proposal. `sql-review` and `dbt-model-change` no longer assume BigQuery; playbook descriptions say what they are not for.
+
 ## 0.33.0
 
 Neutral core, the domain in its playbooks:

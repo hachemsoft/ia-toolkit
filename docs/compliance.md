@@ -4,7 +4,7 @@ This page helps an organization's compliance, security or legal team assess the 
 
 ## What the kit is, in governance terms
 
-The kit is a configuration tool. It installs text files (context, commands, skills, agents, guardrails) in the folders of coding agent CLIs already present on the workstation: Gemini CLI, Antigravity CLI, Codex CLI. It provides no model and calls no service during installation, except the check call to the model that `setup` makes with the person's CLI and account (`--no-live` skips it). It processes no business data. The prompts, code and data the agent sees go to the model provider under the contract of the chosen CLI (Google account, Gemini Code Assist, Vertex AI, OpenAI): that contract governs their processing, not the kit.
+The kit is a configuration tool. It installs text files (context, commands, skills, agents, guardrails) in the folders of coding agent CLIs already present on the workstation: Gemini CLI, Antigravity CLI, Codex CLI. It provides no model and calls no service during installation or update. The only call to a model is `doctor --live`, run on request with the person's CLI and account; `AI_KIT_NO_LIVE=1` refuses it. It processes no business data. The prompts, code and data the agent sees go to the model provider under the contract of the chosen CLI (Google account, Gemini Code Assist, Vertex AI, OpenAI): that contract governs their processing, not the kit.
 
 ## Reference frameworks
 

@@ -45,7 +45,17 @@ An agent never names a model: at most, it declares what it needs (`"capability":
 
 ## Tools and limits
 
-Review agents are read-only: they read and search files, without modifying or running anything. `ai-kit-verifier` is the exception: it can also list folders and run commands, because its role is to run the check commands declared in `AGENTS.md` (build, tests, lint, `dbt test` on the development target) and report their real output at the end of a `/build`. It fixes nothing; the `dbt-prod-guard` guardrail also applies to it. They cannot modify files, run the shell, dbt or BigQuery, or call MCP servers through their own tool list. They propose checks to the main agent. The parent must provide the diff or relevant results when they are not accessible.
+Review agents are read-only: they read and search files, without modifying or running anything. `ai-kit-verifier` is the exception: it can also list folders and run commands, because its role is to run the check commands declared in `AGENTS.md` (build, tests, lint, `dbt test` on the development target) and report their real output at the end of a `/build`. It fixes nothing; the `dbt-prod-guard` guardrail also applies to it. They propose checks to the main agent.
+
+How far the tool list holds depends on the CLI (the `AGENT_TOOLS` contract of each adapter, [matrix](cli/matrice.md)):
+
+| CLI | Agent tool list | What it means |
+| --- | --- | --- |
+| Gemini CLI | native | the agent only gets the tools listed in its header: a reviewer cannot write or run the shell |
+| Antigravity CLI | instruction | the header carries the list, but agy applying it is not verified: the prompt says "read only", nothing technical prevents a write |
+| Codex CLI | instruction | a role holds instructions only; the session's sandbox and approvals apply, as for the main agent |
+
+Where it is only an instruction, the kit never claims a reviewer cannot write: the prompt asks it, the CLI's sandbox and approvals are the barrier. The parent must provide the diff or relevant results when they are not accessible.
 
 Company and team practices are included in their prompt at install time: we do not assume an isolated agent receives the parent's full context. Personal context (`30_USER.md`) is not copied there: it shapes the parent's answers, not the delegated mission. Project instructions must be read and missing facts reported. Skills are not assumed to be automatically available in sub-agents. When a base skill mentions a "sub-agent" or "background agent", `00_KIT.md` tells the model to use these `ai-kit-*` agents, or to do the work itself if they are absent.
 

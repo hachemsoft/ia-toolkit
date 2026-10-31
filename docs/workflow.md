@@ -4,15 +4,15 @@ The kit follows the cycle from Anthropic's ["AI-native SDLC playbook"](https://c
 
 ## Ceremony matches the stakes
 
-| Stakes | What to do | Commands |
-| --- | --- | --- |
-| Small fix (label, filter, colour) | do it, check it yourself | none; `/test` if the repo has tests |
-| Visual or exploratory | iterate with the agent, look, start again | `/design` for a throwaway prototype |
-| Small feature | short framing, then test-first | short `/intent`, `/build`, `/test`, `/ship` |
-| Large or unclear | spec, phased plan, verification between phases | `/intent`, `/spec`, `/build` per ticket, `/review`, `/ship` |
-| Production, irreversible, sensitive data | all of the above, full review | `/review full`, guardrails active |
+Three levels, defined once in the kit context (`00_KIT.md`) and used by every command:
 
-Each command states in one line the level it chose. `/review` accepts `quick` or `full` as an argument.
+| Level | Stakes | What to do | Commands |
+| --- | --- | --- | --- |
+| **quick** | small local change (label, typo, condition), visual or exploratory work | do it, run the check that covers it; no document | none; `/test` if the repo has tests; `/design` for a throwaway prototype |
+| **standard** | small feature, a few files | a short alignment in the conversation, then test-first; no `plan.md` unless asked | `/build`, `/test`, `/ship` |
+| **full** | large or unclear change; production, irreversible or sensitive data | intent, spec, plan, acceptance before code, verification between phases; full review | `/intent`, `/spec`, `/build` per ticket, `/review full`, `/ship`, guardrails active |
+
+Each command states in one line the level it chose. A go-ahead already given in the conversation is not asked again. `/review` accepts `quick` or `full` as an argument.
 
 ## The steps
 
@@ -24,9 +24,9 @@ The installed commands depend on the profile: see the [profile table](getting-st
 | Plan | `/map <work item>` (developers) | decision tickets | map a piece of work too large for one session, decisions first, then `/spec` |
 | Design | `/spec` | `spec.md` | from the accepted intent, without a new interview: goal, scope, requirements with acceptance criteria, data contracts (grain, keys, sources, freshness), rules applied while writing, points of attention; one file, never a ticket (splitting into tickets is `to-tickets`, on request) |
 | Build | `/design <question>` (developers) | interface sketch or prototype | several shapes of a module compared, or a throwaway prototype to decide |
-| Build | `/build <ticket or spec>` | `plan.md`, then diff and tests | plan in plan mode (files, order, risks, evidence), accepted before any code; implementation one slice at a time, failing test first; final check by the verifier agent when installed |
-| Test | `/test [scope]` | real output of the checks | tests what changed and what depends on it, whatever the team: files changed against the base branch, the "Changed" command of each stack in the "Verifying your work" block of `AGENTS.md`, full suite if a shared file changed; same rule with the repo's tools if the block is missing, looked up in CI first; if no command can be inferred, it says so, asks for the commands and offers to write them into `AGENTS.md`; pastes the output; fixes the code, never the test |
-| Deploy | `/review [base] [quick\|full]` | sorted findings | bug, security, data and compliance passes against `spec.md` (and `plan.md` when present locally), following the repo's `REVIEW.md` or the kit template; these passes replace the upstream skill's axes; in `full` mode, a doubt pass on each claim |
+| Build | `/build <task, ticket or spec>` | diff and tests; `plan.md` for a full change | quick: say what changes and how it is checked, then do it; standard: a short alignment, then test-first; full: plan in plan mode (files, order, risks, evidence), accepted before any code; implementation one slice at a time, failing test first; commits only with your agreement; final check by the verifier agent when installed |
+| Test | `/test [scope]` | real output of the checks | tests what changed and what depends on it, whatever the team: files changed against the base branch, the "Changed" command of each stack in the "Verifying your work" block of `AGENTS.md`, full suite if a shared file changed; same rule with the repo's tools if the block is missing, looked up in CI first; if no command can be inferred, it says so, asks for the commands and offers to write them into `AGENTS.md`; pastes the output; fixes the code and never weakens a test to hide a regression; when the person changes a contract on purpose, the test follows it and the change is said |
+| Deploy | `/review [base\|staged\|local] [quick\|full]` | the scope, then sorted findings | the same behaviour as asking "review my changes" (the `code-review` skill): the branch's commits, the staged and unstaged changes and the new files by default, stated in one line; bug, security, domain, standards and compliance passes (compliance only when a spec, intent or plan exists), following the repo's `REVIEW.md` or the kit template; one severity scale (Important, Minor, Nit); no tracker or spec required; in `full` mode, a doubt pass on each claim |
 | Deploy | `/ship` | MR description | visual summary, before/after evidence, one-way or two-way door; pushes nothing |
 | Maintain | `/diagnose <symptom>` | proven cause, regression test | red/green signal before any fix (a failing test; for data, an assertion query; for infrastructure, a plan or a dry run); the finding can become an `intent.md` again |
 | Maintain | `/triage` (developers) | tickets ready for an agent | triage state machine for incoming tickets |

@@ -28,18 +28,22 @@ A CLI without an adapter can already read the kit's repository files (`AGENTS.md
 | Commands (`commands/<name>.md`) | `~/.gemini/commands/<name>.toml` | a command skill in the plugin, `~/.gemini/config/plugins/ai-kit/skills/<name>/` (in agy, every skill is a command) | a command skill, called with `$<name>` |
 | Override a command in a repository | `<repo>/.gemini/commands/<name>.toml` | not reliable: a repo skill named like the command skill does not replace it (see the line above); give the repo skill another name | not reliable: both are listed (see the line above); give the repo skill another name |
 | Agents | `~/.gemini/agents/ai-kit-<name>.md` | plugin `agents/` | `[agents.ai-kit-<name>]` in the managed block of `config.toml` |
+| Agent tool list (`AGENT_TOOLS`) | native: the header's `tools` are the only tools | instruction only: applying the header's list is not verified | instruction only: the session's sandbox and approvals apply |
 | Guardrails | `ai-kit-*` groups under `hooks.BeforeTool` of `settings.json` | plugin `hooks.json` (`PreToolUse`) | `[[hooks.PreToolUse]]` in that block, to approve in Codex ("Trust") |
 | Repository protected paths | `<repo>/.ai-kit/protected-paths`, read by the kit script | the same file, read by the same script | the same file, read by the same script |
 | MCP | `mcpServers` of `settings.json` | plugin `mcp_config.json` | `[mcp_servers.ai-kit-<name>]` in that block |
 | Permissions | Gemini approval mode | each person's rules in `~/.gemini/antigravity-cli/settings.json`, never written by the kit | Codex sandbox and approvals, never set by the kit |
 | Logs read by `usage` | `~/.gemini/tmp/*/chats/*.json` | `~/.gemini/antigravity-cli/history.jsonl` | `~/.codex/history.jsonl` |
+| What `usage` can observe (`OBSERVES`) | prompts, so commands; skills activated; agents called; errors | prompts only, so commands; skills and agents not observable | prompts only, so commands; skills and agents not observable |
 | Real call by `doctor --live` | `gemini -p` | no (agy is checked by `agy plugin validate`) | no (`codex doctor` checks its configuration) |
 | Evals | `evals/run.py --cli gemini` | `evals/run.py --cli agy` | `evals/run.py --cli codex` |
 | Model (`model`, `models` in `overrides.json`) | `model` sets `model.name` in `settings.json`; `models` sets `model:` on the agents with a capability | not applied: agy's own model choice | not applied: the session model |
 | Authentication set by the kit | when declared: `vertex`, `code_assist`, `model` in `overrides.json` | never; see [the agy page](agy.md#authentication-google-account-or-google-cloud-project) | never (`codex login`) |
 | Detailed page | [Gemini CLI](gemini.md) | [Antigravity CLI](agy.md) | [Codex CLI](codex.md) |
 
-**Where the layers and `30_USER.md` live.** Gemini imports only files located in `~/.gemini` (verified on 0.65). When Gemini is installed, the layers and `30_USER.md` are therefore in `~/.gemini/`, and agy and Codex read them from there. Without Gemini (`--target codex`, `--target agy`, or a workstation where only another CLI is detected), they are in `~/.ai-kit/context/`, and no `~/.gemini` folder is created for Codex. If the location changes, `30_USER.md` is copied to the new place if it is missing there; the old one is never deleted. `doctor` shows the file in effect.
+**Where the layers and `30_USER.md` live.** Gemini imports only files located in `~/.gemini` (verified on 0.65). When Gemini is installed, the layers and `30_USER.md` are therefore in `~/.gemini/`, and agy and Codex read them from there. Without Gemini (`--target codex`, `--target agy`, or a workstation where only another CLI is detected), they are in `~/.ai-kit/context/`, and no `~/.gemini` folder is created for Codex. If the location changes (another CLI chosen), the version in effect is the one at the location recorded by the previous installation, whatever other copies exist or their dates: it is copied to the new place; a different copy already there is kept beside it as `30_USER.md.before-<date>`, and the installer names the file in effect. The old one is never deleted. A `30_USER.md` that seems to hold a secret, or is not plain UTF-8 text, is never copied (neither to a new place nor into the Codex block): the source stays as it is, the last valid copy stays in place, and the installer says why. `doctor` shows the file in effect.
+
+**Chosen CLIs.** The CLIs chosen at setup are recorded and kept by every `update`, whatever folders exist on the machine. Removing a CLI from the choice removes what the kit had put there (files, settings entries, managed blocks, kit references in `context.fileName`) and keeps the person's own settings.
 
 ## Add a CLI
 

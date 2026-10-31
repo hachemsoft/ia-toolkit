@@ -28,6 +28,8 @@ COMMAND = 'agy'
 HOME_DIR = '.gemini'
 BUILTIN_COMMANDS = {'help', 'planning', 'agents', 'model', 'models', 'permissions', 'config', 'diff', 'keybindings', 'remote-control', 'login', 'logout', 'clear', 'quit', 'exit'}
 MANAGED_PREFIXES = (AGY_PLUGIN+'/',)
+AGENT_TOOLS = 'instruction'
+OBSERVES = {'prompt'}  # history.jsonl holds the typed prompts only: skills and agents are not visible  # the plugin agents carry the Gemini "tools" list, but agy applying it is not verified
 
 def is_managed(rel):
     return rel.startswith(MANAGED_PREFIXES)
