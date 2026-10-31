@@ -158,6 +158,123 @@ def parse_frontmatter(text):
             meta[key.strip()] = value.strip("'")
     return meta, match.group(2)
 
+DEFAULT_PREFIX = 'ai-kit-'
+PREFIX = re.compile(r'([a-z0-9][a-z0-9-]{0,19})?')
+
+def skill_prefix(overrides):
+    """The prefix the kit gives its skills and commands where a name is already taken (skill_prefix, ai-kit- by default)."""
+    value = overrides.get('skill_prefix', DEFAULT_PREFIX)
+    if not isinstance(value, str) or not PREFIX.fullmatch(value):
+        raise KitError('skill_prefix must be up to 20 lowercase letters, digits or dashes (for example "ai-kit-" or "kit-"), or "" for none.')
+    return value
+
+def taken(path, rel, old_files):
+    """A file or folder that exists and that the kit did not install: a name the person already uses."""
+    if not path.exists():
+        return False
+    if path.is_dir():
+        return not any(r.startswith(rel+'/') for r in old_files)
+    return rel not in old_files
+
+def free_name(name, path_for, rel_for, old_files, prefix, what):
+    """name if the kit can use it, prefix+name when one of the person's own skills or commands already has it."""
+    if not taken(path_for(name), rel_for(name), old_files):
+        return name
+    if not prefix:
+        raise KitError('The kit '+what+' '+name+' has the name of one of your own, and skill_prefix is empty: set a prefix (for example "ai-kit-").')
+    return prefix+name
+
+def rename_references(text, mapping):
+    """Rewrites, in a kit text, the references to renamed skills or commands: `name`, "name", /name, the name skill."""
+    if not mapping:
+        return text
+    alternatives = '|'.join(re.escape(n) for n in sorted(mapping, key=len, reverse=True))
+    pattern = re.compile(r'(?<![\w/.-])(`|"|/|\$)?(' + alternatives + r')(?![\w-])(?=(`|"|\s+skill\b)?)')
+    def replace(match):
+        opener, name, closer = match.group(1), match.group(2), match.group(3)
+        if not opener and not closer:
+            return match.group(0)  # a plain word: the CLI's context says how to read it
+        return (opener or '') + mapping[name]
+    return pattern.sub(replace, text)
+
+def front_matter_name(text, name):
+    """The name: line of a skill's front matter, whatever the line endings (a Windows checkout has CRLF)."""
+    return re.sub(r'^(---\r?\n(?:.*\r?\n)*?)name:[^\r\n]*(\r?\n)', lambda m: m.group(1)+'name: '+name+m.group(2), text, count=1)
+
+def renamed_skill_file(data, src, source, mapping, own_name):
+    """A skill file as installed under a renamed scheme: references rewritten, and the SKILL.md front matter named."""
+    if src.suffix != '.md' or (not mapping and own_name is None):
+        return data
+    text = rename_references(data.decode('utf-8'), mapping)
+    if own_name is not None and src == source/'SKILL.md':
+        text = front_matter_name(text, own_name)
+    return text.encode('utf-8')
+
+
+def kit_name(name, known):
+    """The kit name behind an installed name: tdd for ai-kit-tdd, whatever prefix was used; the name itself otherwise."""
+    if name in known:
+        return name
+    return next((k for k in sorted(known, key=len, reverse=True) if len(name) > len(k) and name.endswith(k)), name)
+
+def renamed_notice(label, skills, commands, sigil='/'):
+    """One line saying which kit skills and commands a CLI received under another name, and why."""
+    parts = ['skill '+o+' as '+n for o, n in sorted(skills.items()) if o != n] + ['command '+sigil+o+' as '+sigil+n for o, n in sorted(commands.items()) if o != n]
+    if not parts:
+        return None
+    return '[Info] '+label+': '+', '.join(parts)+' installed under another name, because one of your own already has the name.'
+
+SKILL_READ = re.compile(r'[\\/]skills[\\/]+([A-Za-z0-9_-]+)[\\/]+SKILL\.md')
+
+def skills_read(text, kit_skills):
+    """The kit skills whose SKILL.md a tool call reads (a CLI loading a skill reads its file), by kit name."""
+    names = {kit_name(m.group(1), kit_skills) for m in SKILL_READ.finditer(text)}
+    return sorted(n for n in names if n in kit_skills)
+
+LIVE_PROMPT = 'Reply with OK only.'
+
+def network_problem(output, label, service='its service', hosts="the service's hosts"):
+    """Network, proxy or certificate failure in a CLI's output: the installation is complete, access to the model is what
+    fails. The fixes respect the company network: never bypass the proxy, never disable certificate checks."""
+    if re.search(r'Proxy Authentication Required|status: 407|"code": 407|\b407\b', output):
+        return ('The company proxy asks for authentication (HTTP 407).',
+                'Ask IT how command-line tools authenticate to the proxy on your workstation; '+label+' uses the proxy set in HTTPS_PROXY.')
+    if re.search(r'SELF_SIGNED_CERT_IN_CHAIN|UNABLE_TO_GET_ISSUER_CERT|UNABLE_TO_VERIFY_LEAF_SIGNATURE|self[- ]signed certificate in certificate chain'
+                 r'|unable to get local issuer certificate|invalid peer certificate|UnknownIssuer|certificate verify failed', output, re.I):
+        return ('The company network inspects HTTPS and '+label+' does not know the company root certificate.',
+                'Ask IT for the company root certificate and how to declare it for command-line tools (NODE_EXTRA_CA_CERTS for Node.js, SSL_CERT_FILE for others). Never disable certificate checks.')
+    if re.search(r'ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|fetch failed|getaddrinfo|socket hang up'
+                 r'|dns error|Connection refused|error sending request|Could not resolve host', output, re.I):
+        return (label+' cannot reach '+service+': no network, or the network blocks it.',
+                'The kit itself is installed and works offline. Connect to the network; behind a company proxy, the CLI uses the proxy set by IT (HTTPS_PROXY); if it is still blocked, ask IT to allow '+hosts+' for '+label+'.')
+    return None
+
+def live_call(home, cli, label, command, rules, timeout=90):
+    """doctor --live: one real call to the model through the CLI, from an empty folder; 0 when it answers. rules: (pattern,
+    diagnosis, fix) read in order on its output, after the network causes. A failure is logged as an auth friction."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        try:
+            proc = run_timed(command, timeout, cwd=tmp, text=True, encoding='utf-8', errors='replace', stdin=subprocess.DEVNULL)
+            output, code, timed_out = (proc.stdout or '')+'\n'+(proc.stderr or ''), proc.returncode, False
+        except subprocess.TimeoutExpired as exc:
+            def text(v):
+                return v.decode('utf-8', 'replace') if isinstance(v, bytes) else (v or '')
+            output, code, timed_out = text(exc.stdout)+'\n'+text(exc.stderr), None, True
+        except OSError as exc:
+            output, code, timed_out = str(exc), None, False
+    if code == 0 and re.search(r'\bOK\b', output):
+        print('[OK] Real call to the model: '+label+' answers.')
+        return 0
+    found = network_problem(output, label) or next(((d, f) for pattern, d, f in rules if re.search(pattern, output, re.I)), None)
+    if not found:
+        found = ((label+' did not answer in time.') if timed_out else (label+' did not answer as expected (code '+str(code)+').'),
+                 'Start '+command[0]+' in a terminal: it says what is missing (sign-in, network); the full output of '+' '.join(command[:2])+' … helps IT.')
+    print('[Check] '+found[0])
+    print('        Fix: '+found[1])
+    record_auto_friction(home, found[0], cli)
+    return 1
+
 COMMANDS_DIR = 'commands'
 
 def load_commands():

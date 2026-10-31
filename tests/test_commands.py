@@ -37,10 +37,11 @@ class CommandTests(unittest.TestCase):
   self.run_kit('data-developer');self.assertTrue(self.cmd('design').exists());self.assertTrue(self.cmd('triage').exists());self.assertTrue(self.cmd('review').exists());self.assertFalse(self.cmd('ask').exists())
  def test_command_removed_when_skill_disabled(self):
   self.run_kit();self.assertTrue(self.cmd('learn').exists());self.overrides({'disabled_skills':['teach']});self.run_kit();self.assertFalse(self.cmd('learn').exists());self.assertTrue(self.cmd('intent').exists())
- def test_personal_command_conflict_blocks(self):
+ def test_personal_command_kept_and_the_kits_renamed(self):
+  # 0.36: a command of the person's with a kit command's name no longer stops the installation; the kit's takes the prefix.
   p=self.cmd('intent');p.parent.mkdir(parents=True);p.write_text('prompt = "mine"\n',encoding='utf-8')
-  with self.assertRaises(KitError):self.run_kit()
-  self.assertEqual(p.read_text(encoding='utf-8'),'prompt = "mine"\n');self.assertFalse((self.home/'.ai-kit/state.json').exists())
+  self.run_kit()
+  self.assertEqual(p.read_text(encoding='utf-8'),'prompt = "mine"\n');self.assertTrue(self.cmd('ai-kit-intent').is_file())
  def test_modified_command_blocks(self):
   self.run_kit();self.cmd('ship').write_text('prompt = "edited"\n',encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit('data-developer')

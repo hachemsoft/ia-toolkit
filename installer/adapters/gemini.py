@@ -10,7 +10,8 @@ import tempfile
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (ROOT, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes,
+from ..core import (LIVE_PROMPT, network_problem, ROOT, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
+                    rename_references, renamed_skill_file, renamed_notice, kit_name,
                     digest, merge_defaults, run_timed,
                     record_auto_friction, _ts)
 
@@ -67,25 +68,10 @@ def kit_hook_groups(groups):
     """Indexes of the hook groups added by the kit in a settings list."""
     return [i for i,g in enumerate(groups) if isinstance(g,dict) and any(isinstance(h,dict) and str(h.get('name','')).startswith('ai-kit-') for h in g.get('hooks',[]))]
 
-LIVE_PROMPT = 'Reply with OK only.'
-
-def network_problem(output):
-    """Network, proxy or certificate failure in the output: the installation is complete, access to the model is what fails.
-    The fixes respect the company network: never bypass the proxy, never disable certificate checks."""
-    if re.search(r'Proxy Authentication Required|status: 407|"code": 407', output):
-        return ('The company proxy asks for authentication (HTTP 407).',
-                'Ask IT how command-line tools authenticate to the proxy on your workstation; the CLI uses the proxy set in HTTPS_PROXY.')
-    if re.search(r'SELF_SIGNED_CERT_IN_CHAIN|UNABLE_TO_GET_ISSUER_CERT|UNABLE_TO_VERIFY_LEAF_SIGNATURE|self[- ]signed certificate in certificate chain|unable to get local issuer certificate', output, re.I):
-        return ('The company network inspects HTTPS and Gemini (Node.js) does not know the company root certificate.',
-                'Ask IT for the company root certificate and how to declare it (Node.js reads it from NODE_EXTRA_CA_CERTS). Never disable certificate checks.')
-    if re.search(r'ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|fetch failed|getaddrinfo|socket hang up', output):
-        return ('Gemini cannot reach the Google APIs: no network, or the network blocks them.',
-                'The kit itself is installed and works offline. Connect to the network; behind a company proxy, the CLI uses the proxy set by IT (HTTPS_PROXY); if it is still blocked, ask IT to allow the Google API hosts (googleapis.com) for Gemini CLI.')
-    return None
 
 def diagnose_live(returncode, output, timed_out, settings):
     """A one-sentence diagnosis and the fix, from the output of a real call to Gemini."""
-    network = network_problem(output)
+    network = network_problem(output, 'Gemini (Node.js)', 'the Google APIs', 'the Google API hosts (googleapis.com)')
     if network:
         return network
     if timed_out:
@@ -232,28 +218,53 @@ def install(p: Plan) -> None:
                 p.writes[context_file] = (remaining+'\n').encode('utf-8')
             else:
                 p.deletes.append(context_file)
+    names = skill_names(p)
+    commands = {c['name']: free_name(c['name'], lambda n: gemini/'commands'/(n+'.toml'), lambda n: '.gemini/commands/'+n+'.toml', p.old_files,
+                                     skill_prefix(p.overrides), 'command') for c in p.commands}
+    mapping = {**{o: n for o, n in names.items() if o != n}, **{o: n for o, n in commands.items() if o != n}}
+    p.adapter_data.setdefault(NAME, {})['mapping'] = mapping
     write_skills(p)
     for command in p.commands:
-        p.managed_write(gemini/'commands'/(command['name']+'.toml'), gemini_command_toml(command).encode('utf-8'), 'Command')
+        text = gemini_command_toml({**command, 'prompt': rename_references(command['prompt'], mapping)})
+        p.managed_write(gemini/'commands'/(commands[command['name']]+'.toml'), text.encode('utf-8'), 'Command')
+    notice = renamed_notice(LABEL, names, commands)
+    if notice:
+        p.notices.append(notice)
     for agent, definition in p.agents:
         name = 'ai-kit-'+agent
         data = agent_markdown(p, agent, definition)
         p.managed_write(gemini/'agents'/(name+'.md'), data, 'Agent')
         p.agent_markdown[name] = data
 
+def skill_names(p: Plan) -> dict:
+    """Each kit skill's name in ~/.gemini/skills (shared by Gemini and agy): its own, or prefixed when one of the person's
+    skills already has it. Computed once per installation."""
+    shared = p.adapter_data.setdefault('gemini-skills', {})
+    if 'names' not in shared:
+        root, prefix = p.home/'.gemini'/'skills', skill_prefix(p.overrides)
+        shared['names'] = {s: free_name(s, lambda n: root/n, lambda n: '.gemini/skills/'+n, p.old_files, prefix, 'skill') for s in p.selected}
+    return shared['names']
+
 def write_skills(p: Plan) -> None:
     """Profile skills in ~/.gemini/skills, a folder read by Gemini and by agy."""
+    names = skill_names(p)
+    mapping = {o: n for o, n in names.items() if o != n}
     for skill, source in p.skill_sources:
         for src in source.rglob('*'):
             if src.is_file():
-                p.managed_write(p.home/'.gemini'/'skills'/skill/src.relative_to(source), p.skill_file(skill, source, src), 'Skill')
+                data = renamed_skill_file(p.skill_file(skill, source, src), src, source, mapping, names[skill] if names[skill] != skill else None)
+                p.managed_write(p.home/'.gemini'/'skills'/names[skill]/src.relative_to(source), data, 'Skill')
 
-def agent_markdown(p: Plan, agent: str, definition: dict) -> bytes:
-    """Agent in Markdown with front matter, shared by Gemini and agy."""
+def agent_markdown(p: Plan, agent: str, definition: dict, tool_names=None) -> bytes:
+    """Agent in Markdown with front matter, the format of Gemini and agy; tool_names translates the kit's tool names
+    (Gemini's) into the CLI's own, one kit tool giving one or more."""
     agent_defaults = read_json(ROOT/'agents/defaults.json')
+    tools = definition.get('tools', agent_defaults['tools'])
+    if tool_names:
+        tools = list(dict.fromkeys(t for tool in tools for t in tool_names.get(tool, [tool])))
     # Identifiers are validated slugs; a JSON string is also a valid YAML string.
     header = ['---', 'name: ai-kit-'+agent, 'description: '+json.dumps(definition['description'], ensure_ascii=False),
-              'kind: local', 'tools: '+json.dumps(definition.get('tools', agent_defaults['tools'])),
+              'kind: local', 'tools: '+json.dumps(tools),
               'max_turns: '+str(definition.get('max_turns', agent_defaults['max_turns']))]
     header += ['timeout_mins: '+str(definition.get('timeout_mins', agent_defaults['timeout_mins'])), '---']
     return ('\n'.join(header)+'\n\n'+p.agent_body(definition)).encode('utf-8')
@@ -396,9 +407,12 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     skills = installed_skills(home, state)
     installed_commands = sorted(rel.split('/')[2][:-5] for rel in state.get('files',{}) if rel.startswith('.gemini/commands/'))
     by_name = {c['name']: c for c in ctx.load_commands()}
-    for name in installed_commands:
-        missing = [s for s in by_name.get(name,{}).get('skills',[]) if s not in skills]
-        status(name in by_name and not missing,'Command /'+name+': skills present'+(' (missing '+', '.join(missing)+')' if missing else ''))
+    # Installed names may carry the prefix given on a collision with one of the person's own: compare by kit name.
+    present_skills = {kit_name(s, set((state.get('installed') or {}).get('skills', []))) for s in skills}
+    for installed_name in installed_commands:
+        name = kit_name(installed_name, by_name)
+        missing = [s for s in by_name.get(name,{}).get('skills',[]) if s not in present_skills]
+        status(name in by_name and not missing,'Command /'+installed_name+': skills present'+(' (missing '+', '.join(missing)+')' if missing else ''))
     print('[Info] '+str(len(skills))+' skills, '+str(len(installed_commands))+' commands; skill descriptions injected on every turn: '+str(skill_description_weight(home, skills))+' bytes.')
     shadowed = [s for s in skills if (home/'.agents/skills'/s/'SKILL.md').is_file()]
     status(not shadowed,'No kit skill shadowed by a copy in ~/.agents/skills'+(' (shadowed: '+', '.join(shadowed)+')' if shadowed else ''))

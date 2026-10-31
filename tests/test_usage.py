@@ -53,10 +53,13 @@ class ObservabilityTests(unittest.TestCase):
   import time;now=int(time.time())
   lines=[json.dumps({'session_id':'s'+str(s),'ts':now,'text':('/intent idea' if p==0 else 'plain request '+str(p))}) for s in range(sessions) for p in range(prompts_each)]
   h=self.home/'.codex/history.jsonl';h.write_text('\n'.join(lines),encoding='utf-8')
- def test_ten_codex_sessions_fifty_prompts_without_skill_events_recommend_nothing(self):
+ def test_ten_sessions_of_a_cli_that_does_not_see_skills_recommend_nothing(self):
+  # Every adapter now observes skills and agents; a CLI that only saw prompts must still recommend nothing.
+  from unittest import mock
+  from installer.adapters import codex
   self.codex_history(10,5)
   out=io.StringIO();rep_file=self.home/'r.json'
-  with contextlib.redirect_stdout(out):usage(self.home,as_json=rep_file)
+  with mock.patch.object(codex,'OBSERVES',{'prompt'}),contextlib.redirect_stdout(out):usage(self.home,as_json=rep_file)
   rep=json.loads(rep_file.read_text(encoding='utf-8'));text=out.getvalue()
   self.assertEqual((rep['sessions'],rep['prompts']),(10,50));self.assertTrue(rep['enough_data'])
   self.assertEqual(rep['core_candidates_to_demote'],[]);self.assertEqual(rep['unused_skills'],[]);self.assertEqual(rep['unused_agents'],[])

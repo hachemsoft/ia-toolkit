@@ -10,25 +10,19 @@ import os
 from pathlib import Path
 import re
 import shutil
-import subprocess
-import tempfile
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (ROOT, USER_CONTEXT, KitError, digest, hook_command, split_block, place_block, json_bytes, read_json, run_timed,
-                    record_auto_friction, _ts)
+from ..core import (ROOT, USER_CONTEXT, KitError, digest, hook_command, split_block, place_block, json_bytes, read_json, _ts, live_call, LIVE_PROMPT, DEFAULT_PREFIX, skill_prefix, rename_references, renamed_skill_file)
 
 CLAUDE_DIR = '.claude'
 CLAUDE_MD = ('<!-- ai-kit:start : block managed by the AI Kit; do not edit here (30_USER.md, overrides.json, then update) -->', '<!-- ai-kit:end -->')
-DEFAULT_PREFIX = 'ai-kit-'
-PREFIX = re.compile(r'([a-z0-9][a-z0-9-]{0,19})?')
 # Skills Claude Code itself ships: a kit skill installed without a prefix must not take one of these names.
 BUNDLED_SKILLS = {'code-review', 'security-review', 'simplify', 'init', 'loop', 'schedule', 'claude-api', 'update-config',
                   'keybindings-help', 'fewer-permission-prompts', 'run', 'plugin-authoring', 'workflow-authoring'}
 # Tools of the kit's agent definitions, in Claude Code's names.
 TOOL_NAMES = {'read_file': 'Read', 'grep_search': 'Grep', 'list_directory': 'Glob', 'glob': 'Glob', 'run_shell_command': 'Bash'}
 KIT_HOOK = re.compile(r'[\\/]\.ai-kit[\\/]hooks[\\/]')
-LIVE_PROMPT = 'Reply with OK only.'
 
 # --- Adapter interface ---------------------------------------------------------------------------------------------
 NAME = 'claude'
@@ -44,32 +38,6 @@ BUILTIN_COMMANDS = {'add-dir', 'advisor', 'agents', 'alias', 'autocompact', 'bra
                     'loops', 'mcp', 'memory', 'model', 'permissions', 'plan', 'plugin', 'recap', 'reload-plugins', 'reload-skills',
                     'resume', 'rewind', 'skills', 'status', 'statusline', 'tasks', 'theme', 'todos', 'usage', 'vim', 'voice',
                     'code-review', 'security-review', 'simplify', 'loop', 'schedule'}
-
-
-def skill_prefix(overrides):
-    value = overrides.get('skill_prefix', DEFAULT_PREFIX)
-    if not isinstance(value, str) or not PREFIX.fullmatch(value):
-        raise KitError('skill_prefix must be up to 20 lowercase letters, digits or dashes (for example "ai-kit-" or "kit-"), or "" for none.')
-    return value
-
-
-def renamer(names, prefix):
-    """Rewrites the references to the given skills in a kit text: `tdd`, "tdd", /tdd, the tdd skill → the prefixed names."""
-    if not prefix or not names:
-        return lambda text: text
-    alternatives = '|'.join(re.escape(n) for n in sorted(names, key=len, reverse=True))
-    pattern = re.compile(r'(?<![\w/.-])(`|"|/)?(' + alternatives + r')(?![\w-])(?=(`|"|\s+skill\b)?)')
-    def replace(match):
-        opener, name, closer = match.group(1), match.group(2), match.group(3)
-        if not opener and not closer:
-            return match.group(0)  # a plain word: the block of CLAUDE.md tells how to read it
-        return (opener or '') + prefix + name
-    return lambda text: pattern.sub(replace, text)
-
-
-def front_matter_name(text, name):
-    """The name: line of a skill's front matter, whatever the line endings (a Windows checkout has CRLF)."""
-    return re.sub(r'^(---\r?\n(?:.*\r?\n)*?)name:[^\r\n]*(\r?\n)', lambda m: m.group(1)+'name: '+name+m.group(2), text, count=1)
 
 
 def command_text(command, prompt):
@@ -132,17 +100,14 @@ def install(p: Plan) -> None:
         if taken:
             raise KitError('skill_prefix is empty, but these kit skills have the name of a skill already in ~/.claude/skills or shipped with'
                            ' Claude Code: '+', '.join(taken)+'. Set a prefix (for example "ai-kit-") or rename your own skills.')
-    rewrite = renamer(p.selected, prefix)
+    mapping = {s: prefix+s for s in p.selected} if prefix else {}
+    def rewrite(text):
+        return rename_references(text, mapping)
     for skill, source in p.skill_sources:
         for src in source.rglob('*'):
             if not src.is_file():
                 continue
-            data = p.skill_file(skill, source, src)
-            if src.suffix == '.md':
-                text = rewrite(data.decode('utf-8'))
-                if src == source/'SKILL.md':
-                    text = front_matter_name(text, prefix+skill)
-                data = text.encode('utf-8')
+            data = renamed_skill_file(p.skill_file(skill, source, src), src, source, mapping, prefix+skill)
             p.managed_write(claude/'skills'/(prefix+skill)/src.relative_to(source), data, 'Claude Code skill')
     renamed = {}
     for command in p.commands:
@@ -314,26 +279,17 @@ def doctor_hint():
     return 'Claude Code: check /memory, /skills, /agents, /hooks and /mcp in a session.' if shutil.which(COMMAND) else None
 
 
+LIVE_RULES = (
+    (r'Invalid API key|Please run /login|not logged in|OAuth token (has )?expired|authentication_error|401', 'Claude Code is not signed in, or its sign-in expired.', 'Start claude and run /login, following your IT procedure (Claude account, API key, Bedrock or Vertex).'),
+    (r'Credit balance is too low|credit', 'No credit left on the account Claude Code uses.', 'Top up the account, or sign in with the account your organization provides.'),
+    (r'rate.?limit|429|usage limit', 'Claude Code usage limit reached.', 'Wait for the limit to reset, or ask for a higher plan.'),
+    (r'overloaded|529', 'The service is overloaded for now.', 'Try again in a few minutes; nothing to change on the workstation.'),
+    (r'model[^\n]{0,40}(not found|not available|invalid)|invalid model', 'The model Claude Code asked for is not available on your access.', 'Choose another one with /model in claude.'),
+)
+
 def live(home):
-    """Real call to the model (doctor --live only), with a generic diagnosis; 0 if Claude Code answers."""
-    with tempfile.TemporaryDirectory() as tmp:
-        try:
-            proc = run_timed([COMMAND, '-p', LIVE_PROMPT, '--max-turns', '1'], 90, cwd=tmp, text=True, encoding='utf-8', stdin=subprocess.DEVNULL)
-            output, code = proc.stdout+'\n'+proc.stderr, proc.returncode
-        except subprocess.TimeoutExpired:
-            output, code = '', None
-        except OSError as exc:
-            output, code = str(exc), None
-    if code == 0 and 'OK' in output:
-        print('[OK] Real call to the model: Claude Code answers.')
-        return 0
-    diagnostic = ('Claude Code did not answer in time.' if code is None and not output else
-                  'Claude Code did not answer as expected (code '+str(code)+').')
-    print('[Check] '+diagnostic)
-    print('        Fix: start claude and sign in (/login) following your IT procedure; behind a company proxy, Claude Code uses HTTPS_PROXY.'
-          ' Never disable certificate checks.')
-    record_auto_friction(home, diagnostic, NAME)
-    return 1
+    """doctor --live: one real call with claude -p; 0 when the model answers."""
+    return live_call(home, NAME, LABEL, [COMMAND, '-p', LIVE_PROMPT], LIVE_RULES)
 
 
 COMMAND_TAG = re.compile(r'<command-name>(/[^<]+)</command-name>(?:.*?<command-args>(.*?)</command-args>)?', re.S)

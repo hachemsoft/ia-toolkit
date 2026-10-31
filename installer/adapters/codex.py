@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (USER_CONTEXT, KitError, digest, hook_command, split_block, place_block, command_skill_text, redact, user_context_refusal)
+from ..core import (USER_CONTEXT, KitError, digest, hook_command, split_block, place_block, command_skill_text, redact, user_context_refusal,
+                    skill_prefix, free_name, rename_references, renamed_skill_file, renamed_notice, _ts, live_call, LIVE_PROMPT, skills_read)
 
 CODEX_DIR = '.codex'
 # Managed block markers: no path, so they never change when a folder is renamed.
@@ -70,10 +71,13 @@ def copied_user_text(block):
         return ''
     return block.split(USER_COPY, 1)[1].rsplit(CODEX_MD[1], 1)[0].strip()
 
-def codex_context_block(kit_text, practice_texts, user_text):
+def codex_context_block(kit_text, practice_texts, user_text, renamed=None):
     lines = [CODEX_MD[0], '# AI Kit (Codex)', '',
-             'In Codex, the kit commands are skills: they are called with `$intent`, `$build`, `$test`… (`/skills` lists them). Wherever this context or a skill writes `/intent`, read `$intent`, and in your answers always write kit commands with `$` (`$intent`), never with `/`.',
-             '', kit_text.strip(), '']
+             'In Codex, the kit commands are skills: they are called with `$intent`, `$build`, `$test`… (`/skills` lists them). Wherever this context or a skill writes `/intent`, read `$intent`, and in your answers always write kit commands with `$` (`$intent`), never with `/`.']
+    if renamed:
+        lines.append('Installed under another name, because one of the person\'s own skills already has the name: '
+                     + ', '.join('`'+old+'` is `'+new+'`' for old, new in sorted(renamed.items()))+'.')
+    lines += ['', kit_text.strip(), '']
     lines += [t.strip()+'\n' for t in practice_texts]
     if user_text.strip():
         lines += [USER_COPY, user_text.strip(), '']
@@ -105,8 +109,9 @@ COMMAND = 'codex'
 HOME_DIR = CODEX_DIR
 BUILTIN_COMMANDS = {'skills', 'model', 'review', 'init', 'new', 'compact', 'diff', 'mention', 'status', 'mcp', 'approvals', 'logout', 'quit', 'exit', 'hooks', 'agents', 'resume'}
 MANAGED_PREFIXES = (CODEX_DIR+'/skills/', CODEX_DIR+'/ai-kit/')
-AGENT_TOOLS = 'instruction'
-OBSERVES = {'prompt'}  # history.jsonl holds the typed prompts only: skills and agents are not visible  # a role file holds developer_instructions only: the session's sandbox and approvals apply
+AGENT_TOOLS = 'instruction'  # a role file holds developer_instructions only: the session's sandbox and approvals apply
+# history.jsonl holds the prompts; the session files (~/.codex/sessions) the tool calls: skill files read, agents spawned, errors.
+OBSERVES = {'prompt', 'skill', 'agent', 'error'}
 
 def is_managed(rel):
     return rel.startswith(MANAGED_PREFIXES)
@@ -125,18 +130,31 @@ codex_present = present
 def install(p: Plan) -> None:
     """Skills (with native "on command only"), command skills and agent roles."""
     codex = p.home/CODEX_DIR
+    root, prefix = codex/'skills', skill_prefix(p.overrides)
+    def free(name, what):
+        return free_name(name, lambda n: root/n, lambda n: CODEX_DIR+'/skills/'+n, p.old_files, prefix, what)
+    names = {s: free(s, 'skill') for s in p.selected}
+    commands = {c['name']: free(c['name'], 'command') for c in p.commands if c['name'] not in p.selected}
+    mapping = {**{o: n for o, n in names.items() if o != n}, **{o: n for o, n in commands.items() if o != n}}
     for skill, source in p.skill_sources:
+        target = root/names[skill]
         for src in source.rglob('*'):
             if src.is_file():
-                p.managed_write(codex/'skills'/skill/src.relative_to(source), p.skill_file(skill, source, src), 'Codex skill')
+                data = renamed_skill_file(p.skill_file(skill, source, src), src, source, mapping, names[skill] if names[skill] != skill else None)
+                p.managed_write(target/src.relative_to(source), data, 'Codex skill')
         # Codex honours "on command only" through agents/openai.yaml.
         if explicit_only((source/'SKILL.md').read_text(encoding='utf-8')) and not (source/'agents'/'openai.yaml').exists():
-            p.managed_write(codex/'skills'/skill/'agents'/'openai.yaml', CODEX_EXPLICIT_ONLY.encode('utf-8'), 'Codex skill')
+            p.managed_write(target/'agents'/'openai.yaml', CODEX_EXPLICIT_ONLY.encode('utf-8'), 'Codex skill')
     for command in p.commands:
         if command['name'] in p.selected:
             continue  # a skill with the same name serves as the command
-        p.managed_write(codex/'skills'/command['name']/'SKILL.md', command_skill_text(command).encode('utf-8'), 'Codex command skill')
-        p.managed_write(codex/'skills'/command['name']/'agents'/'openai.yaml', CODEX_EXPLICIT_ONLY.encode('utf-8'), 'Codex command skill')
+        named = {**command, 'name': commands[command['name']], 'prompt': rename_references(command['prompt'], mapping)}
+        p.managed_write(root/named['name']/'SKILL.md', command_skill_text(named).encode('utf-8'), 'Codex command skill')
+        p.managed_write(root/named['name']/'agents'/'openai.yaml', CODEX_EXPLICIT_ONLY.encode('utf-8'), 'Codex command skill')
+    p.adapter_data.setdefault(NAME, {})['renamed'] = mapping
+    notice = renamed_notice(LABEL, names, commands, '$')
+    if notice:
+        p.notices.append(notice)
     agents = p.adapter_data.setdefault(NAME, {}).setdefault('agents', {})
     for agent, definition in p.agents:
         name = 'ai-kit-'+agent
@@ -165,7 +183,7 @@ def finalize(p: Plan, active: bool = True) -> None:
                                  ' until the file is fixed and update runs again. The kit configuration itself is installed.')
             else:
                 user_text = data.decode('utf-8')
-            block = codex_context_block(p.kit_text, p.practice_texts, user_text)
+            block = codex_context_block(p.kit_text, p.practice_texts, user_text, p.adapter_data.get(NAME, {}).get('renamed'))
         elif active:
             if p.enabled_hooks and re.search(r'^\s*(hooks\.)?PreToolUse\s*=', outside, re.M):
                 raise KitError('~/.codex/config.toml already defines hooks.PreToolUse in another form: the kit cannot add its guardrails without rewriting it.')
@@ -239,6 +257,16 @@ def hook_approval(home):
                   ' which may belong to other hooks). In Codex, /hooks shows what is approved; after an update that changed a'
                   ' guardrail command, Codex asks again ("Hooks need review"): answer Trust.')
 
+LIVE_RULES = (
+    (r'Not logged in|codex login|401|Unauthorized|invalid_api_key', 'Codex is not signed in, or its sign-in expired.', 'Run codex login following your IT procedure (ChatGPT account or API key).'),
+    (r'usage limit|429|rate limit|quota', 'Codex quota or usage limit reached.', 'Wait for the limit to reset, or ask for a higher plan or quota.'),
+    (r'model[^\n]{0,40}(not found|does not exist|not supported)|model_not_found', 'The model Codex asked for is not available on your access.', 'Choose another one with /model in codex, or in ~/.codex/config.toml (outside the kit block).'),
+)
+
+def live(home):
+    """doctor --live: one real call with codex exec, read-only and ephemeral; 0 when the model answers."""
+    return live_call(home, NAME, LABEL, [COMMAND, 'exec', '--skip-git-repo-check', '--ephemeral', '--color', 'never', '-s', 'read-only', LIVE_PROMPT], LIVE_RULES)
+
 def history(home, state):
     """~/.codex/history.jsonl: one line per prompt (session_id, ts in seconds, text); commands typed as $intent or /intent."""
     path = home/CODEX_DIR/'history.jsonl'
@@ -253,3 +281,39 @@ def history(home, state):
         if not isinstance(stamp, (int, float)):
             continue
         yield {'kind': 'prompt', 'session': ('codex:'+str(entry['session_id'])) if entry.get('session_id') else None, 'ts': stamp/1000 if stamp > 1e12 else stamp, 'text': str(entry.get('text', '')).strip()}
+    yield from session_events(home, state)
+
+def session_events(home, state):
+    """~/.codex/sessions/**/rollout-*.jsonl: a kit skill counts when a tool call reads its SKILL.md, an agent when
+    spawn_agent names an ai-kit-* role; error events count as errors."""
+    kit_skills = set((state.get('installed') or {}).get('skills', []))
+    for path in sorted((home/CODEX_DIR/'sessions').glob('**/rollout-*.jsonl')):
+        try:
+            lines = path.read_text(encoding='utf-8', errors='replace').splitlines()
+        except OSError:
+            continue
+        session = 'codex:'+path.stem.split('-', 6)[-1]
+        for line in lines:
+            try:
+                entry = json.loads(line)
+            except ValueError:
+                continue
+            payload = entry.get('payload') if isinstance(entry, dict) else None
+            if not isinstance(payload, dict):
+                continue
+            ts, kind = _ts(entry.get('timestamp')), payload.get('type')
+            if entry.get('type') == 'session_meta' and payload.get('id'):
+                session = 'codex:'+str(payload['id'])
+            elif entry.get('type') == 'event_msg' and kind in ('error', 'stream_error'):
+                yield {'kind': 'error', 'session': session, 'ts': ts}
+            elif kind in ('function_call', 'custom_tool_call', 'local_shell_call'):
+                call = str(payload.get('arguments') or payload.get('input') or payload.get('action') or '')
+                if payload.get('name') == 'spawn_agent':
+                    try:
+                        role = str((json.loads(call) or {}).get('agent_type') or '')
+                    except (ValueError, AttributeError):
+                        role = ''
+                    if role.startswith('ai-kit-'):
+                        yield {'kind': 'agent', 'session': session, 'ts': ts, 'name': role}
+                for name in skills_read(call, kit_skills):
+                    yield {'kind': 'skill', 'session': session, 'ts': ts, 'name': name}

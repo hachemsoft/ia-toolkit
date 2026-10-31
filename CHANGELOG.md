@@ -8,6 +8,13 @@ Authentication and model left to each CLI:
 - Agents no longer get a `model:` header: they inherit the session model on every CLI (the `capability` field of the agents is gone).
 - `doctor --live` still diagnoses Gemini's authentication failures, and now says what to set in the CLI or its own files, never in `overrides.json`.
 
+The same on every CLI:
+- A name already taken no longer stops the installation: when one of your skills or commands has the name of a kit skill or command, on Gemini, agy or Codex, yours is kept and the kit's is installed as `<prefix><name>` (`skill_prefix`, `ai-kit-` by default, as on Claude Code); the kit's texts and the Codex block name it so, and the installer says which. When your skill goes, the next `update` takes the plain name back.
+- `doctor --live` for agy (`agy -p`) and Codex (`codex exec`, read-only, not saved), and a detailed diagnosis for Claude Code: sign-in, quota, credit, model, overload; network, proxy and certificate read the same way for all.
+- `usage` sees the skills and agents on Codex (session files `~/.codex/sessions`, with the errors) and on agy (conversations read read-only).
+- agy agents get their tool list with agy's tool names: a reviewer can no longer write or run the shell there.
+- The matrix lists the limits that come from the CLIs themselves.
+
 ## 0.35.0
 
 Claude Code, the fourth supported CLI, with everything the others get:

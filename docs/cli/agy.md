@@ -24,7 +24,7 @@ And **command skills** in the plugin (`~/.gemini/config/plugins/ai-kit/skills/`)
 
 After installation, restart agy: it discovers a new plugin only at startup.
 
-## Verified on 25 October 2026 on agy 1.4.7
+## Verified on 25 October 2026 on agy 1.4.7 (agent tools and logs read again on 1.4.12)
 
 - `agy plugin validate` passes; `agy plugin list` shows `ai-kit` with the profile agents (6 for a developer, 4 for an analyst), 1 rule, 2 hooks.
 - In print mode, agy quotes word for word the "Priority between layers" section of `00_KIT.md`: path includes work.
@@ -39,8 +39,9 @@ The `protected-paths` guardrail always blocks agent writes to the `ai-kit` plugi
 
 - **Print mode and permissions**: agy drops the whole response as soon as a tool asks for a permission it cannot request. Commands that read the repository (`/intent`, `/explain`, `/test`) therefore fail in `agy -p` until the person has approved read rules in their own agy settings. In interactive mode, agy asks for permission and everything works. The evals runner classifies this case as an infrastructure error, not a behavior failure.
 - **Write tool**: the `protected-paths` guardrail recognizes tools whose name contains `write`, `replace` or `edit` and looks for the path in `TargetFile`, `AbsolutePath`, `file_path` or `path`. To be confirmed on a real agy write call.
-- **Agent `tools` field**: accepted by the validator; its exact effect in agy is not documented.
-- **Logs**: `usage` reads `~/.gemini/antigravity-cli/history.jsonl` (prompts and typed commands); skill activations are not visible in this file.
+- **Agent `tools` field**: read by agy (a field of its agent definitions, 1.4.12); the kit writes it with agy's tool names, translated from the kit's: `view_file` and `read_file`, `grep_search`, `list_dir` and `find_by_name`, `run_command` and `command_status` for the verifier.
+- **Logs**: `usage` reads `~/.gemini/antigravity-cli/history.jsonl` (prompts and typed commands) and, read-only, the conversations in `conversations/*.db`: the kit skills whose `SKILL.md` is read and the `ai-kit-*` agents invoked (`invoke_subagent`). The format is agy's own and undocumented: a conversation it cannot read is skipped.
+- **`doctor --live`**: one real call with `agy -p`, which may be billed; the failure is explained (sign-in, quota, API not enabled, network, proxy, certificate).
 
 ## Authentication: Google account or Google Cloud project
 
@@ -60,4 +61,4 @@ agy asks for approval before a shell command or a write, and offers to remember 
 
 ## Troubleshooting
 
-`doctor` validates the plugin and reports kit skills hidden by copies in `~/.agents/skills`. Command skills can collide with older personal skills of the same name (`review`, `diagnose`, `test`…): move or rename them; `update` refuses to overwrite what it does not manage.
+`doctor` validates the plugin and reports kit skills hidden by copies in `~/.agents/skills`. When one of your personal skills already has the name of a kit skill or command skill (`review`, `diagnose`, `test`…), yours is kept and the kit's is installed as `ai-kit-<name>` (`skill_prefix`); the installer says which.

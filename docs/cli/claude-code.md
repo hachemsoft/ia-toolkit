@@ -19,7 +19,7 @@ A kit entry edited by hand (the block, a guardrail group, an MCP entry) stops `u
 
 ## The prefix
 
-`skill_prefix` in `~/.ai-kit/overrides.json` (or in the organization's or the team's defaults) sets it: `"ai-kit-"` by default, up to 20 lowercase letters, digits or dashes. `""` installs the skills without a prefix; the installer then refuses if a name collides (a skill shipped with Claude Code, one of yours) and lists them. Changing the prefix renames the kit's files at the next `update`; the agents stay `ai-kit-<name>`.
+`skill_prefix` in `~/.ai-kit/overrides.json` (or in the organization's or the team's defaults) sets it: `"ai-kit-"` by default, up to 20 lowercase letters, digits or dashes. The other CLIs use the same prefix, but only for a name already taken by one of your skills or commands. `""` installs the skills without a prefix; the installer then refuses if a name collides (a skill shipped with Claude Code, one of yours) and lists them. Changing the prefix renames the kit's files at the next `update`; the agents stay `ai-kit-<name>`.
 
 ## The repository's AGENTS.md
 

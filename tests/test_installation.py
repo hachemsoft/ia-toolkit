@@ -21,10 +21,12 @@ class InstallationTests(unittest.TestCase):
   self.run_kit();self.write('.gemini/skills/sql-review/SKILL.md','personal')
   with self.assertRaises(KitError):self.run_kit('data-developer')
   self.assertEqual(read_json(self.path('.ai-kit/state.json'))['profile'],'data-analyst')
- def test_existing_skill_blocks(self):
+ def test_existing_skill_kept_and_the_kits_renamed(self):
+  # 0.36: one of the person's skills with a kit skill's name is kept; the kit's is installed with the prefix.
   self.write('.gemini/skills/sql-review/SKILL.md','third-party')
-  with self.assertRaises(KitError):self.run_kit()
-  self.assertFalse(self.path('.gemini/settings.json').exists())
+  self.run_kit()
+  self.assertEqual(self.path('.gemini/skills/sql-review/SKILL.md').read_text(encoding='utf-8'),'third-party')
+  self.assertIn('name: ai-kit-sql-review',self.path('.gemini/skills/ai-kit-sql-review/SKILL.md').read_text(encoding='utf-8'))
  def test_dry_run(self):
   self.run_kit(dry=True);self.assertEqual(list(self.home.iterdir()),[])
  def test_invalid_json(self):

@@ -42,7 +42,7 @@ How far the tool list holds depends on the CLI (the `AGENT_TOOLS` contract of ea
 | CLI | Agent tool list | What it means |
 | --- | --- | --- |
 | Gemini CLI | native | the agent only gets the tools listed in its header: a reviewer cannot write or run the shell |
-| Antigravity CLI | instruction | the header carries the list, but agy applying it is not verified: the prompt says "read only", nothing technical prevents a write |
+| Antigravity CLI | native | the header's `tools` carry agy's tool names (`view_file`, `grep_search`, `list_dir`, `run_command`): a reviewer cannot write |
 | Codex CLI | instruction | a role holds instructions only; the session's sandbox and approvals apply, as for the main agent |
 | Claude Code | native | the agent only gets the tools in its header (`Read`, `Grep`, plus `Glob` and `Bash` for the verifier) |
 

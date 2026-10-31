@@ -31,7 +31,9 @@ Codex runs a hook only after it has been approved. The kit installs one by defau
 
 - **`~/.codex/AGENTS.override.md`**: if it exists, Codex reads it instead of `AGENTS.md`, and the kit context is ignored; `doctor` reports it.
 - **Repository context**: Codex natively reads the `AGENTS.md` of the repository and its folders, as the kit organizes it.
-- **Logs read by `usage`**: `~/.codex/history.jsonl` (typed prompts, `$intent` or `/intent` commands).
+- **Logs read by `usage`**: `~/.codex/history.jsonl` (typed prompts, `$intent` or `/intent` commands) and the session files `~/.codex/sessions/**/rollout-*.jsonl`: the kit skills whose `SKILL.md` is read, the `ai-kit-*` roles spawned, the errors.
+- **Name already taken**: when one of your skills in `~/.codex/skills/` has the name of a kit skill or command, yours is kept and the kit's is installed as `ai-kit-<name>` (`skill_prefix`); the kit block says which name to type.
+- **`doctor --live`**: one real call with `codex exec` in a read-only sandbox, without saving the session; may be billed. The failure is explained (sign-in, quota, model, network, proxy, certificate).
 - **Evals**: `python3 evals/run.py --cli codex` runs `codex exec` in a read-only sandbox; `/intent` in a case becomes `$intent`.
 
 ## Codex troubleshooting
