@@ -61,7 +61,9 @@ class MeCommandTests(unittest.TestCase):
     def test_me_interviews_then_writes_only_with_agreement(self):
         me = next(c for c in load_commands() if c['name'] == 'me')
         prompt = me['prompt']
-        for needle in ('Facts first, never asked', 'options A, B, C and your recommendation', 'whether it is a passion',
+        # Simple questions (feedback of a first real run): short, everyday words, examples in the options, small batches.
+        for needle in ('Facts first, never asked', 'twelve words at most', 'a concrete example after a dash', 'at most four',
+                       'question tool', 'A topic you love to dig into, even as a beginner?', 'Reviews simpler, more teaching',
                        'By situation', 'no opinion about tools', 'At most 20 lines', 'before and after', 'With their agreement only',
                        'run update first'):
             self.assertIn(needle, prompt)
