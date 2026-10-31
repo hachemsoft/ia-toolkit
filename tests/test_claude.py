@@ -75,6 +75,11 @@ class InstallTests(Base):
         self.assertIn('$ARGUMENTS', build)
         self.assertNotIn('{{args}}', build)
 
+    def test_front_matter_renamed_with_windows_line_endings(self):
+        text = '---\r\nname: implement\r\ndescription: "x"\r\n---\r\nbody\r\n'
+        self.assertEqual(claude.front_matter_name(text, 'ai-kit-implement'), text.replace('name: implement', 'name: ai-kit-implement'))
+        self.assertEqual(claude.front_matter_name(text.replace('\r\n', '\n'), 'k-x'), '---\nname: k-x\ndescription: "x"\n---\nbody\n')
+
     def test_no_unprefixed_skill_reference_is_left_in_backticks_or_quotes(self):
         self.run_kit()
         names = read_json(self.home/'.ai-kit/state.json')['installed']['skills']

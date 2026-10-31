@@ -68,7 +68,8 @@ def renamer(names, prefix):
 
 
 def front_matter_name(text, name):
-    return re.sub(r'^(---\n(?:.*\n)*?)name:[^\n]*\n', lambda m: m.group(1)+'name: '+name+'\n', text, count=1)
+    """The name: line of a skill's front matter, whatever the line endings (a Windows checkout has CRLF)."""
+    return re.sub(r'^(---\r?\n(?:.*\r?\n)*?)name:[^\r\n]*(\r?\n)', lambda m: m.group(1)+'name: '+name+m.group(2), text, count=1)
 
 
 def command_text(command, prompt):
