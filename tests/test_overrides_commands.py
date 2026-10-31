@@ -1,4 +1,4 @@
-import contextlib, io, json, tempfile, unittest
+import contextlib, io, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply
 from installer.core import KitError

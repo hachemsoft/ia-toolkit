@@ -158,6 +158,11 @@ def parse_frontmatter(text):
             meta[key.strip()] = value.strip("'")
     return meta, match.group(2)
 
+def load_agent(path):
+    """agents/internal/<category>/<name>.md: the agent's settings in the front matter, its instructions as the body."""
+    meta, body = parse_frontmatter(Path(path).read_text(encoding='utf-8'))
+    return {**meta, 'instructions': body.strip()}
+
 DEFAULT_PREFIX = 'ai-kit-'
 PREFIX = re.compile(r'([a-z0-9][a-z0-9-]{0,19})?')
 

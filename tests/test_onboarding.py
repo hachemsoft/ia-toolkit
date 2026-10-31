@@ -2,7 +2,6 @@
 CLIs are simulated (shutil.which); no call to a model or an MCP server."""
 import contextlib
 import io
-import json
 import re
 import tempfile
 import unittest

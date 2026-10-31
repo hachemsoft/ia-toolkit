@@ -2,7 +2,6 @@
 installed with the prefix (skill_prefix, ai-kit- by default), its references rewritten; never a failed installation."""
 import contextlib
 import io
-import json
 from pathlib import Path
 import tempfile
 import unittest

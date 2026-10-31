@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from installer.cli import apply, profile_ids  # noqa: E402
-from installer.toml_files import dump_toml
+from installer.toml_files import dump_toml  # noqa: E402
 
 GOLDEN = ROOT / 'tests' / 'golden' / 'install-snapshot.json'
 IDENTITY = {'email': 'test@example.org', 'name': 'Test', 'source': 'option'}

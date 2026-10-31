@@ -2,7 +2,7 @@ import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply
 from installer.core import KitError, read_json, START, ROOT
-from installer.toml_files import dump_toml, read_toml
+from installer.toml_files import dump_toml
 class InstallationTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory(prefix='kit space é ');self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)

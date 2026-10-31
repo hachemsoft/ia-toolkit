@@ -3,7 +3,6 @@ terminals, and the whole flow (first run, review, back, cancel, menu, uninstall,
 Nothing is applied before Install; Ctrl+C, end of input or an interface error leaves the configuration as it was."""
 import contextlib
 import io
-import json
 import os
 from pathlib import Path
 import re
@@ -14,7 +13,7 @@ from unittest import mock
 from installer import cli, wizard
 from installer.core import read_json
 from installer.ui import Cancelled, PlainUI, libraries
-from installer.toml_files import dump_toml, read_toml
+from installer.toml_files import read_toml
 
 ANSI = re.compile(r'\x1b\[')
 

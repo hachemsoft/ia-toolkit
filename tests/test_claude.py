@@ -16,7 +16,7 @@ from unittest import mock
 from installer import cli, core
 from installer.adapters import claude
 from installer.core import ROOT, KitError, read_json
-from installer.toml_files import dump_toml, read_toml
+from installer.toml_files import dump_toml
 
 H = ROOT/'runtime/hooks'
 PERSONAL_HOOK = {'hooks': [{'type': 'command', 'command': '/usr/local/bin/my-status'}]}

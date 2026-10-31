@@ -109,6 +109,7 @@ class RepoFilesTests(unittest.TestCase):
         root = cli.ROOT
         self.assertFalse(list((root/'profiles').glob('*.json')))
         self.assertFalse((root/'organization.json').exists())
+        self.assertFalse(list((root/'agents'/'internal').rglob('*.json')))  # agents are Markdown, like skills and commands
         for path in (root/'profiles').glob('*.toml'):
             profile = read_toml(path)
             self.assertEqual(profile['id'], path.stem)

@@ -18,8 +18,8 @@ from types import SimpleNamespace
 from datetime import datetime, timezone
 
 from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, read_json, json_bytes, digest,
-                   safe_id, inside, hook_command, load_commands, _ts, friction_id, fixed_frictions, redact, user_context_refusal)
-from .toml_files import read_toml, parse_toml, dump_toml, set_list, set_schema
+                   safe_id, inside, hook_command, load_commands, load_agent, _ts, friction_id, fixed_frictions, redact, user_context_refusal)
+from .toml_files import read_toml, dump_toml, set_list, set_schema
 from .adapters import ADAPTERS
 from .interface import ContextHost, DoctorContext, LiveCheck, Plan
 
@@ -518,7 +518,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         safe_id(agent)
         if agent not in agent_catalog:
             raise KitError('Unknown agent: '+agent)
-        agents.append((agent, read_json(inside(ROOT,agent_catalog[agent]['path']))))
+        agents.append((agent, load_agent(inside(ROOT,agent_catalog[agent]['path']))))
     hooks_dir = kit/'hooks'  # scripts shared by all CLIs, like kit/bin/friction.py
     hook_manifest = read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})
     wanted_hooks = overrides.get('hooks', {})

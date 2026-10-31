@@ -1,7 +1,6 @@
 """organization.json: organization defaults merged with each person's overrides, team as its own dimension, update that pulls."""
 import contextlib
 import io
-import json
 import os
 import re
 import shutil

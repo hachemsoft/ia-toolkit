@@ -10,7 +10,7 @@ from unittest import mock
 
 from installer import cli
 from installer.adapters import codex
-from installer.core import read_json, json_error, KitError
+from installer.core import read_json, json_error, KitError, load_agent
 
 SECRET = 'api_key = abcdefghijklmnop1234'  # fake, matches the detector
 
@@ -187,8 +187,8 @@ class AgentContractTests(unittest.TestCase):
             self.assertIn(adapter.AGENT_TOOLS, ('native', 'instruction', 'unavailable'), adapter.NAME)
 
     def test_verifier_may_run_its_checks_and_reviewers_only_read(self):
-        verifier = read_json(cli.ROOT/'agents/internal/common/verifier.json')
-        reviewer = read_json(cli.ROOT/'agents/internal/development/code-reviewer.json')
+        verifier = load_agent(cli.ROOT/'agents/internal/common/verifier.md')
+        reviewer = load_agent(cli.ROOT/'agents/internal/development/code-reviewer.md')
         self.assertIn('run only the commands', cli.agent_instruction(verifier))
         self.assertNotIn('run no command', cli.agent_instruction(verifier))
         self.assertIn('run no command', cli.agent_instruction(reviewer))

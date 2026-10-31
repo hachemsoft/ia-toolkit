@@ -1,7 +1,6 @@
 """Skills that cite other skills: a required one is in requires, an optional one is in optional with what to do without it."""
 import contextlib
 import io
-import json
 from pathlib import Path
 import re
 import tempfile
