@@ -7,6 +7,7 @@ Your personal context, by interview:
 - At the first installation, three quick questions (language and length of the answers, autonomy) and your role in one line fill `30_USER.md`, without any model; the installer then points to `/me`. They are written only while the file is still the one the kit created.
 - A lighter `30_USER.md` template: Me, Domains, Answers, Working with me, By situation, Report; the generic lines that repeated the kit are gone. It always keeps one line asking the agent to say plainly when your idea is risky or wrong (a personal profile makes assistants agree too easily). Existing files are not touched.
 - `docs/customization.md` says what makes a good personal context, from the studies of context files and personalization.
+- The `protected-paths` guardrail counts a writing command only where the shell runs it (first word, after `sudo`, `xargs`, `find -exec`, `bash -c`, a subshell): a word inside a path, such as `install.json` or a folder named `rm-old`, no longer blocks a read. A path piped into `xargs rm` is still blocked.
 
 ## 0.37.0
 

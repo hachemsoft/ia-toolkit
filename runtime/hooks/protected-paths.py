@@ -85,9 +85,12 @@ def use_utf8():
 
 SHELL_TOOLS = ('run_shell_command', 'run_command', 'shell', 'local_shell', 'exec_command', 'unified_exec', 'container.exec', 'Bash')
 
-# Shell operations that change a file; reading (cat, less, grep) stays allowed.
-WRITE_COMMANDS = re.compile(r'(\btee\b|\bsed\b[^|;&]*\s(-[a-z]*i\b|--in-place)|\b(cp|mv|rm|chmod|chown|truncate|ln|dd|install|del|erase)\b'
-                            r'|\b(Set-Content|Add-Content|Out-File|Remove-Item|Move-Item|Copy-Item|Rename-Item)\b)', re.I)
+# Shell operations that change a file; reading (cat, less, grep) stays allowed. A command counts only where the shell runs
+# it (first word, after sudo, xargs, -exec, bash -c…): "install" or "rm" inside a path such as install.json is not one.
+WRITE_COMMANDS = {'tee', 'cp', 'mv', 'rm', 'chmod', 'chown', 'truncate', 'ln', 'dd', 'install', 'del', 'erase'}
+WRAPPERS = {'sudo', 'doas', 'env', 'xargs', 'nohup', 'time', 'command', 'exec', 'builtin', 'nice', '-exec', '-execdir', '-ok'}
+RUNS_TEXT = re.compile(r'-[a-z]*c|-command|-encodedcommand', re.I)  # bash -c, sh -lc, pwsh -Command: the next word is run
+POWERSHELL_WRITES = re.compile(r'\b(Set-Content|Add-Content|Out-File|Remove-Item|Move-Item|Copy-Item|Rename-Item)\b', re.I)
 
 SHELLS = {'sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'pwsh', 'powershell'}
 HEREDOC = re.compile(r'<<-?\s*["\']?([A-Za-z_][A-Za-z0-9_]*)["\']?')
@@ -112,9 +115,35 @@ def without_data_heredocs(text):
     return '\n'.join(out)
 
 def shell_segments(command):
-    """The simple commands of a shell line: split on new lines, ;, &&, ||, | and &, after joining continued lines."""
+    """The pipelines of a shell line: split on new lines, ;, &&, || and &, after joining continued lines. A pipeline stays
+    whole: in "echo path | xargs rm" the path and the write are in two commands of the same pipeline."""
     text = re.sub(r'(\\|`)\r?\n', ' ', command)
-    return [s for s in re.split(r'\r?\n|;|&&|\|\||\||&', without_data_heredocs(text)) if s.strip()]
+    return [s for s in re.split(r'\r?\n|;|&&|\|\||&', without_data_heredocs(text)) if s.strip()]
+
+def command_words(pipeline):
+    """The words the shell runs as commands in a pipeline, lower case, without the quote or bracket that opens them."""
+    expect, current = True, None
+    for word in pipeline.replace('|', ' | ').split():
+        if word == '|':
+            expect = True
+            continue
+        opens = word.startswith(('(', '$(', '`', '{'))
+        core = re.sub(r'^[\s"\'`({$]+', '', word).lower()
+        if not (expect or opens):
+            if (current in SHELLS and RUNS_TEXT.fullmatch(core)) or core in ('-exec', '-execdir', '-ok'):
+                expect = True  # bash -c '…', find … -exec: what follows is run
+            continue
+        if re.fullmatch(r'[a-z_][a-z0-9_]*=.*', core):
+            continue  # VAR=value before the command
+        current = core.rsplit('/', 1)[-1]
+        yield current
+        expect = current in WRAPPERS or (core.startswith('-') and expect)
+
+def writes(pipeline):
+    words = list(command_words(pipeline))
+    if any(w in WRITE_COMMANDS for w in words) or POWERSHELL_WRITES.search(pipeline):
+        return True
+    return 'sed' in words and bool(re.search(r'\s(-[a-z]*i\b|--in-place)', pipeline))
 
 def shell_config_write(command):
     """Reason for refusal when one simple command of a shell line writes to the kit or CLI configuration: a redirection to
@@ -131,7 +160,7 @@ def segment_config_write(text):
         if not re.search(name, text, re.I):
             continue
         redirected = re.search(r'>>?\s*["\']?[^\s;|&]*' + name, text, re.I)
-        if redirected or WRITE_COMMANDS.search(text):
+        if redirected or writes(text):
             return ('Blocked by the kit: this command changes "' + entry.rstrip('/') + '", configuration of the kit or of a CLI; '
                     'the agent does not change it. Tell the person what to change (then run update).')
     return None

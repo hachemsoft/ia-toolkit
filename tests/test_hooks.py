@@ -58,6 +58,14 @@ class HookScriptTests(unittest.TestCase):
               "python3 - <<'EOF'\ndoc = 'sed -i s/a/b/ ~/.ai-kit/overrides.json, or echo x > .ai-kit/protected-paths'\nEOF",
               'cat <<EOF > notes.md\nnever run: rm ~/.ai-kit/hooks/dbt-prod-guard.py\nEOF'):
    self.assertNotIn('decision',run_hook('protected-paths.py',{'tool_name':'Bash','tool_input':{'command':cmd}}),cmd)
+  # A word inside a path is not a command: install.json, a folder named rm-old, a file named tee.log.
+  for cmd in ('cat ~/.ai-kit/runtime/install.json','ls ~/.ai-kit/bin/rm-old ~/.gemini/settings.json','head ~/.ai-kit/hooks/tee.log'):
+   self.assertNotIn('decision',run_hook('protected-paths.py',{'tool_name':'Bash','tool_input':{'command':cmd}}),cmd)
+  # Where the shell runs it, it is one: after sudo, xargs, find -exec, bash -c, a subshell; the path anywhere in the pipeline.
+  for cmd in ('sudo rm ~/.ai-kit/hooks/dbt-prod-guard.py',"bash -c 'rm ~/.ai-kit/hooks/dbt-prod-guard.py'",'echo ~/.ai-kit/hooks/x.py | xargs rm',
+              'find ~/.ai-kit/hooks -name "*.py" -exec rm {} +','(cd ~ && cp x .ai-kit/overrides.toml)','FORCE=1 /bin/rm -f ~/.ai-kit/state.json',
+              'pwsh -Command "Remove-Item $HOME/.ai-kit/overrides.toml"',"sudo -n sed -i 's/a/b/' ~/.ai-kit/overrides.toml"):
+   self.assertEqual(run_hook('protected-paths.py',{'tool_name':'Bash','tool_input':{'command':cmd}}).get('decision'),'deny',cmd)
   # Still blocked: a write in the same simple command, through a pipe, a continued line, or a heredoc a shell runs.
   for cmd in ('echo x | tee ~/.ai-kit/overrides.json','cd ~ && sed -i s/a/b/ .ai-kit/overrides.json',"sed -i 's/a/b/' \\\n  ~/.ai-kit/overrides.json",
               'echo x &> ~/.ai-kit/overrides.json','bash <<EOF\nsed -i s/a/b/ ~/.ai-kit/overrides.json\nEOF',

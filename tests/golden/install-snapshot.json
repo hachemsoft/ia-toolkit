@@ -1,7 +1,7 @@
 {
  "architect/all": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".claude/CLAUDE.md": "936cacece61db2ef",
@@ -295,7 +295,7 @@
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
   ".ai-kit/context/30_USER.md": "7fe1a8ce0b03c0c2",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-dbt-reviewer.md": "94818eb494daa4f7",
@@ -361,7 +361,7 @@
  },
  "data-analyst/all": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".claude/CLAUDE.md": "936cacece61db2ef",
@@ -578,7 +578,7 @@
  },
  "data-analyst/both": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".gemini/00_KIT.md": "dfa30a21a0e6d4f0",
@@ -663,7 +663,7 @@
  },
  "data-analyst/gemini": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".gemini/00_KIT.md": "dfa30a21a0e6d4f0",
@@ -731,7 +731,7 @@
  },
  "data-developer/all": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".claude/CLAUDE.md": "936cacece61db2ef",
@@ -1042,7 +1042,7 @@
  "data-developer/all/overrides": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
   ".ai-kit/hooks/dbt-prod-guard.py": "7b6f4cf4b2906214",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "f8a2dcf5e7300ee5",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".claude/CLAUDE.md": "a7c0a941d54ec5b8",
@@ -1370,7 +1370,7 @@
  },
  "data-developer/both": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".gemini/00_KIT.md": "373c57087f11925e",
@@ -1488,7 +1488,7 @@
  "data-developer/both/overrides": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
   ".ai-kit/hooks/dbt-prod-guard.py": "7b6f4cf4b2906214",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "f8a2dcf5e7300ee5",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".gemini/00_KIT.md": "edbf593e7987f8ce",
@@ -1615,7 +1615,7 @@
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
   ".ai-kit/context/30_USER.md": "7fe1a8ce0b03c0c2",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".codex/AGENTS.md": "f0f42dd76f3362ae",
@@ -1731,7 +1731,7 @@
  },
  "data-developer/gemini": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".gemini/00_KIT.md": "373c57087f11925e",
@@ -1823,7 +1823,7 @@
  },
  "devops/all": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".claude/CLAUDE.md": "936cacece61db2ef",
@@ -2085,7 +2085,7 @@
  },
  "general/all": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".claude/CLAUDE.md": "936cacece61db2ef",
@@ -2312,7 +2312,7 @@
  },
  "general/both": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".gemini/00_KIT.md": "2e225b1c0dab8f77",
@@ -2400,7 +2400,7 @@
  },
  "general/gemini": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".gemini/00_KIT.md": "2e225b1c0dab8f77",
@@ -2468,7 +2468,7 @@
  },
  "java-developer/all": {
   ".ai-kit/bin/friction.py": "88215c14d90e35fb",
-  ".ai-kit/hooks/protected-paths.py": "af49049507f1dec8",
+  ".ai-kit/hooks/protected-paths.py": "3a5191bbe9ff1834",
   ".ai-kit/overrides.toml": "0e89cc5312637f79",
   ".ai-kit/schemas/overrides.schema.json": "aa02e5e3a11c15e8",
   ".claude/CLAUDE.md": "936cacece61db2ef",
