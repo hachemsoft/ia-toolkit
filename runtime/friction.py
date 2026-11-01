@@ -17,11 +17,15 @@ from datetime import datetime, timezone
 CATEGORIES = ('command', 'skill', 'guardrail', 'rule', 'docs', 'tool', 'auth', 'other')
 # What looks like a secret (API keys and tokens of common services, bearer tokens, password=..., private keys): never kept
 # in a friction or shown in a diagnosis. Same list in installer/core.py (a test checks it).
-SECRET = re.compile(r'AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,}'
-                    r'|glpat-[A-Za-z0-9_-]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|ya29\.[0-9A-Za-z_-]{20,}'
+SECRET = re.compile(r'AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9_-]{20,}|sk_(?:live|test)_[A-Za-z0-9]{16,}|gh[pousr]_[A-Za-z0-9]{30,}'
+                    r'|github_pat_[A-Za-z0-9_]{20,}|glpat-[A-Za-z0-9_-]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}'
+                    r'|ya29\.[0-9A-Za-z_-]{20,}|hf_[A-Za-z0-9]{30,}|npm_[A-Za-z0-9]{30,}|dapi[0-9a-f]{32}|GOCSPX-[A-Za-z0-9_-]{20,}'
+                    r'|https://hooks\.slack\.com/services/[A-Za-z0-9/]{20,}'
                     r'|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----'
-                    r'|(?i:bearer)\s+[A-Za-z0-9._~+/-]{16,}=*'
-                    r'|(?i:\b(?:password|passwd|pwd|secret|token|api[_-]?key)\b\s*[:=]\s*)(?!\$\{)[^\s"\',;]{6,}')
+                    r'|(?i:bearer|basic)\s+[A-Za-z0-9._~+/-]{16,}=*'
+                    r'|\b[a-z][a-z0-9+.-]*://[^\s:/@]+:[^\s:/@]{3,}@'
+                    r'|(?i:\b(?:[a-z0-9]+_)*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key)(?:_[a-z0-9_]*)?\b["\']?\s*[:=]\s*["\']?)'
+                    r'(?!\$\{)(?=[^\s"\',;]*[A-Za-z])[^\s"\',;]{6,}')
 
 def redact(text):
     return SECRET.sub('[redacted]', str(text))
@@ -60,8 +64,11 @@ def component_version(name):
 
 def record(category, text, command='none', cli='unknown', source='person'):
     text = redact(' '.join(str(text).split()))[:300]
+    command = (command or 'none').lstrip('/') or 'none'
+    if not re.fullmatch(r'[a-z0-9:_-]{1,40}', command.lower()):
+        command = 'none'  # a kit command name, nothing else: the field is never free text
     entry = {'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'category': category,
-             'command': (command or 'none').lstrip('/') or 'none', 'text': text, 'cli': cli, 'source': source}
+             'command': command, 'text': text, 'cli': cli, 'source': source}
     entry.update(context())
     version = component_version(entry['command'])
     if version:
@@ -69,7 +76,9 @@ def record(category, text, command='none', cli='unknown', source='person'):
     entry['id'] = friction_id(entry['ts'], entry['text'])
     os.makedirs(kit_dir(), exist_ok=True)
     path = os.path.join(kit_dir(), 'frictions.jsonl')
-    with open(path, 'a', encoding='utf-8') as handle:
+    # Readable by the person only: the lines say what they worked on.
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    with os.fdopen(descriptor, 'a', encoding='utf-8') as handle:
         handle.write(json.dumps(entry, ensure_ascii=False) + '\n')
     return path, entry
 

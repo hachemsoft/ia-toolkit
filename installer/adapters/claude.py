@@ -138,7 +138,7 @@ def kit_groups(groups):
 
 def hook_matcher(manifest_matcher):
     parts = manifest_matcher.split('|')
-    tools = (['Bash'] if 'run_shell_command' in parts else []) + (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'] if any(x != 'run_shell_command' for x in parts) else [])
+    tools = (['Bash', 'PowerShell'] if 'run_shell_command' in parts else []) + (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'] if any(x != 'run_shell_command' for x in parts) else [])
     return '|'.join(tools)
 
 

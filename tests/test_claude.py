@@ -140,7 +140,7 @@ class SettingsTests(Base):
         self.assertEqual(data['hooks']['Stop'], [PERSONAL_HOOK])
         groups = data['hooks']['PreToolUse']
         self.assertEqual(groups[0], PERSONAL_HOOK)
-        self.assertEqual({g['matcher'] for g in groups[1:]}, {'Bash', 'Bash|Write|Edit|MultiEdit|NotebookEdit'})
+        self.assertEqual({g['matcher'] for g in groups[1:]}, {'Bash|PowerShell', 'Bash|PowerShell|Write|Edit|MultiEdit|NotebookEdit'})
         before = settings.read_bytes()
         self.run_kit()
         self.assertEqual(settings.read_bytes(), before)

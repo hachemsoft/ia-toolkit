@@ -10,11 +10,11 @@ Input: {{args}} (optional: the friction in the user's own words).
 
 Record one friction: something that slowed the person down, surprised them or made them work around the kit (a command that did not do what its description says, a skill that fired for nothing, a guardrail in the way, a wrong page of documentation, a missing tool, an authentication problem). If the input is empty, ask for it in one sentence and wait. Pick one category: command, skill, guardrail, rule (the agent went against a rule written in AGENTS.md, the kit context or a playbook), docs, tool, auth, other. Then run the script the kit installed, never write the file yourself:
 
-Pass the sentence on standard input, never on the command line, so that the shell expands nothing in it (no `$(...)`, no backticks). One sentence, no secret, no prompt text, no repository path. On macOS or Linux:
+Pass the sentence on standard input, never on the command line, so that the shell expands nothing in it (no `$(...)`, no backticks). One sentence on one line (never a line that is only the end marker), no secret, no prompt text, no repository path. On macOS or Linux:
 
-python3 ~/.ai-kit/bin/friction.py --category <category> --command <the kit command in use, or none> --cli <gemini, agy, codex or claude: the CLI you are> <<'FRICTION'
-<the sentence>
-FRICTION
+python3 ~/.ai-kit/bin/friction.py --category <category> --command <the kit command in use, or none> --cli <gemini, agy, codex or claude: the CLI you are> <<'AI_KIT_FRICTION_END'
+<the sentence, on one line>
+AI_KIT_FRICTION_END
 
 On Windows (PowerShell), the same with a literal here-string:
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.41.0
+
+Security, after the audit of 0.40:
+- `protected-paths` turns around: a shell command that names a protected path is allowed only when every program it runs only reads (`cat`, `grep`, `ls`, `diff`, `jq`, `sed`/`awk` without in-place editing, read-only `git`, `cp` from it). In 0.40, `python -c`, `perl -pi`, `node -e`, `sed -Ei`, `cd ~/.ai-kit && echo x > overrides.toml`, a variable holding the path, quotes or `//` in the path, `unlink`, `find -delete` or `eval` got through. Paths are compared as the shell resolves them; a `cd` into a configuration folder or a wildcard inside one is refused; a very long command is judged at once (no timeout that would let it through); a call that names a protected path in a form the script cannot read is refused.
+- Claude Code's `PowerShell` tool is checked, by both guardrails.
+- Protected too: every file the kit installed (skills, commands, agents: an instruction slipped into one would load in every repo), and in each repo the settings that could turn hooks off (`.claude/settings.json`, `.claude/settings.local.json`, `.gemini/settings.json`, `.gemini/.env`, `.codex/config.toml`) and a `.env` that would set the kit's variables or `DBT_TARGET`. The repo is found from the file written, not only from where the CLI started; a pattern with a leading `/` is anchored at the repo root.
+- `dbt-prod-guard`: `AI_KIT_PROD_TARGETS` adds production targets and can no longer remove the defaults; `DBT_TARGET` in the environment, a Jinja default target in `profiles.yml` (`env_var('DBT_TARGET', 'prod')`), `d''bt`, `pr\od` and `dbtRunner` are seen.
+- Secrets: the detector catches `DB_PASSWORD=…`, values in quotes, `postgres://user:pass@`, `Basic` authorization and more key formats, without flagging `max_tokens` or `${VARIABLE}`. An MCP setting whose value looks secret is refused (`${VARIABLE}` only): it would have been copied in clear into the CLIs' settings, the state and the backups.
+- Backups: the last 20 are kept. Frictions are readable by the person only; their command field is a command name, nothing else; the end marker of the text can no longer appear in it by accident.
+- `organization.toml` `locked_hooks`: guardrails that stay on whatever a team or a person writes. `docs/hooks.md` says where the real lock is (the managed settings of each CLI, deployed by IT) and what to set, CLI by CLI.
+- Releases: each ZIP comes with `SHA256SUMS.txt` and a build provenance attestation (`gh attestation verify`); a published asset is never overwritten; the CI actions are pinned by commit, kept current by Dependabot. `Installer.cmd` never runs a `python.exe` planted in the current folder.
+
 ## 0.40.0
 
 A version for every skill and agent:

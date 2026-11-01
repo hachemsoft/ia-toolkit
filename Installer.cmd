@@ -4,6 +4,8 @@ rem in its private environment (%USERPROFILE%\.ai-kit\runtime) and opens the ins
 rem Command prompt only: no PowerShell, no administrator rights, no change to the system, the PATH or the execution policy.
 rem Equivalent command, for IT: python -I scripts\launcher.py followed by setup, update, doctor or uninstall, run from this folder.
 setlocal
+rem Never run a py.exe or python.exe planted in the current folder: only the ones on the PATH.
+set "NoDefaultCurrentDirectoryInExePath=1"
 set "KIT_DIR=%~dp0."
 
 rem Python: py -3 (Python launcher), then python, then python3. The Microsoft Store alias without Python answers 9009: treated as absent.

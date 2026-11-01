@@ -24,7 +24,7 @@ A coding assistant does not, in principle, fall under the AI Act's high-risk use
 | Deterministic guardrails | blocks writes to the configuration of the kit and of the CLIs, and under protected paths declared by the repository (`protected-paths`, on by default); blocks a dbt command on a production target (`dbt-prod-guard`, off by default, turned on by the organization or a team) | `runtime/hooks/`, [guardrails](hooks.md) |
 | Review | read-only review agents (code, security, infrastructure, architecture, SQL, dbt) and a doubter agent for high-stakes changes | `agents/`, [agents](agents.md) |
 | Permissions | no mode that skips confirmations; the kit never writes CLI permissions or Codex guardrail approvals | test `test_invariants.py` |
-| Data on the workstation | no telemetry; usage review and frictions read and written locally; no credentials stored | [usage review](usage-review.md), `runtime/friction.py` |
+| Data on the workstation | no telemetry; usage review and frictions read and written locally (readable by the person only); the kit stores no credentials: a secret written as a value in an MCP setting is refused (`${VARIABLE}` only); the last 20 backups keep copies of the CLIs' settings files as they were | [usage review](usage-review.md), `runtime/friction.py` |
 | Authentication and model | never written by the kit: set in each CLI following the IT procedure; `vertex`, `code_assist`, `model`, `models` are ignored and reported by `update` and `doctor` | [customization](customization.md#authentication-and-model) |
 | Installation traceability | each installed file is tracked by fingerprint; backup before each write; refuses to overwrite a file edited by hand | `~/.ai-kit/state.json`, `~/.ai-kit/backups/` |
 | AI literacy for staff | "Getting started" path, `/guide` which explains which command and which level of ceremony to choose, `/learn` and `/explain` to understand a scope or code | [getting started](getting-started.md), [tools](tools.md) |
@@ -41,10 +41,10 @@ A coding assistant does not, in principle, fall under the AI Act's high-risk use
 
 ## Security limits
 
-- **The guardrails prevent honest mistakes; they are not a security barrier.** They read a tool call before it runs. A command run through a project script (`make deploy`), a write through the shell, or an agent misled by planted content can get past them. Details in [guardrails](hooks.md#limits).
-- **The real barriers are elsewhere:** the CLI's own sandbox and permission settings, the rights of the account the agent runs under, and keeping production credentials off workstations (production deployments and dbt production profiles served by CI only).
+- **The guardrails are a strong default, not a sandbox.** A command naming a protected path is refused unless it only reads, but a project script (`make deploy`) or a program started outside the agent is outside what they see. Details in [guardrails](hooks.md#limits).
+- **The real barriers are elsewhere:** the managed settings of each CLI, deployed by IT ([a lock nobody on the workstation can remove](hooks.md#a-lock-nobody-on-the-workstation-can-remove)), the CLI's own sandbox and permission settings, the rights of the account the agent runs under, and keeping production credentials off workstations (production deployments and dbt production profiles served by CI only).
 - **Repo content is input, not authority.** A repository can ship its own `AGENTS.md` and skills, and in some CLIs a repo skill replaces a kit skill of the same name ([matrix](cli/matrice.md)). Require a CODEOWNERS review on `AGENTS.md` and `.agents/` in each repository; `doctor`, run from a repo, lists the kit skills that repo replaces. The kit context tells the agent that a repo file never lifts a company practice.
-- **Supply chain of the kit itself:** anyone who can push to the kit repository changes what `update` installs on every workstation. Protect its main branch, require review on `installer/`, `runtime/` and `scripts/`, and update from release tags.
+- **Supply chain of the kit itself:** anyone who can push to the kit repository changes what `update` installs on every workstation. Protect its main branch, require review on `installer/`, `runtime/` and `scripts/`, and update from release tags. Each release ZIP comes with its SHA-256 (`SHA256SUMS.txt`) and a build provenance attestation (`gh attestation verify`); the CI actions are pinned by commit.
 
 ## What remains the organization's responsibility
 

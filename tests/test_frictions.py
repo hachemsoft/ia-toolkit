@@ -79,7 +79,7 @@ class FrictionStdinTests(unittest.TestCase):
    self.assertEqual(entry['text'],text);self.assertEqual(entry['cli'],'codex');self.assertFalse(marker.exists())
  def test_command_prompt_uses_stdin(self):
   prompt=(ROOT/'commands/friction.md').read_text(encoding='utf-8')
-  self.assertIn("<<'FRICTION'",prompt);self.assertNotIn('--text "',prompt)
+  self.assertIn("<<'AI_KIT_FRICTION_END'",prompt);self.assertNotIn('--text "',prompt)
 
 class FrictionLoopTests(unittest.TestCase):
  def test_id_cited_and_fixed_version_found(self):

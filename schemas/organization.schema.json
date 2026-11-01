@@ -20,6 +20,18 @@
       "$ref": "overrides.schema.json",
       "description": "Organization defaults, same keys as overrides.toml; each person's overrides.toml is applied on top."
     },
+    "locked_hooks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "dbt-prod-guard",
+          "protected-paths"
+        ]
+      },
+      "uniqueItems": true,
+      "description": "Guardrails that stay on for everyone: a team or a person cannot turn them off in their settings. For a lock that nobody on the workstation can remove, use the managed settings of the CLIs (docs/hooks.md)."
+    },
     "teams": {
       "type": "object",
       "description": "Settings per team, same keys and formats as overrides.toml; applied after defaults and before each person's overrides.toml. The team is chosen at setup (--team or the question). Its context goes in practices/20-<team>.md.",

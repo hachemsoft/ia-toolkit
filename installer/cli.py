@@ -70,7 +70,20 @@ def validate_server(server):
     # Never preselect automatic trust.
     if server.get('trust') is True:
         raise KitError('MCP: trust=true is not supported by this kit.')
+    # A secret written as a value would be copied in clear into the CLIs' settings, the state and the backups: ${VARIABLE} only.
+    for field in ('env', 'headers'):
+        values = server.get(field) or {}
+        if not isinstance(values, dict) or not all(isinstance(v, str) for v in values.values()):
+            raise KitError('MCP: '+field+' must be a table of texts.')
+        for key, value in values.items():
+            if re.fullmatch(r'\$\{[A-Za-z_][A-Za-z0-9_]*\}', value.strip()):
+                continue
+            if SECRET_NAME.search(key) or SECRET.search(key+'='+value):
+                raise KitError('MCP: '+field+' '+key+' holds a value that looks secret: write ${'+re.sub(r'[^A-Za-z0-9_]', '_', key).upper()
+                               + '} instead and define that variable in your environment (docs/mcp.md).')
     return server
+
+SECRET_NAME = re.compile(r'(?i)(password|passwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|credential|authorization|auth)')
 
 def git_identity(home):
     """Global git identity read from the given home folder."""
@@ -576,6 +589,12 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     enabled_hooks = {}
     # A guardrail marked "default" in the manifest is on unless overrides.toml sets it to false.
     wanted_hooks = {**{n: True for n, spec in hook_manifest.items() if spec.get('default')}, **wanted_hooks}
+    # Guardrails the organization locks stay on, whatever a team or a person writes (organization.toml locked_hooks).
+    locked = organization().get('locked_hooks', [])
+    if not isinstance(locked, list) or not all(isinstance(n, str) and n in hook_manifest for n in locked):
+        raise KitError('organization.toml: locked_hooks must list guardrails of the kit ('+', '.join(sorted(hook_manifest))+').')
+    turned_off = [n for n in locked if wanted_hooks.get(n) is False]
+    wanted_hooks.update({n: True for n in locked})
     for name, flag in wanted_hooks.items():
         safe_id(name)
         if name not in hook_manifest:
@@ -588,7 +607,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     # MCP: resolved from the three sources apart, not from the merged overrides ("github": true must not erase the server).
     servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
     enabled_mcp = {'ai-kit-'+name: server for name, server in servers.items()}
-    notices = personal_notices
+    notices = personal_notices + ['[Info] Guardrail '+n+' stays on: your organization locks it (organization.toml locked_hooks).' for n in turned_off]
     unknown_names(overrides, catalog, agent_catalog, notices)
     notices += [retired_key_notice(key) for key in RETIRED_KEYS if key in overrides]
     p = Plan(active=[a.NAME for a in active], notices=notices,
@@ -722,6 +741,17 @@ def relocate_user_context(p, home, state, user_file, kit):
             data = p.user_context_text.encode('utf-8')
         p.writes[user_file] = data
 
+BACKUPS_KEPT = 20
+
+def prune_backups(kit, keep=BACKUPS_KEPT):
+    """Only the most recent backups stay: they hold copies of settings files, which may carry the person's own secrets."""
+    folder = kit/'backups'
+    if not folder.is_dir():
+        return
+    dated = sorted((p for p in folder.iterdir() if p.is_dir() and re.match(r'\d{8}T\d{6}-', p.name)), key=lambda p: p.name)
+    for old in dated[:-keep] if keep else dated:
+        shutil.rmtree(old, ignore_errors=True)
+
 def commit_changes(home, kit, writes, deletes, progress=None):
     """Backs up every file about to change, then writes and removes them; on any error or interruption, puts everything
     back. Returns (changed paths, backup folder)."""
@@ -766,6 +796,7 @@ def commit_changes(home, kit, writes, deletes, progress=None):
             else:
                 atomic_write(path,data)
         raise
+    prune_backups(kit)
     return changed, backup
 
 PERSONAL_KEPT = ('.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learning/', '.ai-kit/runtime/')

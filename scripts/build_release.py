@@ -43,6 +43,11 @@ Other actions (same command, followed by)
   doctor      local checks, no call to the model
   uninstall   remove what the kit installed (--dry-run first shows what would go)
 
+Check the download (optional, recommended in a company)
+  The release page lists the SHA-256 of this ZIP in SHA256SUMS.txt. Compare it with:
+  Mac and Linux: shasum -a 256 <the zip>      Windows: certutil -hashfile <the zip> SHA256
+  The build provenance can be checked with: gh attestation verify <the zip> --repo hachemsoft/ia-toolkit
+
 Documentation: README.md and docs/.
 """
 

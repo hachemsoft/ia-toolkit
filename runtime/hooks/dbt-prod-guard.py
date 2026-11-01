@@ -19,8 +19,10 @@ class _Hit:
 
 def default_target_hit(command, targets, payload):
     """Without --target or DBT_TARGET, the default target comes from profiles.yml (--profiles-dir, DBT_PROFILES_DIR, ~/.dbt): block it if it is production."""
-    if re.search(r'(?:--target|-t)(?:[\s=]|$)|\bDBT_TARGET=', command, re.I):
+    if re.search(r'(?:--target|-t)(?:[\s=,]|$)|\bDBT_TARGET=', command, re.I):
         return None
+    if os.environ.get('DBT_TARGET', '').lower() in targets:
+        return _Hit(os.environ['DBT_TARGET'] + ' (DBT_TARGET in the environment)')
     match = re.search(r'--profiles-dir[\s=]+[\'"]?([^\s\'"]+)', command)
     cwd = payload.get('cwd') or (payload.get('workspacePaths') or [None])[0] or os.getcwd()
     candidates = []
@@ -36,8 +38,18 @@ def default_target_hit(command, targets, payload):
                 text = handle.read()
         except OSError:
             continue
-        # Minimal reading without PyYAML: the `target: <name>` lines indented one level under a profile.
-        for found in re.findall(r'^[ \t]+target:[ \t]*[\'"]?([A-Za-z0-9_-]+)', text, re.M):
+        # Minimal reading without PyYAML: the `target: <name>` lines indented one level under a profile, and the
+        # common Jinja form target: "{{ env_var('DBT_TARGET', 'prod') }}", resolved from the environment or its default.
+        for line in re.findall(r'^[ \t]+target:[ \t]*(.+)$', text, re.M):
+            jinja = re.search(r'env_var\(\s*[\'"]([A-Za-z0-9_]+)[\'"]\s*(?:,\s*[\'"]([A-Za-z0-9_-]+)[\'"])?', line)
+            if jinja:
+                found = os.environ.get(jinja.group(1)) or jinja.group(2)
+                if not found:
+                    return _Hit(line.strip() + ' (a target only known when dbt runs, in ' + path + ')')
+            elif '{{' in line:
+                return _Hit(line.strip() + ' (a target only known when dbt runs, in ' + path + ')')
+            else:
+                found = re.match(r'[\'"]?([A-Za-z0-9_-]+)', line.strip()).group(1)
             if found.lower() in targets:
                 return _Hit(found + ' (default target from ' + path + ')')
         return None
@@ -55,7 +67,9 @@ def as_text(value):
         return ' '.join(str(v) for v in value)
     return str(value or '')
 
-SHELL_TOOLS = ('run_shell_command', 'run_command', 'shell', 'local_shell', 'exec_command', 'unified_exec', 'container.exec', 'Bash')
+SHELL_TOOLS = ('run_shell_command', 'run_command', 'shell', 'local_shell', 'exec_command', 'unified_exec', 'container.exec', 'Bash',
+               'PowerShell', 'powershell')
+DEFAULT_TARGETS = ('prod', 'production', 'prd')
 
 def use_utf8():
     """The CLIs send and read UTF-8; on Windows the console defaults to cp1252: force UTF-8 for input and output."""
@@ -112,12 +126,17 @@ def main():
     args = payload.get('tool_input') or call.get('args') or {}
     if not isinstance(args, dict):
         args = {'command': args}
-    command = as_text(args.get('command') or args.get('cmd') or args.get('CommandLine'))
+    raw = as_text(args.get('command') or args.get('cmd') or args.get('CommandLine'))
+    # The shell removes backslashes and glued quotes: d''bt, pr\od are dbt and prod. Python calls dbt too (dbtRunner).
+    command = raw.replace('\\\n', ' ').replace('\\', '').replace("''", '').replace('""', '')
     # `dbt`, `./dbt`, `/path/dbt`, `dbt.exe`, any case; also right after a quote, a backtick or a parenthesis (`sh -c "dbt …"`, `$(dbt …)`).
-    if not re.search(r'(^|[\s;&|/\\"\'`(])dbt(\.exe)?(\s|$|["\'`)])', command, re.I):
+    if not (re.search(r'(^|[\s;&|/"\'`(])dbt(\.exe)?(\s|$|["\'`)])', command, re.I) or re.search(r'dbtRunner|dbt\.cli', command)):
         print('{}')
         return
-    targets = [t.strip().lower() for t in os.environ.get('AI_KIT_PROD_TARGETS', 'prod,production,prd').split(',') if t.strip()]
+    command = re.sub(r"['\"],\s*['\"]", ' ', command)  # dbtRunner().invoke(['run', '--target', 'prod']): the list as words
+    # The organization's extra targets add to the defaults; they can never remove them (a .env cannot turn the guard off).
+    extra = [t.strip().lower() for t in os.environ.get('AI_KIT_PROD_TARGETS', '').split(',') if t.strip() and t.strip().lower() != 'none']
+    targets = list(dict.fromkeys(list(DEFAULT_TARGETS) + extra))
     alternation = '|'.join(re.escape(t) for t in targets)
     # --target prod, --target=prod, -t prod, -tprod, single or double quotes around the value.
     hits = (re.search(r'(?:--target|-t)(?:[\s=]+|(?<=-t))[\'"]?(' + alternation + r')[\'"]?(?![\w-])', command, re.I)
