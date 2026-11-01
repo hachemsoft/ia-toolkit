@@ -144,10 +144,15 @@ def dump_toml(data, schema=None):
 def set_list(text, key, values, path='overrides.toml'):
     """The document with the top-level key set to a list of names, everything else untouched (comments, order, other
     keys); the key is added before the first [section] when absent. Checked by reading the result back."""
+    return set_key(text, key, list(values), path, 'the list ')
+
+
+def set_key(text, key, value, path='overrides.toml', label=''):
+    """The document with the top-level key set to a value (a list or a plain value), everything else untouched."""
     lines = text.split('\n')
     first_section = next((i for i, line in enumerate(lines) if re.match(r'\s*\[', line)), len(lines))
     start = next((i for i in range(first_section) if re.match(r'\s*' + re.escape(key) + r'\s*=', lines[i])), None)
-    new_line = key + ' = ' + toml_value(list(values))
+    new_line = key + ' = ' + toml_value(value)
     if start is None:
         insert = first_section
         while insert > 0 and lines[insert - 1].strip() == '':
@@ -157,9 +162,9 @@ def set_list(text, key, values, path='overrides.toml'):
         end = value_end(lines, start)
         lines[start:end + 1] = [new_line]
     result = '\n'.join(lines)
-    expected = {**parse_toml(text, path), key: list(values)}
+    expected = {**parse_toml(text, path), key: value}
     if parse_toml(result, path) != expected:
-        raise KitError(str(path) + ': the list ' + key + ' could not be updated without changing something else; edit it by hand.')
+        raise KitError(str(path) + ': ' + label + key + ' could not be updated without changing something else; edit it by hand.')
     return result
 
 def value_end(lines, start):

@@ -3,10 +3,10 @@ practices, skills, agents and guardrails, and the old files to remove. apply (in
 import re
 
 from .core import ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, adopt_user_copy
-from .toml_files import dump_toml, set_list, set_schema
+from .toml_files import dump_toml, set_list, set_key, set_schema
 from .adapters import ADAPTERS
 from .settings import (organization, team_settings, personal_settings, merge_settings, allowed_commands, resolve_skills,
-                       practice_file, RENAMED_SKILLS, PERSONAL_FILE, LEGACY_PERSONAL_FILE, CHOICE_KEYS)
+                       practice_file, RENAMED_SKILLS, PERSONAL_FILE, LEGACY_PERSONAL_FILE, CHOICE_KEYS, SCALAR_CHOICES)
 from .commit import KIT_MANAGED
 
 LIST_KEYS = ('extra_skills', 'disabled_skills', 'extra_agents', 'disabled_agents', 'extra_commands', 'disabled_commands')
@@ -16,9 +16,9 @@ def effective_settings(kit, team, choices):
     """Organization defaults, then the team's settings, then the person's own overrides on top (never replaced wholesale),
     with the choices of this run. Returns (organization defaults, team layer, personal, merged overrides, choices)."""
     org_defaults, team_layer, personal = organization().get('defaults', {}), team_settings(team), personal_settings(kit)
-    choices = {k: list(v) for k, v in (choices or {}).items()}
-    if set(choices) - set(CHOICE_KEYS):
-        raise KitError('Unknown choice: '+', '.join(sorted(set(choices) - set(CHOICE_KEYS))))
+    choices = {k: (v if k in SCALAR_CHOICES else list(v)) for k, v in (choices or {}).items()}
+    if set(choices) - set(CHOICE_KEYS) - set(SCALAR_CHOICES):
+        raise KitError('Unknown choice: '+', '.join(sorted(set(choices) - set(CHOICE_KEYS) - set(SCALAR_CHOICES))))
     personal = {**personal, **choices}
     overrides = merge_settings(merge_settings(org_defaults, team_layer), personal)
     if overrides.get('frictions', 'propose') not in ('propose', 'auto', 'off'):
@@ -71,8 +71,8 @@ def personal_file(kit, choices, deletes):
         # Created once, pointing to the schema so that editors complete and check the keys.
         text = set_schema((ROOT/'templates/user-overrides.toml').read_text(encoding='utf-8'), schema_uri)
     for key, values in choices.items():
-        # Only the chosen lists change; the person's other keys and comments stay.
-        text = set_list(text, key, values, '~/.ai-kit/overrides.toml')
+        # Only the chosen keys change; the person's other keys and comments stay.
+        text = set_key(text, key, values, '~/.ai-kit/overrides.toml') if key in SCALAR_CHOICES else set_list(text, key, values, '~/.ai-kit/overrides.toml')
     return personal_path, text.encode('utf-8'), notices
 
 

@@ -12,7 +12,7 @@ import sys
 from types import SimpleNamespace
 from datetime import datetime, timezone
 
-from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, read_json, json_bytes, digest,
+from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, read_json, json_bytes, digest,
                    safe_id, inside, load_commands, load_agent, redact, user_context_refusal)
 from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
@@ -507,6 +507,47 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
     return 0
 
 
+FRICTION_MODES = ('propose', 'auto', 'off')
+
+
+def friction_action(argv):
+    """ai-kit friction: the /friction script itself (runtime/friction.py, one implementation) run from the terminal,
+    with --home; --list for the last frictions; --mode [propose|auto|off] to show or change the frictions setting of
+    overrides.toml, then reapply the agents' context (the rule lives in 00_KIT.md)."""
+    parser = argparse.ArgumentParser(prog='ai-kit friction', add_help=False)
+    parser.add_argument('--home', type=Path, default=Path.home())
+    parser.add_argument('--mode', nargs='?', const='', default=None)
+    parser.add_argument('--yes', action='store_true')
+    parser.add_argument('--plain', action='store_true')
+    args, rest = parser.parse_known_args(argv)
+    home = args.home.resolve()
+    if args.mode is None:
+        return friction_module().main([*rest, '--home', str(home)])
+    state = read_json(home/'.ai-kit/state.json')
+    if not state:
+        raise KitError('Kit not installed: run setup.')
+    org_defaults, team_layer, personal, overrides, _ = effective_settings(home/'.ai-kit', state.get('team'), None)
+    current = overrides.get('frictions', 'propose')
+    origin = ('your overrides.toml' if 'frictions' in personal else 'your team' if 'frictions' in team_layer
+              else "your organization's defaults" if 'frictions' in org_defaults else 'kit default')
+    if args.mode == '':
+        print('Frictions mode: '+current+' ('+origin+').')
+        print('propose: the agent offers /friction on a friction signal and you confirm. auto: it logs the friction itself and says so in one line. off: no friction rule.')
+        print('Change it: ai-kit friction --mode <propose|auto|off>. Log one now: ai-kit friction --category <'+'|'.join(friction_module().CATEGORIES)+'> --text "<one sentence>".')
+        return 0
+    if args.mode not in FRICTION_MODES:
+        raise KitError('frictions must be propose, auto or off (given: '+args.mode+').')
+    if args.mode == 'auto' and not args.yes and interactive():
+        from .ui import make_ui
+        if not make_ui(args.plain).confirm('In auto mode the agent writes a friction line itself, without asking, on each friction signal (one factual sentence, locally, nothing sent). Switch to auto?', default=False):
+            print('Nothing changed: frictions mode stays '+current+'.')
+            return 1
+    with contextlib.redirect_stdout(io.StringIO()):
+        apply(state['profile'], home, False, None, None, state.get('team'), choices={'frictions': args.mode})
+    print('Frictions mode: '+args.mode+' (your overrides.toml); the agents\' context is updated. Start a new session of your CLI.')
+    return 0
+
+
 def text_editor(path):
     """(name, command) of the system's plain-text editor for this file, or None: nothing to install, nothing to configure."""
     if sys.platform == 'darwin' and shutil.which('open'):
@@ -595,9 +636,23 @@ def main(argv=None):
     if sys.version_info < (3,9):
         print('Python 3.9 minimum required (3.11 or newer recommended).',file=sys.stderr)
         return 2
+    argv = sys.argv[1:] if argv is None else list(argv)
+    if argv and argv[0] == 'friction':
+        # The /friction script from the terminal: its own options, the kit's --home. Colour as for the other actions.
+        with styled_output(plain='--plain' in argv):
+            try:
+                return friction_action(argv[1:])
+            except (KitError, OSError, UnicodeError) as exc:
+                print('Error: '+redact(str(exc)), file=sys.stderr)
+                return 2
+            except (EOFError, KeyboardInterrupt):
+                print('\nOperation cancelled.', file=sys.stderr)
+                return 130
+            except SystemExit as exc:  # the script's own argparse: usage already printed
+                return exc.code if isinstance(exc.code, int) else 2
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
-    parser.add_argument('action',nargs='?',choices=['setup','update','doctor','usage','uninstall','managed-settings'],
-                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices')
+    parser.add_argument('action',nargs='?',choices=['setup','update','doctor','usage','uninstall','managed-settings','friction'],
+                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]')
     parser.add_argument('--since',type=int,default=42,help='usage: window in days (default 42)')
     parser.add_argument('--json',type=Path,help='usage: write the report to this file')
     parser.add_argument('--min-sessions',type=int,default=10,help='usage: minimum sessions before recommending (default 10)')

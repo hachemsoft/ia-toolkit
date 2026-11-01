@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `ai-kit friction` in the terminal: the very script `/friction` runs (`runtime/friction.py`, one implementation, now with `--home`), so `ai-kit friction --category docs --text "…"` logs a friction with the same format; `ai-kit friction --list [N]` shows the last ones (also `friction.py --list`); `ai-kit friction --mode` shows the frictions mode and where it comes from, `--mode propose|auto|off` writes it in `overrides.toml` (your other keys and comments kept) and reapplies the agents' context; switching to `auto` asks first in a terminal (`--yes` for automation). The secret filter, `redact` and the friction ids of the kit package are now imported from that script instead of being a copy of it; `doctor --live` writes its auth frictions through the same function.
 - `update`, `doctor` and `usage` in colour: `[OK]` green, `[Check]` yellow, `[Info]` cyan, `Error:` red, the headings and "Next step" in bold, through one output layer (`installer/console.py`) that changes no character of the text. Nothing changes with `--plain`, `AI_KIT_PLAIN=1`, `NO_COLOR`, `TERM=dumb`, an output redirected to a file, or without Rich.
 
 ## 0.46.0

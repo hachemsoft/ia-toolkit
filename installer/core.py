@@ -18,20 +18,22 @@ KIT_CONTEXT = '00_KIT.md'
 USER_CONTEXT = '30_USER.md'
 CONTEXT_NAME = re.compile(r'[0-9]{2}_[A-Z0-9_]+\.md')
 EMAIL = re.compile(r'[^@\s]+@[^@\s]+\.[^@\s]+')
-# What looks like a secret (API keys and tokens of common services, bearer tokens, password=..., private keys): never kept
-# in a friction or shown in a diagnosis. Same list in runtime/friction.py (a test checks it).
-SECRET = re.compile(r'AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9_-]{20,}|sk_(?:live|test)_[A-Za-z0-9]{16,}|gh[pousr]_[A-Za-z0-9]{30,}'
-                    r'|github_pat_[A-Za-z0-9_]{20,}|glpat-[A-Za-z0-9_-]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}'
-                    r'|ya29\.[0-9A-Za-z_-]{20,}|hf_[A-Za-z0-9]{30,}|npm_[A-Za-z0-9]{30,}|dapi[0-9a-f]{32}|GOCSPX-[A-Za-z0-9_-]{20,}'
-                    r'|https://hooks\.slack\.com/services/[A-Za-z0-9/]{20,}'
-                    r'|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----'
-                    r'|(?i:bearer|basic)\s+[A-Za-z0-9._~+/-]{16,}=*'
-                    r'|\b[a-z][a-z0-9+.-]*://[^\s:/@]+:[^\s:/@]{3,}@'
-                    r'|(?i:\b(?:[a-z0-9]+_)*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key)(?:_[a-z0-9_]*)?\b["\']?\s*[:=]\s*["\']?)'
-                    r'(?!\$\{)(?=[^\s"\',;]*[A-Za-z])[^\s"\',;]{6,}')
+# What looks like a secret, the redaction and the friction ids live in runtime/friction.py, the script /friction runs:
+# the kit package loads that very file (one implementation; in the installed package it is ai_kit/kit/runtime/friction.py).
+def friction_module():
+    """runtime/friction.py as a module, loaded once from the kit's own files."""
+    if 'module' not in _FRICTION:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('ai_kit_friction', ROOT/'runtime'/'friction.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _FRICTION['module'] = module
+    return _FRICTION['module']
 
-def redact(text):
-    return SECRET.sub('[redacted]', str(text))
+_FRICTION = {}
+SECRET = friction_module().SECRET
+redact = friction_module().redact
+friction_id = friction_module().friction_id
 
 class KitError(Exception):
     pass
@@ -369,10 +371,6 @@ def _ts(value):
     except ValueError:
         return 0
 
-def friction_id(ts, text):
-    """Same id as runtime/friction.py: 6 hex characters from the date and the sentence (older lines get it when read)."""
-    return hashlib.sha256((str(ts) + '|' + str(text)).encode('utf-8')).hexdigest()[:6]
-
 FIXED_FRICTIONS = re.compile(r'\bfrictions?:\s*([0-9a-f]{6}(?:\s*,\s*[0-9a-f]{6})*)', re.I)
 
 def fixed_frictions(changelog):
@@ -388,18 +386,12 @@ def fixed_frictions(changelog):
     return fixed
 
 def record_auto_friction(home, diagnostic, cli='unknown'):
-    """A failure seen by doctor --live becomes an `auth` friction, logged locally without asking (same format as /friction)."""
+    """A failure seen by doctor --live becomes an `auth` friction, logged locally without asking (same format as /friction:
+    the same function writes it)."""
     if not (home/'.ai-kit/state.json').is_file():
         return
     try:
-        state = read_json(home/'.ai-kit/state.json')
-        system = {'darwin': 'mac', 'win32': 'windows'}.get(sys.platform, sys.platform)
-        entry = {'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'category': 'auth', 'command': 'doctor',
-                 'text': redact(' '.join(str(diagnostic).split()))[:300], 'cli': cli, 'source': 'doctor',
-                 'os': system, 'kit': str(state.get('version', '')), 'profile': str(state.get('profile', ''))}
-        entry['id'] = friction_id(entry['ts'], entry['text'])
-        with open(home/'.ai-kit/frictions.jsonl', 'a', encoding='utf-8') as handle:
-            handle.write(json.dumps(entry, ensure_ascii=False) + '\n')
-    except (OSError, KitError, ValueError):
+        friction_module().record('auth', diagnostic, 'doctor', cli, source='doctor', home=str(home))
+    except (OSError, ValueError):
         pass
 

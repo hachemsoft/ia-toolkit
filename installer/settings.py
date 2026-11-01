@@ -338,3 +338,4 @@ def personal_settings(kit):
 
 
 CHOICE_KEYS = ('extra_skills', 'disabled_skills', 'extra_commands', 'disabled_commands', 'extra_agents', 'disabled_agents')
+SCALAR_CHOICES = ('frictions',)  # a plain value the installer may write too (ai-kit friction --mode)

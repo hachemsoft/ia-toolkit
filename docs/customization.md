@@ -154,7 +154,7 @@ github = true
 dbt-prod-guard = true
 ```
 
-`frictions` sets what the agent does on the six friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. Then `update`. Every key is optional; a missing key changes nothing. A command added through `extra_commands` comes with its skills and their dependencies; a skill required by another one cannot be disabled on its own, and `update` says so.
+`frictions` sets what the agent does on the six friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. Then `update`. Every key is optional; a missing key changes nothing. A command added through `extra_commands` comes with its skills and their dependencies; a skill required by another one cannot be disabled on its own, and `update` says so. In a terminal, `ai-kit friction --mode` shows the current mode and where it comes from, `ai-kit friction --mode auto` (or `propose`, `off`) writes it in your `overrides.toml` and reapplies the agents' context; `ai-kit friction --list` shows your last frictions.
 
 ## Authentication and model
 

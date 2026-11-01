@@ -1,0 +1,53 @@
+/* AI Kit learning workspace: shared stylesheet. Every lesson and reference sheet links it. */
+:root {
+  --ink: #1a1a1a; --paper: #fffff8; --muted: #666; --rule: #d8d4c4;
+  --accent: #8b2500; --ok: #2e6b2e; --ko: #9b1c1c; --code-bg: #f3f1e8;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --ink: #e8e6df; --paper: #151515; --muted: #a09c93; --rule: #3a3a3a;
+          --accent: #e8905a; --ok: #7fc27f; --ko: #e07070; --code-bg: #222; }
+}
+html { font-size: 17px; }
+body { margin: 0; padding: 2rem 1rem 4rem; background: var(--paper); color: var(--ink);
+       font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif; line-height: 1.5; }
+main { max-width: 44rem; margin: 0 auto; }
+h1 { font-weight: 400; font-size: 2rem; margin: 0 0 .25rem; line-height: 1.15; }
+h2 { font-weight: 400; font-size: 1.4rem; margin: 2.4rem 0 .6rem; font-style: italic; }
+h3 { font-weight: 600; font-size: 1rem; margin: 1.6rem 0 .4rem; letter-spacing: .02em; }
+.kicker { color: var(--muted); font-size: .9rem; margin-bottom: 1.6rem; }
+p, li { max-width: 40rem; }
+a { color: var(--accent); }
+code, pre { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .86em; }
+code { background: var(--code-bg); padding: .05em .3em; border-radius: 3px; }
+pre { background: var(--code-bg); padding: .8rem 1rem; overflow-x: auto; border-left: 3px solid var(--rule); }
+pre code { background: none; padding: 0; }
+.note { font-size: .88rem; color: var(--muted); border-left: 2px solid var(--rule); padding-left: .8rem; margin: 1rem 0; }
+.win { border: 1px solid var(--accent); padding: .8rem 1rem; margin: 1.4rem 0; }
+.win strong { color: var(--accent); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; margin: 1rem 0; }
+th, td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 2.4rem 0; }
+nav.course { font-size: .85rem; color: var(--muted); margin-bottom: 1.6rem; }
+nav.course a { margin-right: 1rem; }
+/* Pipeline: a horizontal chain of steps */
+.flow { display: flex; flex-wrap: wrap; gap: .4rem; align-items: stretch; margin: 1rem 0; padding: 0; list-style: none; }
+.flow li { flex: 1 1 9rem; border: 1px solid var(--rule); padding: .5rem .6rem; font-size: .85rem; position: relative; }
+.flow li b { display: block; font-size: .8rem; color: var(--accent); margin-bottom: .2rem; }
+.flow li + li::before { content: "→"; position: absolute; left: -.75rem; top: .4rem; color: var(--muted); }
+/* Quiz */
+.quiz { border: 1px solid var(--rule); padding: 1rem 1.2rem; margin: 1.2rem 0; }
+.quiz p.q { margin-top: 0; font-weight: 600; }
+.quiz button { display: block; width: 100%; text-align: left; margin: .3rem 0; padding: .45rem .7rem; font: inherit;
+               background: var(--paper); color: var(--ink); border: 1px solid var(--rule); cursor: pointer; }
+.quiz button:hover { border-color: var(--accent); }
+.quiz button.ok { border-color: var(--ok); color: var(--ok); }
+.quiz button.ko { border-color: var(--ko); color: var(--ko); }
+.quiz .why { display: none; margin-top: .6rem; font-size: .9rem; color: var(--muted); }
+.quiz.done .why { display: block; }
+.quiz.done button { cursor: default; }
+.score { font-weight: 600; margin-top: 1rem; }
+/* Prediction box: answer first, then reveal */
+details.predict { margin: 1rem 0; }
+details.predict summary { cursor: pointer; color: var(--accent); }
+@media print { body { padding: 0; } .quiz button { border: 1px solid #999; } nav.course { display: none; } }

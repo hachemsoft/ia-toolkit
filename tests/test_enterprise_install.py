@@ -294,11 +294,11 @@ class SecretsAndNetworkTests(unittest.TestCase):
         self.assertEqual(redact('"TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"'), '"TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"')
         self.assertEqual(redact('the token expired'), 'the token expired')
 
-    def test_friction_script_uses_the_same_list(self):
-        source = (ROOT/'runtime/friction.py').read_text(encoding='utf-8')
-        core = (ROOT/'installer/core.py').read_text(encoding='utf-8')
-        pattern = re.compile(r"^SECRET = re\.compile\(.*?\)\n", re.S | re.M)
-        self.assertEqual(pattern.search(source).group(0), pattern.search(core).group(0))
+    def test_friction_script_is_the_only_secret_list(self):
+        # One list: the kit package imports it from the script (installer/core.py), there is no copy to keep in step.
+        from installer import core
+        self.assertIs(core.SECRET, core.friction_module().SECRET)
+        self.assertNotIn('SECRET = re.compile(', (ROOT/'installer/core.py').read_text(encoding='utf-8'))
 
     def test_friction_text_is_redacted_on_disk(self):
         with tempfile.TemporaryDirectory() as tmp:
