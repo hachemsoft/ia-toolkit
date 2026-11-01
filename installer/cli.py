@@ -242,6 +242,8 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     agents = select_agents(profile, overrides, agent_catalog, load_agent)
     hooks_dir = kit/'hooks'  # scripts shared by all CLIs, like kit/bin/friction.py
     hook_manifest, enabled_hooks, turned_off = guardrails(overrides, hooks_dir)
+    news = news_setting(overrides)
+    kit_dir = kit_folder()
     # MCP: resolved from the three sources apart, not from the merged overrides ("github": true must not erase the server).
     servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
     enabled_mcp = {'ai-kit-'+name: server for name, server in servers.items()}
@@ -288,7 +290,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     tracker = friction_tracker(org_defaults_root(), personal)
     if org_defaults_root().get('friction_tracker') and tracker is None:
         p.notices.append('[Info] Frictions stay local: share_frictions = false in your overrides.toml (your organization set a friction tracker).')
-    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,**({'friction_tracker': tracker} if tracker else {}),
+    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'news':news,**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
                  'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}
     writes[kit/'state.json'] = json_bytes(new_state)
@@ -517,6 +519,22 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
 
 
 FRICTION_MODES = ('propose', 'auto', 'off')
+
+
+def news_setting(overrides):
+    """[news] of the merged settings, for state.json: check_remote (the session-news hook reads the kit's remote once a day), true by default."""
+    news = overrides.get('news', {})
+    if not isinstance(news, dict) or not isinstance(news.get('check_remote', True), bool) or any(k not in ('check_remote',) for k in news):
+        raise KitError('news must be a table with check_remote = true or false.')
+    return {'check_remote': news.get('check_remote', True)}
+
+
+def kit_folder():
+    """The kit folder the session-news hook reads (git fetch): the one the launcher runs from, else this clone; none for a pip install."""
+    folder = os.environ.get('AI_KIT_SOURCE_DIR')
+    if folder:
+        return folder
+    return str(ROOT) if (ROOT/'.git').exists() else None
 
 
 def news_action(argv):

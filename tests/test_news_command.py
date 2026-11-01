@@ -10,6 +10,7 @@ import unittest
 from unittest import mock
 
 from installer import cli
+from installer.core import ROOT, read_json
 
 
 class NewsCommandTests(unittest.TestCase):
@@ -40,6 +41,23 @@ class NewsCommandTests(unittest.TestCase):
         code, out = self.run_kit('news', '--list')
         self.assertEqual(code, 0, out)
         self.assertIn('99.0.0', out)
+
+    def test_state_records_kit_dir_and_news_setting(self):
+        state = read_json(self.home/'.ai-kit/state.json')
+        self.assertEqual(state.get('kit_dir'), str(ROOT))  # no launcher: the clone the installer runs from
+        self.assertEqual(state.get('news'), {'check_remote': True})
+        (self.home/'.ai-kit/overrides.toml').write_text('[news]\ncheck_remote = false\n', encoding='utf-8')
+        with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': str(self.home/'kit-folder')}):
+            code, out = self.run_kit('update')
+        self.assertEqual(code, 0, out)
+        self.assertNotIn('unknown', out.lower())
+        state = read_json(self.home/'.ai-kit/state.json')
+        self.assertEqual(state.get('news'), {'check_remote': False})
+        self.assertEqual(state.get('kit_dir'), str(self.home/'kit-folder'))  # the launcher names the kit folder
+        (self.home/'.ai-kit/overrides.toml').write_text('[news]\ncheck_remote = "no"\n', encoding='utf-8')
+        code, out = self.run_kit('update')
+        self.assertNotEqual(code, 0)
+        self.assertIn('check_remote', out)
 
 
 if __name__ == '__main__':

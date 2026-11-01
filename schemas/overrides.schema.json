@@ -63,13 +63,17 @@
     },
     "hooks": {
       "type": "object",
-      "description": "Guardrails: true turns one on, false turns it off. protected-paths is on by default.",
+      "description": "Guardrails and hooks: true turns one on, false turns it off. protected-paths and session-news are on by default.",
       "properties": {
         "dbt-prod-guard": {
           "type": "boolean"
         },
         "protected-paths": {
           "type": "boolean"
+        },
+        "session-news": {
+          "type": "boolean",
+          "description": "At session start, tells the agent once what is new (installed version, NEWS.md, a newer version available). On by default."
         }
       },
       "additionalProperties": false
@@ -163,6 +167,16 @@
     "share_frictions": {
       "type": "boolean",
       "description": "false: your frictions are never sent to the organization's friction tracker; they stay in ~/.ai-kit/frictions.jsonl (default true, which only matters when the organization set a tracker)."
+    },
+    "news": {
+      "type": "object",
+      "description": "The session-news hook. check_remote: read VERSION and NEWS.md on the kit's origin once a day (git fetch, never a pull); false keeps the hook local.",
+      "properties": {
+        "check_remote": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "patternProperties": {
