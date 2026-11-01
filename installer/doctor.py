@@ -278,6 +278,37 @@ def tracker_checks(home, state, status):
         print('[Info] '+str(pending)+' friction'+('s' if pending != 1 else '')+' not sent to the tracker yet: ai-kit friction --sync')
 
 
+def news_checks(home, state, status):
+    """The session-news hook: the kit folder it reads, the last remote read, what waits for the next session start."""
+    if 'session-news' not in state.get('hooks', {}):
+        print('[Info] session-news hook off (hooks.session-news = false): nothing announced at session start.')
+        return
+    news = __import__('installer.core', fromlist=['news_module']).news_module()
+    hook = news.hook_module()
+    kit_dir = str(state.get('kit_dir') or '')
+    if not kit_dir:
+        print('[Info] Kit folder not recorded: session-news announces the installed version only (run the installer from the kit folder, then update).')
+    else:
+        status(os.path.isdir(kit_dir), 'Kit folder present for session-news: '+kit_dir+('' if os.path.isdir(kit_dir) else ' (moved or deleted: run the installer from its new place, then update)'))
+    marker = read_json(home/'.ai-kit'/'news.json')
+    last = marker.get('last_check') if isinstance(marker.get('last_check'), dict) else {}
+    if (state.get('news') or {}).get('check_remote') is False:
+        print('[Info] Kit remote not read by session-news (news.check_remote = false): a newer version is not proposed.')
+    elif last:
+        print('[Info] Kit remote last read by session-news: '+str(last.get('date'))+', '+str(last.get('result'))+(' ('+last['detail']+')' if last.get('detail') else '')
+              + (', remote version '+last['remote_version'] if last.get('remote_version') else ''))
+    else:
+        print('[Info] Kit remote not read yet by session-news (once a day at session start; ai-kit news --check reads it now).')
+    if marker.get('declined_version'):
+        print('[Info] Version '+str(marker['declined_version'])+' declined (ai-kit news --later): the next one will be proposed.')
+    if hook and kit_dir and os.path.isdir(kit_dir):
+        today = __import__('datetime').date.today().isoformat()
+        waiting = [e for e in hook.parse_news(hook.read_text(os.path.join(kit_dir, 'NEWS.md')))
+                   if e['id'] not in (marker.get('announced_news') or []) and hook.aimed_at(e, str(state.get('profile') or ''), str(state.get('team') or ''), today)]
+        if waiting:
+            print('[Info] '+str(len(waiting))+' announcement'+('s' if len(waiting) != 1 else '')+' waiting for the next session start: '+', '.join(e['id'] for e in waiting))
+
+
 def runtime_checks(home, status):
     """The private environment the launcher installs the kit in, and the copies of the kit a person may run instead."""
     from . import command as kit_command
@@ -345,6 +376,7 @@ def doctor_checks(home, cwd=None, problems=None):
         print('Profile: '+state['profile']+' | version '+state['version'])
         command_checks(home, state, status)
         tracker_checks(home, state, status)
+        news_checks(home, state, status)
         identity = state.get('user', {})
         print('Recorded identity: '+(identity.get('email') or identity.get('name') or 'none')+(' (source '+identity['source']+')' if identity.get('source') else ''))
         profile = load_profile(state['profile'])

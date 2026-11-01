@@ -59,6 +59,28 @@ class NewsCommandTests(unittest.TestCase):
         self.assertNotEqual(code, 0)
         self.assertIn('check_remote', out)
 
+    def test_doctor_reports_the_hook_state(self):
+        kit = self.home/'kit-folder'
+        kit.mkdir()
+        (kit/'NEWS.md').write_text('# News\n\n## 2026-11-02 hello : Hello\n\nText.\n\n## 2026-11-02 analysts : Not us\nprofiles: data-analyst\n\nText.\n', encoding='utf-8')
+        with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': str(kit)}):
+            self.run_kit('update')
+        code, out = self.run_kit('doctor')
+        self.assertIn('[OK] Kit folder present for session-news: '+str(kit), out)
+        self.assertIn('[Info] Kit remote not read yet by session-news', out)
+        self.assertIn('[Info] 1 announcement waiting for the next session start: hello', out)
+        (self.home/'.ai-kit/news.json').write_text(json.dumps({'announced_news': ['hello'], 'declined_version': '9.0.0', 'last_check': {'date': '2026-11-02', 'result': 'failed', 'detail': 'no route'}}), encoding='utf-8')
+        kit.rename(self.home/'moved')
+        code, out = self.run_kit('doctor')
+        self.assertIn('[Check] Kit folder present for session-news: '+str(kit)+' (moved or deleted', out)
+        self.assertIn('[Info] Kit remote last read by session-news: 2026-11-02, failed (no route)', out)
+        self.assertIn('[Info] Version 9.0.0 declined', out)
+        self.assertNotIn('waiting for the next session start', out)
+        (self.home/'.ai-kit/overrides.toml').write_text('[hooks]\nsession-news = false\n', encoding='utf-8')
+        self.run_kit('update')
+        code, out = self.run_kit('doctor')
+        self.assertIn('[Info] session-news hook off', out)
+
 
 if __name__ == '__main__':
     unittest.main()
