@@ -67,12 +67,12 @@ sequenceDiagram
 
 ## Areas of concern
 - **Codex et Gemini redemandent confiance** pour un hook nouveau (première installation) ou dont la commande change (chemin du Python ou du script). Une fois par changement, documenté ; le mainteneur accepte ce coût. Décide : mainteneur.
-- **agy** : l'événement `SessionStart` existe, mais rien ne prouve que `additionalContext` atteint le modèle. À prouver en session réelle avant de l'annoncer pour agy ; sinon agy reste sur le message terminal d'`update`, les trois autres livrent. Décide : mainteneur, sur le résultat du test.
+- **agy** : tranché le 2026-11-02 en session réelle (1.4.12, depuis un dossier neutre) : le hook tourne mais `additionalContext` n'atteint pas le modèle, et consommerait l'annonce pour rien. Non déclaré pour agy ; message terminal d'`update` conservé. Décidé : mainteneur.
 - **Réseau d'entreprise** : un `git fetch` qui attend un proxy peut prendre les 5 s du timeout, une fois par jour, au démarrage. Acceptable ? Sinon `check_remote = false` dans `defaults`. Décide : organisation.
 - **Claude Code attend la fin des hooks** avant la première réponse : la même seconde au pire, un jour sur un. Décide : mainteneur.
 - **Clone avec changements locaux** : le fetch ne les touche pas, mais `update` refusera ensuite (`git pull --ff-only`) ; l'agent le dira en donnant la commande. Pas de contradiction, à documenter.
 
 ## Open questions
-- Preuve agy (voir ci-dessus) : un appel modèle, à faire au `/build`.
+- Preuve agy : faite, négative (voir ci-dessus).
 - Later : check par URL pour les ZIP ; mise à jour forcée par l'organisation (réglages gérés par l'IT) ; langue des annonces.
 - Le découpage en tranches se fait au `/build`.

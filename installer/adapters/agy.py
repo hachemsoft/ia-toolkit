@@ -93,8 +93,11 @@ def install(p: Plan) -> None:
             parts = spec['matcher'].split('|')
             matcher = '|'.join((['.*(write|replace|edit).*'] if any(p != 'run_shell_command' for p in parts) else []) + (['run_command'] if 'run_shell_command' in parts else []))
             agy_hooks['ai-kit-'+name] = {'enabled': name in p.enabled_hooks, event: [{'matcher': matcher, 'hooks': [command]}]}
-        else:  # a lifecycle event (SessionStart): a flat list of commands, the shape `agy plugin validate` accepts
-            agy_hooks['ai-kit-'+name] = {'enabled': name in p.enabled_hooks, event: [command]}
+        else:
+            # A lifecycle hook (SessionStart) runs in agy (flat list of commands, the shape `agy plugin validate` accepts), but
+            # its additionalContext never reaches the model (checked on 1.4.12 from a neutral folder): declaring it would
+            # consume the announcement for nothing. Not declared until agy passes it; the terminal line of update remains.
+            continue
     p.managed_write(plugin/'hooks.json', json_bytes(agy_hooks), 'Plugin agy')
     if p.enabled_mcp:
         p.managed_write(plugin/'mcp_config.json', json_bytes({'mcpServers': p.enabled_mcp}), 'Plugin agy')

@@ -146,12 +146,12 @@ class HookInstallTests(unittest.TestCase):
   g=self.settings()['hooks']['SessionStart'];self.assertEqual(len(g),1);self.assertNotIn('matcher',g[0]);self.assertEqual(g[0]['hooks'][0]['name'],'ai-kit-session-news');self.assertIn('session-news.py',g[0]['hooks'][0]['command'])
   c=read_json(self.home/'.claude/settings.json')['hooks'];self.assertEqual(len(c['SessionStart']),1);self.assertNotIn('matcher',c['SessionStart'][0]);self.assertIn('session-news.py',c['SessionStart'][0]['hooks'][0]['command']);self.assertTrue(all('session-news' not in h['command'] for grp in c['PreToolUse'] for h in grp['hooks']))
   cfg=(self.home/'.codex/config.toml').read_text(encoding='utf-8');self.assertIn('[[hooks.SessionStart]]\n\n[[hooks.SessionStart.hooks]]',cfg);self.assertIn('session-news.py',cfg);self.assertNotIn('[[hooks.SessionStart]]\nmatcher',cfg)
-  a=read_json(self.home/'.gemini/config/plugins/ai-kit/hooks.json')['ai-kit-session-news'];self.assertTrue(a['enabled']);self.assertEqual(sorted(a['SessionStart'][0]),['command','timeout','type']);self.assertIn('session-news.py',a['SessionStart'][0]['command'])  # agy: a flat list for a lifecycle event (plugin validate)
+  self.assertNotIn('ai-kit-session-news',read_json(self.home/'.gemini/config/plugins/ai-kit/hooks.json'))  # agy runs a SessionStart hook but its context never reaches the model (1.4.12): not declared
   self.overrides({'hooks':{'session-news':False}})
   with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'all')
   st=read_json(self.home/'.ai-kit/state.json');self.assertNotIn('session-news',st['hooks']);self.assertFalse((self.home/'.ai-kit/hooks/session-news.py').exists())
   self.assertNotIn('SessionStart',self.settings().get('hooks',{}));self.assertNotIn('SessionStart',read_json(self.home/'.claude/settings.json').get('hooks',{}))
-  self.assertNotIn('[[hooks.SessionStart]]',(self.home/'.codex/config.toml').read_text(encoding='utf-8'));self.assertFalse(read_json(self.home/'.gemini/config/plugins/ai-kit/hooks.json')['ai-kit-session-news']['enabled'])
+  self.assertNotIn('[[hooks.SessionStart]]',(self.home/'.codex/config.toml').read_text(encoding='utf-8'));self.assertNotIn('ai-kit-session-news',read_json(self.home/'.gemini/config/plugins/ai-kit/hooks.json'))
  def test_doctor_proves_session_news_answers_without_writing(self):
   self.run_kit();text=self.doctor_text()
   self.assertIn('[OK] Hook session-news: synthetic test, the script runs and answers',text);self.assertFalse((self.home/'.ai-kit/news.json').exists())
