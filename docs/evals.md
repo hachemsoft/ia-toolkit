@@ -29,7 +29,7 @@ python3 evals/run.py --confirm-paid-run --cli claude --home ./no-kit --baseline 
 python3 evals/compare.py with-kit.json without-kit.json      # no model call
 ```
 
-`--baseline` refuses a home folder that holds the kit, and runs every case, the ones that require a kit command included: without the kit, that command is just text the agent reads. The comparison lists the cases that pass only with the kit, only without it, and with both; it refuses two reports of different CLIs or models. Both runs are billed; one run of each varies with the model, so repeat them before concluding.
+The home folder without the kit needs its own sign-in: start the CLI there once (`HOME=./no-kit claude`, then `/login`), since a CLI keeps its sign-in in the home folder. Every case starts with a kit command, which the agent without the kit only reads as text: the comparison measures what the commands bring, not the context alone. `--baseline` refuses a home folder that holds the kit, and runs every case, the ones that require a kit command included: without the kit, that command is just text the agent reads. The comparison lists the cases that pass only with the kit, only without it, and with both; it refuses two reports of different CLIs or models. Both runs are billed; one run of each varies with the model, so repeat them before concluding.
 
 ## Write a case
 

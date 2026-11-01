@@ -63,6 +63,8 @@ def api_error(returncode, output):
         return 'model unknown to this CLI (see the list in the output): choose another --model, not a behaviour failure'
     if 'print timeout after' in output and 'returning partial output' in output:
         return 'Antigravity returned a partial answer before the print timeout: not a behaviour failure'
+    if 'Please run /login' in output:
+        return 'Claude Code not signed in in this home folder: start claude there once and run /login (for --baseline, a home folder of its own)'
     if 'Not logged in' in output or 'codex login' in output.lower() and 'error' in output.lower():
         return 'Codex not signed in: run codex login'
     if 'usage limit' in output.lower() or "You've hit your usage limit" in output:
@@ -137,7 +139,7 @@ def cli_command(cli, executable, case, timeout, model, approval_mode):
         return [executable, 'exec', '--skip-git-repo-check', '--ephemeral', '--color', 'never', '-s', 'read-only'] + (['-m', model] if model else []) + [prompt]
     if cli == 'claude':
         # Claude Code: print mode, no shell and no file write, as the Gemini policy does; skills and agents stay available.
-        return [executable, '-p', case['prompt'], '--disallowedTools', 'Bash,Write,Edit,MultiEdit,NotebookEdit'] + (['--model', model] if model else [])
+        return [executable, '-p', case['prompt'], '--disallowedTools', 'Bash,Write,Edit,NotebookEdit'] + (['--model', model] if model else [])
     if cli == 'agy':
         # Antigravity: print mode; tools that ask for permission are refused for lack of a prompt, skills still activate.
         return [executable, '-p', case['prompt'], '--print-timeout', str(timeout) + 's'] + (['--model', model] if model else [])

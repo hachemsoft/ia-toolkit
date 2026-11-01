@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.45.1
+
+- Evals on Claude Code: a home folder where Claude Code is not signed in is reported as such (it was reported as Codex), and `MultiEdit`, which Claude Code no longer has, is no longer in the denied tools. `docs/evals.md` says how to sign in the home folder without the kit.
+
 ## 0.45.0
 
 Measuring the kit's effect:

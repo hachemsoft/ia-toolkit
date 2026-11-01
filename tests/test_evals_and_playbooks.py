@@ -49,6 +49,8 @@ class EvalSuiteTests(unittest.TestCase):
   self.assertIn('API 402',evals_run.api_error(1,'...retryWithBackoff ... {\n  status: 402\n}\nAn unexpected critical error occurred'))
   self.assertIn('authentication',evals_run.api_error(1,'Please set an Auth method in your settings.json'))
   self.assertIn('Antigravity',evals_run.api_error(0,'jetski: no output produced — a tool required the "command" permission that headless mode cannot prompt for'))
+  self.assertIn('Claude Code not signed in',evals_run.api_error(1,'Not logged in · Please run /login'))
+  self.assertIn('Codex not signed in',evals_run.api_error(1,'Error: Not logged in. Run codex login'))
   self.assertIsNone(evals_run.api_error(0,'Start with /intent.'))
  def test_dry_run_lists_cases(self):
   out=io.StringIO()
