@@ -12,3 +12,4 @@ build/
 .debug/
 docs/sdlc/*/intent.md
 docs/sdlc/*/plan.md
+docs/learn/
