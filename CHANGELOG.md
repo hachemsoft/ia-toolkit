@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.45.2
+
+- `/friction` works again: since 0.41, the guardrail refused the command that runs the kit's own `~/.ai-kit/bin/friction.py`, because it names a protected folder without only reading it. Python running that script is allowed when nothing else in the command names a protected path; anything else under that folder is still refused. A test now runs the command `/friction` gives, on macOS and in PowerShell.
+
 ## 0.45.1
 
 - Evals on Claude Code: a home folder where Claude Code is not signed in is reported as such (it was reported as Codex), and `MultiEdit`, which Claude Code no longer has, is no longer in the denied tools. `docs/evals.md` says how to sign in the home folder without the kit.

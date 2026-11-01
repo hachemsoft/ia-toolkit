@@ -102,6 +102,32 @@ class ShellTests(Base):
         self.assertIsNone(self.decide({'tool_name': 'write_file', 'tool_input': {'file_path': str(self.home/'.gemini/skills/mine/SKILL.md')}}))
 
 
+class KitToolTests(Base):
+    """/friction runs the kit's own script under ~/.ai-kit/bin: that must stay possible, and only that."""
+    ALLOWED = (
+        "python3 ~/.ai-kit/bin/friction.py --category tool --command none --cli claude <<'AI_KIT_FRICTION_END'\nfive tags pushed at once started no release\nAI_KIT_FRICTION_END",
+        "@'\nfive tags\n'@ | py -3 $HOME/.ai-kit/bin/friction.py --category tool --command none --cli claude",
+    )
+    BLOCKED = (
+        'python3 ~/.ai-kit/bin/friction.py --category tool > ~/.ai-kit/overrides.toml',
+        'python3 ~/.ai-kit/bin/friction.py ~/.ai-kit/overrides.toml',
+        'python3 ~/.ai-kit/bin/other.py',
+        'python3 -c "x" ~/.ai-kit/bin/friction.py',
+        'python3 ~/.ai-kit/bin/friction.py && rm ~/.ai-kit/state.json',
+    )
+
+    def test_friction_script_runs(self):
+        for command in self.ALLOWED:
+            with self.subTest(command=command):
+                self.assertNotEqual(self.shell(command), 'deny')
+        self.assertNotEqual(self.shell(self.ALLOWED[1], tool='PowerShell'), 'deny')
+
+    def test_nothing_else_under_its_name(self):
+        for command in self.BLOCKED:
+            with self.subTest(command=command):
+                self.assertEqual(self.shell(command), 'deny')
+
+
 class RepoTests(Base):
     def repo(self):
         repo = self.home/'work'/'repo'

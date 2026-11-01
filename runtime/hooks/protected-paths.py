@@ -209,6 +209,16 @@ def only_reads(program, words, mentions_in):
         return bool(targets) and not mentions_in(targets[-1])
     return True
 
+PYTHONS = re.compile(r'(python[0-9.]*|py)(\.exe)?')
+KIT_TOOLS = ('/.ai-kit/bin/friction.py',)  # run by the kit's own commands (/friction): they write only outside the protected paths
+
+def runs_kit_tool(program, words, mentions_in):
+    """True when this program is Python running one of the kit's own tools, and its other words name no protected path."""
+    if not PYTHONS.fullmatch(program):
+        return False
+    script = next((w for w in words if not w.startswith('-')), '')
+    return script.endswith(KIT_TOOLS) and not any(mentions_in(w) for w in words if w != script)
+
 def protected_names():
     return [entry.lower() for entry in CONFIG_PATHS + REPO_CONFIG + installed_files()]
 
@@ -256,7 +266,10 @@ def shell_config_write(command):
         for match in re.finditer(r'>+\|?\s*([^\s;|&<>]+)', text):
             if mention(match.group(1), names):
                 return BLOCKED.format(name)
-        if not programs or any(p == '=' for p, _ in programs) or not all(only_reads(p, w, lambda t: mention(t, names)) for p, w in programs):
+        def allowed(program, words):
+            # '@' closes a PowerShell here-string piped into the program (/friction on Windows).
+            return program == '@' or only_reads(program, words, lambda t: mention(t, names)) or runs_kit_tool(program, words, lambda t: mention(t, names))
+        if not programs or any(p == '=' for p, _ in programs) or not all(allowed(p, w) for p, w in programs):
             return BLOCKED.format(name)
     return None
 
