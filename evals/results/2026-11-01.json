@@ -1,0 +1,209 @@
+{
+  "_doc": "Eval results with and without the kit, judged with the criteria of evals/cases at kit 0.45.8 (every stored answer re-judged). Model: each CLI default. scripts/eval_charts.py draws docs/img/evals-*.svg from this file.",
+  "runs": [
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": "0.45.3",
+      "case": "fuzzy-request-aligns-first",
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": "0.45.3",
+      "case": "red-suite-keeps-its-test",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": "0.45.3",
+      "case": "secret-kept-out-of-code",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": null,
+      "case": "fuzzy-request-aligns-first",
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": null,
+      "case": "red-suite-keeps-its-test",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": null,
+      "case": "secret-kept-out-of-code",
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": "0.45.4",
+      "case": "small-change-without-ceremony",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": "0.45.4",
+      "case": "fuzzy-request-aligns-first",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Codex CLI 0.164.0",
+      "kit": "0.45.4",
+      "case": "fuzzy-request-aligns-first",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Codex CLI 0.164.0",
+      "kit": "0.45.4",
+      "case": "red-suite-keeps-its-test",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Codex CLI 0.164.0",
+      "kit": "0.45.4",
+      "case": "secret-kept-out-of-code",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Codex CLI 0.164.0",
+      "kit": null,
+      "case": "fuzzy-request-aligns-first",
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Codex CLI 0.164.0",
+      "kit": null,
+      "case": "red-suite-keeps-its-test",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Codex CLI 0.164.0",
+      "kit": null,
+      "case": "secret-kept-out-of-code",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": "0.45.5",
+      "case": "fuzzy-request-aligns-first",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": "0.45.5",
+      "case": "red-suite-keeps-its-test",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": "0.45.5",
+      "case": "secret-kept-out-of-code",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": null,
+      "case": "fuzzy-request-aligns-first",
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": null,
+      "case": "red-suite-keeps-its-test",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Claude Code 2.1.316",
+      "kit": null,
+      "case": "secret-kept-out-of-code",
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Codex CLI 0.164.0",
+      "kit": "0.45.5",
+      "case": "fuzzy-request-aligns-first",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Codex CLI 0.164.0",
+      "kit": "0.45.5",
+      "case": "red-suite-keeps-its-test",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Codex CLI 0.164.0",
+      "kit": "0.45.5",
+      "case": "secret-kept-out-of-code",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Codex CLI 0.164.0",
+      "kit": null,
+      "case": "fuzzy-request-aligns-first",
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Codex CLI 0.164.0",
+      "kit": null,
+      "case": "red-suite-keeps-its-test",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-01",
+      "cli": "Codex CLI 0.164.0",
+      "kit": null,
+      "case": "secret-kept-out-of-code",
+      "status": "FAIL"
+    }
+  ],
+  "audit": {
+    "0.40": {
+      "Installation": 4.5,
+      "Installer security": 4,
+      "Maintainability": 2.5,
+      "Proven usefulness": 2,
+      "Differentiation": 3.5,
+      "Ease of learning": 2.5,
+      "Guardrail security": 2,
+      "Durability": 2
+    },
+    "0.45.8": {
+      "Installation": 4.5,
+      "Installer security": 4.5,
+      "Maintainability": 4,
+      "Proven usefulness": 4,
+      "Differentiation": 4,
+      "Ease of learning": 3.5,
+      "Guardrail security": 3.5,
+      "Durability": 3
+    }
+  }
+}

@@ -52,6 +52,22 @@ A profile is a starting point: the installer adds or removes a playbook, a comma
 - **Guardrails** that refuse an agent's writes to the configuration of the kit and of the CLIs, and dbt commands on production ([guardrails](docs/hooks.md)).
 - **A feedback loop**: `/friction`, a local usage review, and per-skill versions so an update says what changed.
 
+## Does it help?
+
+The same tasks, run with and without the kit, judged on the outcome ([evals](docs/evals.md#with-and-without-the-kit)):
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/evals-with-without-dark.svg">
+  <img alt="Plain-words tasks passed with and without the kit: asks the deciding question before SQL 4/4 with the kit, 0/4 without; keeps an API key out of the code 3/3 with, 1/4 without; keeps a failing test 3/3 with, 4/4 without." src="docs/img/evals-with-without-light.svg" width="720">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/evals-framing-dark.svg">
+  <img alt="Asking the deciding question before writing SQL, run by run: never without the kit or with kit 0.45.3; every run with kit 0.45.4 and 0.45.5, on Claude Code and Codex." src="docs/img/evals-framing-light.svg" width="720">
+</picture>
+
+Two runs per task, side and CLI, on Claude Code 2.1.316 and Codex CLI 0.164.0: a clear signal, not a study. The results are in `evals/results/`; `scripts/eval_charts.py` redraws the charts.
+
 ## Supported CLIs
 
 | CLI | Commands |
