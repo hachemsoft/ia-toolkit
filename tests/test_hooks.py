@@ -139,6 +139,23 @@ class HookInstallTests(unittest.TestCase):
   out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
   return out.getvalue()
+ def test_session_news_declared_on_every_cli_and_off_by_setting(self):
+  with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'all')
+  st=read_json(self.home/'.ai-kit/state.json');self.assertIn('session-news',st['hooks']);self.assertEqual(st['hooks']['session-news']['event'],'SessionStart');self.assertNotIn('matcher',st['hooks']['session-news']['group'])
+  self.assertTrue((self.home/'.ai-kit/hooks/session-news.py').is_file())
+  g=self.settings()['hooks']['SessionStart'];self.assertEqual(len(g),1);self.assertNotIn('matcher',g[0]);self.assertEqual(g[0]['hooks'][0]['name'],'ai-kit-session-news');self.assertIn('session-news.py',g[0]['hooks'][0]['command'])
+  c=read_json(self.home/'.claude/settings.json')['hooks'];self.assertEqual(len(c['SessionStart']),1);self.assertNotIn('matcher',c['SessionStart'][0]);self.assertIn('session-news.py',c['SessionStart'][0]['hooks'][0]['command']);self.assertTrue(all('session-news' not in h['command'] for grp in c['PreToolUse'] for h in grp['hooks']))
+  cfg=(self.home/'.codex/config.toml').read_text(encoding='utf-8');self.assertIn('[[hooks.SessionStart]]\n\n[[hooks.SessionStart.hooks]]',cfg);self.assertIn('session-news.py',cfg);self.assertNotIn('[[hooks.SessionStart]]\nmatcher',cfg)
+  a=read_json(self.home/'.gemini/config/plugins/ai-kit/hooks.json')['ai-kit-session-news'];self.assertTrue(a['enabled']);self.assertEqual(sorted(a['SessionStart'][0]),['command','timeout','type']);self.assertIn('session-news.py',a['SessionStart'][0]['command'])  # agy: a flat list for a lifecycle event (plugin validate)
+  self.overrides({'hooks':{'session-news':False}})
+  with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'all')
+  st=read_json(self.home/'.ai-kit/state.json');self.assertNotIn('session-news',st['hooks']);self.assertFalse((self.home/'.ai-kit/hooks/session-news.py').exists())
+  self.assertNotIn('SessionStart',self.settings().get('hooks',{}));self.assertNotIn('SessionStart',read_json(self.home/'.claude/settings.json').get('hooks',{}))
+  self.assertNotIn('[[hooks.SessionStart]]',(self.home/'.codex/config.toml').read_text(encoding='utf-8'));self.assertFalse(read_json(self.home/'.gemini/config/plugins/ai-kit/hooks.json')['ai-kit-session-news']['enabled'])
+ def test_doctor_proves_session_news_answers_without_writing(self):
+  self.run_kit();text=self.doctor_text()
+  self.assertIn('[OK] Hook session-news: synthetic test, the script runs and answers',text);self.assertFalse((self.home/'.ai-kit/news.json').exists())
+  self.assertNotIn('Guardrail session-news',text)
  def test_doctor_proves_guardrails_block(self):
   # Audit : un garde-fou déclaré doit être prouvé, pas seulement présent.
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':True}});self.run_kit()
@@ -160,16 +177,16 @@ class HookInstallTests(unittest.TestCase):
   text=self.doctor_text();self.assertNotIn('[OK] Codex: kit guardrails approved',text);self.assertIn('approval not verifiable automatically',text)
  def test_defaults_protect_configuration_only(self):
   # protected-paths is on by default (configuration of the kit and CLIs); dbt-prod-guard stays opt-in.
-  self.run_kit();self.assertEqual(sorted(read_json(self.home/'.ai-kit/state.json')['hooks']),['protected-paths'])
+  self.run_kit();self.assertEqual(sorted(read_json(self.home/'.ai-kit/state.json')['hooks']),['protected-paths','session-news'])  # session-news: on by default too (0.47)
   self.assertEqual([g['hooks'][0]['name'] for g in self.settings()['hooks']['BeforeTool']],['ai-kit-protected-paths'])
-  self.overrides({'hooks':{'protected-paths':False}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertEqual(read_json(self.home/'.ai-kit/state.json')['hooks'],{})
+  self.overrides({'hooks':{'protected-paths':False,'session-news':False}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertEqual(read_json(self.home/'.ai-kit/state.json')['hooks'],{})
  def test_enable_then_disable(self):
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':True}});self.run_kit()
   groups=self.settings()['hooks']['BeforeTool'];self.assertEqual(len(groups),2);names={g['hooks'][0]['name'] for g in groups};self.assertEqual(names,{'ai-kit-dbt-prod-guard','ai-kit-protected-paths'})
   self.assertEqual({g['hooks'][0]['name']:g['matcher'] for g in groups}['ai-kit-dbt-prod-guard'],'run_shell_command');groups=[g for g in groups if g['hooks'][0]['name']=='ai-kit-dbt-prod-guard'];self.assertTrue((self.home/'.ai-kit/hooks/dbt-prod-guard.py').is_file());self.assertIn(str(self.home.resolve()),groups[0]['hooks'][0]['command'])  # Windows: the temporary folder has a short name (RUNNER~1)
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':False}});self.run_kit()
   groups=self.settings()['hooks']['BeforeTool'];self.assertEqual(len(groups),1);self.assertFalse((self.home/'.ai-kit/hooks/protected-paths.py').exists())
-  self.overrides({'hooks':{'protected-paths':False}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertFalse((self.home/'.gemini/hooks/ai-kit').exists())
+  self.overrides({'hooks':{'protected-paths':False,'session-news':False}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertFalse((self.home/'.gemini/hooks/ai-kit').exists())
  def test_user_hooks_preserved(self):
   s=self.home/'.gemini/settings.json';s.parent.mkdir(parents=True);s.write_text(json.dumps({'hooks':{'BeforeTool':[{'matcher':'*','hooks':[{'name':'mine','type':'command','command':'echo'}]}],'SessionStart':[{'hooks':[{'type':'command','command':'x'}]}]}}),encoding='utf-8')
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':False}});self.run_kit();h=self.settings()['hooks'];self.assertEqual(h['BeforeTool'][0]['hooks'][0]['name'],'mine');self.assertEqual(len(h['BeforeTool']),2);self.assertIn('SessionStart',h)

@@ -10,7 +10,7 @@ from typing import Optional
 
 from . import gemini
 from ..interface import DoctorContext, Plan, Status
-from ..core import (ROOT, USER_CONTEXT, json_bytes, hook_command, command_skill_text, skill_prefix, free_name, rename_references,
+from ..core import (ROOT, USER_CONTEXT, json_bytes, hook_command, cli_event, command_skill_text, skill_prefix, free_name, rename_references,
                     renamed_notice, live_call, LIVE_PROMPT, skills_read)
 
 AGY_PLUGIN = '.gemini/config/plugins/ai-kit'
@@ -86,11 +86,15 @@ def install(p: Plan) -> None:
         p.notices.append(notice)
     agy_hooks = {}
     for name, spec in p.hook_manifest.items():
-        script = p.hooks_dir/spec['script']
-        # agy tool names: run_command for the shell, *write*/*replace*/*edit* for file writes.
-        parts = spec['matcher'].split('|')
-        matcher = '|'.join((['.*(write|replace|edit).*'] if any(p != 'run_shell_command' for p in parts) else []) + (['run_command'] if 'run_shell_command' in parts else []))
-        agy_hooks['ai-kit-'+name] = {'enabled': name in p.enabled_hooks, 'PreToolUse': [{'matcher': matcher, 'hooks': [{'type': 'command', 'command': hook_command(script), 'timeout': 20}]}]}
+        command = {'type': 'command', 'command': hook_command(p.hooks_dir/spec['script']), 'timeout': 20}
+        event = cli_event(spec['event'])
+        if event == 'PreToolUse':
+            # agy tool names: run_command for the shell, *write*/*replace*/*edit* for file writes.
+            parts = spec['matcher'].split('|')
+            matcher = '|'.join((['.*(write|replace|edit).*'] if any(p != 'run_shell_command' for p in parts) else []) + (['run_command'] if 'run_shell_command' in parts else []))
+            agy_hooks['ai-kit-'+name] = {'enabled': name in p.enabled_hooks, event: [{'matcher': matcher, 'hooks': [command]}]}
+        else:  # a lifecycle event (SessionStart): a flat list of commands, the shape `agy plugin validate` accepts
+            agy_hooks['ai-kit-'+name] = {'enabled': name in p.enabled_hooks, event: [command]}
     p.managed_write(plugin/'hooks.json', json_bytes(agy_hooks), 'Plugin agy')
     if p.enabled_mcp:
         p.managed_write(plugin/'mcp_config.json', json_bytes({'mcpServers': p.enabled_mcp}), 'Plugin agy')

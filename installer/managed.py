@@ -3,7 +3,7 @@ workstation. Generated from organization.toml; nothing is installed, nothing out
 import json
 from pathlib import Path
 
-from .core import ROOT, KitError, read_json
+from .core import ROOT, KitError, read_json, is_guardrail
 from .settings import organization
 
 # Written by an agent, these would switch a guardrail off or change what every session loads. 30_USER.md and
@@ -17,7 +17,7 @@ POSIX_HOOKS = '"$HOME/.ai-kit/hooks/'
 
 def locked(org, manifest):
     """The guardrails to enforce: those the organization locks, or every guardrail on by default when it locks none."""
-    names = org.get('locked_hooks') or [n for n, spec in manifest.items() if spec.get('default')]
+    names = org.get('locked_hooks') or [n for n, spec in manifest.items() if spec.get('default') and is_guardrail(spec)]
     unknown = [n for n in names if n not in manifest]
     if unknown:
         raise KitError('organization.toml locked_hooks: unknown guardrail '+', '.join(unknown)+' (known: '+', '.join(sorted(manifest))+').')

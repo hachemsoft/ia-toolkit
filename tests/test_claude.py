@@ -149,6 +149,22 @@ class SettingsTests(Base):
         with self.assertRaises(KitError):
             self.run_kit()
 
+    def test_session_news_beside_a_personal_session_start_hook_and_edits_detected(self):
+        settings = self.home/'.claude/settings.json'
+        settings.parent.mkdir()
+        settings.write_text(json.dumps({'hooks': {'SessionStart': [PERSONAL_HOOK]}}), encoding='utf-8')
+        self.run_kit()
+        groups = read_json(settings)['hooks']['SessionStart']
+        self.assertEqual(groups[0], PERSONAL_HOOK)
+        self.assertEqual(len(groups), 2)
+        self.assertNotIn('matcher', groups[1])
+        self.assertIn('session-news.py', groups[1]['hooks'][0]['command'])
+        data = read_json(settings)
+        data['hooks']['SessionStart'][1]['matcher'] = 'startup'
+        settings.write_text(json.dumps(data), encoding='utf-8')
+        with self.assertRaises(KitError):
+            self.run_kit()
+
     def test_mcp_servers_in_claude_json_translated_and_the_rest_kept(self):
         state = self.home/'.claude.json'
         state.write_text(json.dumps({'numStartups': 3, 'mcpServers': {'mine': {'type': 'stdio', 'command': 'x'}}}), encoding='utf-8')

@@ -128,6 +128,16 @@ def merge_defaults(current, defaults):
 def quote_path(path):
     return '"'+str(path)+'"' if os.name == 'nt' else shlex.quote(str(path))
 
+# Manifest events (Gemini CLI's names) and their name in the CLIs that use Claude Code's: a guardrail runs before a tool,
+# the session-news hook at session start. A hook that is not a guardrail is never locked or managed by IT.
+CLI_EVENTS = {'BeforeTool': 'PreToolUse'}
+
+def cli_event(event):
+    return CLI_EVENTS.get(event, event)
+
+def is_guardrail(spec):
+    return spec.get('event') == 'BeforeTool'
+
 def hook_command(script):
     """Command a CLI runs for a kit guardrail: this Python, isolated (-I: no PYTHON* variables, no current folder on the import path)."""
     return quote_path(sys.executable)+' -I '+quote_path(script)

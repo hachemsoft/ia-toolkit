@@ -13,7 +13,7 @@ import shutil
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (ROOT, USER_CONTEXT, KitError, digest, hook_command, split_block, place_block, json_bytes, read_json, _ts, live_call, LIVE_PROMPT, DEFAULT_PREFIX, skill_prefix, rename_references, renamed_skill_file)
+from ..core import (ROOT, USER_CONTEXT, KitError, digest, hook_command, cli_event, split_block, place_block, json_bytes, read_json, _ts, live_call, LIVE_PROMPT, DEFAULT_PREFIX, skill_prefix, rename_references, renamed_skill_file)
 
 CLAUDE_DIR = '.claude'
 # The marker text is an identifier, kept as written in 0.35 ("overrides.json" is now overrides.toml).
@@ -138,6 +138,21 @@ def kit_groups(groups):
     return [i for i, g in enumerate(groups) if isinstance(g, dict) and any(isinstance(h, dict) and KIT_HOOK.search(str(h.get('command', ''))) for h in g.get('hooks', []))]
 
 
+def kit_events(manifest):
+    """The settings.json events the kit's hooks use, in a fixed order (the digest of the kit's groups follows it)."""
+    return sorted({cli_event(spec['event']) for spec in manifest.values()})
+
+
+def kit_hook_groups(hooks, events):
+    """The kit's groups across those events, in that order."""
+    found = []
+    for event in events:
+        groups = hooks.get(event, [])
+        if isinstance(groups, list):
+            found += [groups[i] for i in kit_groups(groups)]
+    return found
+
+
 def hook_matcher(manifest_matcher):
     parts = manifest_matcher.split('|')
     tools = (['Bash', 'PowerShell'] if 'run_shell_command' in parts else []) + (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'] if any(x != 'run_shell_command' for x in parts) else [])
@@ -185,31 +200,35 @@ def finalize(p: Plan, active: bool = True) -> None:
     path = p.home/rel
     settings = read_json(path) if path.exists() else {}
     hooks = settings.get('hooks', {})
-    if not isinstance(hooks, dict) or not isinstance(hooks.get('PreToolUse', []), list):
-        raise KitError('~/.claude/settings.json: hooks.PreToolUse must be a list; configuration left untouched.')
-    groups = hooks.get('PreToolUse', [])
-    mine = [groups[i] for i in kit_groups(groups)]
+    events = kit_events(getattr(p, 'hook_manifest', None) or read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {}))
+    if not isinstance(hooks, dict) or not all(isinstance(hooks.get(e, []), list) for e in events):
+        raise KitError('~/.claude/settings.json: hooks.'+' and hooks.'.join(events)+' must be lists; configuration left untouched.')
+    mine = kit_hook_groups(hooks, events)
     if mine and old_blocks.get(rel) != digest(json_bytes(mine)):
-        raise KitError('Kit guardrail edited by hand in ~/.claude/settings.json (hooks.PreToolUse): put it back or remove it, then update.')
-    new_groups = []
+        raise KitError('Kit hook edited by hand in ~/.claude/settings.json (hooks.'+' or hooks.'.join(events)+'): put it back or remove it, then update.')
+    new_groups = {event: [] for event in events}
     if active:
         for name, spec in p.hook_manifest.items():
             if name in p.enabled_hooks:
-                new_groups.append({'matcher': hook_matcher(spec['matcher']),
-                                   'hooks': [{'type': 'command', 'command': hook_command(p.hooks_dir/spec['script']), 'timeout': 20}]})
-    if mine or new_groups:
-        kept = [g for i, g in enumerate(groups) if i not in kit_groups(groups)] + new_groups
-        if kept:
-            hooks['PreToolUse'] = kept
-        else:
-            hooks.pop('PreToolUse', None)
+                group = {'hooks': [{'type': 'command', 'command': hook_command(p.hooks_dir/spec['script']), 'timeout': 20}]}
+                if spec['matcher']:  # a guardrail runs on some tools; session-news on every session start (it reads `source` itself)
+                    group = {'matcher': hook_matcher(spec['matcher']), **group}
+                new_groups[cli_event(spec['event'])].append(group)
+    if mine or any(new_groups.values()):
+        for event in events:
+            groups = hooks.get(event, [])
+            kept = [g for i, g in enumerate(groups) if i not in kit_groups(groups)] + new_groups[event]
+            if kept:
+                hooks[event] = kept
+            else:
+                hooks.pop(event, None)
         if hooks:
             settings['hooks'] = hooks
         else:
             settings.pop('hooks', None)
         p.writes[path] = json_bytes(settings)
-    if new_groups:
-        p.blocks[rel] = digest(json_bytes(new_groups))
+    if any(new_groups.values()):
+        p.blocks[rel] = digest(json_bytes([g for event in events for g in new_groups[event]]))
     # ~/.claude.json: MCP servers
     rel = '.claude.json'
     path = p.home/rel
@@ -260,8 +279,8 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
             status(target.is_file(), 'File imported by ~/.claude/CLAUDE.md present: '+line[1:])
     if state.get('hooks'):
         settings = read_json(home/CLAUDE_DIR/'settings.json') if (home/CLAUDE_DIR/'settings.json').is_file() else {}
-        groups = (settings.get('hooks') or {}).get('PreToolUse', [])
-        mine = [groups[i] for i in kit_groups(groups)] if isinstance(groups, list) else []
+        hooks = settings.get('hooks') if isinstance(settings.get('hooks'), dict) else {}
+        mine = kit_hook_groups(hooks, kit_events(read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})))
         status(bool(mine) and digest(json_bytes(mine)) == blocks.get(CLAUDE_DIR+'/settings.json'), 'Guardrails configured in ~/.claude/settings.json')
     kit_servers = [name for name in state.get('mcp', {})]
     if kit_servers:

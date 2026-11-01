@@ -463,8 +463,8 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
         # The command is "<python> -I <script>" (core.hook_command), each part quoted: split on " -I ", not on spaces,
         # so that a home folder with spaces ("Home à") gives the right path.
         script = Path(hook['group']['hooks'][0]['command'].split(' -I ', 1)[-1].strip().strip('"\''))
-        status(isinstance(groups,list) and hook['group'] in groups and script.is_file(),'Guardrail configured in settings.json: '+name)
-    if not state.get('hooks'):
+        status(isinstance(groups,list) and hook['group'] in groups and script.is_file(),('Guardrail' if hook.get('event') == 'BeforeTool' else 'Hook')+' configured in settings.json: '+name)
+    if not any(h.get('event') == 'BeforeTool' for h in state.get('hooks',{}).values()):
         print('[Info] No guardrail enabled; see docs/hooks.md (dbt-prod-guard, protected-paths).')
     for name,server in state.get('mcp',{}).items():
         status(settings.get('mcpServers',{}).get(name)==server,'MCP configuration: '+name)

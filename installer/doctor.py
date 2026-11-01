@@ -23,6 +23,17 @@ GUARDRAIL_PROBES = {
     'dbt-prod-guard': lambda home: {'tool_name': 'run_shell_command', 'tool_input': {'command': 'dbt run --target prod'}, 'cwd': str(home)},
     'protected-paths': lambda home: {'tool_name': 'write_file', 'tool_input': {'file_path': str(home/'.ai-kit'/'overrides.toml')}, 'cwd': str(home)},
 }
+# session-news on a /clear: answers {} and writes nothing (a startup probe would mark the real news as announced).
+HOOK_PROBES = {'session-news': lambda home: {'source': 'clear', 'hook_event_name': 'SessionStart'}}
+
+
+def blocks(answer):
+    return answer.get('decision') == 'deny' or answer.get('hookSpecificOutput', {}).get('permissionDecision') == 'deny'
+
+
+
+def proc_ok(proc):
+    return proc is not None and proc.returncode == 0
 
 
 def command_parts(command):
@@ -34,26 +45,30 @@ def command_parts(command):
 def guardrail_checks(home, state, status):
     """Each enabled guardrail: its Python and script exist, and it really blocks a known case. A guardrail that cannot run lets everything through."""
     for name, hook in sorted(state.get('hooks', {}).items()):
+        kind = 'Guardrail' if hook.get('event') == 'BeforeTool' else 'Hook'
         interpreter, script = command_parts(hook['group']['hooks'][0]['command'])
         if not interpreter or not interpreter.is_file():
-            status(False, 'Guardrail '+name+': Python not found ('+str(interpreter)+'); run update to point to the current Python')
+            status(False, kind+' '+name+': Python not found ('+str(interpreter)+'); run update to point to the current Python')
             continue
         if not script.is_file():
-            status(False, 'Guardrail '+name+': script missing ('+str(script)+'); run update')
+            status(False, kind+' '+name+': script missing ('+str(script)+'); run update')
             continue
-        probe = GUARDRAIL_PROBES.get(name)
+        probe = GUARDRAIL_PROBES.get(name) or HOOK_PROBES.get(name)
         if not probe:
             continue
         env = {k: v for k, v in os.environ.items() if k != 'AI_KIT_ALLOW_PROD'}
         env.update({'HOME': str(home), 'USERPROFILE': str(home)})
+        proc = None
         try:
             proc = subprocess.run([str(interpreter), '-I', str(script)], input=json.dumps(probe(home)), capture_output=True, text=True,
                                   encoding='utf-8', errors='replace', timeout=20, env=env)
             answer = json.loads(proc.stdout or '{}')
         except (OSError, ValueError, subprocess.SubprocessError):
             answer = {}
-        blocked = answer.get('decision') == 'deny' or answer.get('hookSpecificOutput', {}).get('permissionDecision') == 'deny'
-        status(blocked, 'Guardrail '+name+': synthetic test, the script blocks a known case when run (this does not prove the CLI calls it)')
+        if name in HOOK_PROBES:
+            status(proc_ok(proc) and answer == {}, 'Hook '+name+': synthetic test, the script runs and answers (this does not prove the CLI calls it)')
+        else:
+            status(blocks(answer), 'Guardrail '+name+': synthetic test, the script blocks a known case when run (this does not prove the CLI calls it)')
 
 
 REPO_SKILL_DIRS = ('.agents/skills', '.gemini/skills', '.codex/skills')

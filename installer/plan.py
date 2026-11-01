@@ -2,7 +2,7 @@
 practices, skills, agents and guardrails, and the old files to remove. apply (installer/cli.py) runs them in order."""
 import re
 
-from .core import ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, adopt_user_copy
+from .core import is_guardrail, ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, adopt_user_copy
 from .toml_files import dump_toml, set_list, set_key, set_schema
 from .adapters import ADAPTERS
 from .settings import (organization, team_settings, personal_settings, merge_settings, allowed_commands, resolve_skills,
@@ -123,8 +123,8 @@ def guardrails(overrides, hooks_dir):
         raise KitError('hooks must be an object name → true/false.')
     wanted_hooks = {**{n: True for n, spec in hook_manifest.items() if spec.get('default')}, **wanted_hooks}
     locked = organization().get('locked_hooks', [])
-    if not isinstance(locked, list) or not all(isinstance(n, str) and n in hook_manifest for n in locked):
-        raise KitError('organization.toml: locked_hooks must list guardrails of the kit ('+', '.join(sorted(hook_manifest))+').')
+    if not isinstance(locked, list) or not all(isinstance(n, str) and n in hook_manifest and is_guardrail(hook_manifest[n]) for n in locked):
+        raise KitError('organization.toml: locked_hooks must list guardrails of the kit ('+', '.join(sorted(n for n, s in hook_manifest.items() if is_guardrail(s)))+').')
     turned_off = [n for n in locked if wanted_hooks.get(n) is False]
     wanted_hooks.update({n: True for n in locked})
     enabled_hooks = {}
@@ -136,7 +136,7 @@ def guardrails(overrides, hooks_dir):
             continue
         spec = hook_manifest[name]
         script = hooks_dir/spec['script']
-        enabled_hooks[name] = {'event': spec['event'], 'group': {'matcher': spec['matcher'], 'hooks': [{'name': 'ai-kit-'+name, 'type': 'command', 'command': hook_command(script)}]}}
+        enabled_hooks[name] = {'event': spec['event'], 'group': {**({'matcher': spec['matcher']} if spec['matcher'] else {}), 'hooks': [{'name': 'ai-kit-'+name, 'type': 'command', 'command': hook_command(script)}]}}
     return hook_manifest, enabled_hooks, turned_off
 
 
