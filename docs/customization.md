@@ -173,6 +173,10 @@ Before 0.36 the kit could write some of these settings for the first CLI of the 
 
 Two deterministic hooks, set in `overrides.toml` under `[hooks]`: `protected-paths` is on by default (it protects the configuration of the kit and of the CLIs; `protected-paths = false` turns it off), `dbt-prod-guard` is off by default. See [guardrails](hooks.md).
 
+## News at session start
+
+The `session-news` hook (on by default, `[hooks] session-news = false` turns it off) tells the agent once what is new: the installed version, the entries of the repository's `NEWS.md`, a newer version available. `[news] check_remote = false` keeps it local: no daily read of the kit's remote, no version proposed. Both keys accept an organization default in `defaults`. An organization announces a skill or a training by adding a section to the `NEWS.md` of its copy of the repository, optionally aimed at `profiles` or `teams`: see [session-news](hooks.md#session-news).
+
 ## Identity
 
 See [identity](identity.md): how the kit detects the signed-in person, what it does with that, and what it does not.
