@@ -13,7 +13,7 @@ import unittest
 from unittest import mock
 
 from installer import cli, settings
-from installer.core import ROOT, read_json
+from installer.core import ROOT, friction_module, read_json
 from installer.toml_files import read_toml
 
 ORG = {'allowed_domains': [], 'defaults': {}, 'friction_tracker': {'kind': 'gitlab', 'project': 'tools/ai-kit', 'labels': ['friction', 'kit']}}
@@ -110,10 +110,14 @@ class TrackerTests(Base):
         call = self.calls()[-1]
         self.assertEqual(call[:3], ['issue', 'create', '--repo=tools/ai-kit'])
         self.assertIn('--title=[friction] docs on /build', call)
-        body = next(a for a in call if a.startswith('--description='))
+        self.assertTrue(any(a.startswith('--description=The plan step is too long') for a in call))
+        # The whole command, in process: a Windows .cmd wrapper cannot receive an argument holding a newline (cmd.exe
+        # truncates the line there), while a real glab.exe or gh.exe does; so the body and the labels are checked here.
+        command = friction_module().issue_command(self.org['friction_tracker'], entry, 'glab')
+        body = next(a for a in command if a.startswith('--description='))
         self.assertIn('The plan step is too long', body)
         self.assertIn('(frictions: '+entry['id']+')', body)
-        self.assertIn('--label=friction,kit', call)
+        self.assertIn('--label=friction,kit', command)
         self.assertEqual(self.sent()[entry['id']]['url'], 'https://gitlab.example.org/tools/ai-kit/-/issues/1')
         proc = self.script('--sync')
         self.assertIn('Nothing to send', proc.stdout)
@@ -150,7 +154,9 @@ class TrackerTests(Base):
         call = self.calls()[-1]
         self.assertEqual(call[:3], ['issue', 'create', '--repo=github.acme.org/acme/ai-kit'])
         self.assertTrue(any(a.startswith('--body=') for a in call))
-        self.assertIn('--label=friction', call)
+        command = friction_module().issue_command(self.org['friction_tracker'], self.lines()[-1], 'gh')  # see above: in process
+        self.assertTrue(any(a.startswith('--body=') and '(frictions: ' in a for a in command))
+        self.assertIn('--label=friction', command)
 
     def test_doctor_reports_the_tracker(self):
         out = io.StringIO()
