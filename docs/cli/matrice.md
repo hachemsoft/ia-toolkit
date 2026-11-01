@@ -10,7 +10,6 @@ The kit content (practices, skills, commands, agents, guardrails) is written onc
 | Antigravity CLI (agy) | ✅ integrated | 1.4.12 | [Antigravity CLI](agy.md) |
 | Codex CLI | ✅ integrated | 0.164 (files, repo skills and evals) | [Codex CLI](codex.md) |
 | Claude Code | ✅ integrated | 2.1.316 (files and evals in `claude -p`; interactive checks to do) | [Claude Code](claude-code.md) |
-| GitHub Copilot CLI | ❌ no adapter | — | — |
 
 A CLI without an adapter can already read the kit's repository files (`AGENTS.md`, `GLOSSARY.md`, `REVIEW.md`) if it reads `AGENTS.md`, but it has none of the kit's global layers, commands, skills or guardrails.
 
