@@ -170,6 +170,15 @@ class InstallTests(Base):
             cli.doctor(self.home)
         self.assertIn('[OK] The `ai-kit` command runs the launcher of '+str(moved), out.getvalue())
 
+    def test_doctor_does_not_take_the_kit_command_for_another_copy(self):
+        self.apply()
+        out = io.StringIO()
+        with mock.patch.dict(os.environ, {'PATH': str(self.shim().parent)}), contextlib.redirect_stdout(out):
+            cli.doctor(self.home)
+        self.assertNotIn('another copy of the kit', out.getvalue())
+        self.assertIn('[OK] The `ai-kit` command runs the launcher of '+str(self.kit), out.getvalue())
+        self.assertNotIn('is not on the PATH of this terminal', out.getvalue())
+
     def test_unknown_shell_gets_the_line_to_add(self):
         with mock.patch.dict(os.environ, {'SHELL': '/usr/bin/fish'}):
             out = self.apply()
