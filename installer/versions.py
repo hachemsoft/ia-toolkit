@@ -22,7 +22,8 @@ def content_digest(path):
     """Digest of a skill folder (every file, by relative path) or of an agent file, line endings normalised: a Windows
     checkout (CRLF) gives the same digest."""
     digest = hashlib.sha256()
-    files = sorted(p for p in path.rglob('*') if p.is_file()) if path.is_dir() else [path]
+    # Sorted on the relative path as text: Windows compares Path objects case-insensitively, which changes the order.
+    files = sorted((p for p in path.rglob('*') if p.is_file()), key=lambda p: p.relative_to(path).as_posix()) if path.is_dir() else [path]
     for file in files:
         rel = file.relative_to(path).as_posix() if path.is_dir() else file.name
         digest.update(rel.encode('utf-8') + b'\0' + file.read_bytes().replace(b'\r\n', b'\n') + b'\0')

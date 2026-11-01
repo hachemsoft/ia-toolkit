@@ -51,6 +51,11 @@ class LockTests(unittest.TestCase):
                 (folder/'SKILL.md').write_bytes(text)
                 (folder/'refs'/'a.md').write_bytes(b'ref\n')
             self.assertEqual(versions.content_digest(unix), versions.content_digest(windows))
+            # The order does not depend on the system's comparison of paths (case-insensitive on Windows).
+            (unix/'B.md').write_bytes(b'b\n'); (windows/'B.md').write_bytes(b'b\n')
+            files = sorted(p.relative_to(unix).as_posix() for p in unix.rglob('*') if p.is_file())
+            self.assertEqual(files, ['B.md', 'SKILL.md', 'refs/a.md'])
+            self.assertEqual(versions.content_digest(unix), versions.content_digest(windows))
             (windows/'refs'/'a.md').write_bytes(b'changed\n')
             self.assertNotEqual(versions.content_digest(unix), versions.content_digest(windows))
 
