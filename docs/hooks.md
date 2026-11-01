@@ -52,6 +52,14 @@ Five different facts, never merged: the guardrail is **present** (its Python and
 
 The kit installs per person, so a person (and an agent with shell access) can in principle change what it wrote. For rules that must hold whatever happens, IT deploys the managed settings of each CLI (MDM, Group Policy or the vendor's admin console); they take precedence over the person's settings. `organization.toml` `locked_hooks` keeps a guardrail on against a team's or a person's settings, which is the kit's own level of enforcement.
 
+The kit writes these files for you, from `organization.toml`: `managed-settings --out <empty folder>`, with a `README.txt` saying where each one goes. The guardrails are those of `locked_hooks`, or the ones on by default when it is empty. Nothing is installed: IT reviews and deploys them.
+
+| File written | What it holds |
+| --- | --- |
+| `claude-code/managed-settings.json` | edits to the kit's and Claude Code's configuration denied; the guardrails as managed hooks; with `--managed-hooks-only`, hooks from any other source ignored |
+| `gemini-cli/settings.json` (system settings) | the guardrails; YOLO mode off |
+| `codex/requirements.toml` | sandbox and approvals kept on: the agent writes only inside its repo |
+
 | CLI | Where IT deploys it | What to set |
 | --- | --- | --- |
 | Claude Code | `managed-settings.json` (macOS `/Library/Application Support/ClaudeCode/`, Linux `/etc/claude-code/`, Windows `C:\Program Files\ClaudeCode\`), or the admin console | `permissions.deny` on `Edit(~/.ai-kit/**)`, `Edit(~/.claude/settings.json)` and the other protected paths; the kit's hooks declared there with `allowManagedHooksOnly`; the sandbox for shell commands |

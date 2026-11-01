@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.44.0
+
+For IT:
+- `managed-settings --out <empty folder>` writes, from `organization.toml`, the managed settings that make the guardrails hold whatever a person or an agent changes on the workstation: Claude Code (edits to the kit's and Claude Code's configuration denied, the guardrails as managed hooks, `--managed-hooks-only` to ignore every other hook), Gemini CLI system settings (the guardrails, YOLO mode off), Codex CLI requirements (sandbox and approvals kept on), and a README saying where each file goes. The guardrails are those of `locked_hooks`, or those on by default. Nothing is installed: IT reviews and deploys the files with its device management.
+
 ## 0.43.0
 
 Maintainability:

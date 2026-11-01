@@ -599,7 +599,7 @@ def main(argv=None):
         print('Python 3.9 minimum required (3.11 or newer recommended).',file=sys.stderr)
         return 2
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
-    parser.add_argument('action',nargs='?',choices=['setup','update','doctor','usage','uninstall'],
+    parser.add_argument('action',nargs='?',choices=['setup','update','doctor','usage','uninstall','managed-settings'],
                         help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices')
     parser.add_argument('--since',type=int,default=42,help='usage: window in days (default 42)')
     parser.add_argument('--json',type=Path,help='usage: write the report to this file')
@@ -615,6 +615,8 @@ def main(argv=None):
     parser.add_argument('--no-live',action='store_true',help='accepted for compatibility: setup and update never call the model')
     parser.add_argument('--yes',action='store_true',help='uninstall: confirm without a question (automation)')
     parser.add_argument('--plain',action='store_true',help='plain text questions and output, without colours or arrow-key menus')
+    parser.add_argument('--out',type=Path,help='managed-settings: an empty folder to write the files IT deploys')
+    parser.add_argument('--managed-hooks-only',action='store_true',help='managed-settings: Claude Code ignores hooks from any other source')
     parser.add_argument('--version',action='store_true',help='which copy of the kit runs, and with which Python')
     args = parser.parse_args(argv)
     if args.version:
@@ -644,6 +646,11 @@ def main(argv=None):
             if args.live and os.environ.get('AI_KIT_NO_LIVE') == '1':
                 raise KitError('doctor --live makes a real call to the model, refused because AI_KIT_NO_LIVE=1 is set.')
             return doctor(home, live=args.live)
+        if args.action == 'managed-settings':
+            if not args.out:
+                raise KitError('managed-settings needs --out <empty folder>.')
+            from .managed import managed_settings
+            return managed_settings(args.out, args.managed_hooks_only)
         if args.action == 'usage':
             return usage(home, args.since, args.json, args.min_sessions, args.min_prompts)
         if not args.dry_run:

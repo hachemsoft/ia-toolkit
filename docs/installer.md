@@ -49,6 +49,7 @@ The context layers and `30_USER.md` are in `~/.ai-kit/context/`, whatever the CL
 | Uninstall (`--dry-run` to see the list, `--yes` for automation, `--remove-runtime` for the private environment too) | `sh scripts/bootstrap.sh uninstall` | `Installer.cmd uninstall` |
 | Check the connection (real call to the model, may be billed) | `sh scripts/bootstrap.sh doctor --live` | `Installer.cmd doctor --live` |
 | Usage review | `sh scripts/bootstrap.sh usage` | `Installer.cmd usage` |
+| For IT: the managed settings that make the guardrails hold ([guardrails](hooks.md#a-lock-nobody-on-the-workstation-can-remove)) | `sh scripts/bootstrap.sh managed-settings --out <empty folder>` | `Installer.cmd managed-settings --out <empty folder>` |
 
 Windows: to get a Command Prompt in the kit folder, type `cmd` in the Explorer address bar and press Enter. The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) look for Python 3.9 or newer, then hand over to `scripts/launcher.py` (above); without a usable Python they say what to ask IT. They need neither PowerShell nor administrator rights.
 
