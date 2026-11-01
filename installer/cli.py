@@ -18,6 +18,7 @@ from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
 from .settings import (practice_file, profile_menu, profile_ids, load_profile, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, organization, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, allowed_domains, domain_allowed, team_ids, profile_practices, RENAMED_SKILLS, resolve_skills, skill_note, RETIRED_KEYS, retired_key_notice, unknown_names, allowed_commands, selected_commands, LEGACY_KIT_DIR, recorded_targets, version_changes, PERSONAL_FILE, LEGACY_PERSONAL_FILE, personal_settings, CHOICE_KEYS)  # noqa: F401 (re-exported)
 from . import command as kit_command
+from .console import styled_output
 from .commit import (BACKUPS_KEPT, prune_backups, commit_changes, atomic_write, KIT_MANAGED, managed_roots, prune_empty_dirs)  # noqa: F401 (re-exported)
 from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKILL_DIRS, repo_root, repo_skill_overrides, mcp_report, print_summary, doctor, kit_version, source_folder, version_line, SCRIPT_INTERPRETER, kit_commands_on_path, runtime_checks, doctor_checks, release_check, live_checks, plain_text_problem)  # noqa: F401 (re-exported)
 from .plan import (effective_settings, resolve_selection, personal_file, practice_layers, skill_sources, select_agents,
@@ -365,6 +366,20 @@ def relocate_user_context(p, home, state, user_file, kit):
 PERSONAL_KEPT = ('.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learning/', '.ai-kit/runtime/')
 
 
+def _nothing():
+    pass
+
+
+def _registry_add():
+    if kit_command.registry_entry(True):
+        kit_command.announce_environment_change()
+
+
+def _registry_remove():
+    kit_command.registry_entry(False)
+    kit_command.announce_environment_change()
+
+
 def plan_command(p, managed_write, choice):
     """The `ai-kit` command of installer/command.py in the plan: the shim as a managed file, the startup block as an
     untracked write. Returns (state entry, function to call once the files are written: registry, execute bit)."""
@@ -375,17 +390,14 @@ def plan_command(p, managed_write, choice):
     shim = kit/'bin'/kit_command.SHIM_NAME
     rel = shim.relative_to(home).as_posix()
     entry = {'chosen': chosen, 'folder': None, 'startup_file': None, 'registry': False}
-    def after():
-        pass
+    after = _nothing
     if not chosen:
         if previous.get('startup_file') and (home/previous['startup_file']).is_file():
             text = (home/previous['startup_file']).read_text(encoding='utf-8')
             if kit_command.BLOCK_START in text:
                 p.writes[home/previous['startup_file']] = kit_command.without_block(text).encode('utf-8')
         if previous.get('registry') and os.name == 'nt' and kit_command.real_home(home):
-            def after():
-                kit_command.registry_entry(False)
-                kit_command.announce_environment_change()
+            after = _registry_remove
         return entry, after
     if folder is None:
         # Run without the launcher (a developer's pip install .): nothing to point to; an existing command stays as it is.
@@ -402,15 +414,13 @@ def plan_command(p, managed_write, choice):
     if os.name == 'nt':
         entry['registry'] = kit_command.real_home(home)
         if entry['registry']:
-            def after():
-                if kit_command.registry_entry(True):
-                    kit_command.announce_environment_change()
+            after = _registry_add
         else:
             p.notices.append('[Info] `ai-kit` command written for this trial home folder only: the user PATH is not changed.')
     else:
-        def after():
+        def after(shim=shim):
             if shim.is_file():
-                shim.chmod(0o755)
+                shim.chmod(0o755)  # the execute bit, once the file is written
         name = kit_command.startup_file()
         line = kit_command.path_line(home)
         if name:
@@ -610,73 +620,76 @@ def main(argv=None):
     if args.version:
         print(version_line())
         return 0
-    try:
-        home = args.home.resolve()
-        # Guided: no action, or setup without --profile at a terminal. Without a terminal, setup reuses the recorded choices.
-        guided = args.action is None or (args.action == 'setup' and not args.profile and not args.dry_run and interactive())
-        if guided:
-            if not interactive():
-                # No terminal to ask in: never wait for an answer that cannot come.
-                raise KitError('no terminal to ask your choices in: give them as options, for example '
-                               'setup --profile general --user <email> (profiles: '+', '.join(profile_ids())+').')
-            from .wizard import start
-            from .ui import make_ui
-            return start(make_ui(args.plain), home, setup=args.action == 'setup')
-        if args.action == 'uninstall':
-            if args.dry_run or args.yes:
-                return uninstall(home, dry_run=args.dry_run)
-            if not interactive():
-                raise KitError('uninstall needs a confirmation: add --yes, or --dry-run to see what would be removed.')
-            from .ui import make_ui
-            ui = make_ui(args.plain)
-            return uninstall(home, confirm=lambda summary: ui.confirm('Remove the kit configuration listed above? A backup is kept.', default=False))
-        if args.action == 'doctor':
-            if args.live and os.environ.get('AI_KIT_NO_LIVE') == '1':
-                raise KitError('doctor --live makes a real call to the model, refused because AI_KIT_NO_LIVE=1 is set.')
-            return doctor(home, live=args.live)
-        if args.action == 'managed-settings':
-            if not args.out:
-                raise KitError('managed-settings needs --out <empty folder>.')
-            from .managed import managed_settings
-            return managed_settings(args.out, args.managed_hooks_only)
-        if args.action == 'usage':
-            return usage(home, args.since, args.json, args.min_sessions, args.min_prompts)
-        if not args.dry_run:
-            migrate_kit_dir(home)  # with --dry-run, apply announces it without renaming
-        state = read_json(home/'.ai-kit/state.json') or read_json(home/LEGACY_KIT_DIR/'state.json')
-        target = args.target
-        if not state and args.action == 'update':
-            # After an uninstall: the choices of the last installation, from its backup, rather than an error.
-            state = last_installation(home)
-            if state:
-                target = target or state.get('targets') or None
-                print('[Info] The kit was not installed: reinstalled with the choices of your last installation (profile '
-                      + state['profile']+', '+', '.join(state.get('targets') or [])+'). Change them with setup.')
-        identity = resolve_identity(args, home, state)
-        if identity is None and state.get('user') and not (home/'.ai-kit/state.json').exists():
-            identity = state['user']
-        role = args.profile or state.get('profile')
-        if not role:
-            raise KitError('Kit not installed: run setup.' if args.action == 'update' else 'Specify --profile among: '+', '.join(profile_ids())+'.')
-        team = args.team or state.get('team')
-        apply(role,home,args.dry_run,identity,target,team,command={'yes': True, 'no': False}.get(args.command_on_path))
-        # setup and update never call the model: the summary says "connection not verified"; doctor --live is the only real call.
-        live = None
-        if args.action == 'setup' and not args.dry_run and interactive():
-            state = read_json(home/'.ai-kit/state.json')
-            def reapply():
-                with contextlib.redirect_stdout(io.StringIO()):
-                    return apply(role, home, False, None, args.target, team)
-            try:
-                personal_context_step(home/state.get('context_dir', '.gemini')/USER_CONTEXT, reapply)
-            except EOFError:
-                print()  # optional step: the installation is already complete
-        if not args.dry_run:
-            print_summary(home, read_json(home/'.ai-kit/state.json'), live)
-        return 0
-    except (KitError,OSError,UnicodeError) as exc:
-        print('Error: '+redact(str(exc)),file=sys.stderr)
-        return 2
-    except (EOFError,KeyboardInterrupt):
-        print('\nOperation cancelled.',file=sys.stderr)
-        return 130
+    # Colour by prefix for the command-line actions; the guided screens have their own interface (installer/console.py).
+    guided_screen = args.action is None or (args.action == 'setup' and not args.profile and not args.dry_run)
+    with styled_output(plain=args.plain or guided_screen):
+        try:
+            home = args.home.resolve()
+            # Guided: no action, or setup without --profile at a terminal. Without a terminal, setup reuses the recorded choices.
+            guided = args.action is None or (args.action == 'setup' and not args.profile and not args.dry_run and interactive())
+            if guided:
+                if not interactive():
+                    # No terminal to ask in: never wait for an answer that cannot come.
+                    raise KitError('no terminal to ask your choices in: give them as options, for example '
+                                   'setup --profile general --user <email> (profiles: '+', '.join(profile_ids())+').')
+                from .wizard import start
+                from .ui import make_ui
+                return start(make_ui(args.plain), home, setup=args.action == 'setup')
+            if args.action == 'uninstall':
+                if args.dry_run or args.yes:
+                    return uninstall(home, dry_run=args.dry_run)
+                if not interactive():
+                    raise KitError('uninstall needs a confirmation: add --yes, or --dry-run to see what would be removed.')
+                from .ui import make_ui
+                ui = make_ui(args.plain)
+                return uninstall(home, confirm=lambda summary: ui.confirm('Remove the kit configuration listed above? A backup is kept.', default=False))
+            if args.action == 'doctor':
+                if args.live and os.environ.get('AI_KIT_NO_LIVE') == '1':
+                    raise KitError('doctor --live makes a real call to the model, refused because AI_KIT_NO_LIVE=1 is set.')
+                return doctor(home, live=args.live)
+            if args.action == 'managed-settings':
+                if not args.out:
+                    raise KitError('managed-settings needs --out <empty folder>.')
+                from .managed import managed_settings
+                return managed_settings(args.out, args.managed_hooks_only)
+            if args.action == 'usage':
+                return usage(home, args.since, args.json, args.min_sessions, args.min_prompts)
+            if not args.dry_run:
+                migrate_kit_dir(home)  # with --dry-run, apply announces it without renaming
+            state = read_json(home/'.ai-kit/state.json') or read_json(home/LEGACY_KIT_DIR/'state.json')
+            target = args.target
+            if not state and args.action == 'update':
+                # After an uninstall: the choices of the last installation, from its backup, rather than an error.
+                state = last_installation(home)
+                if state:
+                    target = target or state.get('targets') or None
+                    print('[Info] The kit was not installed: reinstalled with the choices of your last installation (profile '
+                          + state['profile']+', '+', '.join(state.get('targets') or [])+'). Change them with setup.')
+            identity = resolve_identity(args, home, state)
+            if identity is None and state.get('user') and not (home/'.ai-kit/state.json').exists():
+                identity = state['user']
+            role = args.profile or state.get('profile')
+            if not role:
+                raise KitError('Kit not installed: run setup.' if args.action == 'update' else 'Specify --profile among: '+', '.join(profile_ids())+'.')
+            team = args.team or state.get('team')
+            apply(role,home,args.dry_run,identity,target,team,command={'yes': True, 'no': False}.get(args.command_on_path))
+            # setup and update never call the model: the summary says "connection not verified"; doctor --live is the only real call.
+            live = None
+            if args.action == 'setup' and not args.dry_run and interactive():
+                state = read_json(home/'.ai-kit/state.json')
+                def reapply():
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        return apply(role, home, False, None, args.target, team)
+                try:
+                    personal_context_step(home/state.get('context_dir', '.gemini')/USER_CONTEXT, reapply)
+                except EOFError:
+                    print()  # optional step: the installation is already complete
+            if not args.dry_run:
+                print_summary(home, read_json(home/'.ai-kit/state.json'), live)
+            return 0
+        except (KitError,OSError,UnicodeError) as exc:
+            print('Error: '+redact(str(exc)),file=sys.stderr)
+            return 2
+        except (EOFError,KeyboardInterrupt):
+            print('\nOperation cancelled.',file=sys.stderr)
+            return 130

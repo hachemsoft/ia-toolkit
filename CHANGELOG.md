@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `update`, `doctor` and `usage` in colour: `[OK]` green, `[Check]` yellow, `[Info]` cyan, `Error:` red, the headings and "Next step" in bold, through one output layer (`installer/console.py`) that changes no character of the text. Nothing changes with `--plain`, `AI_KIT_PLAIN=1`, `NO_COLOR`, `TERM=dumb`, an output redirected to a file, or without Rich.
+
 ## 0.46.0
 
 - The `ai-kit` command in your terminal: the installer asks at setup (yes by default) and writes `~/.ai-kit/bin/ai-kit` (`ai-kit.cmd` on Windows), a script that runs the launcher of the kit folder, so `ai-kit update` fetches the new version, reinstalls and reapplies, from any folder; `ai-kit doctor`, `ai-kit usage`, and `ai-kit` alone for the menu. The folder goes on your own PATH only: the user `Path` of the Windows registry (never the machine PATH, never `setx`), or one marked block in your shell startup file (`.zshrc`, `.bash_profile`, `.bashrc`, `.profile`; an unknown shell gets the line to add). `update` keeps the choice, `setup --command-on-path no` or the question turns it off, `uninstall` removes everything. The kit folder must stay: `doctor` reports a command whose folder moved or was deleted, and running the installer from the new place rewrites it. Run without the launcher (a developer's `pip install .`), the kit writes no command and keeps an existing one. The "no change to the PATH" promise of the launchers and docs becomes "your own PATH, if you chose it"; `installer/command.py` is the only module allowed to touch it (test).
