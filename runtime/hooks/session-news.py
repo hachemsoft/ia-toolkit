@@ -48,7 +48,7 @@ def read_json(path):
         return {}
 
 
-def read_text(path):
+def file_text(path):
     try:
         with open(path, encoding='utf-8') as handle:
             return handle.read()
@@ -154,10 +154,10 @@ def whats_new(state, marker, kit_dir, today, check_remote=True):
     announced_versions = [v for v in marker.get('announced_versions', []) if isinstance(v, str)]
     announced_news = [n for n in marker.get('announced_news', []) if isinstance(n, str)]
     if version and version not in announced_versions:
-        section = changelog_section(read_text(os.path.join(kit_dir, 'CHANGELOG.md')), version) if kit_dir else ''
+        section = changelog_section(file_text(os.path.join(kit_dir, 'CHANGELOG.md')), version) if kit_dir else ''
         items.append('Kit updated to '+version+'.'+(' What changed:\n'+indent(section) if section else ' What changed: CHANGELOG.md of the kit.'))
         announced_versions.append(version)
-    news_texts = [read_text(os.path.join(kit_dir, 'NEWS.md'))] if kit_dir else []
+    news_texts = [file_text(os.path.join(kit_dir, 'NEWS.md'))] if kit_dir else []
     remote_version = ''
     last = marker.get('last_check') if isinstance(marker.get('last_check'), dict) else {}
     if check_remote and kit_dir and os.path.isdir(kit_dir) and last.get('date') != today:
@@ -201,7 +201,7 @@ def main():
             state = read_json(os.path.join(kit, 'state.json'))
             if state:
                 marker_path = os.path.join(kit, MARKER)
-                before = read_text(marker_path)
+                before = file_text(marker_path)
                 kit_dir = str(state.get('kit_dir') or '')
                 check = (state.get('news') or {}).get('check_remote', True) is not False
                 items, marker = whats_new(state, read_json(marker_path), kit_dir if os.path.isdir(kit_dir) else '', date.today().isoformat(), check)

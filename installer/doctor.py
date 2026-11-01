@@ -261,7 +261,8 @@ def tracker_checks(home, state, status):
     config = state.get('friction_tracker')
     if not config:
         return
-    friction = __import__('installer.core', fromlist=['friction_module']).friction_module()
+    from .core import friction_module
+    friction = friction_module()
     cli = friction.TRACKERS.get(config.get('kind'), {}).get('cli')
     label = 'Friction tracker: '+str(config.get('kind'))+' '+str(config.get('project'))+', '
     exe = shutil.which(cli) if cli else None
@@ -283,7 +284,8 @@ def news_checks(home, state, status):
     if 'session-news' not in state.get('hooks', {}):
         print('[Info] session-news hook off (hooks.session-news = false): nothing announced at session start.')
         return
-    news = __import__('installer.core', fromlist=['news_module']).news_module()
+    from .core import news_module
+    news = news_module()
     hook = news.hook_module()
     kit_dir = str(state.get('kit_dir') or '')
     if not kit_dir:
@@ -303,7 +305,7 @@ def news_checks(home, state, status):
         print('[Info] Version '+str(marker['declined_version'])+' declined (ai-kit news --later): the next one will be proposed.')
     if hook and kit_dir and os.path.isdir(kit_dir):
         today = __import__('datetime').date.today().isoformat()
-        waiting = [e for e in hook.parse_news(hook.read_text(os.path.join(kit_dir, 'NEWS.md')))
+        waiting = [e for e in hook.parse_news(hook.file_text(os.path.join(kit_dir, 'NEWS.md')))
                    if e['id'] not in (marker.get('announced_news') or []) and hook.aimed_at(e, str(state.get('profile') or ''), str(state.get('team') or ''), today)]
         if waiting:
             print('[Info] '+str(len(waiting))+' announcement'+('s' if len(waiting) != 1 else '')+' waiting for the next session start: '+', '.join(e['id'] for e in waiting))
