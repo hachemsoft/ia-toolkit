@@ -17,6 +17,7 @@ from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET,
 from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
 from .settings import (practice_file, profile_menu, profile_ids, load_profile, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, organization, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, allowed_domains, domain_allowed, team_ids, profile_practices, RENAMED_SKILLS, resolve_skills, skill_note, RETIRED_KEYS, retired_key_notice, unknown_names, allowed_commands, selected_commands, LEGACY_KIT_DIR, recorded_targets, version_changes, PERSONAL_FILE, LEGACY_PERSONAL_FILE, personal_settings, CHOICE_KEYS)  # noqa: F401 (re-exported)
+from . import command as kit_command
 from .commit import (BACKUPS_KEPT, prune_backups, commit_changes, atomic_write, KIT_MANAGED, managed_roots, prune_empty_dirs)  # noqa: F401 (re-exported)
 from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKILL_DIRS, repo_root, repo_skill_overrides, mcp_report, print_summary, doctor, kit_version, source_folder, version_line, SCRIPT_INTERPRETER, kit_commands_on_path, runtime_checks, doctor_checks, release_check, live_checks, plain_text_problem)  # noqa: F401 (re-exported)
 from .plan import (effective_settings, resolve_selection, personal_file, practice_layers, skill_sources, select_agents,
@@ -182,13 +183,14 @@ def migrate_kit_dir(home, dry_run=False):
     return False
 
 
-def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None):
+def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None, command=None):
     """Full prevalidation, neutral plan, adapters, backup, then atomic write file by file.
     target: a --target value or a list of CLI names; None keeps the CLIs recorded by the previous installation.
     choices: new values for keys of the person's overrides.toml (CHOICE_KEYS), written with the rest of the installation,
     never before: a preview (dry_run) or a cancelled run leaves the file as it was.
     report: a dict filled with what the plan writes and removes (the interface's summary). progress(step, done, total):
-    called as the files are really written. Returns the notices shown to the person (also printed)."""
+    called as the files are really written. command: True/False to add or remove the `ai-kit` command (installer/command.py);
+    None keeps the recorded choice (yes on a first installation). Returns the notices shown to the person (also printed)."""
     home = home.resolve()
     if migrate_kit_dir(home, dry_run):
         return []  # --dry-run: the old folder is not renamed yet, the plan would be wrong
@@ -256,6 +258,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         agent_body=lambda definition: practices+'\n'+agent_instruction(definition)+'\n'+definition['instructions']+'\n')
     # Scripts shared by all CLIs: frictions and enabled guardrails.
     managed_write(kit/'bin'/'friction.py', (ROOT/'runtime/friction.py').read_bytes(), 'Kit script')
+    command_state, command_after = plan_command(p, managed_write, command)
     managed_write(kit/'schemas'/'overrides.schema.json', (ROOT/'schemas/overrides.schema.json').read_bytes(), 'Kit schema')
     for name in enabled_hooks:
         managed_write(hooks_dir/hook_manifest[name]['script'], (ROOT/'runtime/hooks'/hook_manifest[name]['script']).read_bytes(), 'Guardrail')
@@ -280,7 +283,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     changed = version_changes((state.get('installed') or {}).get('versions'), installed_versions)
     if changed:
         p.notices.append('[Info] Updated: '+', '.join(changed)+'. What changed: CHANGELOG.md of the kit.')
-    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],
+    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,
                  'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}
     writes[kit/'state.json'] = json_bytes(new_state)
@@ -306,6 +309,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         return p.notices
     # No download, dependency installation or MCP execution.
     changed, backup = commit_changes(home, kit, writes, deletes, progress)
+    command_after()
     print('Kit configuration installed.' if changed else 'Kit configuration already up to date.')
     print('Your personal context: '+str(p.user_file))
     for target in restored:
@@ -361,6 +365,78 @@ def relocate_user_context(p, home, state, user_file, kit):
 PERSONAL_KEPT = ('.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learning/', '.ai-kit/runtime/')
 
 
+def plan_command(p, managed_write, choice):
+    """The `ai-kit` command of installer/command.py in the plan: the shim as a managed file, the startup block as an
+    untracked write. Returns (state entry, function to call once the files are written: registry, execute bit)."""
+    kit, home, state = p.kit, p.home, p.state
+    previous = state.get('command') or {}
+    chosen = choice if choice is not None else previous.get('chosen', True)
+    folder = source_folder()
+    shim = kit/'bin'/kit_command.SHIM_NAME
+    rel = shim.relative_to(home).as_posix()
+    entry = {'chosen': chosen, 'folder': None, 'startup_file': None, 'registry': False}
+    def after():
+        pass
+    if not chosen:
+        if previous.get('startup_file') and (home/previous['startup_file']).is_file():
+            text = (home/previous['startup_file']).read_text(encoding='utf-8')
+            if kit_command.BLOCK_START in text:
+                p.writes[home/previous['startup_file']] = kit_command.without_block(text).encode('utf-8')
+        if previous.get('registry') and os.name == 'nt' and kit_command.real_home(home):
+            def after():
+                kit_command.registry_entry(False)
+                kit_command.announce_environment_change()
+        return entry, after
+    if folder is None:
+        # Run without the launcher (a developer's pip install .): nothing to point to; an existing command stays as it is.
+        if rel in p.old_files and shim.is_file():
+            managed_write(shim, shim.read_bytes(), 'Kit command')
+            entry.update({'folder': previous.get('folder') or kit_command.shim_folder(shim.read_bytes()), 'startup_file': previous.get('startup_file'), 'registry': previous.get('registry', False)})
+        else:
+            p.notices.append('[Info] The `ai-kit` command is not installed: run the installer from the kit folder (Installer.cmd, or sh scripts/bootstrap.sh) to add it.')
+        return entry, after
+    data = kit_command.shim_bytes(folder)
+    new = not shim.is_file() or shim.read_bytes() != data
+    managed_write(shim, data, 'Kit command')
+    entry['folder'] = str(folder)
+    if os.name == 'nt':
+        entry['registry'] = kit_command.real_home(home)
+        if entry['registry']:
+            def after():
+                if kit_command.registry_entry(True):
+                    kit_command.announce_environment_change()
+        else:
+            p.notices.append('[Info] `ai-kit` command written for this trial home folder only: the user PATH is not changed.')
+    else:
+        def after():
+            if shim.is_file():
+                shim.chmod(0o755)
+        name = kit_command.startup_file()
+        line = kit_command.path_line(home)
+        if name:
+            path = home/name
+            text = path.read_text(encoding='utf-8') if path.is_file() else ''
+            wanted = kit_command.with_block(text, line)
+            if wanted != text:
+                p.writes[path] = wanted.encode('utf-8')
+                new = True
+            entry['startup_file'] = name
+        else:
+            p.notices.append('[Info] Shell not recognised: add this line to your shell startup file to use the `ai-kit` command: '+line)
+    if new:
+        p.notices.append('[Info] `ai-kit` command installed: open a new terminal to use it (ai-kit doctor, ai-kit update).')
+    return entry, after
+
+
+def remove_command(home, state, writes):
+    """uninstall: the startup block goes (the shim is a managed file, removed with the others)."""
+    previous = state.get('command') or {}
+    if previous.get('startup_file') and (home/previous['startup_file']).is_file():
+        text = (home/previous['startup_file']).read_text(encoding='utf-8')
+        if kit_command.BLOCK_START in text:
+            writes[home/previous['startup_file']] = kit_command.without_block(text).encode('utf-8')
+
+
 def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
     """Removes what the kit installed and nothing else: the managed files it can recognise as unchanged, its blocks and
     entries in the CLIs' settings, and its state. Kept: the personal context (30_USER.md), overrides.toml, the backups,
@@ -390,6 +466,7 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
         except KitError as exc:
             kept.append(adapter.LABEL+': '+str(exc))
     deletes.append(kit/'state.json')
+    remove_command(home, state, writes)
     writes = {path: data for path, data in writes.items() if not path.exists() or path.read_bytes() != data}
     personal = [str(home/state.get('context_dir', '.gemini')/USER_CONTEXT)] + [str(home/rel) for rel in PERSONAL_KEPT if (home/rel).exists()]
     def rel(path):
@@ -411,6 +488,9 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
         print('Uninstall cancelled: nothing changed.')
         return 1
     changed, backup = commit_changes(home, kit, writes, deletes, progress)
+    if (state.get('command') or {}).get('registry') and os.name == 'nt' and kit_command.real_home(home):
+        kit_command.registry_entry(False)
+        kit_command.announce_environment_change()
     print('Kit configuration removed. Backup of every removed or cleaned file: '+str(backup))
     print('Your files kept: '+', '.join(personal))
     print('The kit\'s private Python environment ('+str(kit/'runtime')+') stays; the launcher removes it with uninstall --remove-runtime.')
@@ -516,6 +596,7 @@ def main(argv=None):
     parser.add_argument('--user',help='Work email to record, without interactive confirmation')
     parser.add_argument('--home',type=Path,default=Path.home(),help='Alternative home folder for an isolated trial')
     parser.add_argument('--dry-run',action='store_true',help='Show the plan without writing')
+    parser.add_argument('--command-on-path',choices=['yes','no'],help='setup: add the ai-kit command to your terminal (your own PATH only; removed by uninstall); default yes on a first installation, then the recorded choice')
     parser.add_argument('--team',help='setup: your team, when it has its own practices (practices/20-<team>.md) or tools (teams in organization.toml); kept for update; none to leave it')
     parser.add_argument('--target',choices=list(TARGETS),help='default: the CLIs chosen at the last installation (auto on the first one); auto: the CLIs present on the machine (Gemini if none); gemini, agy, codex, claude: that CLI only; both: Gemini and agy; all: every supported CLI')
     parser.add_argument('--live',action='store_true',help='doctor: make a real call to the model and diagnose (may be billed by your provider)')
@@ -578,7 +659,7 @@ def main(argv=None):
         if not role:
             raise KitError('Kit not installed: run setup.' if args.action == 'update' else 'Specify --profile among: '+', '.join(profile_ids())+'.')
         team = args.team or state.get('team')
-        apply(role,home,args.dry_run,identity,target,team)
+        apply(role,home,args.dry_run,identity,target,team,command={'yes': True, 'no': False}.get(args.command_on_path))
         # setup and update never call the model: the summary says "connection not verified"; doctor --live is the only real call.
         live = None
         if args.action == 'setup' and not args.dry_run and interactive():

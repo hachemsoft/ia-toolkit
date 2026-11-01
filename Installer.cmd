@@ -1,7 +1,8 @@
 @echo off
 rem AI Kit launcher for Windows: finds Python 3.9 or newer, then hands over to scripts\launcher.py, which installs the kit
 rem in its private environment (%USERPROFILE%\.ai-kit\runtime) and opens the installer (the menu when no argument is given).
-rem Command prompt only: no PowerShell, no administrator rights, no change to the system, the PATH or the execution policy.
+rem Command prompt only: no PowerShell, no administrator rights, no change to the system or the execution policy. The only
+rem change outside %USERPROFILE%\.ai-kit: the ai-kit command on your own user PATH, if you chose it (removed by uninstall).
 rem Equivalent command, for IT: python -I scripts\launcher.py followed by setup, update, doctor or uninstall, run from this folder.
 setlocal
 rem Never run a py.exe or python.exe planted in the current folder: only the ones on the PATH.

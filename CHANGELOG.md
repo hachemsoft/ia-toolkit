@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.0
+
+- The `ai-kit` command in your terminal: the installer asks at setup (yes by default) and writes `~/.ai-kit/bin/ai-kit` (`ai-kit.cmd` on Windows), a script that runs the launcher of the kit folder, so `ai-kit update` fetches the new version, reinstalls and reapplies, from any folder; `ai-kit doctor`, `ai-kit usage`, and `ai-kit` alone for the menu. The folder goes on your own PATH only: the user `Path` of the Windows registry (never the machine PATH, never `setx`), or one marked block in your shell startup file (`.zshrc`, `.bash_profile`, `.bashrc`, `.profile`; an unknown shell gets the line to add). `update` keeps the choice, `setup --command-on-path no` or the question turns it off, `uninstall` removes everything. The kit folder must stay: `doctor` reports a command whose folder moved or was deleted, and running the installer from the new place rewrites it. Run without the launcher (a developer's `pip install .`), the kit writes no command and keeps an existing one. The "no change to the PATH" promise of the launchers and docs becomes "your own PATH, if you chose it"; `installer/command.py` is the only module allowed to touch it (test).
+- Documentation: install from a git clone by default (`update` fetches), the release ZIP for workstations without git or a package index; never `pip install` the kit next to the launcher's copy.
+
 ## 0.45.9
 
 - The README opens with the kit's logo (light and dark) and a section "Does it help?": the plain-words tasks run with and without the kit, as two charts.

@@ -73,14 +73,18 @@ class LauncherTests(unittest.TestCase):
         self.setup_kit(self.kit, '--profile', 'general', '--target', 'all', '--user', 'first.last@example.com')
         self.assertTrue((self.home/'.ai-kit/state.json').is_file())
         shutil.rmtree(self.base/'Kit IA été')
-        # Nothing installed points back to the extracted folder: hooks, scripts and schema live in ~/.ai-kit.
+        # Nothing installed points back to the extracted folder (hooks, scripts and schema live in ~/.ai-kit), except the
+        # `ai-kit` command, which runs that folder's launcher by choice (0.46), and the state that records it.
         markers = {str(self.kit), self.kit.as_uri(), str(self.kit).replace('\\', '/'), str(self.kit).replace('\\', '\\\\')}
         # The private environment is left out: pip records there where the package came from (direct_url.json), a note
         # nothing reads; that the kit runs without the folder is checked by running it after the deletion (test_launcher).
+        naming = []
         for path in self.home.rglob('*'):
             if path.is_file() and '/backups/' not in path.as_posix() and '/.ai-kit/runtime/' not in path.as_posix():
                 text = path.read_text(encoding='utf-8', errors='replace')
-                self.assertFalse([m for m in markers if m in text], path)
+                if [m for m in markers if m in text]:
+                    naming.append(path.relative_to(self.home).as_posix())
+        self.assertEqual(sorted(naming), sorted(['.ai-kit/bin/'+('ai-kit.cmd' if os.name == 'nt' else 'ai-kit'), '.ai-kit/state.json']))
         self.assertTrue((self.home/'.ai-kit/schemas/overrides.schema.json').is_file())
 
     def test_new_version_from_another_folder_keeps_personal_settings(self):
@@ -163,9 +167,15 @@ class ReleaseFilesTests(unittest.TestCase):
 
     def test_no_system_change_in_installer_and_launchers(self):
         # Registry, system or user PATH, execution policy, Gatekeeper and quarantine, elevation, shell startup files.
+        # One exception by decision (0.46): installer/command.py puts the `ai-kit` command on the person's own PATH (user
+        # registry key, a marked block in the shell startup file), when chosen, removed by uninstall; nowhere else.
         forbidden = re.compile(r'winreg|\bsetx\b|reg add|ExecutionPolicy|\bxattr\b|\bspctl\b|\bsudo\b|\brunas\b|HKEY_|Set-ItemProperty'
                                r'|\.zshrc|\.bashrc|\.bash_profile|\.zprofile|/etc/|launchctl|defaults write', re.I)
-        sources = list((ROOT/'installer').rglob('*.py')) + [ROOT/'Installer.cmd', ROOT/'scripts/bootstrap.sh', ROOT/'scripts/launcher.py', ROOT/'runtime/friction.py']
+        sources = [p for p in (ROOT/'installer').rglob('*.py') if p.name != 'command.py'] + [ROOT/'Installer.cmd', ROOT/'scripts/bootstrap.sh', ROOT/'scripts/launcher.py', ROOT/'runtime/friction.py']
+        command = (ROOT/'installer/command.py').read_text(encoding='utf-8')
+        self.assertIn('HKEY_CURRENT_USER', command)
+        self.assertNotIn('HKEY_LOCAL_MACHINE', command)
+        self.assertFalse(re.search(r'\bsetx\b|ExecutionPolicy|\bsudo\b|\brunas\b|/etc/|launchctl|defaults write', command))
         found = []
         for source in sources:
             for number, line in enumerate(source.read_text(encoding='utf-8').splitlines(), 1):

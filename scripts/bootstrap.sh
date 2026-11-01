@@ -1,7 +1,8 @@
 #!/bin/sh
 # AI Kit launcher for macOS and Linux: finds Python 3.9 or newer, then hands over to scripts/launcher.py, which installs the
 # kit in its private environment (~/.ai-kit/runtime) and opens the installer (the menu when no argument is given).
-# No sudo, no change to the system, to the PATH or to the shell startup files.
+# No sudo, no change to the system. The only change outside ~/.ai-kit: one marked block in your shell startup file for the
+# ai-kit command, if you chose it (removed by uninstall).
 set -eu
 KIT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 KIT_PYTHON=

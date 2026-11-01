@@ -10,3 +10,5 @@ build/
 *.egg-info/
 .codegraph/
 .debug/
+docs/sdlc/*/intent.md
+docs/sdlc/*/plan.md

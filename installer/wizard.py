@@ -106,6 +106,15 @@ def labelled(name, entry):
     return name+' — '+entry.get('description', '')+(' (also installs '+', '.join(needs)+')' if needs else '')
 
 
+def choose_command(ui, state, previous=None):
+    """The `ai-kit` command in the terminal: asked only when the launcher gave the kit folder (nothing to point to otherwise)."""
+    if cli.source_folder() is None:
+        return None
+    recorded = (state.get('command') or {}).get('chosen', True)
+    default = recorded if previous is None else previous
+    return ui.confirm('Add the `ai-kit` command to your terminal (your own PATH only, removed by uninstall)?', default=default)
+
+
 def customize(ui, home, profile_id):
     """None to keep the profile as proposed; otherwise the new lists for overrides.toml. A choice the person turned off
     stays off: nothing is ticked again behind their back, and a conflict is explained, not resolved silently."""
@@ -167,7 +176,7 @@ def by_folder(paths):
 def review(ui, home, plan):
     """Shows what will change, from a dry run of the engine: 'install', 'back' or 'cancel'."""
     report = {}
-    quietly(cli.apply, plan['profile'], home, True, plan['identity'], plan['targets'], plan['team'], choices=plan['choices'], report=report)
+    quietly(cli.apply, plan['profile'], home, True, plan['identity'], plan['targets'], plan['team'], choices=plan['choices'], report=report, command=plan['command'])
     labels = {a.NAME: a.LABEL for a in ADAPTERS}
     lines = ['Profile: '+report['profile']+' ('+str(len(report['skills']))+' skills, '+str(len(report['commands']))+' commands, '
              + str(len(report['agents']))+' agents, '+str(len(report['hooks']))+' guardrails)',
@@ -193,7 +202,7 @@ def review(ui, home, plan):
 def install(ui, home, plan):
     with ui.progress('Installing…') as step:
         notices, lines = quietly(cli.apply, plan['profile'], home, False, plan['identity'], plan['targets'], plan['team'],
-                                 choices=plan['choices'], progress=step)
+                                 choices=plan['choices'], progress=step, command=plan['command'])
     result(ui, home, notices)
 
 
@@ -254,13 +263,14 @@ def quick_context(ui, home):
 
 def choose_and_install(ui, home, state):
     """The choices, the review, then the installation. Back returns to the choices with the answers kept."""
-    plan = {'targets': None, 'profile': None, 'team': None, 'identity': None, 'choices': None}
+    plan = {'targets': None, 'profile': None, 'team': None, 'identity': None, 'choices': None, 'command': None}
     current = dict(state)
     while True:
         plan['targets'] = choose_targets(ui, home, {**current, 'targets': plan['targets'] or cli.recorded_targets(current)})
         plan['profile'] = choose_profile(ui, {**current, 'profile': plan['profile'] or current.get('profile')})
         plan['team'] = choose_team(ui, current)
         plan['identity'] = choose_identity(ui, home, {**current, 'user': plan['identity'] or current.get('user')})
+        plan['command'] = choose_command(ui, current, plan['command'])
         plan['choices'] = customize(ui, home, plan['profile'])
         action = review(ui, home, plan)
         if action == 'install':

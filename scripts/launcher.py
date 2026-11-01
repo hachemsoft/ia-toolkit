@@ -8,8 +8,8 @@ Standard library only, run with `python -I` (no current folder, no PYTHONPATH, n
 4. runs the kit (python -m ai_kit) with that environment's Python, from the person's current folder;
 5. for update in a git clone, first fetches the new version with git, never over local changes.
 
-It never activates the environment for the person, never touches the global Python, the PATH or the shell, and needs no
-administrator rights. Messages are plain text: the interface libraries are not installed yet.
+It never activates the environment for the person, never touches the global Python, and needs no administrator rights.
+The kit itself (installer/command.py) adds the `ai-kit` command to the person's own PATH when they chose it at setup. Messages are plain text: the interface libraries are not installed yet.
 """
 import hashlib
 import json

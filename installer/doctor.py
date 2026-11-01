@@ -220,6 +220,27 @@ def kit_commands_on_path():
     return found
 
 
+def command_checks(home, state, status):
+    """The `ai-kit` command the person chose: its script, the kit folder it runs, the PATH of this terminal."""
+    from . import command as kit_command
+    recorded = state.get('command') or {}
+    if not recorded.get('chosen') or not recorded.get('folder'):
+        return  # not chosen, or never installed (the kit ran without the launcher): setup and update already said so
+    shim = home/'.ai-kit'/'bin'/kit_command.SHIM_NAME
+    if not shim.is_file():
+        status(False, 'The `ai-kit` command is missing: run the installer from the kit folder (Installer.cmd, or sh scripts/bootstrap.sh)')
+        return
+    folder = kit_command.shim_folder(shim.read_bytes()) or recorded.get('folder')
+    if folder and Path(folder).is_dir():
+        status(True, 'The `ai-kit` command runs the launcher of '+folder)
+    else:
+        status(False, 'The `ai-kit` command points to a kit folder that moved or was deleted ('+str(folder)+'): run the installer from the kit folder, it rewrites the command')
+    on_path = [p for p in os.environ.get('PATH', '').split(os.pathsep) if p and os.path.normcase(os.path.normpath(p)) == os.path.normcase(os.path.normpath(str(shim.parent)))]
+    if not on_path:
+        print('[Info] '+str(shim.parent)+' is not on the PATH of this terminal: open a new one to use the `ai-kit` command'
+              + ('' if os.name == 'nt' or recorded.get('startup_file') else '; add the line the installer gave to your shell startup file'))
+
+
 def runtime_checks(home, status):
     """The private environment the launcher installs the kit in, and the copies of the kit a person may run instead."""
     record = read_json(home/'.ai-kit/runtime/install.json', {})
@@ -283,6 +304,7 @@ def doctor_checks(home, cwd=None, problems=None):
     hints = []
     if state:
         print('Profile: '+state['profile']+' | version '+state['version'])
+        command_checks(home, state, status)
         identity = state.get('user', {})
         print('Recorded identity: '+(identity.get('email') or identity.get('name') or 'none')+(' (source '+identity['source']+')' if identity.get('source') else ''))
         profile = load_profile(state['profile'])

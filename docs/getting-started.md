@@ -21,7 +21,7 @@ Do not `pip install` or `pipx install` the kit next to this: that makes a second
 
 ### Run the kit
 
-Every page that says "run `update`" means this, **from the kit folder**:
+The installer asked whether to add the **`ai-kit` command** to your terminal (yes by default). Open a new terminal after the installation: from any folder, `ai-kit update`, `ai-kit doctor`, `ai-kit usage`, and `ai-kit` alone for the menu. It runs the launcher of your kit folder, so `ai-kit update` really fetches the new version. It is on your own PATH only (user PATH on Windows, one marked block in your shell startup file on Mac), and `uninstall` removes it. If you answered no, every page that says "run `update`" means this, **from the kit folder**:
 
 | Action | Windows | Mac |
 | --- | --- | --- |
@@ -42,7 +42,7 @@ Folders starting with a dot are hidden: paste the path into the Explorer address
 
 ### New version
 
-Run `update` from the kit folder (table above): it fetches the new version (`git pull --ff-only`), reinstalls the kit in its private environment and reapplies your configuration, in three reported steps. Your CLIs, profile, choices and files are kept. No `git pull` or `pip install` by hand. From a ZIP: extract the new ZIP and run its installer, as the first time; the old folder can be deleted.
+Run `ai-kit update` (or `update` from the kit folder, table above): it fetches the new version (`git pull --ff-only`), reinstalls the kit in its private environment and reapplies your configuration, in three reported steps. Your CLIs, profile, choices and files are kept. No `git pull` or `pip install` by hand. From a ZIP: extract the new ZIP and run its installer, as the first time; the old folder can be deleted.
 
 ## 2. First session (five minutes)
 
