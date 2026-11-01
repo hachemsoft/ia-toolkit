@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 
 from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, read_json, json_bytes, digest,
                    safe_id, inside, hook_command, load_commands, load_agent, adopt_user_copy, _ts, friction_id, fixed_frictions, redact, user_context_refusal)
+from . import versions
 from .toml_files import read_toml, dump_toml, set_list, set_schema
 from .adapters import ADAPTERS
 from .interface import ContextHost, DoctorContext, LiveCheck, Plan
@@ -336,6 +337,15 @@ def user_context_text(identity, answers=None, role=None):
         text = text.replace(ROLE_PLACEHOLDER, '- '+' '.join(str(role).split()))
     return text
 
+def version_changes(before, now):
+    """The skills and agents whose version changed since the previous installation: "skill tdd 1.0.0 → 1.1.0". Nothing
+    on a first installation, or from a state written before 0.40 (no versions recorded)."""
+    if not before:
+        return []
+    return [kind[:-1]+' '+name+' '+str(before[kind][name])+' → '+str(version)
+            for kind in ('skills', 'agents') for name, version in sorted((now.get(kind) or {}).items())
+            if name in (before.get(kind) or {}) and before[kind][name] != version]
+
 def write_quick_context(home, answers, role=None):
     """The quick answers written into 30_USER.md, only while the file is still the one the kit created (never over the
     person's own text). Returns the file written, or None when it was left as is."""
@@ -626,8 +636,13 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
             deletes.append(target_path)
     for adapter in ADAPTERS:
         adapter.finalize(p, active=adapter in active)  # inactive: removes what a previous installation had put in place
+    installed_versions = {'skills': {s: catalog[s].get('version') for s in selected}, 'agents': {a: agent_catalog[a].get('version') for a, _ in agents}}
+    changed = version_changes((state.get('installed') or {}).get('versions'), installed_versions)
+    if changed:
+        p.notices.append('[Info] Updated: '+', '.join(changed)+'. What changed: CHANGELOG.md of the kit.')
     new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],
-                 'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active]}}
+                 'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
+                              'versions':installed_versions}}
     writes[kit/'state.json'] = json_bytes(new_state)
     writes = {path:b for path,b in writes.items() if not path.exists() or path.read_bytes()!=b}
     # Refuse links in managed paths before any write.
@@ -1125,6 +1140,11 @@ def doctor_checks(home, cwd=None, problems=None):
         folder_version = kit_version()
         status(state.get('version') == folder_version, 'Configuration applied by version '+str(state.get('version'))+', the kit running is '+folder_version
                + ('' if state.get('version') == folder_version else ': run update'))
+        recorded = (state.get('installed') or {}).get('versions')
+        if recorded:
+            behind = version_changes(recorded, {kind: {n: v for n, v in names.items() if n in recorded.get(kind, {})}
+                                                for kind, names in versions.catalog_versions().items()})
+            status(not behind, 'Skills and agents at the versions of this kit' + (': '+', '.join(behind)+'; run update' if behind else ''))
         org_defaults = organization().get('defaults', {})
         team_layer = team_settings(state.get('team'))
         personal = personal_settings(home/'.ai-kit')

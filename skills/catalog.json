@@ -1,6 +1,7 @@
 {
   "grilling": {
     "path": "skills/internal/common/grilling",
+    "version": "1.0.0",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "description": "Challenge a plan, a decision or an idea through rounds of questions before implementing it.",
@@ -9,6 +10,7 @@
   },
   "codebase-design": {
     "path": "skills/internal/common/codebase-design",
+    "version": "1.0.0",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "description": "Vocabulary of deep modules: interface, seam, depth; interface design in several variants.",
@@ -17,6 +19,7 @@
   },
   "prototype": {
     "path": "skills/internal/common/prototype",
+    "version": "1.0.0",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "description": "Throwaway prototype to settle a design, logic or interface question.",
@@ -25,6 +28,7 @@
   },
   "domain-modeling": {
     "path": "skills/internal/common/domain-modeling",
+    "version": "1.0.0",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "description": "Project glossary (GLOSSARY.md) and architecture decisions (ADRs).",
@@ -33,6 +37,7 @@
   },
   "tdd": {
     "path": "skills/internal/common/tdd",
+    "version": "1.0.0",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "description": "Test-first development: red, green, refactor; integration tests preferred.",
@@ -44,6 +49,7 @@
   },
   "diagnosing-bugs": {
     "path": "skills/internal/common/diagnosing-bugs",
+    "version": "1.0.0",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "description": "Diagnosis loop for hard bugs and performance regressions: reproduce, minimize, hypothesize, instrument, fix.",
@@ -52,6 +58,7 @@
   },
   "writing-for-agents": {
     "path": "skills/internal/common/writing-for-agents",
+    "version": "1.0.0",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "description": "Write documents intended for agents: skills, AGENTS.md, repo docs.",
@@ -60,6 +67,7 @@
   },
   "investigation": {
     "path": "skills/internal/common/investigation",
+    "version": "1.0.0",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "needs_agents": true,
@@ -69,6 +77,7 @@
   },
   "mr": {
     "path": "skills/internal/common/mr",
+    "version": "1.0.0",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "description": "Write a merge request description: visual summary, evidence, merge risk.",
@@ -77,6 +86,7 @@
   },
   "routing": {
     "path": "skills/internal/common/routing",
+    "version": "1.0.0",
     "origin": "internal",
     "description": "Which command, which tool and what level of ceremony for the situation: kit router.",
     "category": "tool",
@@ -90,6 +100,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/grill-me",
+    "version": "1.0.0",
     "requires": [
       "grilling"
     ],
@@ -101,6 +112,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/grill-with-docs",
+    "version": "1.0.0",
     "requires": [
       "grilling",
       "domain-modeling"
@@ -113,6 +125,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/to-questionnaire",
+    "version": "1.0.0",
     "description": "Turn a decision you cannot make alone into a questionnaire for someone else.",
     "category": "tool",
     "tier": "optional"
@@ -121,6 +134,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/to-spec",
+    "version": "1.0.0",
     "description": "Turn the conversation into a specification: in this kit, /spec writes it as spec.md, never a ticket.",
     "category": "workflow",
     "tier": "profile",
@@ -132,6 +146,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/to-tickets",
+    "version": "1.0.0",
     "requires": [
       "to-spec"
     ],
@@ -146,6 +161,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/wayfinder",
+    "version": "1.0.0",
     "requires": [
       "grilling"
     ],
@@ -161,6 +177,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/implement",
+    "version": "1.0.0",
     "requires": [
       "tdd",
       "code-review"
@@ -173,6 +190,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/implement-spec",
+    "version": "1.0.0",
     "requires": [
       "implement",
       "tdd",
@@ -192,6 +210,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/code-review",
+    "version": "1.0.0",
     "description": "Review changes, committed or not (branch commits, staged, unstaged, new files), on bugs, security, standards and the spec when one exists; one severity scale.",
     "category": "workflow",
     "tier": "core"
@@ -200,6 +219,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/ticket-sorting",
+    "version": "1.0.0",
     "requires": [
       "grilling"
     ],
@@ -214,6 +234,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/retrospective",
+    "version": "1.0.0",
     "description": "Retrospective of a work session: improve the agent's environment, not the code.",
     "category": "tool",
     "tier": "profile",
@@ -225,6 +246,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/handover",
+    "version": "1.0.0",
     "description": "Compact the conversation into a handover document for another agent or another session.",
     "category": "tool",
     "tier": "optional"
@@ -233,6 +255,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/wait-what",
+    "version": "1.0.0",
     "description": "Rephrase the last message that was not understood, using the glossary's vocabulary.",
     "category": "tool",
     "tier": "profile"
@@ -241,6 +264,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/zoom-out",
+    "version": "1.0.0",
     "description": "Step back: wider context and big picture.",
     "category": "tool",
     "tier": "profile"
@@ -249,6 +273,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/teach",
+    "version": "1.0.0",
     "description": "Learn a perimeter or a concept over several sessions: lessons, quizzes and briefs; shared material in the repo's docs/learn/<topic>/, personal progress in ~/.ai-kit/learning/.",
     "category": "tool",
     "tier": "core"
@@ -257,6 +282,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/improve-codebase-architecture",
+    "version": "1.0.0",
     "requires": [
       "grilling",
       "codebase-design"
@@ -269,6 +295,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/manual-steps",
+    "version": "1.0.0",
     "description": "Generate an interactive bash wizard for the steps only a human can perform.",
     "category": "tool",
     "tier": "optional"
@@ -277,6 +304,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/write-a-skill",
+    "version": "1.0.0",
     "requires": [
       "writing-great-skills"
     ],
@@ -288,6 +316,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/writing-great-skills",
+    "version": "1.0.0",
     "description": "Reference for writing and reviewing predictable skills.",
     "category": "reference",
     "tier": "optional",
@@ -299,6 +328,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/setup-workflow",
+    "version": "1.0.0",
     "description": "Configure a repo for the flow: ticket tracker (GitHub, GitLab, local), triage labels, location of the glossary and the ADRs. Run once per repo.",
     "category": "setup",
     "tier": "core",
@@ -319,6 +349,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/workflow-guide",
+    "version": "1.0.0",
     "description": "Which skill or which flow for the current situation: router across all skills.",
     "category": "tool",
     "tier": "optional",
@@ -348,6 +379,7 @@
   },
   "init-project-context": {
     "path": "skills/internal/common/init-project-context",
+    "version": "1.0.0",
     "origin": "internal",
     "requires": [
       "writing-for-agents",
@@ -365,6 +397,7 @@
   },
   "python-js-change": {
     "path": "skills/internal/development/python-js-change",
+    "version": "1.0.0",
     "origin": "internal",
     "description": "Develop or review a Python or JavaScript feature in an existing repo.",
     "category": "domain",
@@ -379,6 +412,7 @@
   },
   "sql-review": {
     "path": "skills/internal/analytics/sql-review",
+    "version": "1.0.0",
     "origin": "internal",
     "description": "Review SQL, plain or in dbt, on any warehouse, and investigate suspicious aggregations, duplicates or business results.",
     "category": "domain",
@@ -389,6 +423,7 @@
   },
   "dbt-model-change": {
     "path": "skills/internal/analytics/dbt-model-change",
+    "version": "1.0.0",
     "origin": "internal",
     "description": "Create, modify, test or document a dbt model, on any adapter (BigQuery specifics when the project uses it).",
     "category": "domain",
@@ -399,6 +434,7 @@
   },
   "bigquery-query-review": {
     "path": "skills/internal/analytics/bigquery-query-review",
+    "version": "1.0.0",
     "origin": "internal",
     "description": "Optimize a slow or expensive BigQuery query and check scans, partitions, joins and plan.",
     "category": "domain",
@@ -409,6 +445,7 @@
   },
   "kpi-definition": {
     "path": "skills/internal/analytics/kpi-definition",
+    "version": "1.0.0",
     "origin": "internal",
     "category": "domain",
     "tier": "profile",
@@ -416,6 +453,7 @@
   },
   "incremental-replay": {
     "path": "skills/internal/analytics/incremental-replay",
+    "version": "1.0.0",
     "origin": "internal",
     "category": "domain",
     "tier": "profile",
@@ -423,6 +461,7 @@
   },
   "bigquery-cost-review": {
     "path": "skills/internal/analytics/bigquery-cost-review",
+    "version": "1.0.0",
     "origin": "internal",
     "category": "domain",
     "tier": "profile",
@@ -430,6 +469,7 @@
   },
   "perimeter-brief": {
     "path": "skills/internal/analytics/perimeter-brief",
+    "version": "1.0.0",
     "origin": "internal",
     "category": "domain",
     "tier": "profile",
@@ -462,6 +502,7 @@
   },
   "java-change": {
     "path": "skills/internal/development/java-change",
+    "version": "1.0.0",
     "origin": "internal",
     "description": "Develop or review a Java feature in an existing repo (Maven or Gradle, Spring or other).",
     "category": "domain",
@@ -475,6 +516,7 @@
   },
   "infra-change": {
     "path": "skills/internal/operations/infra-change",
+    "version": "1.0.0",
     "origin": "internal",
     "description": "Prepare or review an infrastructure or delivery change: Terraform, Kubernetes, Helm, CI/CD pipeline, Dockerfile, cloud configuration.",
     "category": "domain",
@@ -485,6 +527,7 @@
   },
   "architecture-decision": {
     "path": "skills/internal/architecture/architecture-decision",
+    "version": "1.0.0",
     "origin": "internal",
     "description": "Investigate and document an architecture decision (ADR): options, criteria, consequences, reversibility.",
     "category": "domain",

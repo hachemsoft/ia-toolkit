@@ -1,6 +1,6 @@
 {
  "architect/all": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "00ce208d8ef5e84c",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -220,7 +220,7 @@
   ".gemini/config/plugins/ai-kit/agents/ai-kit-repo-investigator.md": "86e91b580e57b536",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-verifier.md": "8641ec69d7321527",
   ".gemini/config/plugins/ai-kit/hooks.json": "89fe43909b02ef87",
-  ".gemini/config/plugins/ai-kit/plugin.json": "5d0d22bec38740d2",
+  ".gemini/config/plugins/ai-kit/plugin.json": "e6261d4d1031d494",
   ".gemini/config/plugins/ai-kit/rules/AGENTS.md": "24ccb49e4febc8de",
   ".gemini/config/plugins/ai-kit/skills/audit/SKILL.md": "74a2a8ee85d35a78",
   ".gemini/config/plugins/ai-kit/skills/build/SKILL.md": "8d02e028b9f84ed6",
@@ -294,7 +294,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "data-analyst/agy": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "dfa30a21a0e6d4f0",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -307,7 +307,7 @@
   ".gemini/config/plugins/ai-kit/agents/ai-kit-sql-reviewer.md": "3d57d5e38c226cc4",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-verifier.md": "8641ec69d7321527",
   ".gemini/config/plugins/ai-kit/hooks.json": "89fe43909b02ef87",
-  ".gemini/config/plugins/ai-kit/plugin.json": "5d0d22bec38740d2",
+  ".gemini/config/plugins/ai-kit/plugin.json": "e6261d4d1031d494",
   ".gemini/config/plugins/ai-kit/rules/AGENTS.md": "24ccb49e4febc8de",
   ".gemini/config/plugins/ai-kit/skills/build/SKILL.md": "8d02e028b9f84ed6",
   ".gemini/config/plugins/ai-kit/skills/diagnose/SKILL.md": "728625495a06c425",
@@ -364,7 +364,7 @@
   ".gemini/skills/writing-for-agents/SKILL.md": "551adca942227b44"
  },
  "data-analyst/all": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "dfa30a21a0e6d4f0",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -527,7 +527,7 @@
   ".gemini/config/plugins/ai-kit/agents/ai-kit-sql-reviewer.md": "3d57d5e38c226cc4",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-verifier.md": "8641ec69d7321527",
   ".gemini/config/plugins/ai-kit/hooks.json": "89fe43909b02ef87",
-  ".gemini/config/plugins/ai-kit/plugin.json": "5d0d22bec38740d2",
+  ".gemini/config/plugins/ai-kit/plugin.json": "e6261d4d1031d494",
   ".gemini/config/plugins/ai-kit/rules/AGENTS.md": "24ccb49e4febc8de",
   ".gemini/config/plugins/ai-kit/skills/build/SKILL.md": "8d02e028b9f84ed6",
   ".gemini/config/plugins/ai-kit/skills/diagnose/SKILL.md": "728625495a06c425",
@@ -585,7 +585,7 @@
   ".gemini/skills/writing-for-agents/SKILL.md": "551adca942227b44"
  },
  "data-analyst/both": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "dfa30a21a0e6d4f0",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -616,7 +616,7 @@
   ".gemini/config/plugins/ai-kit/agents/ai-kit-sql-reviewer.md": "3d57d5e38c226cc4",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-verifier.md": "8641ec69d7321527",
   ".gemini/config/plugins/ai-kit/hooks.json": "89fe43909b02ef87",
-  ".gemini/config/plugins/ai-kit/plugin.json": "5d0d22bec38740d2",
+  ".gemini/config/plugins/ai-kit/plugin.json": "e6261d4d1031d494",
   ".gemini/config/plugins/ai-kit/rules/AGENTS.md": "24ccb49e4febc8de",
   ".gemini/config/plugins/ai-kit/skills/build/SKILL.md": "8d02e028b9f84ed6",
   ".gemini/config/plugins/ai-kit/skills/diagnose/SKILL.md": "728625495a06c425",
@@ -674,7 +674,7 @@
   ".gemini/skills/writing-for-agents/SKILL.md": "551adca942227b44"
  },
  "data-analyst/gemini": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "dfa30a21a0e6d4f0",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -746,7 +746,7 @@
   ".gemini/skills/writing-for-agents/SKILL.md": "551adca942227b44"
  },
  "data-developer/all": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "373c57087f11925e",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -980,7 +980,7 @@
   ".gemini/config/plugins/ai-kit/agents/ai-kit-sql-reviewer.md": "3d57d5e38c226cc4",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-verifier.md": "8641ec69d7321527",
   ".gemini/config/plugins/ai-kit/hooks.json": "89fe43909b02ef87",
-  ".gemini/config/plugins/ai-kit/plugin.json": "5d0d22bec38740d2",
+  ".gemini/config/plugins/ai-kit/plugin.json": "e6261d4d1031d494",
   ".gemini/config/plugins/ai-kit/rules/AGENTS.md": "24ccb49e4febc8de",
   ".gemini/config/plugins/ai-kit/skills/build/SKILL.md": "8d02e028b9f84ed6",
   ".gemini/config/plugins/ai-kit/skills/design/SKILL.md": "babb44f5e83885b4",
@@ -1060,7 +1060,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "data-developer/all/overrides": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "edbf593e7987f8ce",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -1309,7 +1309,7 @@
   ".gemini/config/plugins/ai-kit/agents/ai-kit-sql-reviewer.md": "3d57d5e38c226cc4",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-verifier.md": "8641ec69d7321527",
   ".gemini/config/plugins/ai-kit/hooks.json": "cab027c6747c9121",
-  ".gemini/config/plugins/ai-kit/plugin.json": "5d0d22bec38740d2",
+  ".gemini/config/plugins/ai-kit/plugin.json": "e6261d4d1031d494",
   ".gemini/config/plugins/ai-kit/rules/AGENTS.md": "24ccb49e4febc8de",
   ".gemini/config/plugins/ai-kit/skills/ask/SKILL.md": "5bf0bae3eec628c8",
   ".gemini/config/plugins/ai-kit/skills/build/SKILL.md": "8d02e028b9f84ed6",
@@ -1393,7 +1393,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "data-developer/both": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "373c57087f11925e",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -1434,7 +1434,7 @@
   ".gemini/config/plugins/ai-kit/agents/ai-kit-sql-reviewer.md": "3d57d5e38c226cc4",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-verifier.md": "8641ec69d7321527",
   ".gemini/config/plugins/ai-kit/hooks.json": "89fe43909b02ef87",
-  ".gemini/config/plugins/ai-kit/plugin.json": "5d0d22bec38740d2",
+  ".gemini/config/plugins/ai-kit/plugin.json": "e6261d4d1031d494",
   ".gemini/config/plugins/ai-kit/rules/AGENTS.md": "24ccb49e4febc8de",
   ".gemini/config/plugins/ai-kit/skills/build/SKILL.md": "8d02e028b9f84ed6",
   ".gemini/config/plugins/ai-kit/skills/design/SKILL.md": "babb44f5e83885b4",
@@ -1514,7 +1514,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "data-developer/both/overrides": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "edbf593e7987f8ce",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -1558,7 +1558,7 @@
   ".gemini/config/plugins/ai-kit/agents/ai-kit-sql-reviewer.md": "3d57d5e38c226cc4",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-verifier.md": "8641ec69d7321527",
   ".gemini/config/plugins/ai-kit/hooks.json": "cab027c6747c9121",
-  ".gemini/config/plugins/ai-kit/plugin.json": "5d0d22bec38740d2",
+  ".gemini/config/plugins/ai-kit/plugin.json": "e6261d4d1031d494",
   ".gemini/config/plugins/ai-kit/rules/AGENTS.md": "24ccb49e4febc8de",
   ".gemini/config/plugins/ai-kit/skills/ask/SKILL.md": "5bf0bae3eec628c8",
   ".gemini/config/plugins/ai-kit/skills/build/SKILL.md": "8d02e028b9f84ed6",
@@ -1642,7 +1642,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "data-developer/codex": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "373c57087f11925e",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -1762,7 +1762,7 @@
   ".codex/skills/zoom-out/agents/openai.yaml": "a1499d95abd84475"
  },
  "data-developer/gemini": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "373c57087f11925e",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -1858,7 +1858,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "devops/all": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "c482c9d6f5271e55",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -2058,7 +2058,7 @@
   ".gemini/config/plugins/ai-kit/agents/ai-kit-security-reviewer.md": "a3a70cf1adedc9d2",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-verifier.md": "8641ec69d7321527",
   ".gemini/config/plugins/ai-kit/hooks.json": "89fe43909b02ef87",
-  ".gemini/config/plugins/ai-kit/plugin.json": "5d0d22bec38740d2",
+  ".gemini/config/plugins/ai-kit/plugin.json": "e6261d4d1031d494",
   ".gemini/config/plugins/ai-kit/rules/AGENTS.md": "24ccb49e4febc8de",
   ".gemini/config/plugins/ai-kit/skills/build/SKILL.md": "8d02e028b9f84ed6",
   ".gemini/config/plugins/ai-kit/skills/diagnose/SKILL.md": "728625495a06c425",
@@ -2124,7 +2124,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "general/all": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "2e225b1c0dab8f77",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -2297,7 +2297,7 @@
   ".gemini/config/plugins/ai-kit/agents/ai-kit-repo-investigator.md": "86e91b580e57b536",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-verifier.md": "8641ec69d7321527",
   ".gemini/config/plugins/ai-kit/hooks.json": "89fe43909b02ef87",
-  ".gemini/config/plugins/ai-kit/plugin.json": "5d0d22bec38740d2",
+  ".gemini/config/plugins/ai-kit/plugin.json": "e6261d4d1031d494",
   ".gemini/config/plugins/ai-kit/rules/AGENTS.md": "24ccb49e4febc8de",
   ".gemini/config/plugins/ai-kit/skills/build/SKILL.md": "8d02e028b9f84ed6",
   ".gemini/config/plugins/ai-kit/skills/diagnose/SKILL.md": "728625495a06c425",
@@ -2355,7 +2355,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "general/both": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "2e225b1c0dab8f77",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -2389,7 +2389,7 @@
   ".gemini/config/plugins/ai-kit/agents/ai-kit-repo-investigator.md": "86e91b580e57b536",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-verifier.md": "8641ec69d7321527",
   ".gemini/config/plugins/ai-kit/hooks.json": "89fe43909b02ef87",
-  ".gemini/config/plugins/ai-kit/plugin.json": "5d0d22bec38740d2",
+  ".gemini/config/plugins/ai-kit/plugin.json": "e6261d4d1031d494",
   ".gemini/config/plugins/ai-kit/rules/AGENTS.md": "24ccb49e4febc8de",
   ".gemini/config/plugins/ai-kit/skills/build/SKILL.md": "8d02e028b9f84ed6",
   ".gemini/config/plugins/ai-kit/skills/diagnose/SKILL.md": "728625495a06c425",
@@ -2447,7 +2447,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "general/gemini": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "2e225b1c0dab8f77",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -2519,7 +2519,7 @@
   ".gemini/skills/zoom-out/SKILL.md": "2a6894c7f9b1c9c5"
  },
  "java-developer/all": {
-  ".ai-kit/bin/friction.py": "88215c14d90e35fb",
+  ".ai-kit/bin/friction.py": "a0b86157db161275",
   ".ai-kit/context/00_KIT.md": "e2081b6e69b6aea3",
   ".ai-kit/context/10_COMPANY.md": "9e06f1e73212c0a3",
   ".ai-kit/context/20_TEAM.md": "dbc08ab658b6c063",
@@ -2735,7 +2735,7 @@
   ".gemini/config/plugins/ai-kit/agents/ai-kit-security-reviewer.md": "a3a70cf1adedc9d2",
   ".gemini/config/plugins/ai-kit/agents/ai-kit-verifier.md": "8641ec69d7321527",
   ".gemini/config/plugins/ai-kit/hooks.json": "89fe43909b02ef87",
-  ".gemini/config/plugins/ai-kit/plugin.json": "5d0d22bec38740d2",
+  ".gemini/config/plugins/ai-kit/plugin.json": "e6261d4d1031d494",
   ".gemini/config/plugins/ai-kit/rules/AGENTS.md": "24ccb49e4febc8de",
   ".gemini/config/plugins/ai-kit/skills/build/SKILL.md": "8d02e028b9f84ed6",
   ".gemini/config/plugins/ai-kit/skills/design/SKILL.md": "babb44f5e83885b4",

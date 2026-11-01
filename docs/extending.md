@@ -35,7 +35,8 @@ Two folders, two levels of commitment. `skills/internal/`: shipped and maintaine
 3. **The profiles** `profiles/*.toml`: add it to the profiles that need it, or leave it `optional`. A domain playbook is never in the `general` profile. A playbook that a step chains ends with a `## In the kit commands` section (what it changes in `/build`, `/diagnose`, `/review`…): the commands stay neutral and send to the matching playbook.
 4. **A command, if it is a step or a tool**: a `commands/<name>.md` file, with a header (`name`, `description` in English, `category`, `stage` for a workflow, `skills`, `order`) and a prompt with `{{args}}`; see [the pivot format](format.md). Each adapter turns it into its CLI's command. Add an entry in `docs/tools.md` for a tool.
 5. **An eval case** `evals/cases/NN-<name>.json` with the prompt that must trigger the skill and an observable criterion, then `python3 scripts/offline_tests.py` and `python3 evals/run.py --dry-run` (a real run, `--confirm-paid-run`, is billed).
-6. **Distribute**: commit, merge request (MR), tag; workstations get it with the next version of the kit (a new ZIP, or `update` in a git clone, which pulls first).
+6. **Version**: a new skill starts at `"version": "1.0.0"` in its catalog entry; a changed one raises it (patch for a wording, minor for a behaviour added, major when what it produces or needs changes), then `python3 scripts/versions.py --update` records it in `versions.lock.json`. The tests refuse a skill or an agent changed under the same version. The CHANGELOG says what changed, naming the skill and its version; `update` tells each person which skills and agents changed.
+7. **Distribute**: commit, merge request (MR), tag; workstations get it with the next version of the kit (a new ZIP, or `update` in a git clone, which pulls first).
 
 ## Full example: a `/dashboard-check` tool in twenty minutes
 
@@ -102,7 +103,7 @@ The need: review a dashboard before publishing. One skill, one command, one eval
    }
    ```
 
-5. Check and distribute: `python3 scripts/offline_tests.py`, `python3 evals/run.py --dry-run --only dashboard-check-totals` (then, if the maintainer decides it, `--confirm-paid-run`: billed), then commit, merge request (MR) and tag (distribution: step 6 above). Anyone who wants the tool enables it with one line: `extra_commands = ["dashboard-check"]` in `~/.ai-kit/overrides.toml`, then `update`; `/dashboard-check` appears in every supported CLI.
+5. Check and distribute: `python3 scripts/offline_tests.py`, `python3 evals/run.py --dry-run --only dashboard-check-totals` (then, if the maintainer decides it, `--confirm-paid-run`: billed), then commit, merge request (MR) and tag (version and distribution: steps 6 and 7 above). Anyone who wants the tool enables it with one line: `extra_commands = ["dashboard-check"]` in `~/.ai-kit/overrides.toml`, then `update`; `/dashboard-check` appears in every supported CLI.
 
 ## Replace a kit skill for the organization
 

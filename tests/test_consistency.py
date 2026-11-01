@@ -31,6 +31,14 @@ class ConsistencyTests(unittest.TestCase):
     self.assertTrue(e['path'].startswith('skills/contrib/'),n);self.assertEqual(e.get('tier'),'optional',n+': a contributed skill is optional');self.assertTrue(e.get('owner'),n+': owner required')
    elif e.get('path','').startswith('skills/contrib/'):self.fail(n+': under skills/contrib but origin != contrib')
   self.assertTrue((ROOT/'skills/contrib/README.md').is_file())
+ def test_contrib_agents_rules(self):
+  # 0.40: the same rules as for skills; a contributed agent is in no profile, enabled with extra_agents.
+  agents=read_json(ROOT/'agents/catalog.json');in_profiles={a for p in self.profiles.values() for a in p.get('agents',[])}
+  for n,e in agents.items():
+   if e.get('origin')=='contrib':
+    self.assertTrue(e['path'].startswith('agents/contrib/'),n);self.assertTrue(e.get('owner'),n+': owner required');self.assertNotIn(n,in_profiles,n+': a contributed agent is in no profile')
+   elif e.get('path','').startswith('agents/contrib/'):self.fail(n+': under agents/contrib but origin != contrib')
+  self.assertTrue((ROOT/'agents/contrib/README.md').is_file())
  def test_general_docs_do_not_name_a_cli(self):
   """General pages talk about "the agent" and "the CLI"; CLI-specific content goes in docs/cli/ (tables and links tolerated)."""
   # README.md is not part of it: it is the home page, which presents the supported CLIs.

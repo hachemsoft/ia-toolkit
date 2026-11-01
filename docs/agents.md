@@ -57,7 +57,8 @@ Future access to an MCP server must use explicitly allowed tools and be validate
 ## Layout
 
 - `agents/catalog.json`: shared catalog.
-- `agents/internal/<category>/<name>.md`: role and instructions, independent of any CLI.
+- `agents/internal/<category>/<name>.md`: role and instructions, independent of any CLI; `agents/contrib/<name>.md` for an agent contributed by someone in the organization, in no profile, enabled with `extra_agents` ([rules](../agents/contrib/README.md)).
+- A version per agent in `agents/catalog.json`, raised at every change and recorded in `versions.lock.json` (see [extending](extending.md#for-the-organization-in-the-kit)).
 - `agents/defaults.json`: default tools and settings, shared by all CLIs.
 - `profiles/*.toml`: agents selected per role.
 - Output: one file per agent, in the format and location each CLI reads ([matrix](cli/matrice.md)).

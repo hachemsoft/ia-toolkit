@@ -5,7 +5,7 @@
 3. Select the skills in the profiles. Do not install the whole catalog by default.
 4. For skills taken from an upstream repository, copy the folders as is into skills/internal/common/, remove files specific to other tools, keep the licence text (skills/LICENSE-UPSTREAM-MIT) and run the tests again; no automatic download.
 5. Add an MCP server only after validating the server, the transport, the authentication and its Windows/Mac prerequisites. Do not commit secrets.
-6. Run the tests, do a trial with --home in a temporary folder, then, when a skill, a command or a practice changes, check the eval cases with `python3 evals/run.py --dry-run`; a real run (`--confirm-paid-run`) is billed and decided by the maintainer. When the agent gets it wrong, add the failing prompt as an eval case before fixing the skill.
+6. Raise the version of every skill or agent you changed, in its catalog (`skills/catalog.json`, `agents/catalog.json`), then `python3 scripts/versions.py --update`; the tests refuse a change under the same version. Run the tests, do a trial with --home in a temporary folder, then, when a skill, a command or a practice changes, check the eval cases with `python3 evals/run.py --dry-run`; a real run (`--confirm-paid-run`) is billed and decided by the maintainer. When the agent gets it wrong, add the failing prompt as an eval case before fixing the skill.
 7. Then validate on a real Mac and a standard Windows workstation without admin rights, then in each supported CLI, signed in.
 8. Release: see [Release](#release) below.
 

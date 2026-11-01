@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.40.0
+
+A version for every skill and agent:
+- Each skill and agent carries its own version in its catalog (`skills/catalog.json`, `agents/catalog.json`), in semver: patch for a wording, minor for a behaviour added, major when what it produces or needs changes. All start at 1.0.0.
+- `versions.lock.json` records each version with a digest of the content (line endings ignored, so a Windows checkout gives the same). The tests refuse a skill or an agent changed under the same version, and say what to do: raise it, then `python3 scripts/versions.py --update`.
+- Your installation records the versions it installed: `update` says which changed ("Updated: skill tdd 1.0.0 → 1.1.0"), `doctor` says when this kit has newer ones than your installation, and a `/friction` about a skill records its version.
+- `agents/contrib/`, like `skills/contrib/`: an agent contributed by someone in the organization, with an owner and a version, in no profile, enabled with `extra_agents`.
+
 ## 0.39.0
 
 One place for your context, whatever the CLIs:

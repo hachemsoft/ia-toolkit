@@ -45,11 +45,27 @@ def friction_id(ts, text):
     """Short stable id (6 hex characters) from the date and the sentence; cited in tickets and in the CHANGELOG."""
     return hashlib.sha256((str(ts) + '|' + str(text)).encode('utf-8')).hexdigest()[:6]
 
+def component_version(name):
+    """Version of the kit skill or agent named like the command, from the installation state (0.40), or None."""
+    try:
+        with open(os.path.join(kit_dir(), 'state.json'), encoding='utf-8') as handle:
+            recorded = (json.load(handle).get('installed') or {}).get('versions') or {}
+    except (OSError, ValueError):
+        return None
+    for kind in ('skills', 'agents'):
+        version = (recorded.get(kind) or {}).get(name) or (recorded.get(kind) or {}).get(name.replace('ai-kit-', '', 1))
+        if version:
+            return kind[:-1] + ' ' + name + ' ' + str(version)
+    return None
+
 def record(category, text, command='none', cli='unknown', source='person'):
     text = redact(' '.join(str(text).split()))[:300]
     entry = {'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'category': category,
              'command': (command or 'none').lstrip('/') or 'none', 'text': text, 'cli': cli, 'source': source}
     entry.update(context())
+    version = component_version(entry['command'])
+    if version:
+        entry['component'] = version
     entry['id'] = friction_id(entry['ts'], entry['text'])
     os.makedirs(kit_dir(), exist_ok=True)
     path = os.path.join(kit_dir(), 'frictions.jsonl')
