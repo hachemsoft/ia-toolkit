@@ -193,4 +193,70 @@ class HookInstallTests(unittest.TestCase):
   self.run_kit('data-developer');base=self.home/'.gemini/agents'
   v=(base/'ai-kit-verifier.md').read_text(encoding='utf-8');self.assertIn('run_shell_command',v.split('---')[1]);self.assertIn('max_turns: 15',v)
   for n in ('ai-kit-repo-investigator.md','ai-kit-code-reviewer.md'):self.assertNotIn('run_shell_command',(base/n).read_text(encoding='utf-8').split('---')[1])
+S='session-news.py'
+def git(*args,cwd):
+ env={**os.environ,'GIT_AUTHOR_NAME':'t','GIT_AUTHOR_EMAIL':'t@example.com','GIT_COMMITTER_NAME':'t','GIT_COMMITTER_EMAIL':'t@example.com','GIT_TERMINAL_PROMPT':'0'}
+ return subprocess.run(['git','-c','commit.gpgsign=false','-c','init.defaultBranch=main',*args],cwd=str(cwd),capture_output=True,text=True,env=env,check=True)
+class SessionNewsTests(unittest.TestCase):
+ """The session-news hook: what is new, said once, at startup and resume; the remote read once a day, never a write."""
+ def setUp(self):
+  self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);t=Path(self.tmp.name)
+  self.home=t/'home';(self.home/'.ai-kit').mkdir(parents=True);self.kit=t/'kit';self.kit.mkdir()
+  (self.kit/'CHANGELOG.md').write_text('# Changelog\n\n## 0.47.0\n\n- News at session start.\n\n## 0.46.0\n\n- Older line.\n',encoding='utf-8')
+  (self.kit/'VERSION').write_text('0.47.0\n',encoding='utf-8')
+  self.env={'HOME':str(self.home),'USERPROFILE':str(self.home)};self.state()
+ def state(self,**extra):
+  s={'version':'0.47.0','profile':'data-developer','team':'data-platform','kit_dir':str(self.kit),'news':{'check_remote':False},**extra}
+  (self.home/'.ai-kit/state.json').write_text(json.dumps(s),encoding='utf-8')
+ def marker(self,**fields):
+  p=self.home/'.ai-kit/news.json'
+  if fields:p.write_text(json.dumps(fields),encoding='utf-8')
+  return json.loads(p.read_text(encoding='utf-8')) if p.exists() else {}
+ def hook(self,payload=None):
+  return run_hook(S,{'source':'startup'} if payload is None else payload,self.env)
+ def context(self,out):
+  self.assertEqual(out.get('hookSpecificOutput',{}).get('hookEventName','SessionStart'),'SessionStart');return out.get('hookSpecificOutput',{}).get('additionalContext','')
+ def test_installed_version_announced_once_with_its_changelog_section(self):
+  c=self.context(self.hook());self.assertIn('0.47.0',c);self.assertIn('News at session start.',c);self.assertNotIn('Older line',c)
+  self.assertEqual(self.marker().get('announced_versions'),['0.47.0']);self.assertEqual(self.hook(),{})
+ def test_only_startup_and_resume_and_every_input_shape(self):
+  for source in ('clear','compact','fork'):self.assertEqual(self.hook({'source':source}),{});self.assertFalse((self.home/'.ai-kit/news.json').exists(),source)
+  self.assertIn('0.47.0',self.context(self.hook({'hook_event_name':'SessionStart','source':'resume','session_id':'x'})))
+  self.marker();(self.home/'.ai-kit/news.json').unlink();self.assertIn('0.47.0',self.context(self.hook({})))  # no source: startup
+  proc=subprocess.run([sys.executable,'-I',str(H/S)],input='not json',capture_output=True,text=True,env={**os.environ,**self.env});self.assertEqual(json.loads(proc.stdout),{});self.assertEqual(proc.returncode,0)
+  (self.home/'.ai-kit/state.json').unlink();self.assertEqual(self.hook(),{})
+ def test_news_entries_targeted_expired_seen_and_malformed(self):
+  self.marker(announced_versions=['0.47.0'])
+  (self.kit/'NEWS.md').write_text('# News\n\n## 2026-11-02 welcome : A channel for news\n\nFirst global entry.\n\n## 2026-11-02 analysts-only : For analysts\nprofiles: data-analyst\n\nNot for us.\n\n## 2026-01-01 expired : Old training\nuntil: 2026-01-31\n\nGone.\n\n## 2026-11-02 team-news : Team session\nteams: data-platform, other\n\nFor our team.\n\n## no id here\n\nIgnored.\n',encoding='utf-8')
+  c=self.context(self.hook());self.assertIn('A channel for news',c);self.assertIn('First global entry.',c);self.assertIn('Team session',c)
+  for absent in ('For analysts','Old training','no id here','Ignored.'):self.assertNotIn(absent,c)
+  self.assertEqual(sorted(self.marker()['announced_news']),['team-news','welcome']);self.assertEqual(self.hook(),{})
+ def origin_and_clone(self):
+  t=Path(self.tmp.name);origin=t/'origin';origin.mkdir();git('init',cwd=origin)
+  (origin/'VERSION').write_text('0.47.0\n',encoding='utf-8');(origin/'NEWS.md').write_text('# News\n',encoding='utf-8');(origin/'CHANGELOG.md').write_text('# Changelog\n\n## 0.47.0\n\n- x\n',encoding='utf-8')
+  git('add','.',cwd=origin);git('commit','-q','-m','0.47.0',cwd=origin)
+  clone=t/'clone';git('clone','-q',str(origin),str(clone),cwd=t);self.kit=clone;self.state(news={'check_remote':True});self.marker(announced_versions=['0.47.0'])
+  return origin,clone
+ def test_remote_newer_version_and_news_read_once_a_day_without_pulling(self):
+  origin,clone=self.origin_and_clone()
+  (origin/'VERSION').write_text('0.48.0\n',encoding='utf-8');(origin/'NEWS.md').write_text('# News\n\n## 2026-11-02 dbt-training : dbt training on Thursday\n\nRoom 2.\n',encoding='utf-8');git('commit','-qam','0.48.0',cwd=origin)
+  c=self.context(self.hook());self.assertIn('0.48.0',c);self.assertIn('ai-kit update',c);self.assertIn('dbt training on Thursday',c);self.assertIn('ai-kit news --later',c)
+  self.assertEqual((clone/'VERSION').read_text(encoding='utf-8').strip(),'0.47.0')  # fetched, never pulled
+  m=self.marker();self.assertEqual(m['last_check']['result'],'ok');self.assertEqual(m['last_check']['remote_version'],'0.48.0');self.assertIn('dbt-training',m['announced_news'])
+  git('remote','remove','origin',cwd=clone)  # a second session the same day: no fetch, nothing new
+  self.assertEqual(self.hook(),{});self.assertEqual(self.marker()['last_check']['result'],'ok')
+ def test_declined_version_is_not_proposed_again(self):
+  origin,clone=self.origin_and_clone();(origin/'VERSION').write_text('0.48.0\n',encoding='utf-8');git('commit','-qam','0.48.0',cwd=origin)
+  self.marker(announced_versions=['0.47.0'],declined_version='0.48.0');self.assertEqual(self.hook(),{});self.assertEqual(self.marker()['last_check']['remote_version'],'0.48.0')
+ def test_remote_failure_is_silent_and_recorded(self):
+  origin,clone=self.origin_and_clone();git('remote','set-url','origin',str(Path(self.tmp.name)/'nowhere'),cwd=clone)
+  self.assertEqual(self.hook(),{});m=self.marker();self.assertEqual(m['last_check']['result'],'failed');self.assertNotIn('remote_version',m['last_check'])
+  self.state(news={'check_remote':False});(self.home/'.ai-kit/news.json').unlink();self.marker(announced_versions=['0.47.0']);self.assertEqual(self.hook(),{});self.assertNotIn('last_check',self.marker())
+  self.state(kit_dir=str(Path(self.tmp.name)/'gone'),news={'check_remote':True});self.assertEqual(self.hook(),{});self.assertNotIn('last_check',self.marker())
+ def test_fast_without_remote_and_instruction_never_runs_update(self):
+  import time;start=time.monotonic();c=self.context(self.hook());self.assertLess(time.monotonic()-start,1.0)
+  self.assertIn('Never run',c);self.assertIn('ai-kit update',c)
+ def test_context_is_capped(self):
+  (self.kit/'CHANGELOG.md').write_text('# Changelog\n\n## 0.47.0\n\n'+('- a very long line of changes\n'*2000),encoding='utf-8')
+  self.assertLessEqual(len(self.context(self.hook())),8000)
 if __name__=='__main__':unittest.main()
