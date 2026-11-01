@@ -12,7 +12,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from installer import cli, core, settings
+from installer import cli, settings
 from installer.core import ROOT, read_json
 from installer.toml_files import read_toml
 
@@ -66,7 +66,7 @@ class Base(unittest.TestCase):
 
     def calls(self):
         log = self.bin/'calls.jsonl'
-        return [json.loads(l) for l in log.read_text(encoding='utf-8').splitlines()] if log.is_file() else []
+        return [json.loads(line) for line in log.read_text(encoding='utf-8').splitlines()] if log.is_file() else []
 
     def run_kit(self, *args):
         out = io.StringIO()
@@ -80,7 +80,7 @@ class Base(unittest.TestCase):
 
     def lines(self):
         path = self.home/'.ai-kit/frictions.jsonl'
-        return [json.loads(l) for l in path.read_text(encoding='utf-8').splitlines()] if path.is_file() else []
+        return [json.loads(line) for line in path.read_text(encoding='utf-8').splitlines()] if path.is_file() else []
 
     def sent(self):
         return read_json(self.home/'.ai-kit/frictions-sent.json', {})

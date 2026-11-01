@@ -47,8 +47,9 @@ class LauncherTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        # Spaces and accents in the kit folder and in the home folder, as in "Documents/Kit IA été".
-        self.base = Path(self.temp.name)/'Mes documents é'
+        # Spaces and accents in the kit folder and in the home folder, as in "Documents/Kit IA été". Resolved: on a Windows
+        # runner the temporary folder comes in its short 8.3 form (RUNNER~1), while the launcher records the real path.
+        self.base = Path(self.temp.name).resolve()/'Mes documents é'
         self.kit = kit_copy(self.base/'Kit IA été'/'ai-kit 1')
         self.home = self.base/'Home à'
         # A copy of the repository is installed by pip from source: its build backend and libraries come from the local

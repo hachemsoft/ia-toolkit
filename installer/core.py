@@ -7,7 +7,7 @@ import re
 import shlex
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 
 # Kit content: next to the code in the repo or archive, under ai_kit/kit/ when the kit is installed as a package (pipx).
 _PACKAGE_DIR = Path(__file__).resolve().parent

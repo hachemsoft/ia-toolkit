@@ -12,7 +12,7 @@ import unittest
 from unittest import mock
 
 from installer import cli, core
-from installer.core import ROOT, read_json
+from installer.core import ROOT
 from installer.toml_files import read_toml
 
 
@@ -34,7 +34,7 @@ class FrictionCommandTests(unittest.TestCase):
 
     def lines(self):
         path = self.home/'.ai-kit/frictions.jsonl'
-        return [json.loads(l) for l in path.read_text(encoding='utf-8').splitlines()] if path.is_file() else []
+        return [json.loads(line) for line in path.read_text(encoding='utf-8').splitlines()] if path.is_file() else []
 
     def test_logs_like_the_script_and_lists(self):
         code, out = self.run_kit('friction', '--category', 'docs', '--command', '/build', '--cli', 'claude', '--text', 'The plan step is too long')
