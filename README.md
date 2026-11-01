@@ -1,4 +1,9 @@
-# AI Kit
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo-dark.svg">
+    <img alt="AI Kit: one kit, four coding agents" src="docs/img/logo-light.svg" width="360">
+  </picture>
+</h1>
 
 [![Tests](https://github.com/hachemsoft/ia-toolkit/actions/workflows/portability.yml/badge.svg)](https://github.com/hachemsoft/ia-toolkit/actions/workflows/portability.yml)
 [![Version](https://img.shields.io/github/v/tag/hachemsoft/ia-toolkit?label=version)](CHANGELOG.md)
