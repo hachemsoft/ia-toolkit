@@ -76,6 +76,7 @@ class Adapter(Protocol):
     NAME: str  # value of --target
     LABEL: str  # display name
     COMMAND: str  # executable
+    VERIFIED: str  # CLI version the kit was last checked on; doctor reports a newer one
     HOME_DIR: str  # CLI folder, relative to the home folder
     BUILTIN_COMMANDS: Set[str]  # built-in commands, ignored by usage
     MANAGED_PREFIXES: Tuple[str, ...]

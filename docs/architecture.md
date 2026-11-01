@@ -42,7 +42,7 @@ These hold for every change; a test guards each.
 | `~/.claude.json`, rewritten by Claude Code while it runs | the Claude adapter | an `update` during an open session; the docs say to close it first |
 | The CLIs' tool names in the guardrails | `runtime/hooks/` | a new tool name; the guardrails refuse a call that names a protected path in a form they cannot read |
 
-The versions each adapter was checked on are in the [CLI matrix](cli/matrice.md).
+Each adapter declares the CLI version it was checked on (`VERIFIED`, shown in the [CLI matrix](cli/matrice.md)): `doctor` says when a newer one runs. Once a week, `.github/workflows/cli-drift.yml` installs the latest release of each CLI published on npm and runs `scripts/cli_drift.py`: the version, and the options the kit relies on, read from `--help`, without a model call. A red run means an adapter or the evals need a change; a newer version that still has every option is reported, then `VERIFIED` is raised after a check.
 
 ## Migrations
 

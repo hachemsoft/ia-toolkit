@@ -8,7 +8,7 @@ The kit content (practices, skills, commands, agents, guardrails) is written onc
 | --- | --- | --- | --- |
 | Gemini CLI | ✅ integrated | 0.65 | [Gemini CLI](gemini.md) |
 | Antigravity CLI (agy) | ✅ integrated | 1.4.12 | [Antigravity CLI](agy.md) |
-| Codex CLI | ✅ integrated | 0.160 (repo skills on 0.164) | [Codex CLI](codex.md) |
+| Codex CLI | ✅ integrated | 0.164 (files, repo skills and evals) | [Codex CLI](codex.md) |
 | Claude Code | ✅ integrated | 2.1.316 (files and evals in `claude -p`; interactive checks to do) | [Claude Code](claude-code.md) |
 | GitHub Copilot CLI | ❌ no adapter | — | — |
 

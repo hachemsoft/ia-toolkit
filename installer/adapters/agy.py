@@ -27,6 +27,7 @@ def agy_rules_text(context_names, context_dir='.gemini'):
 NAME = 'agy'
 LABEL = 'Antigravity CLI'
 COMMAND = 'agy'
+VERIFIED = '1.4.12'  # the CLI version the kit was last checked on (docs/cli/matrice.md); doctor says when a newer one runs
 HOME_DIR = '.gemini'
 BUILTIN_COMMANDS = {'help', 'planning', 'agents', 'model', 'models', 'permissions', 'config', 'diff', 'keybindings', 'remote-control', 'login', 'logout', 'clear', 'quit', 'exit'}
 MANAGED_PREFIXES = (AGY_PLUGIN+'/',)

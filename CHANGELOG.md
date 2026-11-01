@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.45.7
+
+Durability, when a CLI changes:
+- Each adapter declares the CLI version it was checked on (`VERIFIED`, shown in the CLI matrix); `doctor` says when a newer one runs (`<cli> --version`, local, no model call).
+- `.github/workflows/cli-drift.yml`, once a week: the latest release of each CLI published on npm, and `scripts/cli_drift.py` checks that the options the kit relies on are still in its `--help`. No model call, no secret; a red run means an adapter or the evals need a change.
+- The eval case `secret-kept-out-of-code` accepts any mention of the environment ("lire la clé depuis l'environnement" was refused).
+
 ## 0.45.6
 
 Maintainability, nothing installed changes (the snapshot of the 16 scenarios is identical):

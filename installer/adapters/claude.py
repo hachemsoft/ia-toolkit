@@ -29,6 +29,7 @@ KIT_HOOK = re.compile(r'[\\/]\.ai-kit[\\/]hooks[\\/]')
 NAME = 'claude'
 LABEL = 'Claude Code'
 COMMAND = 'claude'
+VERIFIED = '2.1.316'  # the CLI version the kit was last checked on (docs/cli/matrice.md); doctor says when a newer one runs
 HOME_DIR = CLAUDE_DIR
 AGENT_TOOLS = 'native'  # an agent's "tools" list is the only set of tools Claude Code gives it
 OBSERVES = {'prompt', 'skill', 'agent', 'error'}  # the session transcripts hold every tool call

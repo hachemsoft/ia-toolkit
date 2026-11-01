@@ -107,6 +107,7 @@ def codex_config_block(agent_entries, hook_commands, mcp_servers):
 NAME = 'codex'
 LABEL = 'Codex CLI'
 COMMAND = 'codex'
+VERIFIED = '0.164.0'  # the CLI version the kit was last checked on (docs/cli/matrice.md); doctor says when a newer one runs
 HOME_DIR = CODEX_DIR
 BUILTIN_COMMANDS = {'skills', 'model', 'review', 'init', 'new', 'compact', 'diff', 'mention', 'status', 'mcp', 'approvals', 'logout', 'quit', 'exit', 'hooks', 'agents', 'resume'}
 MANAGED_PREFIXES = (CODEX_DIR+'/skills/', CODEX_DIR+'/ai-kit/')

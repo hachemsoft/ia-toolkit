@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 from .core import (_PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitError, read_json, digest,
-                   inside, load_commands)
+                   inside, load_commands, run_timed)
 from . import versions
 from .adapters import ADAPTERS
 from .interface import DoctorContext, LiveCheck
@@ -246,6 +246,25 @@ def runtime_checks(home, status):
             print('[Info] Another `ai-kit` command, not used because an earlier one comes first on the PATH: '+other+' (version '+str(other_version or 'unknown')+')')
 
 
+def cli_version(command):
+    """The version a CLI reports (<command> --version, local, no model call), or None."""
+    path = shutil.which(command)
+    if not path:
+        return None
+    try:
+        proc = run_timed([path, '--version'], 15, text=True, encoding='utf-8', errors='replace', stdin=subprocess.DEVNULL)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    match = re.search(r'\d+(?:\.\d+)+', (proc.stdout or '') + (proc.stderr or ''))
+    return match.group(0) if match else None
+
+
+def newer_than(found, verified):
+    def parts(version):
+        return tuple(int(x) for x in version.split('.')[:3])
+    return parts(found) > parts(verified)
+
+
 def doctor_checks(home, cwd=None, problems=None):
     issues = 0
     def status(ok,message):
@@ -324,6 +343,10 @@ def doctor_checks(home, cwd=None, problems=None):
             if adapter.NAME in installed:
                 adapter.doctor(home, state, status, ctx)
                 hints.append(adapter.doctor_hint())
+                found = cli_version(adapter.COMMAND)
+                if found and newer_than(found, adapter.VERIFIED):
+                    print('[Info] '+adapter.LABEL+' '+found+' is newer than the version the kit was checked on ('+adapter.VERIFIED+'). '
+                          'If something stops working, the checks above and usage say what; log it with /friction.')
         try:
             servers, undefined = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))
             print('[Info] MCP servers: '+(', '.join(servers) or 'none')+(' | chosen but not defined in organization.toml: '+', '.join(undefined) if undefined else ''))

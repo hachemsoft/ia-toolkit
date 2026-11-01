@@ -178,6 +178,7 @@ def print_live(home, timeout=90):
 NAME = 'gemini'
 LABEL = 'Gemini CLI'
 COMMAND = 'gemini'
+VERIFIED = '0.65.0'  # the CLI version the kit was last checked on (docs/cli/matrice.md); doctor says when a newer one runs
 HOME_DIR = '.gemini'
 OBSERVES = {'prompt', 'skill', 'agent', 'error'}  # chat logs hold every tool call, activate_skill and agents included
 LOGS = ('.gemini/tmp/*/chats/*.json',)  # read by history; usage says when they exist but give nothing

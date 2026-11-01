@@ -64,8 +64,12 @@ class NoModelCallTests(unittest.TestCase):
     def test_local_doctor_calls_no_model(self):
         self.run_main('setup', '--profile', 'general', '--user', 'a@example.org', '--target', 'all')
         self.run_main('doctor')
-        # agy plugin validate checks the plugin files locally; nothing else may run.
-        self.assertEqual([c for c in self.calls() if not c.startswith('agy plugin validate')], [])
+        # agy plugin validate checks the plugin files locally, and <cli> --version only prints the version (0.45.6: doctor
+        # says when a CLI is newer than the one the kit was checked on); nothing else may run.
+        calls = self.calls()
+        self.assertEqual([c for c in calls if not c.startswith('agy plugin validate') and not c.endswith(' --version')], [])
+        self.assertEqual(sorted(c for c in calls if c.endswith(' --version')),
+                         ['agy --version', 'claude --version', 'codex --version', 'gemini --version'])
 
     def test_live_refused_when_no_live_is_set(self):
         self.run_main('setup', '--profile', 'general', '--user', 'a@example.org', '--target', 'gemini')
