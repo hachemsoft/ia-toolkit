@@ -91,6 +91,26 @@ class UninstallTests(unittest.TestCase):
             self.assertEqual(cli.main(['uninstall', '--yes', '--home', str(self.home)]), 0)
         self.assertFalse((self.home/'.ai-kit/state.json').exists())
 
+    def test_update_after_uninstall_reinstalls_the_last_choices(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(cli.main(['uninstall', '--yes', '--home', str(self.home)]), 0)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), mock.patch.object(cli, 'interactive', return_value=False):
+            self.assertEqual(cli.main(['update', '--home', str(self.home)]), 0)
+        self.assertIn('choices of your last installation', out.getvalue())
+        state = read_json(self.home/'.ai-kit/state.json')
+        self.assertEqual(state['profile'], 'general')
+        self.assertEqual(state['targets'], ['gemini', 'agy', 'codex', 'claude'])
+        self.assertEqual(state['user']['email'], 'a@example.org')
+
+    def test_update_without_any_installation_still_says_to_run_setup(self):
+        empty = self.home/'empty'
+        empty.mkdir()
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err), contextlib.redirect_stdout(err):
+            self.assertNotEqual(cli.main(['update', '--home', str(empty)]), 0)
+        self.assertIn('run setup', err.getvalue())
+
     def test_reinstall_after_uninstall_reuses_the_personal_context(self):
         self.quiet(cli.uninstall, self.home)
         self.quiet(cli.apply, 'general', self.home, False, None, 'gemini')

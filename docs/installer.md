@@ -46,7 +46,7 @@ The context layers and `30_USER.md` are in `~/.ai-kit/context/`, whatever the CL
 | New version | extract the new ZIP and run its installer | the same |
 | Reapply this version (after editing `overrides.toml`; in a git clone, it first fetches the new version) | `sh scripts/bootstrap.sh update` | `Installer.cmd update` |
 | Diagnose (local, free) | `sh scripts/bootstrap.sh doctor` | `Installer.cmd doctor` |
-| Uninstall (`--dry-run` to see the list, `--yes` for automation, `--remove-runtime` for the private environment too) | `sh scripts/bootstrap.sh uninstall` | `Installer.cmd uninstall` |
+| Uninstall (`--dry-run` to see the list, `--yes` for automation, `--remove-runtime` for the private environment too; `update` afterwards reinstalls with the same choices) | `sh scripts/bootstrap.sh uninstall` | `Installer.cmd uninstall` |
 | Check the connection (real call to the model, may be billed) | `sh scripts/bootstrap.sh doctor --live` | `Installer.cmd doctor --live` |
 | Usage review | `sh scripts/bootstrap.sh usage` | `Installer.cmd usage` |
 | For IT: the managed settings that make the guardrails hold ([guardrails](hooks.md#a-lock-nobody-on-the-workstation-can-remove)) | `sh scripts/bootstrap.sh managed-settings --out <empty folder>` | `Installer.cmd managed-settings --out <empty folder>` |

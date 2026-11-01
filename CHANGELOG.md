@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.45.3
+
+- `update` after `uninstall` reinstalls with the choices of the last installation (profile, team, CLIs, identity, kept in the backup the uninstall made) instead of stopping at "Kit not installed: run setup"; it says so. With no installation in the backups, it still says to run setup.
+
 ## 0.45.2
 
 - `/friction` works again: since 0.41, the guardrail refused the command that runs the kit's own `~/.ai-kit/bin/friction.py`, because it names a protected folder without only reading it. Python running that script is allowed when nothing else in the command names a protected path; anything else under that folder is still refused. A test now runs the command `/friction` gives, on macOS and in PowerShell.

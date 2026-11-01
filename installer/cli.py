@@ -566,6 +566,18 @@ def interactive():
     return sys.stdin.isatty() and sys.stdout.isatty()
 
 
+def last_installation(home):
+    """The state of the most recent installation kept in a backup (uninstall backs up state.json), or {}."""
+    folder = home/'.ai-kit'/'backups'
+    if not folder.is_dir():
+        return {}
+    for backup in sorted((p for p in folder.iterdir() if p.is_dir() and re.match(r'\d{8}T\d{6}-', p.name)), key=lambda p: p.name, reverse=True):
+        state = read_json(backup/'.ai-kit'/'state.json')
+        if state and state.get('profile'):
+            return state
+    return {}
+
+
 def resolve_identity(args, home, state):
     """Identity confirmed interactively, --user otherwise; never imposed."""
     if args.user:
@@ -656,12 +668,22 @@ def main(argv=None):
         if not args.dry_run:
             migrate_kit_dir(home)  # with --dry-run, apply announces it without renaming
         state = read_json(home/'.ai-kit/state.json') or read_json(home/LEGACY_KIT_DIR/'state.json')
+        target = args.target
+        if not state and args.action == 'update':
+            # After an uninstall: the choices of the last installation, from its backup, rather than an error.
+            state = last_installation(home)
+            if state:
+                target = target or state.get('targets') or None
+                print('[Info] The kit was not installed: reinstalled with the choices of your last installation (profile '
+                      + state['profile']+', '+', '.join(state.get('targets') or [])+'). Change them with setup.')
         identity = resolve_identity(args, home, state)
+        if identity is None and state.get('user') and not (home/'.ai-kit/state.json').exists():
+            identity = state['user']
         role = args.profile or state.get('profile')
         if not role:
             raise KitError('Kit not installed: run setup.' if args.action == 'update' else 'Specify --profile among: '+', '.join(profile_ids())+'.')
         team = args.team or state.get('team')
-        apply(role,home,args.dry_run,identity,args.target,team)
+        apply(role,home,args.dry_run,identity,target,team)
         # setup and update never call the model: the summary says "connection not verified"; doctor --live is the only real call.
         live = None
         if args.action == 'setup' and not args.dry_run and interactive():
