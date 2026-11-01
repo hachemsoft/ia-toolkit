@@ -3,6 +3,7 @@
 ## 0.45.3
 
 - `update` after `uninstall` reinstalls with the choices of the last installation (profile, team, CLIs, identity, kept in the backup the uninstall made) instead of stopping at "Kit not installed: run setup"; it says so. With no installation in the backups, it still says to run setup.
+- Three eval cases in plain words, without a kit command, judged on the outcome rather than on the kit's vocabulary: a fuzzy request gets a question before SQL, a red suite keeps its test, a key stays out of the source (even as a default value). On Claude Code they tie with and without the kit: what the kit adds is measured through its commands.
 
 ## 0.45.2
 

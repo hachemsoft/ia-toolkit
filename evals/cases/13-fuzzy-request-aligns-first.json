@@ -1,0 +1,18 @@
+{
+  "name": "fuzzy-request-aligns-first",
+  "cwd": "dbt-mini",
+  "requires": {},
+  "prompt": "Analysts disagree on which customers count as active in the sales dashboard. Fix it.",
+  "expect": {
+    "regex": [
+      "\\?"
+    ],
+    "not_contains": [
+      "```sql"
+    ],
+    "files_absent": [
+      "models/active_customers.sql"
+    ]
+  },
+  "_doc": "Plain words, no kit command: judged on the outcome. A fuzzy business request gets a question before any ready-to-paste SQL."
+}
