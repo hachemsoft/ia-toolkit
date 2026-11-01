@@ -4,7 +4,7 @@ Every real run calls the model once per case and is billed by the provider: it n
 AI_KIT_NO_LIVE=1 refuses it. Without a model: --dry-run lists the cases and checks their preconditions;
 --stand-in PATH replays them against a stand-in executable (tests of the runner itself).
 
-Usage: python3 evals/run.py [--home DIR] [--cases evals/cases] [--only name] [--dry-run] [--report path.json]
+Usage: python3 evals/run.py [--home DIR] [--cases evals/cases] [--only name] [--dry-run] [--report path.json] [--baseline]
        [--cli gemini|agy|codex|claude] [--model NAME] [--approval-mode MODE] [--timeout S] [--retries N] [--confirm-paid-run | --stand-in PATH]
 Each case is a JSON file: {"name", "prompt", "cwd" (fixture relative to evals/fixtures, optional), "subdir" (launch subfolder, optional),
 "requires": {"profile": ..., "commands": [...], "skills": [...]} (optional, checked against the installed kit),
@@ -206,6 +206,7 @@ def main(argv=None):
     parser.add_argument('--timeout', type=int, default=300, help='per case, in seconds: limits time, not cost')
     parser.add_argument('--retries', type=int, default=0, help='extra attempts on an infrastructure error, at most ' + str(MAX_RETRIES) + ' (each one is billed)')
     parser.add_argument('--report', type=Path)
+    parser.add_argument('--baseline', action='store_true', help='measure the CLI without the kit: --home must hold no kit; every case runs, preconditions ignored; compare with evals/compare.py')
     parser.add_argument('--model', help='model to force (for example gemini-2.5-flash on Vertex)')
     parser.add_argument('--approval-mode', default='default', choices=['default', 'plan'], help='plan blocks skills in Gemini 0.65; default only refuses writes in non-interactive mode')
     parser.add_argument('--cli', default='gemini', choices=['gemini', 'agy', 'codex', 'claude'], help='CLI to evaluate: gemini (default), agy (Antigravity), codex or claude (Claude Code)')
@@ -221,9 +222,12 @@ def main(argv=None):
         return 1
     state_file = args.home.resolve() / '.ai-kit' / 'state.json'
     state = json.loads(state_file.read_text(encoding='utf-8')) if state_file.is_file() else {}
+    if args.baseline and state_file.is_file():
+        print('--baseline measures the CLI without the kit, but the kit is installed in ' + str(args.home) + ': give --home a folder where the CLI is signed in and the kit is not installed.', file=sys.stderr)
+        return 2
     if args.dry_run:
         for case in cases:
-            unmet = unmet_preconditions(case, state) if case.get('requires') else []
+            unmet = unmet_preconditions(case, state) if case.get('requires') and not args.baseline else []
             print(case['name'] + ' : ' + case['prompt'][:80] + (' [precondition: ' + '; '.join(unmet) + ']' if unmet else ''))
         print('Dry run: no model called.')
         return 0
@@ -242,11 +246,11 @@ def main(argv=None):
     kit_version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
     meta = {'kit': kit_version, 'installed_kit': state.get('version'), 'profile': state.get('profile'), 'cli': args.cli,
             'cli_version': version_of(executable), 'model': args.model or 'CLI default', 'approval_mode': args.approval_mode,
-            'retries': args.retries, 'timeout': args.timeout, 'simulated': bool(args.stand_in)}
+            'retries': args.retries, 'timeout': args.timeout, 'simulated': bool(args.stand_in), 'baseline': args.baseline}
     print('Kit ' + kit_version + ' | ' + args.cli + ' ' + str(meta['cli_version']) + ' | model ' + meta['model'] + (' | stand-in, no model' if args.stand_in else ''))
     results, failed = [], 0
     for case in cases:
-        unmet = unmet_preconditions(case, state) if case.get('requires') else []
+        unmet = unmet_preconditions(case, state) if case.get('requires') and not args.baseline else []
         if unmet:
             print('[SKIP] ' + case['name'] + ' — precondition: ' + '; '.join(unmet))
             results.append({'name': case['name'], 'status': 'SKIP', 'failures': unmet, 'attempts': 0, 'output': ''})

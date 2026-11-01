@@ -19,6 +19,18 @@ Cost: every real run calls the model at least once per case and is billed by the
 
 Statuses: `OK`; `FAIL`, a behaviour result; `ERROR`, an execution failure (the CLI exited with a non-zero code, API error, quota, timeout), whatever the output contains; `SKIP`, a precondition of the case (`requires`) is not met by the installed kit.
 
+## With and without the kit
+
+The question a pilot asks is not "does the kit pass its cases" but "does the agent do better with it". Run the same cases twice, with the same CLI and model: once in the home folder where the kit is installed, once with `--baseline` in a home folder where the CLI is signed in and the kit is not installed. Then compare:
+
+```sh
+python3 evals/run.py --confirm-paid-run --cli claude --report with-kit.json
+python3 evals/run.py --confirm-paid-run --cli claude --home ./no-kit --baseline --report without-kit.json
+python3 evals/compare.py with-kit.json without-kit.json      # no model call
+```
+
+`--baseline` refuses a home folder that holds the kit, and runs every case, the ones that require a kit command included: without the kit, that command is just text the agent reads. The comparison lists the cases that pass only with the kit, only without it, and with both; it refuses two reports of different CLIs or models. Both runs are billed; one run of each varies with the model, so repeat them before concluding.
+
 ## Write a case
 
 A file `evals/cases/NN-name.json`: `name`, `prompt` (a kit command or a request as a user types it), `cwd` (fixture), `subdir` (optional: subfolder where the CLI starts, for a monorepo), `requires` (`profile`, `commands`, `skills` the installed kit must have; a case whose command is not installed is skipped, not failed), `git` (optional: a real repository, the fixture committed then the `uncommitted` files written over it, to review changes that are not committed), `expect` with `contains`, `not_contains`, `regex`, `files_absent`, `files_present`. A file criterion with a folder is a path from the repo root; a bare name (`intent.md`) matches at any depth, because the commands write into `docs/sdlc/<date>-<slug>/`. Prefer what can be observed (a file written or not, a command cited) to keywords. The criteria cover what a human would check: the right command is suggested, the glossary is used, no production command is suggested, no file is created without approval.

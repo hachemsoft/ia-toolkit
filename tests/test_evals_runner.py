@@ -96,6 +96,41 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(report['meta']['simulated'])
         self.assertIn('kit', report['meta'])
 
+    def test_baseline_refuses_a_home_with_the_kit(self):
+        self.case()
+        code, out = self.run_cases('--stand-in', str(self.stand_in), '--baseline')
+        self.assertEqual(code, 2)
+        self.assertIn('the kit is installed', out)
+        self.assertEqual(self.calls(), [])
+
+    def test_baseline_runs_cases_that_require_the_kit_and_compares(self):
+        self.case('needs-kit', requires={'commands': ['intent', 'spec']})
+        code, out = self.run_cases('--stand-in', str(self.stand_in))
+        self.assertIn('[SKIP]', out)
+        self.case('needs-kit', requires={'commands': ['intent']})
+        self.run_cases('--stand-in', str(self.stand_in))
+        with_kit = self.base/'with.json'
+        (self.base/'r.json').rename(with_kit)
+        bare = self.base/'bare'
+        bare.mkdir()
+        out = io.StringIO()
+        with mock.patch.dict(os.environ, {'STAND_IN_ANSWER': 'Done.'}), contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+            evals_run.main(['--cases', str(self.cases), '--home', str(bare), '--report', str(self.base/'without.json'), '--stand-in', str(self.stand_in), '--baseline'])
+        without = json.loads((self.base/'without.json').read_text(encoding='utf-8'))
+        self.assertTrue(without['meta']['baseline'])
+        self.assertEqual(without['results'][0]['status'], 'FAIL')
+        spec = importlib.util.spec_from_file_location('evals_compare', ROOT/'evals/compare.py')
+        compare = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(compare)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(compare.main([str(with_kit), str(self.base/'without.json')]), 0)
+        self.assertIn('passed only with the kit: 1 (needs-kit)', out.getvalue())
+        self.assertIn('simulated, not a measure', out.getvalue())
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertEqual(compare.main([str(self.base/'without.json'), str(with_kit)]), 2)
+
     def test_nonzero_exit_is_an_execution_failure_whatever_the_output(self):
         self.case()
         code, out = self.run_cases('--stand-in', str(self.stand_in), STAND_IN_CODE='1')

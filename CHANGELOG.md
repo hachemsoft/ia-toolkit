@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.0
+
+Measuring the kit's effect:
+- `evals/run.py --baseline` runs the cases in a home folder without the kit (refused if the kit is there), and `evals/compare.py` compares that run with a run with the kit: cases passed only with the kit, only without, with both. Both runs are billed and nothing runs on its own; the comparison itself calls no model. The pilot page lists it among the before-and-after measures.
+
 ## 0.44.0
 
 For IT:
