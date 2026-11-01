@@ -72,7 +72,7 @@ A repo shared by several teams (for example services owned by two teams, or a db
 
 ## Override preferences
 
-For a project to set a rule different from `30_USER.md` (language, level of detail, workflow, report format), write it in `AGENTS.md` under the same heading as in the personal file: *Language and style*, *My level and my domains*, *My default workflow*, *Report*. `00_KIT.md` tells the agent that the project wins over `30_USER.md`; it does not win over company or team practices ([above](#how-the-repo-combines-with-your-layers)).
+For a project to set a rule different from `30_USER.md` (language, level of detail, workflow, report format), write it in `AGENTS.md` under the same heading as in the personal file: *Answers*, *Domains*, *Working with me*, *By situation*, *Report*. `00_KIT.md` tells the agent that the project wins over `30_USER.md`; it does not win over company or team practices ([above](#how-the-repo-combines-with-your-layers)).
 
 ## What the kit does not do
 

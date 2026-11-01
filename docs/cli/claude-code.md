@@ -8,7 +8,7 @@ What the kit does for Claude Code, and what is specific to this CLI. Formats rea
 
 ## What the kit installs
 
-- **Context**: a managed block at the top of `~/.claude/CLAUDE.md`, between two `ai-kit` markers, that imports the kit layers and your `30_USER.md` by path (`@~/.gemini/00_KIT.md`, or `~/.ai-kit/context/` without Gemini CLI). Nothing is copied: an edit of `30_USER.md` is read at the next session, without `update`. The rest of the file is yours and never changes.
+- **Context**: a managed block at the top of `~/.claude/CLAUDE.md`, between two `ai-kit` markers, that imports the kit layers and your `30_USER.md` by path (`@~/.ai-kit/context/00_KIT.md`, …). Nothing is copied: an edit of `30_USER.md` is read at the next session, without `update`. The rest of the file is yours and never changes.
 - **Skills** in `~/.claude/skills/`, with a prefix: `ai-kit-tdd`, `ai-kit-code-review`… Claude Code ships its own `code-review`, and many people keep personal skills with the same names as the kit's; the prefix keeps both. The texts the kit installs name its skills with the prefix, and the block of `CLAUDE.md` says to read any other mention the same way. "On command only" (`disable-model-invocation`) is honoured natively.
 - **Commands** in `~/.claude/commands/<name>.md`: `/intent`, `/build`, `/review`… as in the other CLIs. When one of your own skills or commands already has the name, the kit's is installed as `/ai-kit-<name>` (with your prefix), and the installer and the block of `CLAUDE.md` say so; yours is never touched.
 - **Agents** in `~/.claude/agents/ai-kit-<name>.md`. Their tool list is applied by Claude Code itself: a reviewer gets `Read` and `Grep` only, the verifier also `Glob` and `Bash`. They inherit the session's model.

@@ -10,7 +10,7 @@ The kit targets people working on Windows or macOS with a standard account: no a
 | Extract | right-click the ZIP, **Extract All** | double-click the ZIP |
 | Install | double-click `Installer.cmd` in the extracted folder | open **Terminal**, type `sh ` (with a space), drag the `scripts/bootstrap.sh` file of the extracted folder into the window, press Enter |
 | Choices | the guided screens: your CLIs, your profile, optional adjustments, a review of the changes, then Install | the same |
-| `30_USER.md` | the installer shows its path and offers to open it in Notepad | the same, in the default text editor (TextEdit unless you chose another) |
+| `30_USER.md` | three quick questions at the end of the first setup fill it; **Open my personal context** in the menu opens it in Notepad | the same, in the default text editor (TextEdit unless you chose another) |
 | Use | start a new session of your CLI | the same |
 
 Update: download and extract the new ZIP, then run the installer the same way. CLIs, profile, team, choices, `overrides.toml` and `30_USER.md` are kept. The previous folder can be deleted: nothing installed points to it. Uninstall: run the installer and choose **Uninstall**.
@@ -63,7 +63,7 @@ To do on a Windows and a macOS workstation, with a **standard account**, for eac
 | 9 | Network unavailable or model blocked | disconnect, then install from the ZIP; then `doctor --live` | install complete offline; the check names the network, the proxy or the certificate, never asks to disable a protection |
 | 10 | Existing settings preserved | a `~/.gemini/settings.json` with a proxy and an authentication mode set beforehand | these values unchanged after install and update |
 | 11 | No system change | Windows: `reg query HKCU\Environment` before and after; macOS: `ls -le@ ~/.zshrc ~/.zprofile` and the folder attributes before and after | identical |
-| 12 | `30_USER.md` | at the end of setup, accept to open it, write a sentence about your role, save, press Enter; start a new session of the CLI and ask "what do you know about me?" | Notepad or TextEdit opens it as plain text; the agent cites the sentence |
+| 12 | `30_USER.md` | at the end of setup, answer the three quick questions and give your role; start a new session of the CLI, type `/me` and answer; then ask "what do you know about me?" | `~/.ai-kit/context/30_USER.md` holds the answers; `/me` shows the difference and a before and after before writing; the agent cites your role |
 | 13 | Python without `venv` or `pip` (some Linux or trimmed company builds) | run the installer | the message names the missing module and what to ask IT; nothing written in the CLIs' folders |
 | 14 | Guided screens | run the installer in the standard terminal (Windows Terminal or the Command Prompt, macOS Terminal); use the arrows, Space, Enter, then Ctrl+C at the review | readable, keys work; after Ctrl+C, no CLI configuration changed |
 | 15 | Git clone behind the company index | `git clone`, then the launcher, with the company's pip configuration | the package builds from the company index; nothing forced to PyPI |
