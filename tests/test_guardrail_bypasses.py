@@ -57,6 +57,20 @@ class ShellTests(Base):
         'mv ~/.ai-kit/overrides.toml /tmp/x',
         'sudo rm ~/.claude/settings.json',
         "bash -c 'rm ~/.codex/config.toml'",
+        # Readers that also write when asked to (found in the audit pass of 0.45.7).
+        'sort -o ~/.ai-kit/overrides.toml /etc/hosts',
+        'uniq /etc/hosts ~/.ai-kit/overrides.toml',
+        "sed -n 'w ~/.ai-kit/overrides.toml' /etc/hosts",
+        "sed 's/a/b/w ~/.ai-kit/overrides.toml' /etc/hosts",
+        'git diff --output=~/.ai-kit/overrides.toml',
+        'tree -o ~/.ai-kit/overrides.toml .',
+        'xxd -r /etc/hosts ~/.ai-kit/overrides.toml',
+        "find . -fprintf ~/.ai-kit/overrides.toml '%p'",
+        'find . -fls ~/.ai-kit/overrides.toml',
+        'yq -i .a=1 ~/.gemini/settings.json',
+        'cp -t ~/.ai-kit/ overrides.toml',
+        'cp --target-directory=~/.ai-kit overrides.toml',
+        'cp overrides.toml ~/.ai-kit/',
     )
     ALLOWED = (
         'cat ~/.ai-kit/overrides.toml',
@@ -70,6 +84,13 @@ class ShellTests(Base):
         'echo hi > notes.txt',
         'rm -rf build/',
         'cat ~/.ai-kit/overrides.toml | grep mcp',
+        'sort ~/.ai-kit/overrides.toml',
+        'uniq ~/.ai-kit/overrides.toml',
+        'xxd ~/.ai-kit/overrides.toml',
+        'find ~/.ai-kit -name "*.toml"',
+        'git diff --stat -- .claude/settings.json',
+        'yq .hooks ~/.gemini/settings.json',
+        'cp notes.txt /tmp/',
     )
 
     def test_writes_through_any_program_are_blocked(self):

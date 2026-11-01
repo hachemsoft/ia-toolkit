@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.45.8
+
+- `protected-paths`: a reader that can also write a file is a reader only without that option. In 0.45.7, `sort -o`, `uniq IN OUT`, a `sed` script with `w` (or `s///w`), `git diff --output`, `tree -o`, `xxd -r`, `find -fprintf` or `-fls`, `yq -i`, and `cp` into a configuration folder (`cp overrides.toml ~/.ai-kit/`, `cp -t`) got through. Found by the audit pass of 0.45.7; each one is a test, and so are the reads that stay allowed.
+
 ## 0.45.7
 
 Durability, when a CLI changes:

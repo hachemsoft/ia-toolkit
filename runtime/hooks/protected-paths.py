@@ -195,18 +195,31 @@ def only_reads(program, words, mentions_in):
     """True when this program, with these words, only reads. cp reads when the protected path is not its destination."""
     if program not in READERS:
         return False
+    positional = [w for w in words if not w.startswith('-')]
     if program == 'sed':
-        return not any(re.match(r'-[a-z]*i|--in-place', w, re.I) for w in words)
+        # In place, or a script that writes a file or runs a command (w, W, e, s///w).
+        return not any(re.match(r'-[a-z]*i|--in-place', w, re.I) or re.fullmatch(r'(\d+|\$|/[^/]*/)?[we]', w)
+                       or re.fullmatch(r's(.).*\1.*\1[a-z0-9]*w[a-z0-9]*', w) for w in words)
     if program == 'awk':
-        return not any('inplace' in w for w in words)
+        return not any('inplace' in w or 'system(' in w or '|' in w for w in words)
     if program == 'find':
-        return not any(w in ('-delete', '-exec', '-execdir', '-ok', '-fprint') for w in words)
+        return not any(w in ('-delete', '-exec', '-execdir', '-ok', '-okdir', '-fprint', '-fprint0', '-fprintf', '-fls') for w in words)
     if program == 'git':
         subcommand = next((w for w in words if not w.startswith('-') and w not in ('-c',)), '')
-        return subcommand in GIT_READS
+        return subcommand in GIT_READS and not any(w.startswith('--output') for w in words)
     if program == 'cp':
-        targets = [w for w in words if not w.startswith('-')]
-        return bool(targets) and not mentions_in(targets[-1])
+        if any(w == '-t' or w.startswith('--target-directory') for w in words):
+            return False
+        return bool(positional) and not mentions_in(positional[-1])
+    # Readers that also write a file when asked to: their output option, or a second file name.
+    if program in ('sort', 'tree'):
+        return not any(w.startswith('-o') or w.startswith('--output') for w in words)
+    if program == 'uniq':
+        return len(positional) < 2
+    if program == 'xxd':
+        return '-r' not in words and len(positional) < 2
+    if program == 'yq':
+        return not any(w in ('-i', '--inplace') for w in words)
     return True
 
 PYTHONS = re.compile(r'(python[0-9.]*|py)(\.exe)?')
@@ -244,6 +257,14 @@ def touches_config_folder(program, words):
             return True
     if program not in READERS and program != '=' and any(is_folder(w) for w in words):
         return True
+    # cp into a configuration folder (cp overrides.toml ~/.ai-kit/, cp -t ~/.ai-kit x): the file it writes is not named.
+    if program == 'cp':
+        destinations = [w.split('=', 1)[-1] for w in words if w.startswith('--target-directory')]
+        destinations += [words[i + 1] for i, w in enumerate(words[:-1]) if w == '-t']
+        positional = [w for w in words if not w.startswith('-')]
+        destinations += positional[-1:] if len(positional) >= 2 else []
+        if any(is_folder(d) for d in destinations):
+            return True
     return any(re.search(r'[*?\[]', w) and any('/' + f + '/' in '/' + w for f in CONFIG_FOLDERS) for w in words)
 
 def shell_config_write(command):
