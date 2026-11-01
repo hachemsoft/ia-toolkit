@@ -1236,8 +1236,12 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
     sessions_seen, seen_texts = set(), {}
     sessions_by, prompts_by = {a.NAME: set() for a in ADAPTERS}, {a.NAME: 0 for a in ADAPTERS}
     # Each adapter reads its CLI's logs and returns neutral events (prompt, skill, agent, error).
+    unread = []  # CLIs whose logs exist but gave no event at all: their format probably changed
+    kit_sessions = set()  # sessions where the kit did something: a kit command typed, a kit skill or agent activated
     for adapter in ADAPTERS:
+        recognised = 0
         for event in adapter.history(home, state):
+            recognised += 1
             if event.get('ts', 0) < cutoff:
                 continue
             session = event.get('session')
@@ -1251,8 +1255,12 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
                 errors += 1
             elif kind == 'skill':
                 skills[event['name']] += 1
+                if event['name'] in installed_skills:
+                    kit_sessions.add(session)
             elif kind == 'agent':
                 agents[event['name']] += 1
+                if event['name'] in installed_agents:
+                    kit_sessions.add(session)
             elif kind == 'prompt':
                 prompts += 1
                 shown = event['text']
@@ -1260,6 +1268,7 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
                 if match:
                     if match.group(1) in installed_commands:
                         commands[match.group(1)] += 1
+                        kit_sessions.add(session)
                     elif not any(match.group(1) in a.BUILTIN_COMMANDS for a in ADAPTERS):
                         unknown_commands[match.group(1)] += 1
                 text = ' '.join(shown.split()).lower()
@@ -1268,6 +1277,9 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
                     if text in seen:
                         repeated += 1
                     seen.add(text)
+        chosen = adapter.NAME in (state.get('targets') or (state.get('installed') or {}).get('clis') or [])
+        if chosen and not recognised and any(next(home.glob(pattern), None) for pattern in getattr(adapter, 'LOGS', ())):
+            unread.append(adapter.LABEL)
     sessions = len(sessions_seen)
     # What the logs can show: a skill or an agent counts as unused only when every session of the window comes from a CLI
     # whose logs show it; otherwise its absence proves nothing and nothing is recommended about it.
@@ -1319,7 +1331,9 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
     fixed_own = {fid: fixed[fid] for fid in own_ids if fid in fixed}
     frictions_by_category = Counter(str(f.get('category')) for f in frictions)
     enough = sessions >= min_sessions and prompts >= min_prompts
-    report = {'window_days': since_days, 'sessions': sessions, 'prompts': prompts, 'errors': errors,
+    kit_sessions.discard(None)
+    report = {'window_days': since_days, 'sessions': sessions, 'prompts': prompts, 'errors': errors, 'unreadable_logs': unread,
+              'sessions_with_the_kit': len(kit_sessions),
               'sessions_by_cli': {name: len(s) for name, s in sessions_by.items() if s},
               'observed_by': {kind: observing(kind) for kind in ('prompt', 'skill', 'agent')},
               'not_observable': not_observable,
@@ -1328,7 +1342,10 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
               'core_candidates_to_demote': core_candidates() if enough and measurable('skill') else [], 'enough_data': enough,
               'frictions': frictions, 'frictions_by_category': dict(frictions_by_category),
               'unknown_commands': dict(unknown_commands), 'repeated_prompts': repeated, 'frictions_fixed': fixed_own}
-    print('Window: '+str(since_days)+' days | '+str(sessions)+' sessions | '+str(prompts)+' prompts | '+str(errors)+' errors')
+    print('Window: '+str(since_days)+' days | '+str(sessions)+' sessions | '+str(prompts)+' prompts | '+str(errors)+' errors'
+          + (' | the kit used in '+str(len(kit_sessions))+' of them ('+str(round(100*len(kit_sessions)/sessions))+' %)' if sessions else ''))
+    for label in unread:
+        print('[Check] '+label+': its logs exist but nothing in them was recognised; their format may have changed with a new version of the CLI, so its counts are missing here (versions checked: docs/cli/matrice.md).')
     print('Commands typed: '+(', '.join(k+' ×'+str(v) for k,v in commands.most_common()) or 'none'))
     print('Skills activated: '+(', '.join(k+' ×'+str(v) for k,v in skills.most_common()) or 'none'))
     print('Agents called: '+(', '.join(k+' ×'+str(v) for k,v in agents.most_common()) or 'none'))

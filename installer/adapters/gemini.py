@@ -180,6 +180,7 @@ LABEL = 'Gemini CLI'
 COMMAND = 'gemini'
 HOME_DIR = '.gemini'
 OBSERVES = {'prompt', 'skill', 'agent', 'error'}  # chat logs hold every tool call, activate_skill and agents included
+LOGS = ('.gemini/tmp/*/chats/*.json',)  # read by history; usage says when they exist but give nothing
 AGENT_TOOLS = 'native'  # the agent's front matter "tools" list is the only set of tools Gemini gives it
 MANAGED_PREFIXES = ('.gemini/skills/', '.gemini/agents/', '.gemini/commands/', '.gemini/hooks/ai-kit/')  # the last one: former location of the guardrails
 

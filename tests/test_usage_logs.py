@@ -5,6 +5,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest import mock
 
 from installer.adapters import agy, codex
 
@@ -64,6 +65,38 @@ class AgyTests(Base):
         self.assertEqual(self.names(events, 'agent'), ['ai-kit-repo-investigator'])
         self.assertEqual({e['session'] for e in events}, {'agy:c1'})
         self.assertEqual(agy.OBSERVES, {'prompt', 'skill', 'agent'})
+
+
+class UnreadableLogsTests(Base):
+    def test_logs_that_give_nothing_are_reported_not_counted_as_zero(self):
+        import contextlib, io, json
+        from installer import cli
+        (self.home/'.ai-kit').mkdir()
+        (self.home/'.ai-kit/state.json').write_text(json.dumps({'version': '0', 'profile': 'general', 'targets': ['claude'],
+                                                                 'installed': {'skills': ['tdd'], 'commands': [], 'agents': []}}), encoding='utf-8')
+        folder = self.home/'.claude/projects/-repo'
+        folder.mkdir(parents=True)
+        (folder/'s.jsonl').write_text('{"a new format": true}\n', encoding='utf-8')
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            cli.usage(self.home)
+        self.assertIn('[Check] Claude Code: its logs exist but nothing in them was recognised', out.getvalue())
+
+    def test_share_of_sessions_where_the_kit_was_used(self):
+        import contextlib, io, json
+        from installer import cli
+        (self.home/'.ai-kit').mkdir()
+        (self.home/'.ai-kit/state.json').write_text(json.dumps({'version': '0', 'profile': 'general', 'targets': ['claude'],
+                                                                 'installed': {'skills': ['tdd'], 'commands': ['build'], 'agents': []}}), encoding='utf-8')
+        events = [{'kind': 'prompt', 'text': '/build the export', 'session': 'a', 'ts': 9e12},
+                  {'kind': 'prompt', 'text': 'hello there, a plain question', 'session': 'b', 'ts': 9e12},
+                  {'kind': 'skill', 'name': 'tdd', 'session': 'c', 'ts': 9e12},
+                  {'kind': 'skill', 'name': 'someone-elses', 'session': 'd', 'ts': 9e12}]
+        out = io.StringIO()
+        with mock.patch.object(cli.ADAPTERS[0], 'history', return_value=events), contextlib.redirect_stdout(out):
+            cli.usage(self.home, as_json=self.home/'r.json')
+        self.assertIn('the kit used in 2 of them (50 %)', out.getvalue())
+        self.assertEqual(json.loads((self.home/'r.json').read_text(encoding='utf-8'))['sessions_with_the_kit'], 2)
 
 
 if __name__ == '__main__':

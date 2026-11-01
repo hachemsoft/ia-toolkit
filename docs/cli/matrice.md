@@ -21,7 +21,7 @@ A CLI without an adapter can already read the kit's repository files (`AGENTS.md
 | CLI folder | `~/.gemini/` | `~/.gemini/` (also read by agy) and `~/.gemini/config/plugins/ai-kit/` | `~/.codex/` | `~/.claude/` and `~/.claude.json` |
 | Context layers (`00_KIT`, `10_COMPANY`, `20_TEAM`) | copies in `~/.gemini/`, refreshed by `update`, declared in `context.fileName` of `settings.json` | included by path from the plugin's `rules/AGENTS.md` | managed block at the top of `~/.codex/AGENTS.md` | imported by path from the managed block at the top of `~/.claude/CLAUDE.md` |
 | Personal context `30_USER.md` (always `~/.ai-kit/context/30_USER.md`) | a copy in `~/.gemini/30_USER.md`, declared in `context.fileName`, refreshed by `update` | included by path from the plugin | copied into that block on every `update` | imported by path from that block (no copy) |
-| Repository context | `AGENTS.md` or `GEMINI.md`, at the root and in the folders traversed | `AGENTS.md`, `GEMINI.md`, `.agents/rules/` | `AGENTS.md` (and `AGENTS.override.md`), at the root and in the folders | `CLAUDE.md` only: the block asks to read `AGENTS.md`; a one-line `CLAUDE.md` `@AGENTS.md` can load it |
+| Repository context | `AGENTS.md` or `GEMINI.md`, at the root and in the folders traversed | `AGENTS.md`, `GEMINI.md`, `.agents/rules/` | `AGENTS.md` (and `AGENTS.override.md`), at the root and in the folders | `AGENTS.md` when the repo has no `CLAUDE.md` (Claude Code 2.1.277 or later); otherwise `CLAUDE.md`, and the block asks to read `AGENTS.md` |
 | Kit skills | `~/.gemini/skills/<name>/SKILL.md` | the same (`~/.gemini/skills/`) | `~/.codex/skills/<name>/SKILL.md`, "on command only" honored (`agents/openai.yaml`) | `~/.claude/skills/<prefix><name>/SKILL.md` (`ai-kit-` by default, `skill_prefix`), "on command only" honored |
 | Name already taken by one of your skills or commands | the kit's is installed as `<prefix><name>`, yours kept; the kit's texts name it so | the same | the same; the kit block says which name to type (`$<prefix><name>`) | always prefixed for skills; the same for commands |
 | Your own skills (personal, any name the kit does not install) | `~/.gemini/skills/<name>/SKILL.md` | the same (`~/.gemini/skills/`) | `~/.codex/skills/<name>/SKILL.md` | `~/.claude/skills/<name>/SKILL.md`, kept next to the kit's prefixed ones |
@@ -53,7 +53,7 @@ What remains different comes from the CLIs themselves, not from a part of the ki
 
 - **Codex**: commands are skills, typed `$intent` (Codex has no custom `/` commands); `30_USER.md` is copied into the block (Codex does not import files), so a change needs an `update`; the guardrails must be approved once in Codex ("Trust"); an agent role has no tool list.
 - **Gemini and agy**: "on command only" is an instruction in the skill's description; these CLIs have no field for it.
-- **Claude Code**: it rewrites `~/.claude.json` while running, so close it before an `update` that changes MCP; it reads `CLAUDE.md`, not `AGENTS.md` (the block asks it to, and a one-line `CLAUDE.md` makes it automatic).
+- **Claude Code**: it rewrites `~/.claude.json` while running, so close it before an `update` that changes MCP; in a repo that has a `CLAUDE.md`, it reads that instead of `AGENTS.md` (the block asks it to read `AGENTS.md` too, and a one-line `@AGENTS.md` makes it automatic).
 - **agy**: `usage` sees no error events; its conversation files are an undocumented format, read read-only and skipped if they change.
 
 ## Add a CLI

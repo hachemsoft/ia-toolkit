@@ -23,7 +23,7 @@ A kit entry edited by hand (the block, a guardrail group, an MCP entry) stops `u
 
 ## The repository's AGENTS.md
 
-Claude Code loads `CLAUDE.md`, not `AGENTS.md`. The block of `~/.claude/CLAUDE.md` asks it to read the repository's `AGENTS.md` (and the one of the area it works in) before working. For a repository used with Claude Code, "Initialize the project context" also proposes a one-line `CLAUDE.md`, `@AGENTS.md`, so the context loads on its own; the kit never writes a second copy of the content.
+Since 2.1.277, Claude Code reads a repository's `AGENTS.md` itself when the repository has no `CLAUDE.md` ([its docs](https://code.claude.com/docs/en/memory#agents-md)). When the repository has a `CLAUDE.md`, Claude Code reads that instead; the block of `~/.claude/CLAUDE.md` then asks it to read `AGENTS.md` (and the one of the area it works in) before working. For a repository used with Claude Code, "Initialize the project context" also proposes a one-line `CLAUDE.md`, `@AGENTS.md`, so the context loads on its own; the kit never writes a second copy of the content.
 
 ## Close Claude Code before an update
 

@@ -113,6 +113,7 @@ MANAGED_PREFIXES = (CODEX_DIR+'/skills/', CODEX_DIR+'/ai-kit/')
 AGENT_TOOLS = 'instruction'  # a role file holds developer_instructions only: the session's sandbox and approvals apply
 # history.jsonl holds the prompts; the session files (~/.codex/sessions) the tool calls: skill files read, agents spawned, errors.
 OBSERVES = {'prompt', 'skill', 'agent', 'error'}
+LOGS = ('.codex/history.jsonl', '.codex/sessions/*/*/*/rollout-*.jsonl')
 
 def is_managed(rel):
     return rel.startswith(MANAGED_PREFIXES)

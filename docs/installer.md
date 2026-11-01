@@ -52,6 +52,8 @@ The context layers and `30_USER.md` are in `~/.ai-kit/context/`, whatever the CL
 
 Windows: to get a Command Prompt in the kit folder, type `cmd` in the Explorer address bar and press Enter. The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) look for Python 3.9 or newer, then hand over to `scripts/launcher.py` (above); without a usable Python they say what to ask IT. They need neither PowerShell nor administrator rights.
 
+To run `doctor` for a repo (it then also lists the repo skills named like kit skills), start it from the repo folder with the launcher's full path: Windows, `"<kit folder>\Installer.cmd" doctor`; Mac, `sh <kit folder>/scripts/bootstrap.sh doctor`.
+
 Options for `setup` and `update`: `--profile <id>`, `--user <email>`, `--team <team>`, `--target auto|gemini|agy|codex|claude|both|all` (without it: the CLIs chosen last time; see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--plain`. `AI_KIT_NO_PAUSE=1` keeps `Installer.cmd` from waiting for a key when it is started without arguments by a script. Non-interactive example: `sh scripts/bootstrap.sh setup --profile general --user first.last@company.com`. If a company policy blocks a launcher, IT decides: the launcher is equivalent to `python -I scripts/launcher.py` (Windows: `python -I scripts\launcher.py`) followed by the action, run from the kit folder. Never change the policy yourself.
 
 ## Try it without touching your account

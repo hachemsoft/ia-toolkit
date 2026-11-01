@@ -32,6 +32,7 @@ COMMAND = 'claude'
 HOME_DIR = CLAUDE_DIR
 AGENT_TOOLS = 'native'  # an agent's "tools" list is the only set of tools Claude Code gives it
 OBSERVES = {'prompt', 'skill', 'agent', 'error'}  # the session transcripts hold every tool call
+LOGS = ('.claude/projects/*/*.jsonl',)
 MANAGED_PREFIXES = (CLAUDE_DIR+'/skills/', CLAUDE_DIR+'/commands/', CLAUDE_DIR+'/agents/ai-kit-')
 BUILTIN_COMMANDS = {'add-dir', 'advisor', 'agents', 'alias', 'autocompact', 'branch', 'brief', 'btw', 'bug', 'cd', 'chrome', 'clear',
                     'color', 'compact', 'config', 'context', 'copy', 'cost', 'daemon', 'doctor', 'effort', 'exit', 'export', 'feedback',
@@ -68,9 +69,9 @@ def block_text(p: Plan, prefix, renamed):
     if renamed:
         lines.append('- Kit commands renamed because one of your own skills or commands has the same name: '
                      + ', '.join('/'+old+' is /'+new for old, new in sorted(renamed.items()))+'.')
-    lines.append('- Claude Code loads CLAUDE.md, not AGENTS.md: in a repo, read the AGENTS.md at its root, and the one of the area you work in,'
-                 ' before working, unless a CLAUDE.md there already imports it. The only CLAUDE.md the kit allows in a repo is one line,'
-                 ' `@AGENTS.md`, which init-project-context proposes.')
+    lines.append('- A repo\'s AGENTS.md: Claude Code reads it itself when the repo has no CLAUDE.md; when it has one that does not import'
+                 ' AGENTS.md, read the AGENTS.md at its root, and the one of the area you work in, before working. The only CLAUDE.md the'
+                 ' kit allows in a repo is one line, `@AGENTS.md`, which init-project-context proposes.')
     lines.append(CLAUDE_MD[1])
     return '\n'.join(lines)
 

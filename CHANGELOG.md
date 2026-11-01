@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.42.0
+
+Simpler to start, and measurable:
+- The README and the getting-started page are cut by a third and half: what a newcomer needs on day one, in order; options, every action of the installer and the per-repo details moved to the reference pages they belong to.
+- `docs/architecture.md`: the flow of an installation, the adapter contract, the invariants a test guards, what the kit depends on without controlling it, the migration policy.
+- `usage` shows the share of sessions where the kit did something (a kit command, skill or agent), also in the JSON and in `usage-aggregate.py`; and says when a CLI's logs exist but nothing in them is recognised, instead of counting zero.
+- The pilot page has a before-and-after measurement protocol: what to measure, where it comes from, what would show the kit helps.
+- Claude Code reads a repo's `AGENTS.md` itself when the repo has no `CLAUDE.md` (since 2.1.277): the block in `~/.claude/CLAUDE.md` and the CLI pages say so.
+
 ## 0.41.0
 
 Security, after the audit of 0.40:

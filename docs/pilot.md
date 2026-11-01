@@ -35,6 +35,20 @@ Each ticket is handled by the rule: a `doctor` check, a line in "Troubleshooting
 3. Ticket review: what was turned into a check, a page or a case.
 4. Decision: opening to the whole team confirmed or not, scope of analyst commands confirmed or adjusted, first [usage review](usage-review.md) if the report has enough material.
 
+## Measure, before and after
+
+The pilot decides whether the kit is worth opening to everyone; opinions alone do not decide it. Agree on these before day 1, take each one in the week before the kit and again in the last week, on the same people:
+
+| Measure | Where it comes from | What would show the kit helps |
+| --- | --- | --- |
+| share of sessions where the kit did something | `usage` (`the kit used in N of them`) | it rises and holds after the first week |
+| merge requests reworked after review, per person | the forge (comments or new commits after the first review) | fewer |
+| time from first commit to merge, for comparable tickets | the forge | shorter, or the same with fewer review rounds |
+| frictions, by category | `usage`, aggregated with `scripts/usage-aggregate.py` | each one turned into a check, a doc line or an eval case |
+| "would you keep it?" (yes, no, why), at the end | one question per person | a clear yes from most |
+
+Two weeks and three people give a direction, not a proof: say so in the decision. The figures stay in the team; nothing is sent by the kit.
+
 ## What the pilot must answer
 
 - Does an analyst understand `/guide` and `/intent` without reading the docs?

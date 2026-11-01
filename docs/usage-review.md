@@ -38,11 +38,14 @@ The report reads, locally and without sending anything, the session logs each CL
 - kit agents called;
 - errors (when the CLI logs them, see the [matrix](cli/matrice.md));
 - frictions logged with `/friction` (`~/.ai-kit/frictions.jsonl`: date, category, command, one sentence), counted by category;
+- the sessions where the kit did something (a kit command typed, a kit skill or agent activated), as a share of all sessions: the first sign of whether the kit is in people's work or beside it;
 - then, by difference, the installed commands, skills and agents that were never used.
 
 It contains neither prompt text, nor repo file names, nor the person's identity. The JSON can be shared as is.
 
 **What the logs can show.** Each CLI's adapter declares what its logs contain (`OBSERVES`; per CLI in the [matrix](cli/matrice.md)): every supported CLI's logs show the commands typed, the skills activated and the agents called; errors are not in every CLI's logs. A skill or an agent is reported unused only when every session of the window comes from a CLI whose logs show it; otherwise the report lists it as "not observable" and recommends nothing about it.
+
+**Logs it cannot read.** When a CLI's logs exist but nothing in them is recognised, the report says so (`[Check]`) instead of counting zero: the CLI's format probably changed with a new version, and that CLI's counts are missing until the kit follows.
 
 **Data threshold.** Below ten sessions and fifty prompts over the window (change with `--min-sessions` and `--min-prompts`), the report shows the counts but recommends nothing: too little data to conclude. Above it, it lists the candidates to move to optional: core skills of category `workflow` or `tool` that were never activated, and that are required neither by a typed command nor by an activated skill (the catalog's `requires` dependencies are followed). A skill never activated but required by `/intent`, which itself was typed, is not a candidate.
 
@@ -54,7 +57,7 @@ On one workstation, after three weeks:
 
 ```
 $ sh scripts/bootstrap.sh usage
-Window: 42 days | 14 sessions | 86 prompts | 2 errors
+Window: 42 days | 14 sessions | 86 prompts | 2 errors | the kit used in 11 of them (79 %)
 Commands typed: intent ×9, build ×7, test ×6, guide ×4, diagnose ×2, friction ×2
 Skills activated: grill-with-docs ×9, implement ×7, tdd ×6, dbt-model-change ×5, sql-review ×2
 Agents called: ai-kit-verifier ×5

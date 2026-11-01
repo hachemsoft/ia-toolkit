@@ -1,107 +1,71 @@
 # Getting started
 
-This page is for someone who has never seen the kit. Fifteen minutes, in order.
+Fifteen minutes, in order. What you need on day one is on this page; everything else is in the reference pages it links.
 
 ## 1. Install (once)
 
-Before you start: Python 3.9 or later (3.11 recommended), with its standard `venv` and `pip` modules, and your CLI must be available on the workstation, as provided or approved by your company. The kit installs its own libraries in a private environment of your home folder (`~/.ai-kit/runtime`), from the files of the ZIP: no download, no administrator rights, nothing to activate, your Python left as it is. If Python, `venv` or `pip` is missing or blocked, the installer says exactly what to ask IT.
+You need Python 3.9 or later (3.11 recommended) and your coding-agent CLI, as provided by your company. The kit installs into your home folder only: no administrator rights, no download, your Python left as it is. If something is missing, the installer says exactly what to ask IT.
 
-1. Download `ai-kit-<version>.zip` from the Releases page of the kit repository (your organization's copy if it distributes its own, with its `organization.toml`; otherwise the public one), and extract it into a folder you keep, for example `Documents`: this is your **kit folder**, from which you will run `update` and `doctor`. Windows: right-click the ZIP, **Extract All**. Mac: double-click the ZIP.
+1. Download `ai-kit-<version>.zip` from the Releases page (your organization's copy if it has one) and extract it into a folder you keep, for example `Documents`: this is your **kit folder**.
 2. Run the installer:
-   - **Windows**: double-click `Installer.cmd` in the extracted folder. If Windows asks to confirm running a downloaded file, follow your company's rule; if it is blocked, ask IT and change no security setting.
-   - **Mac**: open **Terminal** (Applications > Utilities), type `sh ` (with a space), drag the `scripts/bootstrap.sh` file of the extracted folder into the window, press Enter. (A double-click launcher is not provided: macOS blocks unsigned downloaded scripts, see [validation](validation.md).)
-3. The installer checks Python and prepares its private environment (plain text, a few seconds the first time), then shows a short guided screen. Arrow keys move, Space ticks, Enter confirms; Ctrl+C leaves at any time without changing your configuration. Nothing is changed outside your home folder.
-   1. **This workstation**: Python, each supported CLI (found or not), the kit (installed or not), and the connection to the model, "not checked": the installer never calls the model.
-   2. **Which CLIs do you use?** The CLIs found are ticked the first time; your choice is kept by every update afterwards. A CLI that is not installed yet can be ticked: its configuration is prepared for when IT installs it.
-   3. **Your profile**, a starting point: **General** (the workflow and tools, the right choice if in doubt), **Java Developer**, **DevOps**, **Architect**, **Data Analyst**, **Data Developer**.
-   4. **Your team**, only when your organization defines teams: its practices and tools; **None of these** otherwise.
-   5. **Your work email**, detected and shown for confirmation; it goes at the top of your personal context.
-   6. **Skills, commands and agents**: keep what the profile proposes, or adjust: tick a domain playbook from another profile, an optional tool, a command, a review agent. What a choice needs is installed with it and said; what you turned off stays off.
-   7. **Before installing**: what will be added, updated or removed, where, what stays untouched (your personal context, your `overrides.toml`), and that nothing is billed. Then **Install**, **Back** (your answers are kept) or **Cancel**.
-   8. A progress bar follows the real writes, then the **summary**: the kit configuration, each chosen CLI (found, or not found with its configuration prepared), the data connections (MCP) and your **next step**. The connection to the model stays "not verified", because a CLI found is not a CLI signed in. To check it, `doctor --live` makes one real call to the model (your provider may bill it) and, if it fails, says exactly what to do: sign in, a line to add, or what to ask IT (network, proxy, certificate). On a first installation, the installer then offers the three quick questions below.
-4. **Your personal context** (one minute): three quick questions (language and length of the answers, how much the agent does on its own) and your role in one line; they are written in `30_USER.md`, the short file that tells the agent how to work with you. Then type **`/me`** in your CLI: the agent interviews you in two short rounds (your domains, with your level and what you love, the tone you want in reviews or explanations, what annoys you in an assistant), shows the file before and after on one of your real questions, and writes it only with your agreement. Start a new session of your CLI to take it into account; for a CLI that reads a copy, run `update` first (`/me` reminds you). Later: `/me` again, or run the installer and choose **Open my personal context**.
+   - **Windows**: double-click `Installer.cmd` in the extracted folder.
+   - **Mac**: open **Terminal**, type `sh ` (with a space), drag `scripts/bootstrap.sh` from the extracted folder into the window, press Enter.
+3. Answer the guided screen (arrows move, Space ticks, Enter confirms, Ctrl+C leaves without changing anything): which CLIs you use, your **profile** (**General** if in doubt; also Java Developer, DevOps, Architect, Data Analyst, Data Developer), your work email. Keep what the profile proposes; you can adjust later. Review, then **Install**.
+4. Three quick questions fill your personal context: the language and length of the answers, how much the agent does on its own, your role in one line.
 
-Running the installer again once the kit is installed opens a menu: **Update**, **Change my choices**, **Check the installation** (local), **Open my personal context**, **Uninstall**, and, under Advanced, the billed check of the connection. Without a terminal (a script, CI), give the choices as options and nothing is asked: `setup --profile general --user first.last@company.com --target all`; `update` and `doctor` never ask. `--plain` (or `AI_KIT_PLAIN=1`) gives plain numbered questions and no colours.
-
-   | `--target` (options, without the guided screen) | CLIs configured |
-   | --- | --- |
-   | none | those chosen at the last installation; the first time, those present on the workstation (Gemini CLI if none) |
-   | `auto` | those present on the workstation; Gemini CLI if none |
-   | `gemini`, `agy`, `codex`, `claude` | that CLI only |
-   | `both` | Gemini CLI and Antigravity CLI |
-   | `all` | all four supported CLIs |
+The installer never calls the model, so the summary says "connection not verified". Signing in and choosing the model are done in your CLI, as your IT procedure says.
 
 ### Run the kit
 
-Every page of this documentation that says "run `update`" or "then `update`" means the command below. All four are run **from the kit folder**.
+Every page that says "run `update`" means this, **from the kit folder**:
 
 | Action | Windows | Mac |
 | --- | --- | --- |
-| the guided installer, or its menu once installed | double-click `Installer.cmd` | `sh scripts/bootstrap.sh` |
-| `setup`: install or change your choices (guided at a terminal; `--profile`… to skip the questions) | `Installer.cmd setup` | `sh scripts/bootstrap.sh setup` |
-| `update`: apply a change to `overrides.toml`, pick up a newly installed CLI | `Installer.cmd update` | `sh scripts/bootstrap.sh update` |
-| `doctor`: check, and say what to do (local) | `Installer.cmd doctor` | `sh scripts/bootstrap.sh doctor` |
-| `doctor --live`: also check the connection with a real call to the model, which may be billed | `Installer.cmd doctor --live` | `sh scripts/bootstrap.sh doctor --live` |
-| `usage`: what you used, locally | `Installer.cmd usage` | `sh scripts/bootstrap.sh usage` |
-| `uninstall`: remove what the kit installed (`--dry-run` to see the list, `--yes` without a question, `--remove-runtime` to also remove the private environment) | `Installer.cmd uninstall` | `sh scripts/bootstrap.sh uninstall` |
+| the installer, or its menu once installed (update, change my choices, check, uninstall) | double-click `Installer.cmd` | `sh scripts/bootstrap.sh` |
+| `update`: apply a change to your settings | `Installer.cmd update` | `sh scripts/bootstrap.sh update` |
+| `doctor`: check and say what to do (local, free) | `Installer.cmd doctor` | `sh scripts/bootstrap.sh doctor` |
 
-- **Windows, a Command Prompt in the kit folder**: open the folder in Explorer, click the address bar, type `cmd`, press Enter.
-- **Mac, a Terminal in the kit folder**: in Terminal, type `cd ` (with a space), drag the kit folder into the window, press Enter.
-
-Options (`--profile`, `--team`, `--target`…) go after the action: `Installer.cmd setup --team data-platform`; `--team none` leaves your team.
-
-To run `doctor` for a repo (it then also lists the repo skills named like kit skills), start it from the repo folder with the launcher's full path: Windows, in a Command Prompt opened in the repo, `"<kit folder>\Installer.cmd" doctor`; Mac, in a Terminal in the repo, `sh ` then drag `scripts/bootstrap.sh` from the kit folder, then ` doctor`, Enter.
+Windows, a Command Prompt in the kit folder: click the Explorer address bar, type `cmd`, press Enter. Mac, a Terminal in the kit folder: type `cd ` then drag the folder into the window. Every other action and option: [installer](installer.md).
 
 ### Where your files are
 
 | File | Mac | Windows |
 | --- | --- | --- |
-| Your settings, `overrides.toml` (created by `setup`, with commented examples) | `~/.ai-kit/overrides.toml` | `%USERPROFILE%\.ai-kit\overrides.toml` |
 | Your personal context, `30_USER.md` | `~/.ai-kit/context/30_USER.md` | `%USERPROFILE%\.ai-kit\context\30_USER.md` |
+| Your settings, `overrides.toml` | `~/.ai-kit/overrides.toml` | `%USERPROFILE%\.ai-kit\overrides.toml` |
 
-`~` and `%USERPROFILE%` are your home folder. Folders starting with a dot are hidden: on Windows, paste the path into the Explorer address bar (or open it with `notepad "%USERPROFILE%\.ai-kit\overrides.toml"`); on Mac, in Finder press Cmd+Shift+G and paste the path, or Cmd+Shift+. to show hidden files. `doctor` prints the exact path of `30_USER.md`.
+Folders starting with a dot are hidden: paste the path into the Explorer address bar, or in Finder press Cmd+Shift+G. `doctor` prints the exact paths.
 
 ### New version
 
-Download and extract the new ZIP, then run its installer, as for the first time, and choose **Update**. CLIs, profile, team, choices, `overrides.toml` and `30_USER.md` are kept. The new folder is now your kit folder; the old one can be deleted, since nothing installed depends on it. `update` alone re-applies the version of the folder you have. In a git clone, `update` also fetches the new version first ([installer](installer.md)).
-
-Signing in to the model and choosing it are done in your CLI, following your IT procedure; the kit does not configure them ([customization](customization.md#authentication-and-model)). Otherwise there is nothing to declare.
+Extract the new ZIP and run its installer, as the first time. Your CLIs, profile, choices and files are kept; the old kit folder can be deleted.
 
 ## 2. First session (five minutes)
 
-**One kit, all your repos.** You install the kit once per workstation, not once per repo. The kit folder only serves to run `setup`, `update` and `doctor` ([Run the kit](#run-the-kit)); you never work in it. To work, open a terminal in your own repo and start your CLI there (`gemini`, `agy`, `codex` or `claude`) directly. In `projet-a`, the CLI reads the kit's global context (company, team, you) and the context of `projet-a`; in `projet-b`, the same kit and the context of `projet-b`. What belongs to a project stays in its repo; your preferences stay in your home folder. If the repo already has its context (`AGENTS.md`…), use it as is: do not initialize it again.
+You install the kit once per workstation; you work in your own repos.
 
-| You want to change | File or location | To apply it |
-| --- | --- | --- |
-| your personal preferences | `30_USER.md`, at the path shown by the installer ([where](#where-your-files-are)) | `update` if a CLI keeps a copy ([matrix](cli/matrice.md)), then a new CLI session |
-| your selection of commands, skills, agents, MCP servers | `~/.ai-kit/overrides.toml`: personal, for the whole workstation; there is no per-repo equivalent | `update` from the kit folder ([Run the kit](#run-the-kit)) |
-| your project's conventions | `<repo>/AGENTS.md`, versioned with the repo | a new CLI session in the repo |
-| a skill for this project, or a project variant of a kit skill | `<repo>/.agents/skills/<name>/SKILL.md`: give it a name of its own (for example `<repo>-sql-review`) and say in `AGENTS.md` when to use it; a kit skill's name gives different results per CLI ([matrix](cli/matrice.md)) | a new CLI session in the repo; the CLI may ask you to trust the folder first |
+1. Open a terminal in your repo and start your CLI there (`gemini`, `agy`, `codex` or `claude`). Commands are written `/guide`; in Codex, `$guide`. The first time, Codex asks you to review the kit's hooks: answer "Trust".
+2. Type **`/me`**: a short interview (your domains, the tone you want, what annoys you in an assistant) that fills your personal context, shown before and after, written only with your agreement.
+3. Type `/guide I need to …` with today's need: which command fits and what it produces.
 
-1. Go to your repo: `cd <repo folder>`. Without this, the agent does not see the project context.
-2. Start your CLI: `gemini`, `agy`, `codex` or `claude`. In Gemini, agy and Claude Code, commands are written `/guide`; in Codex, `$guide`. This page writes them with `/`. The first time, Codex asks you to review the kit's hooks: answer "Trust all and continue" (they keep the agent from changing its own configuration).
-3. Optional: type **"Initialize the project context"** (the agent also offers it when it becomes useful). The agent proposes, file by file and with your approval, `AGENTS.md` (one page about the repo), `GLOSSARY.md` (the domain terms), `REVIEW.md` (what a review checks) and two `.gitignore` lines for working notes. If someone has already done this in the repo, skip it.
-4. Type: `/guide I need to …` with today's need. It answers: which level of ceremony, which command, what it produces, an example prompt.
-
-**Your repo and your layers.** The kit's layers (company, team, you) apply in every repo; each repo adds its own context on top: `AGENTS.md`, `GLOSSARY.md`, `REVIEW.md`, its decisions (`docs/adr/`), its working notes (`docs/sdlc/`) and, if the team wants, its own skills in `.agents/skills/`. What wins when they disagree, and what a repo can and cannot change: [project layer](project-context.md).
+When the agent offers to prepare the repo's context (`AGENTS.md`, `GLOSSARY.md`), accept if the repo has none. What a repo adds to your layers: [project layer](project-context.md).
 
 ## 3. Work: one command per step
 
-Plain sentences are the normal way in: "explain how this area works", "make the export skip archived customers", "the job fails since Monday with this error", "review my changes". The commands below are shortcuts to the same steps.
+Plain sentences are the normal way in: "explain how this area works", "the job fails since Monday with this error", "review my changes". The commands are shortcuts to the same steps.
 
 | You want to | Type | You get |
 | --- | --- | --- |
-| frame an idea, a ticket, an incident | `/intent <what you want>` | an interview, then `intent.md` (local note) |
-| turn the intent into a contract | `/spec` | `spec.md`, reviewed with the change |
-| implement | `/build <task, ticket or spec>` | code and tests, one slice at a time; a `plan.md` to accept only for a large or sensitive change |
+| frame an idea, a ticket, an incident | `/intent <what you want>` | an interview, then `intent.md` |
+| turn it into a contract | `/spec` | `spec.md`, reviewed with the change |
+| implement | `/build <task>` | code and tests, one slice at a time |
 | verify | `/test` | the real output of the repo's checks |
-| get a review before merging | `/review` (`full` for production) | the scope reviewed (commits, staged and unstaged changes, new files), then findings sorted by severity |
-| describe the merge or pull request | `/ship` | the description in the repo's format, evidence included; nothing is pushed |
+| get a review before merging | `/review` | findings sorted by severity |
+| describe the merge or pull request | `/ship` | the description, evidence included; nothing is pushed |
 | understand a bug or a wrong number | `/diagnose <symptom>` | proven cause, fix, regression test |
-| learn an area | `/learn <topic>` | lessons, quizzes, reference sheets in `docs/learn/<topic>/` |
-| understand an area or the last answer | `/explain <area>` or `/explain` | a map in glossary terms, or a rephrasing |
-| improve the agent's environment | `/retro` | proposals for `AGENTS.md`, checks, skills |
-| record what got in the way, without stopping | `/friction <one sentence>` | a local line, picked up in the usage review; nothing is sent |
+| record what got in the way | `/friction <one sentence>` | a local line for the team's usage review |
+
+The agent matches the ceremony to the stakes and says so on its first line: `Level: quick` (a small change, done and checked), `standard` (a short alignment, then test-first) or `full` (intent, spec, plan, your acceptance before code).
 
 What each profile installs:
 
@@ -116,30 +80,24 @@ What each profile installs:
 | **Data Developer** (`data-developer`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/triage` `/me` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, code-reviewer, verifier, doubter, sql-reviewer, dbt-reviewer |
 <!-- profile-table:end -->
 
-`/design` shapes an interface or answers a design question with a throwaway prototype; `/map` splits a large piece of work into decision tickets; `/triage` moves incoming tickets forward; `/research` investigates a question using primary sources; `/audit` finds modules worth deepening. `/ask`, `/handoff`, `/research`, `/wizard` and `/audit` can be added to any profile that lacks them: `extra_commands = ["handoff"]` in `~/.ai-kit/overrides.toml`, then `update`. Agent details: [agents](agents.md).
+Your profile's domain playbooks (SQL and dbt, Java, infrastructure…) activate on their own when the task calls for them. Every command and tool: [workflow](workflow.md) and [tools](tools.md).
 
-The rule that avoids running everything: **ceremony matches the stakes**, in three levels; the agent names the one it chose on the first line of its reply (`Level: quick`). **quick**: a small local change, done and checked, no document. **standard**: a small feature, a short alignment in the conversation, then test-first. **full**: a large or fuzzy change, or production data: intent, spec, plan, and your acceptance before code. A go-ahead you already gave is not asked again.
+## 4. What is normal
 
-## 4. What you will see, and what is normal
+- The agent answers in your language; commands and artifact headings stay in English.
+- `intent.md` and `plan.md` are local notes; `spec.md` is versioned. The agent never commits or pushes without your approval.
+- A test changed by the agent is said and explained, never weakened to hide a regression.
+- If one of your own skills or commands already has a kit name, the kit's takes a prefix (`/ai-kit-review`); the installer says which.
+- A permission request before a shell command is normal: answer it.
 
-- `/help` lists the commands with English descriptions; the agent answers in your language. Artifacts keep English headings; their content is in the team's language.
-- `intent.md` and `plan.md` are local notes, ignored by git; `spec.md` and `REVIEW.md` are versioned, unless the repo's `AGENTS.md` sets another convention. The agent never commits without your approval.
-- A test changed by the agent is said and explained: it adapts a test only when you changed the expected behaviour on purpose, never to hide a regression.
-- If one of your own skills or commands already has a kit name, the kit's is installed with a prefix (`/ai-kit-review`, `ai-kit-tdd`); the installer says which, and the kit context names them. In Claude Code, the kit's skills always carry the prefix.
-- Your profile's domain playbooks (Java, infrastructure, architecture, SQL and dbt…) activate on their own when the task calls for them; you do not need to name them.
-- In agy, a permission request before a shell command is normal: answer it; "always allow" saves your choice in your agy settings, and the kit does not touch them.
-- Without a connected MCP server, the agent does not read your real data: provide the extracts, schemas or examples it needs, or have the platform team configure the connection.
+## 5. When something goes wrong
 
-## 5. Troubleshooting
+1. Run the installer and choose **Check the installation** (or `doctor`): it says what to do.
+2. [Troubleshooting](troubleshooting.md): one symptom, one cause, one fix.
+3. Otherwise a ticket ([template](pilot.md)), and on the spot `/friction <one sentence>`.
 
-1. Run the installer again and choose **Check the installation**; or Mac: `sh scripts/bootstrap.sh doctor` from the kit folder; Windows: in the kit folder, type `cmd` in the Explorer address bar and press Enter, then `Installer.cmd doctor`. It tells you what to do. For a sign-in or network problem, add `--live`: one real call to the model, which your provider may bill.
-2. The [Troubleshooting](troubleshooting.md) page: one symptom, one cause, one command.
-3. Otherwise a ticket, using the template on the [pilot](pilot.md) page. And on the spot, `/friction <one sentence>`: the usage review will pick it up. It will become a check, a line on that page or an eval case, never a repeated verbal explanation.
+## Later, when you need it
 
-## 6. Later
-
-- Your preferences: `/me` again, or edit `30_USER.md` ([where](#where-your-files-are)), then `update` for a CLI that reads a copy.
-- Add or remove commands, playbooks, agents: run the installer again, **Change my choices**. MCP servers and guardrails: `~/.ai-kit/overrides.toml`, then [`update`](#run-the-kit). What you decide, and what the organization and your team decide: [customization](customization.md).
-- Write your own skill, or replace a kit skill for yourself, a repo or the team: [add or replace a skill](extending.md).
-- Only when the team wants the agent to read and create tickets: in the repo, ask the agent "set up the workflow for this repo" (the `setup-workflow` skill; requires `glab` or `gh`). Nothing else needs a tracker.
-- The day-to-day of each command: [workflow](workflow.md). A new version of the kit: [new version](#new-version). `doctor` says when what is installed is behind the kit folder.
+- Change your choices: run the installer, **Change my choices**. Your preferences: `/me` again.
+- Settings you write yourself (MCP servers, guardrails), and what your organization and team decide: [customization](customization.md).
+- Your own skills, or a repo's: [extending](extending.md).

@@ -37,6 +37,7 @@ AGY_TOOLS = {'read_file': ['view_file', 'read_file'], 'grep_search': ['grep_sear
 # history.jsonl holds the prompts; each conversation (SQLite, one row per step) holds the tool calls with their JSON
 # arguments: skill files read, invoke_subagent with the agent's TypeName (format read on agy 1.4.12).
 OBSERVES = {'prompt', 'skill', 'agent'}
+LOGS = ('.gemini/antigravity-cli/history.jsonl', '.gemini/antigravity-cli/conversations/*.db')
 AGENT_CALL = re.compile(rb'\{[^{}]*"TypeName"\s*:\s*"(ai-kit-[a-z0-9-]+)"[^{}]*\}')
 # A file-read call and its arguments; the conversation's other steps (context, listings) also name skill paths.
 SKILL_CALL = re.compile(rb'(?:read_file|view_file)[^{]{0,8}(\{[^{}]*SKILL\.md[^{}]*\})')

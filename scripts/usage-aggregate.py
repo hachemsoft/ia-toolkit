@@ -77,7 +77,7 @@ def main(argv=None):
     frictions = []
     unused_everywhere = None
     for r in reports:
-        for key in ('sessions', 'prompts', 'errors'):
+        for key in ('sessions', 'prompts', 'errors', 'sessions_with_the_kit'):
             totals[key] += int(r.get(key, 0) or 0)
         commands.update(r.get('commands', {}))
         skills.update(r.get('skills', {}))
@@ -91,7 +91,8 @@ def main(argv=None):
     except (OSError, ValueError):
         catalog = {}
     candidates = sorted(s for s in (unused_everywhere or set()) if catalog.get(s, {}).get('tier') == 'core' and catalog.get(s, {}).get('category') in ('workflow', 'tool'))
-    out = ['# Aggregated usage summary', '', str(len(reports)) + ' machines | ' + str(totals['sessions']) + ' sessions | ' + str(totals['prompts']) + ' prompts | ' + str(totals['errors']) + ' errors', '',
+    out = ['# Aggregated usage summary', '', str(len(reports)) + ' machines | ' + str(totals['sessions']) + ' sessions | ' + str(totals['prompts']) + ' prompts | ' + str(totals['errors']) + ' errors'
+           + (' | the kit used in ' + str(totals['sessions_with_the_kit']) + ' (' + str(round(100 * totals['sessions_with_the_kit'] / totals['sessions'])) + ' %)' if totals['sessions'] else ''), '',
            table('Commands typed', commands), '', table('Skills activated', skills), '', table('Agents called', agents), '',
            '### Core candidates never activated on any machine', '', (', '.join('`' + c + '`' for c in candidates) if candidates else 'None.'), '',
            '### Frictions (' + str(len(frictions)) + ')', '']
