@@ -98,7 +98,7 @@ Where each file goes and what differs: [CLI matrix](docs/cli/matrice.md).
 - **Workflow**: the steps, each closed by an artifact the next one reads, come from Anthropic's ["The AI-native SDLC playbook"](https://claude.com/resources/articles/the-ai-native-sdlc-playbook).
 - **Base skills**: taken and adapted from [mattpocock/skills](https://github.com/mattpocock/skills), by Matt Pocock, under the MIT licence.
 - **Discipline mechanisms**: rationalization tables and adversarial review by a doubter agent come from [agent-skills](https://github.com/addyosmani/agent-skills), by Addy Osmani.
-- **Other sources**: [pstack](https://github.com/cursor/plugins/tree/main/pstack), and Switch Dimension's comparison of skill packs, the source of the "ceremony matches the stakes" rule. Details in [sources](docs/sources.md).
+- **Other sources**: public skill collections and a published comparison of skill packs, the source of the "ceremony matches the stakes" rule. Details in [sources](docs/sources.md).
 
 ## Licence
 
