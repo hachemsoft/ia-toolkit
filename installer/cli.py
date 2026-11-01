@@ -13,13 +13,14 @@ from types import SimpleNamespace
 from datetime import datetime, timezone
 
 from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, read_json, json_bytes, digest,
-                   safe_id, inside, hook_command, load_commands, load_agent, adopt_user_copy, redact, user_context_refusal)
-from .toml_files import dump_toml, set_list, set_schema
+                   safe_id, inside, load_commands, load_agent, redact, user_context_refusal)
 from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
 from .settings import (practice_file, profile_menu, profile_ids, load_profile, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, organization, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, allowed_domains, domain_allowed, team_ids, profile_practices, RENAMED_SKILLS, resolve_skills, skill_note, RETIRED_KEYS, retired_key_notice, unknown_names, allowed_commands, selected_commands, LEGACY_KIT_DIR, recorded_targets, version_changes, PERSONAL_FILE, LEGACY_PERSONAL_FILE, personal_settings, CHOICE_KEYS)  # noqa: F401 (re-exported)
 from .commit import (BACKUPS_KEPT, prune_backups, commit_changes, atomic_write, KIT_MANAGED, managed_roots, prune_empty_dirs)  # noqa: F401 (re-exported)
 from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKILL_DIRS, repo_root, repo_skill_overrides, mcp_report, print_summary, doctor, kit_version, source_folder, version_line, SCRIPT_INTERPRETER, kit_commands_on_path, runtime_checks, doctor_checks, release_check, live_checks, plain_text_problem)  # noqa: F401 (re-exported)
+from .plan import (effective_settings, resolve_selection, personal_file, practice_layers, skill_sources, select_agents,
+                   guardrails, remove_stale_files, refuse_links)
 from .usage import (usage)  # noqa: F401 (re-exported)
 
 
@@ -200,59 +201,13 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     # Team: chosen at setup (--team or the setup question), then kept for update.
     # 'none' (setup --team none) leaves the team; no value keeps the recorded one.
     team = None if team == 'none' else safe_id(team) if team else state.get('team')
-    # Organization defaults, then the team's settings, then the person's own overrides on top (never replaced wholesale).
-    org_defaults, team_layer, personal = organization().get('defaults', {}), team_settings(team), personal_settings(kit)
-    choices = {k: list(v) for k, v in (choices or {}).items()}
-    if set(choices) - set(CHOICE_KEYS):
-        raise KitError('Unknown choice: '+', '.join(sorted(set(choices) - set(CHOICE_KEYS))))
-    personal = {**personal, **choices}
-    overrides = merge_settings(merge_settings(org_defaults, team_layer), personal)
-    if overrides.get('frictions', 'propose') not in ('propose', 'auto', 'off'):
-        raise KitError('frictions must be propose (default), auto or off.')
-    for key in ('extra_skills','disabled_skills','extra_agents','disabled_agents','extra_commands','disabled_commands'):
-        if not isinstance(overrides.get(key,[]),list) or not all(isinstance(x,str) for x in overrides.get(key,[])):
-            raise KitError(key+' must be a list of names.')
+    org_defaults, team_layer, personal, overrides, choices = effective_settings(kit, team, choices)
     catalog = read_json(ROOT/'skills/catalog.json')
     manifest = load_commands()
-    command_names = [c['name'] for c in manifest]
-    for key in ('extra_commands','disabled_commands'):
-        for name in overrides.get(key, []):
-            if name not in command_names:
-                raise KitError(key+': unknown command '+name+'. Kit commands: '+', '.join(command_names))
-    # A command added in one line (extra_commands) also installs its skills.
-    # Skills renamed in 0.26 (a skill no longer shares a command's name): an old name in overrides.toml still works.
-    for key in ('extra_skills', 'disabled_skills'):
-        renamed = [name for name in overrides.get(key, []) if name in RENAMED_SKILLS]
-        if renamed:
-            print('[Info] overrides.toml '+key+': '+', '.join(n+' is now '+RENAMED_SKILLS[n] for n in renamed)+'; update the name when convenient.')
-            overrides[key] = [RENAMED_SKILLS.get(name, name) for name in overrides[key]]
-    extra_command_skills = [s for c in manifest if c['name'] in overrides.get('extra_commands', []) for s in c['skills']]
-    selected = resolve_skills({**profile, 'skills': list(profile['skills']) + extra_command_skills}, overrides, catalog)
-    allowed = allowed_commands(profile.get('commands'), overrides, command_names)
+    selected, allowed = resolve_selection(profile, overrides, catalog, manifest)
     writes, deletes = {}, []
-    # The schema is copied into ~/.ai-kit: the personal file never points to the extracted kit folder, which may be deleted.
-    schema_uri = (kit/'schemas'/'overrides.schema.json').as_uri()
-    personal_path, legacy_path, personal_notices = kit/PERSONAL_FILE, kit/LEGACY_PERSONAL_FILE, []
-    if personal_path.exists():
-        text = personal_path.read_text(encoding='utf-8-sig')
-        if re.search(r'(?m)^#:schema .*schemas/overrides\.schema\.json\s*$', text):
-            text = set_schema(text, schema_uri)  # an earlier version may have pointed it to the kit folder
-        if legacy_path.exists():
-            personal_notices.append('[Check] ~/.ai-kit/overrides.json is no longer read: ~/.ai-kit/overrides.toml is. Move what you still '
-                                    'need from the JSON file, then delete it.')
-    elif legacy_path.exists():
-        # 0.37: the same settings in TOML, the _ explanations as # comments; checked by reading it back before anything is written.
-        text = dump_toml(read_json(legacy_path), schema_uri)
-        deletes.append(legacy_path)
-        personal_notices.append('[Info] ~/.ai-kit/overrides.json is now ~/.ai-kit/overrides.toml (0.37): the same settings, its _ explanations '
-                                'as # comments. The JSON file is in this update\'s backup.')
-    else:
-        # Created once, pointing to the schema so that editors complete and check the keys.
-        text = set_schema((ROOT/'templates/user-overrides.toml').read_text(encoding='utf-8'), schema_uri)
-    for key, values in choices.items():
-        # Only the chosen lists change; the person's other keys and comments stay.
-        text = set_list(text, key, values, '~/.ai-kit/overrides.toml')
-    writes[personal_path] = text.encode('utf-8')
+    personal_path, personal_bytes, personal_notices = personal_file(kit, choices, deletes)
+    writes[personal_path] = personal_bytes
     identity = dict(user) if user else dict(state.get('user', {}))
     if identity.get('email') and not EMAIL.fullmatch(identity['email']):
         raise KitError('Invalid email: '+identity['email'])
@@ -277,53 +232,13 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     context_names = managed_context_names(profile)
     commands = selected_commands(selected, manifest, allowed)
     kit_text = (ROOT/'templates/kit-context.md').read_text(encoding='utf-8').format(profile=profile_id, commands=command_lines(commands), playbooks=playbook_lines(selected, catalog), frictions=friction_rule(overrides.get('frictions', 'propose')))
-    practice_names, practice_texts = [], []
-    for practice_id in profile['practices']:
-        source, name = practice_file(practice_id)
-        practice_names.append(name)
-        practice_texts.append(source.read_text(encoding='utf-8'))
+    practice_names, practice_texts = practice_layers(profile)
     practices = '\n'.join(practice_texts)
-    skill_sources = []
-    for skill in selected:
-        source = inside(ROOT,catalog[skill]['path'])
-        if not (source/'SKILL.md').is_file():
-            raise KitError('SKILL.md missing: '+skill)
-        for src in source.rglob('*'):
-            if src.is_symlink():
-                raise KitError('Symbolic link not supported: '+str(src))
-        skill_sources.append((skill, source))
+    sources = skill_sources(selected, catalog)
     agent_catalog = read_json(ROOT/'agents/catalog.json')
-    selected_agents = list(dict.fromkeys(profile.get('agents',[]) + overrides.get('extra_agents',[])))
-    selected_agents = [x for x in selected_agents if x not in overrides.get('disabled_agents',[])]
-    agents = []
-    for agent in selected_agents:
-        safe_id(agent)
-        if agent not in agent_catalog:
-            raise KitError('Unknown agent: '+agent)
-        agents.append((agent, load_agent(inside(ROOT,agent_catalog[agent]['path']))))
+    agents = select_agents(profile, overrides, agent_catalog, load_agent)
     hooks_dir = kit/'hooks'  # scripts shared by all CLIs, like kit/bin/friction.py
-    hook_manifest = read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})
-    wanted_hooks = overrides.get('hooks', {})
-    if not isinstance(wanted_hooks, dict) or not all(isinstance(v, bool) for v in wanted_hooks.values()):
-        raise KitError('hooks must be an object name → true/false.')
-    enabled_hooks = {}
-    # A guardrail marked "default" in the manifest is on unless overrides.toml sets it to false.
-    wanted_hooks = {**{n: True for n, spec in hook_manifest.items() if spec.get('default')}, **wanted_hooks}
-    # Guardrails the organization locks stay on, whatever a team or a person writes (organization.toml locked_hooks).
-    locked = organization().get('locked_hooks', [])
-    if not isinstance(locked, list) or not all(isinstance(n, str) and n in hook_manifest for n in locked):
-        raise KitError('organization.toml: locked_hooks must list guardrails of the kit ('+', '.join(sorted(hook_manifest))+').')
-    turned_off = [n for n in locked if wanted_hooks.get(n) is False]
-    wanted_hooks.update({n: True for n in locked})
-    for name, flag in wanted_hooks.items():
-        safe_id(name)
-        if name not in hook_manifest:
-            raise KitError('Unknown guardrail: '+name+'. Available: '+', '.join(sorted(hook_manifest)))
-        if not flag:
-            continue
-        spec = hook_manifest[name]
-        script = hooks_dir/spec['script']
-        enabled_hooks[name] = {'event': spec['event'], 'group': {'matcher': spec['matcher'], 'hooks': [{'name': 'ai-kit-'+name, 'type': 'command', 'command': hook_command(script)}]}}
+    hook_manifest, enabled_hooks, turned_off = guardrails(overrides, hooks_dir)
     # MCP: resolved from the three sources apart, not from the merged overrides ("github": true must not erase the server).
     servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
     enabled_mcp = {'ai-kit-'+name: server for name, server in servers.items()}
@@ -333,7 +248,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     p = Plan(active=[a.NAME for a in active], notices=notices,
         skill_notes={skill: skill_note(skill, selected, catalog) for skill in selected},
         home=home, kit=kit, state=state, old_files=old_files, overrides=overrides, profile_id=profile_id, profile=profile,
-        catalog=catalog, selected=selected, skill_sources=skill_sources, commands=commands, context_names=context_names,
+        catalog=catalog, selected=selected, skill_sources=sources, commands=commands, context_names=context_names,
         kit_text=kit_text, practice_names=practice_names, practice_texts=practice_texts, user_file=context_dir/USER_CONTEXT, context_dir=context_dir,
         user_context_text=user_context_text(identity), agents=agents, hooks_dir=hooks_dir,
         hook_manifest=hook_manifest, enabled_hooks=enabled_hooks, enabled_mcp=enabled_mcp, writes=writes, deletes=deletes,
@@ -358,21 +273,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     # --- Adapters: each translates the plan for its CLI. ---
     for adapter in active:
         adapter.install(p)
-    for rel, previous_hash in old_files.items():
-        if rel in files:
-            continue
-        target_path = inside(home,rel)
-        if not (rel.startswith(KIT_MANAGED) or any(a.is_managed(rel) for a in ADAPTERS)) or target_path == user_file:
-            raise KitError('Invalid state: deletion outside the managed scope.')
-        if target_path.exists():
-            if digest(target_path.read_bytes()) != previous_hash:
-                if target_path.name == USER_CONTEXT and target_path != user_file:
-                    # A 30_USER.md copy the person edited, no longer needed: their edit is never lost.
-                    if adopt_user_copy(p, target_path, previous_hash):
-                        deletes.append(target_path)
-                    continue
-                raise KitError('Old managed file modified locally: '+str(target_path))
-            deletes.append(target_path)
+    remove_stale_files(p, files, user_file)
     for adapter in ADAPTERS:
         adapter.finalize(p, active=adapter in active)  # inactive: removes what a previous installation had put in place
     installed_versions = {'skills': {s: catalog[s].get('version') for s in selected}, 'agents': {a: agent_catalog[a].get('version') for a, _ in agents}}
@@ -384,13 +285,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
                               'versions':installed_versions}}
     writes[kit/'state.json'] = json_bytes(new_state)
     writes = {path:b for path,b in writes.items() if not path.exists() or path.read_bytes()!=b}
-    # Refuse links in managed paths before any write.
-    for path in list(writes)+deletes:
-        for part in (path,*path.parents):
-            if part == home:
-                break
-            if part.is_symlink():
-                raise KitError('Symbolic link in a managed path: '+str(part))
+    refuse_links(home, list(writes)+deletes)  # before any write
     if report is not None:
         def rel(path):
             return path.relative_to(home).as_posix()

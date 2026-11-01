@@ -1,6 +1,7 @@
 """usage: what the CLIs' own logs show about the kit, locally; nothing is sent."""
 import json
 import re
+from types import SimpleNamespace
 from datetime import datetime, timezone
 
 from .core import (ROOT, KitError, read_json, json_bytes, load_commands, _ts, friction_id, fixed_frictions)
@@ -21,6 +22,51 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
     installed = state.get('installed') or next(a for a in ADAPTERS if isinstance(a, ContextHost)).installed_from_files(state)
     installed_skills, installed_commands, installed_agents = (sorted(installed.get(k, [])) for k in ('skills', 'commands', 'agents'))
     cutoff = datetime.now(timezone.utc).timestamp() - since_days*86400
+    c = count_events(home, state, installed_skills, installed_commands, installed_agents, cutoff)
+    commands, skills, agents, sessions_by = c.commands, c.skills, c.agents, c.sessions_by
+    sessions, prompts = len(c.sessions_seen), c.prompts
+    # What the logs can show: a skill or an agent counts as unused only when every session of the window comes from a CLI
+    # whose logs show it; otherwise its absence proves nothing and nothing is recommended about it.
+    used_clis = [a for a in ADAPTERS if sessions_by[a.NAME]]
+    def measurable(kind):
+        return bool(used_clis) and all(kind in a.OBSERVES for a in used_clis)
+    def observing(kind):
+        return [a.LABEL for a in ADAPTERS if kind in a.OBSERVES]
+    unused_commands = [c for c in installed_commands if commands[c] == 0]
+    skill_names = [s for s in installed_skills if s not in installed_commands]  # a skill named after a command is measured by the command
+    unused_skills = [s for s in skill_names if skills[s] == 0] if measurable('skill') else []
+    unused_agents = [a for a in installed_agents if agents[a] == 0] if measurable('agent') else []
+    not_observable = {kind: names for kind, names in (('skills', skill_names), ('agents', installed_agents)) if not measurable(kind[:-1])}
+    required_by_used = required_by(commands, skills, catalog)
+    def core_candidates():
+        out = []
+        for s in unused_skills:
+            entry = catalog.get(s, {})
+            if entry.get('tier') == 'core' and s not in required_by_used and entry.get('category') in ('workflow','tool'):
+                out.append(s)
+        return out
+    frictions, fixed_own = read_frictions(home, cutoff)
+    frictions_by_category = Counter(str(f.get('category')) for f in frictions)
+    enough = sessions >= min_sessions and prompts >= min_prompts
+    report = {'window_days': since_days, 'sessions': sessions, 'prompts': prompts, 'errors': c.errors, 'unreadable_logs': c.unread,
+              'sessions_with_the_kit': len(c.kit_sessions),
+              'sessions_by_cli': {name: len(s) for name, s in sessions_by.items() if s},
+              'observed_by': {kind: observing(kind) for kind in ('prompt', 'skill', 'agent')},
+              'not_observable': not_observable,
+              'commands': dict(commands), 'skills': dict(skills), 'agents': dict(agents),
+              'unused_commands': unused_commands, 'unused_skills': unused_skills, 'unused_agents': unused_agents,
+              'core_candidates_to_demote': core_candidates() if enough and measurable('skill') else [], 'enough_data': enough,
+              'frictions': frictions, 'frictions_by_category': dict(frictions_by_category),
+              'unknown_commands': dict(c.unknown_commands), 'repeated_prompts': c.repeated, 'frictions_fixed': fixed_own}
+    print_report(report, c, not_observable, used_clis, observing, min_sessions, min_prompts)
+    if as_json:
+        as_json.write_text(json_bytes(report).decode('utf-8'), encoding='utf-8')
+    return 0
+
+
+def count_events(home, state, installed_skills, installed_commands, installed_agents, cutoff):
+    """What the CLIs' logs show over the window, from the neutral events each adapter returns (prompt, skill, agent, error)."""
+    from collections import Counter
     commands, skills, agents = Counter(), Counter(), Counter()
     unknown_commands = Counter()
     repeated = errors = prompts = 0
@@ -71,19 +117,14 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
         chosen = adapter.NAME in (state.get('targets') or (state.get('installed') or {}).get('clis') or [])
         if chosen and not recognised and any(next(home.glob(pattern), None) for pattern in getattr(adapter, 'LOGS', ())):
             unread.append(adapter.LABEL)
-    sessions = len(sessions_seen)
-    # What the logs can show: a skill or an agent counts as unused only when every session of the window comes from a CLI
-    # whose logs show it; otherwise its absence proves nothing and nothing is recommended about it.
-    used_clis = [a for a in ADAPTERS if sessions_by[a.NAME]]
-    def measurable(kind):
-        return bool(used_clis) and all(kind in a.OBSERVES for a in used_clis)
-    def observing(kind):
-        return [a.LABEL for a in ADAPTERS if kind in a.OBSERVES]
-    unused_commands = [c for c in installed_commands if commands[c] == 0]
-    skill_names = [s for s in installed_skills if s not in installed_commands]  # a skill named after a command is measured by the command
-    unused_skills = [s for s in skill_names if skills[s] == 0] if measurable('skill') else []
-    unused_agents = [a for a in installed_agents if agents[a] == 0] if measurable('agent') else []
-    not_observable = {kind: names for kind, names in (('skills', skill_names), ('agents', installed_agents)) if not measurable(kind[:-1])}
+    kit_sessions.discard(None)
+    return SimpleNamespace(commands=commands, skills=skills, agents=agents, unknown_commands=unknown_commands,
+                           repeated=repeated, errors=errors, prompts=prompts, sessions_seen=sessions_seen,
+                           sessions_by=sessions_by, unread=unread, kit_sessions=kit_sessions)
+
+
+def required_by(commands, skills, catalog):
+    """Skills a typed command or an activated skill needs, dependencies of the catalog followed."""
     by_name = {c['name']: c for c in load_commands()}
     required_by_used = set(skills)
     for name in commands:
@@ -94,14 +135,12 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
             if dependency not in required_by_used:
                 required_by_used.add(dependency)
                 frontier.append(dependency)
-    def core_candidates():
-        out = []
-        for s in unused_skills:
-            entry = catalog.get(s, {})
-            if entry.get('tier') == 'core' and s not in required_by_used and entry.get('category') in ('workflow','tool'):
-                out.append(s)
-        return out
-    # Frictions logged by /friction: ~/.ai-kit/frictions.jsonl, one line per friction, within the window.
+    return required_by_used
+
+
+def read_frictions(home, cutoff):
+    """Frictions logged by /friction within the window (~/.ai-kit/frictions.jsonl), and those of this person a released
+    version says it fixed: "(frictions: a1b2c3, …)" in the kit's CHANGELOG."""
     frictions, own_ids = [], []
     frictions_file = home/'.ai-kit/frictions.jsonl'
     if frictions_file.is_file():
@@ -120,19 +159,17 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
     changelog = ROOT/'CHANGELOG.md'
     fixed = fixed_frictions(changelog.read_text(encoding='utf-8')) if changelog.is_file() else {}
     fixed_own = {fid: fixed[fid] for fid in own_ids if fid in fixed}
-    frictions_by_category = Counter(str(f.get('category')) for f in frictions)
-    enough = sessions >= min_sessions and prompts >= min_prompts
-    kit_sessions.discard(None)
-    report = {'window_days': since_days, 'sessions': sessions, 'prompts': prompts, 'errors': errors, 'unreadable_logs': unread,
-              'sessions_with_the_kit': len(kit_sessions),
-              'sessions_by_cli': {name: len(s) for name, s in sessions_by.items() if s},
-              'observed_by': {kind: observing(kind) for kind in ('prompt', 'skill', 'agent')},
-              'not_observable': not_observable,
-              'commands': dict(commands), 'skills': dict(skills), 'agents': dict(agents),
-              'unused_commands': unused_commands, 'unused_skills': unused_skills, 'unused_agents': unused_agents,
-              'core_candidates_to_demote': core_candidates() if enough and measurable('skill') else [], 'enough_data': enough,
-              'frictions': frictions, 'frictions_by_category': dict(frictions_by_category),
-              'unknown_commands': dict(unknown_commands), 'repeated_prompts': repeated, 'frictions_fixed': fixed_own}
+    return frictions, fixed_own
+
+
+def print_report(report, c, not_observable, used_clis, observing, min_sessions, min_prompts):
+    """The report as the person reads it; the same figures as the JSON."""
+    since_days, sessions, prompts, errors = report['window_days'], report['sessions'], report['prompts'], report['errors']
+    commands, skills, agents, unknown_commands = c.commands, c.skills, c.agents, c.unknown_commands
+    kit_sessions, unread, repeated = c.kit_sessions, c.unread, c.repeated
+    unused_commands, unused_skills, unused_agents = report['unused_commands'], report['unused_skills'], report['unused_agents']
+    frictions, frictions_by_category, fixed_own = report['frictions'], report['frictions_by_category'], report['frictions_fixed']
+    enough = report['enough_data']
     print('Window: '+str(since_days)+' days | '+str(sessions)+' sessions | '+str(prompts)+' prompts | '+str(errors)+' errors'
           + (' | the kit used in '+str(len(kit_sessions))+' of them ('+str(round(100*len(kit_sessions)/sessions))+' %)' if sessions else ''))
     for label in unread:
@@ -150,7 +187,7 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
     print('Unknown commands typed: '+(', '.join('/'+k+' ×'+str(v) for k,v in unknown_commands.most_common()) or 'none')+' | requests repeated within one session: '+str(repeated))
     if fixed_own:
         print('Your frictions fixed by the kit: '+', '.join(fid+' in '+str(version) for fid, version in fixed_own.items()))
-    print('Frictions logged: '+str(len(frictions))+(' ('+', '.join(k+' ×'+str(v) for k,v in frictions_by_category.most_common())+')' if frictions else '')+'; /friction to log one.')
+    print('Frictions logged: '+str(len(frictions))+(' ('+', '.join(k+' ×'+str(v) for k,v in sorted(frictions_by_category.items(), key=lambda kv: -kv[1]))+')' if frictions else '')+'; /friction to log one.')
     if not enough:
         print('Not enough data to recommend (threshold: '+str(min_sessions)+' sessions and '+str(min_prompts)+' prompts in the window; --min-sessions and --min-prompts to adjust it). No recommendation.')
     elif report['core_candidates_to_demote']:
@@ -158,6 +195,3 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
     else:
         print('No core skill to remove over this window.')
     print('Procedure: docs/usage-review.md. The logs read are local; nothing is sent.')
-    if as_json:
-        as_json.write_text(json_bytes(report).decode('utf-8'), encoding='utf-8')
-    return 0

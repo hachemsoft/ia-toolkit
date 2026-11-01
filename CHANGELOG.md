@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.45.6
+
+Maintainability, nothing installed changes (the snapshot of the 16 scenarios is identical):
+- `apply` goes from 244 to 138 lines: its steps are named functions of `installer/plan.py` (the settings that apply, the selection, the personal file, the practices, skills, agents and guardrails, the old files to remove, the refusal of links).
+- `usage` goes from 152 lines to a short flow: counting the events, reading the frictions and printing are functions of their own. Its text and JSON output are the same, checked on a real workstation.
+
 ## 0.45.5
 
 - Evals: a CLI's log line where a timestamp ends in three digits followed by the word "error" (`16:35:10.505 xcodebuild … error`) is no longer taken for an API error, so a real answer is judged instead of left out. The plain-words cases accept French answers (`contrat`, `variable d’environnement`), as the others do.

@@ -8,14 +8,14 @@ How the installer works, what it guarantees and where it depends on things it do
 launcher (scripts/launcher.py)          the private venv ~/.ai-kit/runtime, the kit package from the ZIP's wheels
   └─ installer (installer/cli.py: main)
        ├─ settings (installer/settings.py): organization.toml defaults → team → ~/.ai-kit/overrides.toml
-       ├─ resolution: profile + settings → skills (with their dependencies), commands, agents, guardrails, MCP servers
+       ├─ resolution (installer/plan.py): profile + settings → skills (with their dependencies), commands, agents, guardrails, MCP servers
        ├─ plan: a Plan (installer/interface.py) holding every file to write, with nothing specific to a CLI
        ├─ adapters (installer/adapters/*.py): each chosen CLI adds its own writes to the plan, in its format
        ├─ checks: nothing written yet; a file edited by hand, a link, a refused value stops everything here
        └─ commit (installer/commit.py): backup of every file that changes, atomic writes, state.json; any error puts everything back
 ```
 
-`setup` and `update` run the same `apply` (`installer/cli.py`, with the commands and migrations); `doctor` (`installer/doctor.py`), `usage` (`installer/usage.py`) and `uninstall` read `~/.ai-kit/state.json`, which records every file the kit wrote with its digest, the managed blocks inside files it shares (`~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`), the guardrails, MCP servers, versions and choices.
+`setup` and `update` run the same `apply` (`installer/cli.py`, with the commands and migrations), which runs the steps of `installer/plan.py` in order; `doctor` (`installer/doctor.py`), `usage` (`installer/usage.py`) and `uninstall` read `~/.ai-kit/state.json`, which records every file the kit wrote with its digest, the managed blocks inside files it shares (`~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`), the guardrails, MCP servers, versions and choices.
 
 ## The adapter contract
 
