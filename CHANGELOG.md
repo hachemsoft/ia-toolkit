@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.9
+
+- The README opens with the kit's logo (light and dark) and a section "Does it help?": the plain-words tasks run with and without the kit, as two charts.
+- `evals/results/2026-11-01.json` keeps every eval result of that day, re-judged with the criteria of 0.45.8 (no answer text); `scripts/eval_charts.py` redraws the charts in `docs/img/` from it, light and dark, without dependency.
+
 ## 0.45.8
 
 - `protected-paths`: a reader that can also write a file is a reader only without that option. In 0.45.7, `sort -o`, `uniq IN OUT`, a `sed` script with `w` (or `s///w`), `git diff --output`, `tree -o`, `xxd -r`, `find -fprintf` or `-fls`, `yq -i`, and `cp` into a configuration folder (`cp overrides.toml ~/.ai-kit/`, `cp -t`) got through. Found by the audit pass of 0.45.7; each one is a test, and so are the reads that stay allowed.
