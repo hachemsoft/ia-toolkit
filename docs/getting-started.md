@@ -4,16 +4,20 @@ Fifteen minutes, in order. What you need on day one is on this page; everything 
 
 ## 1. Install (once)
 
-You need Python 3.9 or later (3.11 recommended) and your coding-agent CLI, as provided by your company. The kit installs into your home folder only: no administrator rights, no download, your Python left as it is. If something is missing, the installer says exactly what to ask IT.
+You need Python 3.9 or later (3.11 recommended), git, and your coding-agent CLI, as provided by your company. The kit installs into your home folder only: no administrator rights, your Python left as it is; its few libraries come from the Python package index your workstation is already configured for. If something is missing, the installer says exactly what to ask IT.
 
-1. Download `ai-kit-<version>.zip` from the Releases page (your organization's copy if it has one) and extract it into a folder you keep, for example `Documents`: this is your **kit folder**.
+1. Clone the kit repository (your organization's copy if it has one) into a folder you keep, for example `Documents`: this is your **kit folder**. Never edit its files: `update` refuses to fetch over local changes; your own settings live in your home folder (below).
 2. Run the installer:
-   - **Windows**: double-click `Installer.cmd` in the extracted folder.
-   - **Mac**: open **Terminal**, type `sh ` (with a space), drag `scripts/bootstrap.sh` from the extracted folder into the window, press Enter.
+   - **Windows**: double-click `Installer.cmd` in the kit folder.
+   - **Mac**: open **Terminal**, type `sh ` (with a space), drag `scripts/bootstrap.sh` from the kit folder into the window, press Enter.
 3. Answer the guided screen (arrows move, Space ticks, Enter confirms, Ctrl+C leaves without changing anything): which CLIs you use, your **profile** (**General** if in doubt; also Java Developer, DevOps, Architect, Data Analyst, Data Developer), your work email. Keep what the profile proposes; you can adjust later. Review, then **Install**.
 4. Three quick questions fill your personal context: the language and length of the answers, how much the agent does on its own, your role in one line.
 
 The installer never calls the model, so the summary says "connection not verified". Signing in and choosing the model are done in your CLI, as your IT procedure says.
+
+**Without git, or without a reachable package index**: download `ai-kit-<version>.zip` from the Releases page, extract it into a folder you keep (that is your kit folder) and run the same installer. It installs everything from the ZIP's own files, with no download. Everything on this page then applies, except that a new version is a new ZIP.
+
+Do not `pip install` or `pipx install` the kit next to this: that makes a second `ai-kit` command that `update` never touches; `doctor` reports it. Remove such a copy with the pip that installed it.
 
 ### Run the kit
 
@@ -38,7 +42,7 @@ Folders starting with a dot are hidden: paste the path into the Explorer address
 
 ### New version
 
-Extract the new ZIP and run its installer, as the first time. Your CLIs, profile, choices and files are kept; the old kit folder can be deleted.
+Run `update` from the kit folder (table above): it fetches the new version (`git pull --ff-only`), reinstalls the kit in its private environment and reapplies your configuration, in three reported steps. Your CLIs, profile, choices and files are kept. No `git pull` or `pip install` by hand. From a ZIP: extract the new ZIP and run its installer, as the first time; the old folder can be deleted.
 
 ## 2. First session (five minutes)
 

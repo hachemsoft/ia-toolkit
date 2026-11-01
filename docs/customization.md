@@ -23,7 +23,7 @@ hooks = { dbt-prod-guard = true }
 
 Both files are TOML and have a JSON Schema in `schemas/`, named on their first line (`#:schema …`): an editor with TOML support that reads that line (VS Code with Even Better TOML, for example) completes the keys, shows each key's description and flags a typo or a wrong value as you type. `organization.toml` points to its schema; the personal file points to the copy in `~/.ai-kit/schemas/` (`setup` updates that line, and changes nothing else in the file). `doctor` also reports an unknown key (usually a typo), and the CI checks the shipped files against the schemas.
 
-**How a change of `organization.toml` reaches you**: with the next version of the kit (a new ZIP, or `git pull` in a clone), then `setup` or `update`. Where your own files are, on Mac and Windows: [getting started](getting-started.md#where-your-files-are).
+**How a change of `organization.toml` reaches you**: with the next version of the kit: `update` in a clone (it fetches it), or a new ZIP then its installer. Where your own files are, on Mac and Windows: [getting started](getting-started.md#where-your-files-are).
 
 ### Who decides what, and what the kit cannot enforce
 

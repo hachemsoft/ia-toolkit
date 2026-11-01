@@ -43,8 +43,8 @@ The context layers and `30_USER.md` are in `~/.ai-kit/context/`, whatever the CL
 | Action | Mac and Linux (Terminal) | Windows (Command Prompt) |
 | --- | --- | --- |
 | Install / change profile | `sh scripts/bootstrap.sh` | double-click `Installer.cmd`, or `Installer.cmd setup` |
-| New version | extract the new ZIP and run its installer | the same |
-| Reapply this version (after editing `overrides.toml`; in a git clone, it first fetches the new version) | `sh scripts/bootstrap.sh update` | `Installer.cmd update` |
+| New version, or reapply this one (after editing `overrides.toml`): in a git clone, fetches the new version first | `sh scripts/bootstrap.sh update` | `Installer.cmd update` |
+| New version from a ZIP | extract the new ZIP and run its installer | the same |
 | Diagnose (local, free) | `sh scripts/bootstrap.sh doctor` | `Installer.cmd doctor` |
 | Uninstall (`--dry-run` to see the list, `--yes` for automation, `--remove-runtime` for the private environment too; `update` afterwards reinstalls with the same choices) | `sh scripts/bootstrap.sh uninstall` | `Installer.cmd uninstall` |
 | Check the connection (real call to the model, may be billed) | `sh scripts/bootstrap.sh doctor --live` | `Installer.cmd doctor --live` |

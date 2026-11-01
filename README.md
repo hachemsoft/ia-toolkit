@@ -15,9 +15,11 @@ A foundation for working with a coding agent as a team, on Mac and Windows. It c
 
 ## Getting started
 
-1. **Install**: download `ai-kit-<version>.zip` from the [Releases](https://github.com/hachemsoft/ia-toolkit/releases) page, extract it, then:
+1. **Install**: clone the repository (your organization's copy if it has one) into a folder you keep, then:
    - **Windows**: double-click `Installer.cmd`.
-   - **Mac**: open Terminal, type `sh ` (with a space), drag `scripts/bootstrap.sh` from the extracted folder into the window, press Enter.
+   - **Mac**: open Terminal, type `sh ` (with a space), drag `scripts/bootstrap.sh` from the cloned folder into the window, press Enter.
+
+   Without git, or without access to a Python package index: download `ai-kit-<version>.zip` from the [Releases](https://github.com/hachemsoft/ia-toolkit/releases) page, extract it and run the same launcher; it installs everything from the ZIP, with no download.
 
    A short guided screen asks which CLIs you use and the profile closest to your job (**General** if in doubt), shows what will change, then installs.
 2. **Use**: open a terminal in your repo, start your CLI and ask in plain words. Type `/me` once: a short interview that tells the agent how to work with you.
@@ -34,7 +36,7 @@ A foundation for working with a coding agent as a team, on Mac and Windows. It c
 
 You need Python 3.9 or later and your CLI, provided by your company; signing in and choosing the model are done in the CLI. Step by step: [getting started](docs/getting-started.md). For IT: [validation on enterprise workstations](docs/validation.md) and [compliance](docs/compliance.md).
 
-**Update**: extract the new ZIP and run its installer; your choices and files are kept. **Uninstall**: run the installer and choose **Uninstall**; only what the kit installed goes.
+**Update**: `Installer.cmd update` (Mac: `sh scripts/bootstrap.sh update`) from the cloned folder fetches the new version, reinstalls and reapplies; your choices and files are kept. Never `pip install` the kit next to it: that makes a second copy `update` does not touch. From a ZIP: extract the new ZIP and run its installer. **Uninstall**: run the installer and choose **Uninstall**; only what the kit installed goes.
 
 ## Profiles
 
