@@ -30,6 +30,17 @@ def friction_module():
         _FRICTION['module'] = module
     return _FRICTION['module']
 
+
+def news_module():
+    """runtime/news.py as a module (ai-kit news), loaded once from the kit's own files."""
+    if 'news' not in _FRICTION:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('ai_kit_news', ROOT/'runtime'/'news.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _FRICTION['news'] = module
+    return _FRICTION['news']
+
 _FRICTION = {}
 SECRET = friction_module().SECRET
 redact = friction_module().redact

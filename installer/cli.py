@@ -12,7 +12,7 @@ import sys
 from types import SimpleNamespace
 from datetime import datetime, timezone
 
-from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, read_json, json_bytes, digest,
+from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, news_module, read_json, json_bytes, digest,
                    safe_id, inside, load_commands, load_agent, redact, user_context_refusal)
 from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
@@ -259,6 +259,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         agent_body=lambda definition: practices+'\n'+agent_instruction(definition)+'\n'+definition['instructions']+'\n')
     # Scripts shared by all CLIs: frictions and enabled guardrails.
     managed_write(kit/'bin'/'friction.py', (ROOT/'runtime/friction.py').read_bytes(), 'Kit script')
+    managed_write(kit/'bin'/'news.py', (ROOT/'runtime/news.py').read_bytes(), 'Kit script')
     command_state, command_after = plan_command(p, managed_write, command)
     managed_write(kit/'schemas'/'overrides.schema.json', (ROOT/'schemas/overrides.schema.json').read_bytes(), 'Kit schema')
     for name in enabled_hooks:
@@ -518,6 +519,16 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
 FRICTION_MODES = ('propose', 'auto', 'off')
 
 
+def news_action(argv):
+    """ai-kit news: the script the agent runs on a refused update (runtime/news.py, one implementation) run from the
+    terminal, with --home: --later, --list, --check."""
+    parser = argparse.ArgumentParser(prog='ai-kit news', add_help=False)
+    parser.add_argument('--home', type=Path, default=Path.home())
+    parser.add_argument('--plain', action='store_true')
+    args, rest = parser.parse_known_args(argv)
+    return news_module().main([*rest, '--home', str(args.home.resolve())])
+
+
 def friction_action(argv):
     """ai-kit friction: the /friction script itself (runtime/friction.py, one implementation) run from the terminal,
     with --home; --list for the last frictions; --mode [propose|auto|off] to show or change the frictions setting of
@@ -645,11 +656,11 @@ def main(argv=None):
         print('Python 3.9 minimum required (3.11 or newer recommended).',file=sys.stderr)
         return 2
     argv = sys.argv[1:] if argv is None else list(argv)
-    if argv and argv[0] == 'friction':
-        # The /friction script from the terminal: its own options, the kit's --home. Colour as for the other actions.
+    if argv and argv[0] in ('friction', 'news'):
+        # The /friction and news scripts from the terminal: their own options, the kit's --home. Colour as for the other actions.
         with styled_output(plain='--plain' in argv):
             try:
-                return friction_action(argv[1:])
+                return friction_action(argv[1:]) if argv[0] == 'friction' else news_action(argv[1:])
             except (KitError, OSError, UnicodeError) as exc:
                 print('Error: '+redact(str(exc)), file=sys.stderr)
                 return 2
@@ -659,8 +670,8 @@ def main(argv=None):
             except SystemExit as exc:  # the script's own argparse: usage already printed
                 return exc.code if isinstance(exc.code, int) else 2
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
-    parser.add_argument('action',nargs='?',choices=['setup','update','doctor','usage','uninstall','managed-settings','friction'],
-                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]')
+    parser.add_argument('action',nargs='?',choices=['setup','update','doctor','usage','uninstall','managed-settings','friction','news'],
+                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now')
     parser.add_argument('--since',type=int,default=42,help='usage: window in days (default 42)')
     parser.add_argument('--json',type=Path,help='usage: write the report to this file')
     parser.add_argument('--min-sessions',type=int,default=10,help='usage: minimum sessions before recommending (default 10)')

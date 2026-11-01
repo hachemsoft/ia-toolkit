@@ -259,4 +259,18 @@ class SessionNewsTests(unittest.TestCase):
  def test_context_is_capped(self):
   (self.kit/'CHANGELOG.md').write_text('# Changelog\n\n## 0.47.0\n\n'+('- a very long line of changes\n'*2000),encoding='utf-8')
   self.assertLessEqual(len(self.context(self.hook())),8000)
+ def news_script(self,*args):
+  proc=subprocess.run([sys.executable,'-I',str(ROOT/'runtime/news.py'),'--home',str(self.home),*args],capture_output=True,text=True,encoding='utf-8');self.assertEqual(proc.returncode,0,proc.stderr);return proc.stdout
+ def test_news_script_later_list_and_check(self):
+  self.assertIn('nothing to decline',self.news_script('--later').lower());self.assertNotIn('declined_version',self.marker())
+  origin,clone=self.origin_and_clone();(origin/'VERSION').write_text('0.48.0\n',encoding='utf-8');git('commit','-qam','0.48.0',cwd=origin)
+  out=self.news_script('--check');self.assertIn('0.48.0',out);self.assertEqual(self.marker()['last_check']['remote_version'],'0.48.0')
+  out=self.news_script('--later');self.assertIn('0.48.0',out);self.assertEqual(self.marker()['declined_version'],'0.48.0');self.assertEqual(self.hook(),{})
+  out=self.news_script('--list');self.assertIn('0.48.0',out);self.assertIn('0.47.0',out);self.assertIn('declined',out.lower())
+  git('remote','set-url','origin',str(Path(self.tmp.name)/'nowhere'),cwd=clone);out=self.news_script('--check');self.assertIn('failed',out.lower());self.assertEqual(self.marker()['last_check']['result'],'failed')
+ def test_protected_paths_lets_the_agent_run_news_later_but_not_write_it(self):
+  env=self.env;shell=lambda cmd:run_hook('protected-paths.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd},'cwd':str(self.home)},env).get('decision')
+  self.assertIsNone(shell('python3 ~/.ai-kit/bin/news.py --later'));self.assertIsNone(shell('ai-kit news --later'))
+  self.assertEqual(shell('python3 ~/.ai-kit/bin/news.py --later > ~/.ai-kit/state.json'),'deny');self.assertEqual(shell('echo x > ~/.ai-kit/bin/news.py'),'deny')
+  self.assertEqual(run_hook('protected-paths.py',{'tool_name':'write_file','tool_input':{'file_path':str(self.home/'.ai-kit/bin/news.py')},'cwd':str(self.home)},env).get('decision'),'deny')
 if __name__=='__main__':unittest.main()
