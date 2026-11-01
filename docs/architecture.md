@@ -7,15 +7,15 @@ How the installer works, what it guarantees and where it depends on things it do
 ```
 launcher (scripts/launcher.py)          the private venv ~/.ai-kit/runtime, the kit package from the ZIP's wheels
   └─ installer (installer/cli.py: main)
-       ├─ settings: organization.toml defaults → team → ~/.ai-kit/overrides.toml (installer/toml_files.py)
+       ├─ settings (installer/settings.py): organization.toml defaults → team → ~/.ai-kit/overrides.toml
        ├─ resolution: profile + settings → skills (with their dependencies), commands, agents, guardrails, MCP servers
        ├─ plan: a Plan (installer/interface.py) holding every file to write, with nothing specific to a CLI
        ├─ adapters (installer/adapters/*.py): each chosen CLI adds its own writes to the plan, in its format
        ├─ checks: nothing written yet; a file edited by hand, a link, a refused value stops everything here
-       └─ commit: backup of every file that changes, atomic writes, state.json; any error puts everything back
+       └─ commit (installer/commit.py): backup of every file that changes, atomic writes, state.json; any error puts everything back
 ```
 
-`setup` and `update` run the same `apply`; `doctor`, `usage` and `uninstall` read `~/.ai-kit/state.json`, which records every file the kit wrote with its digest, the managed blocks inside files it shares (`~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`), the guardrails, MCP servers, versions and choices.
+`setup` and `update` run the same `apply` (`installer/cli.py`, with the commands and migrations); `doctor` (`installer/doctor.py`), `usage` (`installer/usage.py`) and `uninstall` read `~/.ai-kit/state.json`, which records every file the kit wrote with its digest, the managed blocks inside files it shares (`~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`), the guardrails, MCP servers, versions and choices.
 
 ## The adapter contract
 
@@ -30,6 +30,7 @@ These hold for every change; a test guards each.
 - **All or nothing**: writes are atomic; an error or Ctrl+C restores every file from the backup taken just before.
 - **No model call, no network** in `setup`, `update`, `doctor`, `uninstall` and the tests (`scripts/offline_tests.py` takes the CLIs off the PATH and fails if one is reached).
 - **Every skill and agent has a version**, raised at each change (`versions.lock.json`, `scripts/versions.py`).
+- **Modules stay readable**: no module of `installer/` over 800 lines; past that, it is split by responsibility.
 - **Size ceilings**: the kit context template stays under 3,800 characters and each command prompt under 4,000, because the context is loaded at every session of every person: every line has a cost.
 
 ## What the kit does not control

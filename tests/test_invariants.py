@@ -43,6 +43,11 @@ class InvariantTests(unittest.TestCase):
         self.home = Path(self.temp.name)/'home'
         self.home.mkdir()
 
+    def test_installer_modules_stay_readable(self):
+        root = Path(__file__).resolve().parents[1]/'installer'
+        long = {p.name: n for p in root.rglob('*.py') if (n := p.read_text(encoding='utf-8').count('\n')) > 800}
+        self.assertEqual(long, {}, 'split by responsibility (docs/architecture.md)')
+
     def test_no_permission_bypass_in_configuration(self):
         """Never a mode that skips confirmations (yolo, skip-permissions, automatic approval)."""
         install(self.home, overrides={'hooks': {'dbt-prod-guard': True, 'protected-paths': True}})

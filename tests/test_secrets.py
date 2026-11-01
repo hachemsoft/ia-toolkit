@@ -53,15 +53,15 @@ class LockedHookTests(unittest.TestCase):
         import contextlib, io, json, tempfile
         from pathlib import Path
         from unittest import mock
-        from installer import cli
+        from installer import cli, settings
         from installer.toml_files import dump_toml
         with tempfile.TemporaryDirectory() as tmp, mock.patch('shutil.which', return_value=None):
             home = Path(tmp)
             (home/'.ai-kit').mkdir()
             (home/'.ai-kit/overrides.toml').write_text(dump_toml({'hooks': {'protected-paths': False}}), encoding='utf-8')
-            real = cli.read_toml
+            real = settings.read_toml
             org = {'locked_hooks': ['protected-paths'], 'defaults': {}}
-            with mock.patch.object(cli, 'read_toml', side_effect=lambda p, d=None: org if Path(p).name == 'organization.toml' else real(p, d)), \
+            with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: org if Path(p).name == 'organization.toml' else real(p, d)), \
                     contextlib.redirect_stdout(io.StringIO()):
                 notices = cli.apply('general', home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini')
             self.assertIn('protected-paths', json.loads((home/'.ai-kit/state.json').read_text(encoding='utf-8'))['hooks'])

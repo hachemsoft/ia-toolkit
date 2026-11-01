@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from installer import cli
+from installer import cli, settings
 from installer.cli import apply, doctor, merge_settings, setting_differences
 import wheelhouse
 from installer.core import KitError, ROOT, read_json
@@ -27,10 +27,10 @@ class OrganizationTests(unittest.TestCase):
 
     def organization(self, org):
         """Run with this organization.toml instead of the kit's."""
-        real = cli.read_toml
+        real = settings.read_toml
         def patched(path, default=None):
             return org if Path(path).name == 'organization.toml' else real(path, default)
-        return mock.patch.object(cli, 'read_toml', side_effect=patched)
+        return mock.patch.object(settings, 'read_toml', side_effect=patched)
 
     def install(self, profile='general', team=None):
         with contextlib.redirect_stdout(io.StringIO()):
@@ -168,8 +168,8 @@ class TeamToolsTests(unittest.TestCase):
         if personal is not None:
             (self.home/'.ai-kit').mkdir(parents=True, exist_ok=True)
             (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(personal), encoding='utf-8')
-        real = cli.read_toml
-        with mock.patch.object(cli, 'read_toml', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.toml' else real(p, d)), \
+        real = settings.read_toml
+        with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.toml' else real(p, d)), \
              contextlib.redirect_stdout(io.StringIO()):
             apply(profile, self.home, False, IDENTITY, 'gemini', team)
             out = io.StringIO()
@@ -202,8 +202,8 @@ class TeamToolsTests(unittest.TestCase):
         self.assertFalse((self.home/'.gemini/skills/prototype').exists())
 
     def test_team_listed_at_setup_and_unknown_team_refused(self):
-        real = cli.read_toml
-        with mock.patch.object(cli, 'read_toml', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.toml' else real(p, d)):
+        real = settings.read_toml
+        with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.toml' else real(p, d)):
             self.assertIn('data-platform', cli.team_ids())
             with self.assertRaises(KitError):
                 apply('general', self.home, False, IDENTITY, 'gemini', 'no-such-team')
@@ -254,9 +254,9 @@ class McpTests(unittest.TestCase):
             home = Path(tmp)
             (home/'.ai-kit').mkdir()
             (home/'.ai-kit/overrides.toml').write_text(dump_toml({'mcp': {'dbt': False, 'github': True}}), encoding='utf-8')
-            real = cli.read_toml
+            real = settings.read_toml
             org = {'defaults': {'mcp': self.ORG}}
-            with mock.patch.object(cli, 'read_toml', side_effect=lambda p, d=None: org if Path(p).name == 'organization.toml' else real(p, d)), \
+            with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: org if Path(p).name == 'organization.toml' else real(p, d)), \
                  contextlib.redirect_stdout(io.StringIO()):
                 apply('data-analyst', home, False, IDENTITY, 'gemini')
                 out = io.StringIO()

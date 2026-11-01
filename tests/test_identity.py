@@ -1,7 +1,7 @@
 import contextlib, io, json, os, shutil, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from unittest import mock
-from installer import cli
+from installer import cli, settings, doctor as doctor_module
 from installer.cli import apply, doctor, detect_identity
 from installer.core import read_json, ROOT
 class IdentityTests(unittest.TestCase):
@@ -22,7 +22,7 @@ class IdentityTests(unittest.TestCase):
   self.write('.gitconfig','[user]\n\temail = first.last@example.com\n\tname = Zoé Martin\n')
   identity=detect_identity(self.home);self.assertEqual(identity,{'email':'first.last@example.com','name':'Zoé Martin','source':'git'})
  def test_os_fallback(self):
-  with mock.patch.object(cli,'git_identity',return_value={}):identity=detect_identity(self.home)
+  with mock.patch.object(settings,'git_identity',return_value={}):identity=detect_identity(self.home)
   self.assertEqual(identity.get('source'),'os');self.assertNotIn('email',identity)
  def test_header_written_once(self):
   self.run_kit(user={'email':'first.last@example.com','name':'Zoé Martin','source':'option'})
@@ -42,12 +42,12 @@ class IdentityTests(unittest.TestCase):
   self.run_kit(user={'email':'first.last@example.com','source':'option'})
   self.write('.gemini/google_accounts.json',json.dumps({'active':'personal@gmail.com','old':[]}))
   out=io.StringIO()
-  with mock.patch.object(cli,'allowed_domains',return_value=['example.com']), contextlib.redirect_stdout(out):code=doctor(self.home)
+  with mock.patch.object(doctor_module,'allowed_domains',return_value=['example.com']), contextlib.redirect_stdout(out):code=doctor(self.home)
   text=out.getvalue();self.assertEqual(code,1);self.assertIn('[Check] Active Gemini account matches',text);self.assertIn('[Check] Active Gemini account in the allowed domains',text)
  def test_doctor_domain_ok(self):
   self.run_kit(user={'email':'first.last@example.com','source':'option'})
   self.write('.gemini/google_accounts.json',json.dumps({'active':'first.last@example.com','old':[]}))
   out=io.StringIO()
-  with mock.patch.object(cli,'allowed_domains',return_value=['example.com']), contextlib.redirect_stdout(out):doctor(self.home)
+  with mock.patch.object(doctor_module,'allowed_domains',return_value=['example.com']), contextlib.redirect_stdout(out):doctor(self.home)
   self.assertIn('[OK] Active Gemini account matches',out.getvalue());self.assertIn('[OK] Active Gemini account in the allowed domains',out.getvalue())
 if __name__=='__main__':unittest.main()

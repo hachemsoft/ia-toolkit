@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.43.0
+
+Maintainability:
+- `installer/cli.py` (1,516 lines) is split by responsibility: `settings.py` (organization, team and personal layers, profiles), `commit.py` (backup, atomic writes, rollback, retention), `doctor.py`, `usage.py`; `cli.py` keeps `apply`, the commands and the migrations. Nothing installed changes (the snapshot is identical); the names stay importable from `installer.cli`.
+- Tests for the rollback: an error or Ctrl+C in the middle of the writes or removals puts every file back; backups keep the newest only.
+- A test keeps every installer module under 800 lines; `docs/architecture.md` names the modules.
+
 ## 0.42.0
 
 Simpler to start, and measurable:

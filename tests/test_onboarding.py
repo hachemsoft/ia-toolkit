@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from installer import cli
+from installer import cli, doctor as doctor_module
 from installer.core import read_json
 from installer.toml_files import dump_toml
 
@@ -31,13 +31,13 @@ class SummaryTests(unittest.TestCase):
             (self.home/'.ai-kit').mkdir(parents=True, exist_ok=True)
             (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
         self.org = org or {}
-        with mock.patch.object(cli, 'organization', return_value=self.org), contextlib.redirect_stdout(io.StringIO()):
+        with mock.patch.object(doctor_module, 'organization', return_value=self.org), contextlib.redirect_stdout(io.StringIO()):
             cli.apply(profile, self.home, False, {'email': 'a@example.org', 'source': 'test'}, target)
         return read_json(self.home/'.ai-kit/state.json')
 
     def summary(self, which, live=None, problems=()):
         out = io.StringIO()
-        with mock.patch.object(cli.shutil, 'which', side_effect=which), mock.patch.object(cli, 'organization', return_value=self.org), \
+        with mock.patch.object(cli.shutil, 'which', side_effect=which), mock.patch.object(doctor_module, 'organization', return_value=self.org), \
              contextlib.redirect_stdout(out):
             cli.print_summary(self.home, read_json(self.home/'.ai-kit/state.json'), live, problems)
         return out.getvalue()
