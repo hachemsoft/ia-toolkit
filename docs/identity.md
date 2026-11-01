@@ -1,6 +1,6 @@
 # Signed-in person's identity
 
-The kit detects an identity for two uses: writing a header in `30_USER.md` when it is created, and proposing a default profile. This identity is declarative and confirmed by the person. It grants no rights and is not authentication.
+The kit detects an identity to write a header in `30_USER.md` when it creates the file, and to compare it with the CLI's active account in `doctor`. This identity is declarative and confirmed by the person. It grants no rights and is not authentication.
 
 ## Sources, in order
 

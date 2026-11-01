@@ -14,11 +14,12 @@ Before you start: Python 3.9 or later (3.11 recommended), with its standard `ven
    1. **This workstation**: Python, each supported CLI (found or not), the kit (installed or not), and the connection to the model, "not checked": the installer never calls the model.
    2. **Which CLIs do you use?** The CLIs found are ticked the first time; your choice is kept by every update afterwards. A CLI that is not installed yet can be ticked: its configuration is prepared for when IT installs it.
    3. **Your profile**, a starting point: **General** (the workflow and tools, the right choice if in doubt), **Java Developer**, **DevOps**, **Architect**, **Data Analyst**, **Data Developer**.
-   4. **Your work email**, detected and shown for confirmation; it goes at the top of your personal context.
-   5. **Skills, commands and agents**: keep what the profile proposes, or adjust: tick a domain playbook from another profile, an optional tool, a command, a review agent. What a choice needs is installed with it and said; what you turned off stays off.
-   6. **Before installing**: what will be added, updated or removed, where, what stays untouched (your personal context, your `overrides.toml`), and that nothing is billed. Then **Install**, **Back** (your answers are kept) or **Cancel**.
-   7. A progress bar follows the real writes, then the **summary**: the kit configuration, each chosen CLI (found, or not found with its configuration prepared), the data connections (MCP) and your **next step**. The connection to the model stays "not verified", because a CLI found is not a CLI signed in. To check it, `doctor --live` makes one real call to the model (your provider may bill it) and, if it fails, says exactly what to do: sign in, a line to add, or what to ask IT (network, proxy, certificate).
-4. **Your personal context** (one minute): three quick questions (language and length of the answers, how much the agent does on its own) and your role in one line; they are written in `30_USER.md`, the short file that tells the agent how to work with you. Then type **`/me`** in your CLI (written with the CLI's own prefix where it differs, see its page): the agent interviews you in two short rounds (your domains, with your level and what you love, the tone you want in reviews or explanations, what annoys you in an assistant), shows the file before and after on one of your real questions, and writes it only with your agreement. Start a new session of your CLI to take it into account. Later: `/me` again, or run the installer and choose **Open my personal context**.
+   4. **Your team**, only when your organization defines teams: its practices and tools; **None of these** otherwise.
+   5. **Your work email**, detected and shown for confirmation; it goes at the top of your personal context.
+   6. **Skills, commands and agents**: keep what the profile proposes, or adjust: tick a domain playbook from another profile, an optional tool, a command, a review agent. What a choice needs is installed with it and said; what you turned off stays off.
+   7. **Before installing**: what will be added, updated or removed, where, what stays untouched (your personal context, your `overrides.toml`), and that nothing is billed. Then **Install**, **Back** (your answers are kept) or **Cancel**.
+   8. A progress bar follows the real writes, then the **summary**: the kit configuration, each chosen CLI (found, or not found with its configuration prepared), the data connections (MCP) and your **next step**. The connection to the model stays "not verified", because a CLI found is not a CLI signed in. To check it, `doctor --live` makes one real call to the model (your provider may bill it) and, if it fails, says exactly what to do: sign in, a line to add, or what to ask IT (network, proxy, certificate). On a first installation, the installer then offers the three quick questions below.
+4. **Your personal context** (one minute): three quick questions (language and length of the answers, how much the agent does on its own) and your role in one line; they are written in `30_USER.md`, the short file that tells the agent how to work with you. Then type **`/me`** in your CLI: the agent interviews you in two short rounds (your domains, with your level and what you love, the tone you want in reviews or explanations, what annoys you in an assistant), shows the file before and after on one of your real questions, and writes it only with your agreement. Start a new session of your CLI to take it into account; for a CLI that reads a copy, run `update` first (`/me` reminds you). Later: `/me` again, or run the installer and choose **Open my personal context**.
 
 Running the installer again once the kit is installed opens a menu: **Update**, **Change my choices**, **Check the installation** (local), **Open my personal context**, **Uninstall**, and, under Advanced, the billed check of the connection. Without a terminal (a script, CI), give the choices as options and nothing is asked: `setup --profile general --user first.last@company.com --target all`; `update` and `doctor` never ask. `--plain` (or `AI_KIT_PLAIN=1`) gives plain numbered questions and no colours.
 
@@ -55,14 +56,14 @@ To run `doctor` for a repo (it then also lists the repo skills named like kit sk
 
 | File | Mac | Windows |
 | --- | --- | --- |
-| Your settings, `overrides.toml` (created by `setup`, with one explanation line) | `~/.ai-kit/overrides.toml` | `%USERPROFILE%\.ai-kit\overrides.toml` |
+| Your settings, `overrides.toml` (created by `setup`, with commented examples) | `~/.ai-kit/overrides.toml` | `%USERPROFILE%\.ai-kit\overrides.toml` |
 | Your personal context, `30_USER.md` | `~/.ai-kit/context/30_USER.md` | `%USERPROFILE%\.ai-kit\context\30_USER.md` |
 
 `~` and `%USERPROFILE%` are your home folder. Folders starting with a dot are hidden: on Windows, paste the path into the Explorer address bar (or open it with `notepad "%USERPROFILE%\.ai-kit\overrides.toml"`); on Mac, in Finder press Cmd+Shift+G and paste the path, or Cmd+Shift+. to show hidden files. `doctor` prints the exact path of `30_USER.md`.
 
 ### New version
 
-Download and extract the new ZIP, then run its installer, as for the first time, and choose **Update**. CLIs, profile, team, choices, `overrides.toml` and `30_USER.md` are kept. The new folder is now your kit folder; the old one can be deleted, since nothing installed depends on it. `update` alone re-applies the version of the folder you have. In a git clone, it works in three steps and reports each one: fetch the new version (`git pull --ff-only`; never over local changes, never a reset or a merge), reinstall the kit package in the private environment, apply the configuration; if the fetch fails, it says the update is incomplete.
+Download and extract the new ZIP, then run its installer, as for the first time, and choose **Update**. CLIs, profile, team, choices, `overrides.toml` and `30_USER.md` are kept. The new folder is now your kit folder; the old one can be deleted, since nothing installed depends on it. `update` alone re-applies the version of the folder you have. In a git clone, `update` also fetches the new version first ([installer](installer.md)).
 
 Signing in to the model and choosing it are done in your CLI, following your IT procedure; the kit does not configure them ([customization](customization.md#authentication-and-model)). Otherwise there is nothing to declare.
 
@@ -137,7 +138,7 @@ The rule that avoids running everything: **ceremony matches the stakes**, in thr
 
 ## 6. Later
 
-- Your preferences (language, style, domains): `30_USER.md`, created for you and never rewritten by the kit ([where](#where-your-files-are)).
+- Your preferences: `/me` again, or edit `30_USER.md` ([where](#where-your-files-are)), then `update` for a CLI that reads a copy.
 - Add or remove commands, playbooks, agents: run the installer again, **Change my choices**. MCP servers and guardrails: `~/.ai-kit/overrides.toml`, then [`update`](#run-the-kit). What you decide, and what the organization and your team decide: [customization](customization.md).
 - Write your own skill, or replace a kit skill for yourself, a repo or the team: [add or replace a skill](extending.md).
 - Only when the team wants the agent to read and create tickets: in the repo, ask the agent "set up the workflow for this repo" (the `setup-workflow` skill; requires `glab` or `gh`). Nothing else needs a tracker.

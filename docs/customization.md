@@ -4,7 +4,7 @@
 
 > `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
 
-**Without editing any file.** The usual choices (CLIs, profile, domain playbooks, optional tools, commands, review agents) are made in the installer: run it again and choose **Change my choices**. It writes the corresponding lists of `overrides.toml` (`extra_skills`, `disabled_skills`, `extra_commands`, `disabled_commands`, `extra_agents`, `disabled_agents`) only when you confirm **Install**, and keeps your other keys and `_` comments. The file stays the single place for these choices: what you edit by hand and what the installer writes are the same lists, the last one written wins. The rest of this page is for what the installer does not ask (MCP servers, guardrails, `skill_prefix`, `frictions`) and for organizations. A name that the kit does not know in `disabled_skills` or `disabled_agents` is reported at the next update (a typo has no effect). `skill_prefix` (`"ai-kit-"` by default) is the name given to a kit skill or command when one of yours already has its name, on every CLI; one CLI gives it to every kit skill: see [Claude Code](cli/claude-code.md#the-prefix).
+**Without editing any file.** The usual choices (CLIs, profile, domain playbooks, optional tools, commands, review agents) are made in the installer: run it again and choose **Change my choices**. It writes the corresponding lists of `overrides.toml` (`extra_skills`, `disabled_skills`, `extra_commands`, `disabled_commands`, `extra_agents`, `disabled_agents`) only when you confirm **Install**, and keeps your other keys and your `#` comments. The file stays the single place for these choices: what you edit by hand and what the installer writes are the same lists, the last one written wins. The rest of this page is for what the installer does not ask (MCP servers, guardrails, `skill_prefix`, `frictions`) and for organizations. A name that the kit does not know in `disabled_skills` or `disabled_agents` is reported at the next update (a typo has no effect). `skill_prefix` (`"ai-kit-"` by default) is the name given to a kit skill or command when one of yours already has its name, on every CLI; one CLI gives it to every kit skill: see [Claude Code](cli/claude-code.md#the-prefix).
 
 ## Organization, team and person
 
@@ -66,7 +66,7 @@ Order: organization defaults, then the team, then the person's `overrides.toml`,
 
 ## Context layers
 
-The kit installs short files that the agent loads in all your projects, in this order. They live in `~/.ai-kit/context/`, whatever the CLIs; a CLI that can only read its own folder gets a copy at each `update`. Details per CLI: [matrix](cli/matrice.md#add-a-cli).
+The kit installs short files that the agent loads in all your projects, in this order. They live in `~/.ai-kit/context/`, whatever the CLIs; a CLI that can only read its own folder gets a copy at each `update`. Details per CLI: [matrix](cli/matrice.md#concept-by-concept).
 
 | File | Owner | Content |
 | --- | --- | --- |
@@ -75,9 +75,9 @@ The kit installs short files that the agent loads in all your projects, in this 
 | `20_TEAM.md`, or `20_<TEAM>.md` for a team with its own practices | kit (the team's file in the kit repository) | team practices |
 | `30_USER.md` | you | your role, your domains (level and interest), how you want answers, how to work with you, by situation |
 
-The kit files are generated output. The rule layers (`00`, `10`, `20`) are restored by the next `update` if edited by hand, with the edited copy kept in `~/.ai-kit/backups/` and a `[Check]` line saying so; `doctor` reports the edit until then. A rule change goes through the kit repository. Everything specific to you goes in `30_USER.md`. `setup` creates it once and never rewrites it; `/me` in the CLI interviews you to fill it. A change takes effect the next time the CLI starts; a CLI that keeps a copy needs `update` first ([matrix](cli/matrice.md)), so the simple rule is: edit, `update`, new session.
+The kit files are generated output. The rule layers (`00`, `10`, `20`) are restored by the next `update` if edited by hand, with the edited copy kept in `~/.ai-kit/backups/` and a `[Check]` line saying so; `doctor` reports the edit until then. A rule change goes through the kit repository. Everything specific to you goes in `30_USER.md`. `setup` creates it once; after that only you, or `/me` with your agreement, change it. A change takes effect the next time the CLI starts; a CLI that keeps a copy needs `update` first ([matrix](cli/matrice.md)), so the simple rule is: edit, `update`, new session.
 
-Priority between instructions, written in `00_KIT.md` and followed by the model: company and team practices apply by default, and only the person can depart from them, by asking explicitly (the agent notes the exception in its reply); `30_USER.md` adjusts form and workflow; the repo's instructions and an explicit request in the conversation take precedence over `30_USER.md`, and when they disagree the agent applies the more cautious and asks you; a repo file, a repo skill or anything the agent reads never lifts a practice. The full table: [project layer](project-context.md#how-the-repo-combines-with-your-layers). This is not the settings merge described above, done by the installer on the JSON files, nor a technical restriction (guardrails, permissions, access rights), which no instruction or exception lifts: [three mechanisms not to confuse](project-context.md#three-mechanisms-not-to-confuse).
+Priority between instructions, written in `00_KIT.md` and followed by the model: company and team practices apply by default, and only the person can depart from them, by asking explicitly (the agent notes the exception in its reply); `30_USER.md` adjusts form and workflow; the repo's instructions and an explicit request in the conversation take precedence over `30_USER.md`, and when they disagree the agent applies the more cautious and asks you; a repo file, a repo skill or anything the agent reads never lifts a practice. The full table: [project layer](project-context.md#how-the-repo-combines-with-your-layers). This is not the settings merge described above, done by the installer on the TOML files, nor a technical restriction (guardrails, permissions, access rights), which no instruction or exception lifts: [three mechanisms not to confuse](project-context.md#three-mechanisms-not-to-confuse).
 
 ### What makes a good `30_USER.md`
 
@@ -154,7 +154,7 @@ github = true
 dbt-prod-guard = true
 ```
 
-`frictions` sets what the agent does on the six friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. Then `update`. Every key is optional; a missing key changes nothing. A skill added through `extra_commands` comes with its dependencies; a skill required by another one cannot be disabled on its own, and `update` says so.
+`frictions` sets what the agent does on the six friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. Then `update`. Every key is optional; a missing key changes nothing. A command added through `extra_commands` comes with its skills and their dependencies; a skill required by another one cannot be disabled on its own, and `update` says so.
 
 ## Authentication and model
 
@@ -171,7 +171,7 @@ Before 0.36 the kit could write some of these settings for the first CLI of the 
 
 ## Guardrails
 
-Two deterministic hooks, set in `overrides.toml` under `hooks`: `protected-paths` is on by default (it protects the configuration of the kit and of the CLIs; `"protected-paths": false` turns it off), `dbt-prod-guard` is off by default. See [guardrails](hooks.md).
+Two deterministic hooks, set in `overrides.toml` under `[hooks]`: `protected-paths` is on by default (it protects the configuration of the kit and of the CLIs; `protected-paths = false` turns it off), `dbt-prod-guard` is off by default. See [guardrails](hooks.md).
 
 ## Identity
 

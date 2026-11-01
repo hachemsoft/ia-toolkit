@@ -121,7 +121,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/to-spec",
-    "description": "Turn the conversation into a specification published on the ticket tracker.",
+    "description": "Turn the conversation into a specification: in this kit, /spec writes it as spec.md, never a ticket.",
     "category": "workflow",
     "tier": "profile",
     "optional": {

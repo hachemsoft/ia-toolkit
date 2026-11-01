@@ -4,7 +4,7 @@ The kit prepares the workstation; the repo carries its own context. After the gl
 
 ## How the repo combines with your layers
 
-The agent reads, in this order: `00_KIT.md` (the kit), `10_COMPANY.md` (company practices), `20_TEAM.md` or your team's `20_<TEAM>.md`, `30_USER.md` (you), then the repo's `AGENTS.md` files and its CLI-specific context file. When they disagree, the rule given to the agent in `00_KIT.md` (from `templates/kit-context.md`) is:
+The agent reads, in this order: `00_KIT.md` (the kit), `10_COMPANY.md` (company practices), `20_TEAM.md` or your team's `20_<TEAM>.md`, `30_USER.md` (you), all in `~/.ai-kit/context/`, then the repo's `AGENTS.md` files and its CLI-specific context file. When they disagree, the rule given to the agent in `00_KIT.md` (from `templates/kit-context.md`) is:
 
 | Situation | What wins |
 | --- | --- |

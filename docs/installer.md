@@ -34,11 +34,9 @@ Nobody activates the environment, runs pip, changes the `PATH` or needs administ
 - Installs nothing that points back to the extracted kit folder: the package and its content live in `~/.ai-kit/runtime`, the guardrails, the friction script and the `overrides.toml` schema are copied to `~/.ai-kit`, and the guardrails run with the private environment's Python. The extracted folder can be deleted after installation; keep it, or the next ZIP, to run the installer again.
 - Keeps the CLIs you chose: `update` never adds or removes one because a folder exists or disappears. Removing a CLI from your choice removes what the kit had put there and keeps your own settings.
 
-Existing settings must be strict JSON. An invalid JSON file or one with comments is refused without change. Symbolic links on managed paths are not supported.
+Existing JSON settings of the CLIs (`settings.json`, `~/.claude.json`) must be strict JSON: an invalid file or one with comments is refused without change. A mistake in `overrides.toml` is reported with its line and column. Symbolic links on managed paths are not supported.
 
 The context layers and `30_USER.md` are in `~/.ai-kit/context/`, whatever the CLIs; the CLIs include them from there, or get a copy at each `update` (Gemini CLI, which reads only its own folder, and Codex CLI). The guardrail scripts are in `~/.ai-kit/hooks/`.
-
-Before 0.19, the kit folder was called `~/.ai-toolkit`. The first `setup` or `update` renames it to `~/.ai-kit`, with `overrides.toml`, the state and the backups, then rewrites the files that referenced the old path. If both folders exist, the kit stops without touching anything: keep `~/.ai-kit`, move what is missing into it, remove `~/.ai-toolkit`, then run `update`.
 
 ## Commands
 
@@ -46,7 +44,7 @@ Before 0.19, the kit folder was called `~/.ai-toolkit`. The first `setup` or `up
 | --- | --- | --- |
 | Install / change profile | `sh scripts/bootstrap.sh` | double-click `Installer.cmd`, or `Installer.cmd setup` |
 | New version | extract the new ZIP and run its installer | the same |
-| Reapply this version (after editing `overrides.toml`; in a git clone, `git pull` first) | `sh scripts/bootstrap.sh update` | `Installer.cmd update` |
+| Reapply this version (after editing `overrides.toml`; in a git clone, it first fetches the new version) | `sh scripts/bootstrap.sh update` | `Installer.cmd update` |
 | Diagnose (local, free) | `sh scripts/bootstrap.sh doctor` | `Installer.cmd doctor` |
 | Uninstall (`--dry-run` to see the list, `--yes` for automation, `--remove-runtime` for the private environment too) | `sh scripts/bootstrap.sh uninstall` | `Installer.cmd uninstall` |
 | Check the connection (real call to the model, may be billed) | `sh scripts/bootstrap.sh doctor --live` | `Installer.cmd doctor --live` |
@@ -54,7 +52,7 @@ Before 0.19, the kit folder was called `~/.ai-toolkit`. The first `setup` or `up
 
 Windows: to get a Command Prompt in the kit folder, type `cmd` in the Explorer address bar and press Enter. The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) look for Python 3.9 or newer, then hand over to `scripts/launcher.py` (above); without a usable Python they say what to ask IT. They need neither PowerShell nor administrator rights.
 
-Options for `setup` and `update`: `--profile <id>`, `--user <email>`, `--team <team>`, `--target auto|gemini|agy|codex|claude|both|all` (without it: the CLIs chosen last time; see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--plain` (`--no-live` is still accepted and changes nothing). `scripts\bootstrap.ps1` remains for older instructions: it only runs `Installer.cmd`, where the workstation's script policy already allows it, and changes nothing about that policy. `AI_KIT_NO_PAUSE=1` keeps `Installer.cmd` from waiting for a key when it is started without arguments by a script. Non-interactive example: `sh scripts/bootstrap.sh setup --profile general --user first.last@company.com`. If a company policy blocks a launcher, IT decides: the launcher is equivalent to `python -I scripts/launcher.py` (Windows: `python -I scripts\launcher.py`) followed by the action, run from the kit folder. Never change the policy yourself.
+Options for `setup` and `update`: `--profile <id>`, `--user <email>`, `--team <team>`, `--target auto|gemini|agy|codex|claude|both|all` (without it: the CLIs chosen last time; see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--plain`. `AI_KIT_NO_PAUSE=1` keeps `Installer.cmd` from waiting for a key when it is started without arguments by a script. Non-interactive example: `sh scripts/bootstrap.sh setup --profile general --user first.last@company.com`. If a company policy blocks a launcher, IT decides: the launcher is equivalent to `python -I scripts/launcher.py` (Windows: `python -I scripts\launcher.py`) followed by the action, run from the kit folder. Never change the policy yourself.
 
 ## Try it without touching your account
 

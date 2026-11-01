@@ -6,7 +6,7 @@ Goal: fix the kit on real tickets before opening it to the whole team, and check
 
 1. Get the kit: download `ai-kit-<version>.zip` from the Releases page and extract it into `Documents`.
 2. Sign in to your CLI following the IT procedure (authentication mode, project, model are set in the CLI, not in the kit); see [customization › Authentication and model](customization.md#authentication-and-model). Otherwise, nothing to do.
-3. Run the installer: double-click `Installer.cmd` (Windows), or in Terminal `sh scripts/bootstrap.sh` from the extracted folder (Mac). Confirm your identity, choose the profile. Installation makes no call to the model. Then run `doctor --live` once: one real call (your provider may bill it); if it is not green, follow the remedy shown, do not call for help.
+3. Run the installer: double-click `Installer.cmd` (Windows), or in Terminal `sh scripts/bootstrap.sh` from the extracted folder (Mac). Choose your CLIs and your profile, confirm your email, review, **Install**, then answer the three quick questions. Installation makes no call to the model. Then run `doctor --live` once: one real call (your provider may bill it); if it is not green, follow the remedy shown, do not call for help.
 4. Open your usual repo, start your CLI (`gemini`, `agy`, `codex` or `claude`), type `/guide where do I start?` (`$guide` in Codex).
 5. First time in the repo, if it has no `AGENTS.md`: "Initialize the project context". `setup-workflow` only if the team wants the agent to read and create tickets.
 
@@ -38,6 +38,7 @@ Each ticket is handled by the rule: a `doctor` check, a line in "Troubleshooting
 ## What the pilot must answer
 
 - Does an analyst understand `/guide` and `/intent` without reading the docs?
+- Does `/me` produce a `30_USER.md` that visibly changes the answers?
 - Is `doctor --live` enough to fix authentication failures without intervention?
 - Do command skills trigger without being typed, and is that a problem?
 - Do the enabled guardrails get in the way of normal work?

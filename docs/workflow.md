@@ -21,15 +21,15 @@ The installed commands depend on the profile: see the [profile table](getting-st
 | Step | Command | Artifact | What the command does |
 | --- | --- | --- | --- |
 | Plan | `/intent <idea, ticket, incident>` | `intent.md` | interview in rounds until shared understanding; problem, expected outcome, affected users and systems, constraints, open questions; glossary and ADRs updated |
-| Plan | `/map <work item>` (developers) | decision tickets | map a piece of work too large for one session, decisions first, then `/spec` |
-| Design | `/spec` | `spec.md` | from the accepted intent, without a new interview: goal, scope, requirements with acceptance criteria, data contracts (grain, keys, sources, freshness), rules applied while writing, points of attention; one file, never a ticket (splitting into tickets is `to-tickets`, on request) |
-| Build | `/design <question>` (developers) | interface sketch or prototype | several shapes of a module compared, or a throwaway prototype to decide |
+| Plan | `/map <work item>` | decision tickets | map a piece of work too large for one session, decisions first, then `/spec` |
+| Design | `/spec` | `spec.md` | from the accepted intent, without a new interview: the decisions `intent.md` leaves open that change the spec are asked in one round, with options and a recommendation, then the whole `spec.md` is written: goal, scope, requirements with acceptance criteria, data contracts (grain, keys, sources, freshness), rules applied while writing, points of attention; one file, never a ticket (splitting into tickets is `to-tickets`, on request) |
+| Build | `/design <question>` | interface sketch or prototype | several shapes of a module compared, or a throwaway prototype to decide |
 | Build | `/build <task, ticket or spec>` | diff and tests; `plan.md` for a full change | quick: say what changes and how it is checked, then do it; standard: a short alignment, then test-first; full: plan in plan mode (files, order, risks, evidence), accepted before any code; implementation one slice at a time, failing test first; commits only with your agreement; final check by the verifier agent when installed |
 | Test | `/test [scope]` | real output of the checks | tests what changed and what depends on it, whatever the team: files changed against the base branch, the "Changed" command of each stack in the "Verifying your work" block of `AGENTS.md`, full suite if a shared file changed; same rule with the repo's tools if the block is missing, looked up in CI first; if no command can be inferred, it says so, asks for the commands and offers to write them into `AGENTS.md`; pastes the output; fixes the code and never weakens a test to hide a regression; when the person changes a contract on purpose, the test follows it and the change is said |
 | Deploy | `/review [base\|staged\|local] [quick\|full]` | the scope, then sorted findings | the same behaviour as asking "review my changes" (the `code-review` skill): the branch's commits, the staged and unstaged changes and the new files by default, stated in one line; bug, security, domain, standards and compliance passes (compliance only when a spec, intent or plan exists), following the repo's `REVIEW.md` or the kit template; one severity scale (Important, Minor, Nit); no tracker or spec required; in `full` mode, a doubt pass on each claim |
 | Deploy | `/ship` | MR description | visual summary, before/after evidence, one-way or two-way door; pushes nothing |
 | Maintain | `/diagnose <symptom>` | proven cause, regression test | red/green signal before any fix (a failing test; for data, an assertion query; for infrastructure, a plan or a dry run); the finding can become an `intent.md` again |
-| Maintain | `/triage` (developers) | tickets ready for an agent | triage state machine for incoming tickets |
+| Maintain | `/triage` | tickets ready for an agent | triage state machine for incoming tickets |
 
 The templates for `intent.md`, `spec.md`, `plan.md`, `REVIEW.md` and `AGENTS.md` are installed with the `init-project-context` skill. Location convention: one folder per change, `docs/sdlc/<YYYY-MM-DD>-<slug>/`, holding the three artifacts. `REVIEW.md` stays at the root. A repo can document another convention in `AGENTS.md`.
 
@@ -55,7 +55,7 @@ Domain skills, activated by the model when the task calls for them and chained b
 | `infra-change` | `/build`, `/diagnose` (DevOps) | blast radius, read-only evidence (plan, diff), never an apply or a deployment, rollback |
 | `architecture-decision` | `/spec` (Architect) | compared options, criteria, consequences, reversibility, ADR |
 
-The Data playbooks are in both Data profiles; `python-js-change`, `java-change`, `infra-change` and `architecture-decision` are each in the profile shown. A playbook from another profile is added with `extra_skills` in `overrides.toml`. Rationalization tables, description triggers and "Forbidden" sections are what make a playbook activate at the right time.
+The Data playbooks are in both Data profiles; `python-js-change`, `java-change`, `infra-change` and `architecture-decision` are each in the profile shown. A playbook from another profile is added with `extra_skills` in `overrides.toml`.
 
 Each playbook ends with a "Rationalizations and rebuttals" table: the reasons an agent gives to skip a step, and the reply it gets. When the agent finds a new rationalization, it goes into the table.
 

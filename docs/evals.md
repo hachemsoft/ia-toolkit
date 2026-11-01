@@ -27,7 +27,7 @@ One case per incident or repeated error: when the agent gets it wrong, the promp
 
 ## In CI
 
-`.github/workflows/agent-evals.yml` never runs on its own: no trigger on merge requests, pushes or a schedule. Someone starts it by hand (workflow_dispatch) and ticks `confirm_paid_run`, off by default; the job then installs the kit in a temporary folder and runs the suite on Gemini CLI, at the version given in `cli_version` for a reference campaign. It expects a `GEMINI_API_KEY` secret. The model-free tests run on every push in `portability.yml`, with `AI_KIT_NO_LIVE=1`. Changing the workflow in a branch does not change the copy already on the remote default branch: until the change is merged there, the old triggers stay active. agy, Codex and Claude Code are evaluated on a signed-in workstation, with `--cli agy`, `--cli codex` or `--cli claude`.
+`.github/workflows/agent-evals.yml` never runs on its own: no trigger on merge requests, pushes or a schedule. Someone starts it by hand (workflow_dispatch) and ticks `confirm_paid_run`, off by default; the job then installs the kit in a temporary folder and runs the suite on Gemini CLI, at the version given in `cli_version` for a reference campaign. It expects a `GEMINI_API_KEY` secret. The model-free tests run on every push in `portability.yml`, with `AI_KIT_NO_LIVE=1`. agy, Codex and Claude Code are evaluated on a signed-in workstation, with `--cli agy`, `--cli codex` or `--cli claude`.
 
 ## Limits
 
@@ -39,12 +39,17 @@ Model responses vary; the criteria are deliberately broad and check facts (a com
 
 The case asks `/test`, in the dbt fixture, to list the checks and their target based on `AGENTS.md`, which requires the development target. On Gemini CLI ([its page](cli/gemini.md)) in non-interactive mode, one run in two failed the same way: the model writes "I'm reading AGENTS.md" without calling the read tool, so it never sees the rule, and suggests `dbt test` without a target. Nothing is broken in the kit or the repository; the model skips a step it announces. Two countermeasures, both in place: the `/test` prompt now requires reading `AGENTS.md` with the read tool before any suggestion and forbids assuming its content; and the `dbt-prod-guard` guardrail, when enabled, blocks any dbt command on a production target anyway. If the case still fails now and then, it measures model variance, to note, not a ticket.
 
-## Cases added in 0.34
+## Cases
 
-Prepared in 0.34 and checked without a model (`--dry-run`, and the runner's tests with a stand-in executable); their real behaviour is measured only when the maintainer decides a billed run. First billed run on Claude Code 2.1.316 with the general profile (0.36): every case whose preconditions hold passes, after the fixed `Level:` first line was added; the cases that need a Data or infrastructure playbook were skipped. A reference campaign pins the CLI version and records the kit, CLI and model versions in the report.
+Checked without a model by `--dry-run` and the runner's tests; their real behaviour is measured only in a billed run the maintainer decides. First billed run on Claude Code 2.1.316 with the general profile (0.36): every case whose preconditions hold passes, after the fixed `Level:` first line was added; the cases that need a Data or infrastructure playbook were skipped. A reference campaign pins the CLI version and records the kit, CLI and model versions in the report.
 
 | Case | Area | What is observed |
 | --- | --- | --- |
+| `guide-routes-to-commands` | routing | the command is cited (`/intent`), no skill name, no `intent.md` written |
+| `intent-asks-before-writing` | planning | a question about the business term before any `intent.md` |
+| `explain-uses-glossary` | explanation | the glossary's terms and the source of the data |
+| `no-prod-dbt-proposed` | Data | `dbt test` or `dbt build` on the development target, never `--target prod` |
+| `monorepo-cross-area-impact` | monorepo | the other area named, dbt on the development target |
 | `small-change-without-ceremony` | backend, small task | a `Level: quick` line, no `plan.md` or `intent.md`, no new acceptance after a go-ahead |
 | `contract-change-updates-its-test` | backend, contract change | the test follows the new contract, the change of test is said |
 | `review-sees-uncommitted-changes` | backend, review | an uncommitted bug is found; never "nothing to review" |

@@ -1,6 +1,6 @@
 # Tools
 
-Utilities independent of the flow, usable at any time. One tool = one command, one skill underneath, one sheet here. A tool without a sheet does not enter the core.
+Utilities independent of the flow, usable at any time. One tool = one command, usually one skill underneath (none for `/me` and `/friction`), one sheet here. A tool without a sheet does not enter the core.
 
 > `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
 
@@ -17,7 +17,7 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 ## `/learn` — learn an area or a concept
 - **When**: newcomer to an area, building skills on a topic, over several sessions. **Not** for a one-off question (`/explain`).
 - **Command**: `/learn <topic>`.
-- **Output**: in the repo, `docs/learn/<topic>/` with short HTML lessons, quizzes, printable reference sheets, shared components; outside a repo, `~/.ai-kit/learning/<topic>/` with mission, notes and learning log. Domain terms go into the repo's `GLOSSARY.md`.
+- **Output**: shared material (short HTML lessons, quizzes, printable reference sheets) in the repo under `docs/learn/<topic>/`; your mission, notes and learning log outside the repo, in `~/.ai-kit/learning/<topic>/`. Domain terms go into the repo's `GLOSSARY.md`.
 - **Needs**: access to the repo and its docs; web access helps for sources.
 - **Skill**: `teach`. `perimeter-brief` playbook for a Data area when installed.
 - **Example**: `/learn the billing area: sources, models, KPIs, date rules`.
@@ -31,7 +31,7 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 - **Example**: `/explain the path of the orders table up to the sales mart`.
 
 ## `/ask` — questionnaire for a business owner
-- **When**: the information is neither in the code nor in the team. Option in every profile: `"extra_commands": ["ask"]` in `overrides.toml`, then `update`.
+- **When**: the information is neither in the code nor in the team. Option in every profile: `extra_commands = ["ask"]` in `overrides.toml`, then `update`.
 - **Command**: `/ask <recipient and decision to unblock>`.
 - **Output**: a questionnaire file, one idea per question, an answer to fill in under each; the answers feed `/intent`, `spec.md` or the glossary.
 - **Needs**: nothing.
@@ -75,7 +75,7 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 ## `/me` — your personal context, by interview
 - **When**: after installing, then whenever the way the agent answers you does not fit (too long, too basic in one domain, too harsh in reviews).
 - **Command**: `/me`, or `/me <what to change>` (for example `/me simpler answers in reviews`) to be asked only about that.
-- **Output**: `30_USER.md`, at most twenty lines of instructions: your role, your domains (level and interest, separately), answers, working with you, by situation, report. The agent first reads what it can (current file, operating system, repo languages, profile), asks two rounds of questions with options and a recommendation, shows the difference and a before and after on one of your real questions, and writes only with your agreement.
+- **Output**: `~/.ai-kit/context/30_USER.md`, at most twenty lines of instructions: your role, your domains (level and interest, separately), answers, working with you, by situation, report. The agent first reads what it can (current file, operating system, repo languages, profile), asks two rounds of questions with options and a recommendation, shows the difference and a before and after on one of your real questions, and writes only with your agreement.
 - **Needs**: nothing; `update` after the change for a CLI that keeps a copy of the file ([matrix](cli/matrice.md)).
 - **Skill**: none; the command is enough.
 - **Example**: `/me I am new to Terraform but at ease with Python`.
@@ -84,7 +84,7 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 - **When**: something slowed you down, surprised you or forced you to work around the kit: a command that does not do what its description says, a skill that triggers for nothing, an annoying guardrail, a wrong page, a missing tool. Right away, in one sentence, without leaving your work.
 - **Command**: `/friction <one sentence>` or `/friction` alone, and the agent asks.
 - **Output**: a line (short id, date, category, current command, sentence, plus kit version, profile, CLI and OS, added automatically) appended to `~/.ai-kit/frictions.jsonl`, on the workstation only. The sentence goes through standard input, so the shell expands nothing in it. When a version fixes it, `usage` says so, by its id.
-- **What is recorded without you**: a `doctor --live` failure (authentication, quota, model) automatically becomes an `auth` line; the usage report also counts, from the logs, unknown commands typed and repeated requests within one session. The agent offers `/friction` when you correct it, when a check is red after "done", when you give up or repeat the same request, when it works around a skill or a guardrail, or when the ceremony was out of proportion; it writes nothing without you, unless you set `"frictions": "auto"` in `overrides.toml` (`"off"` turns these offers off). `/retro` also offers to record what it finds about the kit. Nothing is sent. The usage report counts them; `usage --json` exports them when the person chooses to share; `scripts/usage-aggregate.py` groups them for the [usage review](usage-review.md), which turns them into tickets.
+- **What is recorded without you**: a `doctor --live` failure (authentication, quota, model) automatically becomes an `auth` line; the usage report also counts, from the logs, unknown commands typed and repeated requests within one session. The agent offers `/friction` when you correct it, when a check is red after "done", when you give up or repeat the same request, when it works around a skill or a guardrail, when the ceremony was out of proportion, or when it went against a rule written in `AGENTS.md`, the kit context or a playbook; it writes nothing without you, unless you set `frictions = "auto"` in `overrides.toml` (`frictions = "off"` turns these offers off). `/retro` also offers to record what it finds about the kit. Nothing is sent. The usage report counts them; `usage --json` exports them when the person chooses to share; `scripts/usage-aggregate.py` groups them for the [usage review](usage-review.md), which turns them into tickets.
 - **Needs**: Python (the `~/.ai-kit/bin/friction.py` script is installed by the kit); in some CLIs, an execution permission the first time.
 - **Skill**: none; the command is enough.
 - **Example**: `/friction /test reran the whole suite when I only wanted one model`.
@@ -94,4 +94,4 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 One line in `~/.ai-kit/overrides.toml`, then `update`: `extra_commands = ["handoff", "research"]`. The command and its skills are installed; `disabled_commands` does the opposite. See [customization](customization.md).
 
 ## Adding a tool
-A skill folder, an entry in `skills/catalog.json` with `category: tool`, a `commands/<name>.md` file in the [pivot format](format.md), a sheet here, a case in `evals/cases/`.
+A skill, its catalog entry with `category: tool`, a command in the [pivot format](format.md), a sheet here and an eval case: see the [full example](extending.md#full-example-a-dashboard-check-tool-in-twenty-minutes).

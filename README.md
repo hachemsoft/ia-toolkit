@@ -25,12 +25,12 @@ A foundation for working with a coding agent as a team, on Mac and Windows. It c
    | "The nightly job fails since Monday with this error: …" | `/diagnose` |
    | "Review my changes before I open the merge request" (committed or not) | `/review` |
 
-   Commands are shortcuts to the same steps; `/guide I need to …` tells you which one fits (`$` instead of `/` in Codex). Nothing to set up before a first task; the agent offers to prepare the repo's context (`AGENTS.md`) when it becomes useful. More: [getting started › Work](docs/getting-started.md#3-work-one-command-per-step).
+   Commands are shortcuts to the same steps; `/guide I need to …` tells you which one fits (`$` instead of `/` in Codex). Nothing to set up before a first task; the agent offers to prepare the repo's context (`AGENTS.md`) when it becomes useful. Type `/me` once: a short interview that fills your personal context. More: [getting started › Work](docs/getting-started.md#3-work-one-command-per-step).
 4. **Troubleshooting** ([how to open a terminal in the kit folder](docs/getting-started.md#run-the-kit)): run the installer again and choose **Check the installation**, or `sh scripts/bootstrap.sh doctor` (Mac) / `Installer.cmd doctor` (Windows) from the kit folder. Add `--live` only to check the connection to the model: it makes a real call, which your provider may bill. Then the [Troubleshooting](docs/troubleshooting.md) page.
 
 Requirements: Python 3.9 or later (3.11 recommended) with its standard `venv` and `pip` modules, and your CLI, provided or approved by your company. The kit installs its own libraries (the terminal interface) in its private environment only: your Python, PATH, shell and security settings are not changed, and no network is needed except to talk to the model. If something is missing or blocked, the message says what to ask IT. The CLI, its authentication and the model come from your organization's procedure and are set in the CLI; the kit does not configure them. The full step-by-step guide: [getting started](docs/getting-started.md). For IT and pilots: [validation on enterprise workstations](docs/validation.md).
 
-**Update**: download and extract the new ZIP, then run its installer the same way. It keeps your CLIs, profile, team, choices, `overrides.toml` and `30_USER.md`; the old folder can be deleted, nothing points back to it. Running the installer again also offers **Update**, **Change my choices**, **Check**, **Open my personal context** and **Uninstall**. `/me` in your CLI interviews you to fill your personal context. In a git clone, `update` fetches the new version (`git pull --ff-only`, never over local changes), reinstalls the package, then applies the configuration, and says which step did not work if one fails.
+**Update**: download and extract the new ZIP, then run its installer the same way. It keeps your CLIs, profile, team, choices, `overrides.toml` and `30_USER.md`; the old folder can be deleted, nothing points back to it. Running the installer again also offers **Update**, **Change my choices**, **Check**, **Open my personal context** and **Uninstall**.
 
 **Uninstall**: run the installer and choose **Uninstall**, or `uninstall --dry-run` to see the list first, `uninstall --yes` for automation, `--remove-runtime` to also remove the private environment. Only what the kit installed goes; your personal context, `overrides.toml`, backups and the CLIs' own settings stay.
 
@@ -45,14 +45,7 @@ Requirements: Python 3.9 or later (3.11 recommended) with its standard `venv` an
 | **Data Analyst** | SQL, dbt, BigQuery, KPIs | SQL, dbt, BigQuery and KPI playbooks, SQL and dbt reviews |
 | **Data Developer** | the same, plus Python and JavaScript | the same, plus `python-js-change` and code review |
 
-A profile is a starting point: the installer lets you add or remove a playbook, a command or an agent without editing any file. For example, in the **Data Analyst** profile:
-
-| You say | What happens |
-| --- | --- |
-| "My number differs from the business figure" | `/diagnose`: proven cause, fix, regression test |
-| "I need to change a dbt model" | `/build`, with `/intent` first when the need is fuzzy |
-| "Check this query and its joins" | no command needed: the SQL playbook applies |
-| "Review my changes before the merge request" | `/review` |
+A profile is a starting point: the installer lets you add or remove a playbook, a command or an agent without editing any file.
 
 Commands and agents installed per profile: [getting started](docs/getting-started.md#3-work-one-command-per-step). Everything can be adjusted per person in `~/.ai-kit/overrides.toml` (a skill, command or agent from another profile, guardrails, MCP servers): [customization](docs/customization.md).
 

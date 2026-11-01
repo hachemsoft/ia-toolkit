@@ -36,6 +36,13 @@ The `protected-paths` guardrail always blocks agent writes to `~/.gemini/setting
 - **Gemini missing**: the kit prepares the files but does not install Gemini. Use the IT procedure, then sign in.
 - **Context not loaded**: run `/memory show` in a repository. If layers are missing, check `context.fileName` and any managed policy.
 - **Vertex variables ignored**: `selectedType` is still `gemini-api-key`. Choose Vertex AI with `/auth`, or set `security.auth.selectedType` to `vertex-ai` in `~/.gemini/settings.json`.
+- **"Your prepayment credits are depleted", HTTP 402**: the AI Studio key has no balance left; top up, or switch to Google sign-in or Vertex AI with `/auth`, as your IT procedure says.
+- **"API Keys are Disallowed"**: a Google Cloud policy forbids keys; `gcloud auth application-default login`, Vertex AI with `/auth`, and remove `GEMINI_API_KEY` from the environment.
+- **"aiplatform.googleapis.com has not been used", HTTP 403**: the Vertex API is not enabled on the project; `gcloud services enable aiplatform.googleapis.com --project <project>`.
+- **"Model fallback activated" in a loop**: the default model is not available on your access; choose one with `/model`, or `model.name` in `~/.gemini/settings.json`.
+- **"This account requires setting the GOOGLE_CLOUD_PROJECT…"**: a Code Assist Standard or Enterprise licence with no project declared; `GOOGLE_CLOUD_PROJECT=<project>` in `~/.gemini/.env` or your environment.
+- **"When using Vertex AI, you must specify…"**: project and region missing; `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION` in `~/.gemini/.env` or your environment.
+- **I edited `~/.gemini/30_USER.md`**: it is Gemini's copy since 0.39; at `update`, your edit goes into `~/.ai-kit/context/30_USER.md` when that file did not change since the copy, otherwise the file wins and your edit is in the update's backup.
 - **Legacy block in `GEMINI.md`** (0.0.x installs): copy your additions to `~/.ai-kit/context/30_USER.md`, remove the block between the `ai-kit` markers in `~/.gemini/GEMINI.md`, then run `update`.
 - **Name already taken**: when one of your skills in `~/.gemini/skills/` or commands in `~/.gemini/commands/` has the name of a kit skill or command, yours is kept and the kit's is installed as `ai-kit-<name>` (`skill_prefix`); a skill of yours named like a kit command counts too, since Gemini makes a command of every skill. The installer says which, and the next `update` takes the plain name back once yours is gone.
 

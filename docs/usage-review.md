@@ -4,7 +4,7 @@ The usage review is the procedure a team uses to slim down the kit based on fact
 
 ## Why it is needed
 
-**Every installed skill has a permanent cost, even when nobody uses it.** Its description is injected into the context of every prompt so the model knows it exists (`doctor` shows this weight). The more skills, the more context is used before the question even starts, and the more likely the model is to activate a skill that misses the request. A core of twenty skills that are never activated charges this tax on every message from every person.
+**Every installed skill has a permanent cost, even when nobody uses it.** Its description is injected into the context of every prompt so the model knows it exists (`doctor` shows this weight where the CLI allows it, see the [matrix](cli/matrice.md)). The more skills, the more context is used before the question even starts, and the more likely the model is to activate a skill that misses the request. A core of twenty skills that are never activated charges this tax on every message from every person.
 
 **Every component is a potential support ticket.** A skill that triggers when nobody wants it, a command nobody understands, an agent that is never called: all things to explain, document, test and maintain at each update of the upstream skills. The kit exists to reduce support, not to feed it.
 
@@ -27,7 +27,7 @@ Data playbooks and vocabulary skills (`domain`, `reference`) are never proposed 
 
 ```sh
 sh scripts/bootstrap.sh usage                        # 42-day window (Windows: Installer.cmd usage)
-sh scripts/bootstrap.sh usage --since 90 --json releve.json
+sh scripts/bootstrap.sh usage --since 90 --json report.json
 sh scripts/bootstrap.sh usage --min-sessions 5 --min-prompts 20
 ```
 
@@ -42,7 +42,7 @@ The report reads, locally and without sending anything, the session logs each CL
 
 It contains neither prompt text, nor repo file names, nor the person's identity. The JSON can be shared as is.
 
-**What the logs can show.** Each CLI's adapter declares what its logs contain (`OBSERVES`; per CLI in the [matrix](cli/matrice.md)): every supported CLI's logs show the commands typed, the skills activated and the agents called; errors are not in every CLI's logs. A skill or an agent is reported unused only when every session of the window comes from a CLI whose logs show it; otherwise the report lists it as "not observable" and recommends nothing about it. Sessions of a CLI that would log prompts only, without any skill event, would say nothing about the skills.
+**What the logs can show.** Each CLI's adapter declares what its logs contain (`OBSERVES`; per CLI in the [matrix](cli/matrice.md)): every supported CLI's logs show the commands typed, the skills activated and the agents called; errors are not in every CLI's logs. A skill or an agent is reported unused only when every session of the window comes from a CLI whose logs show it; otherwise the report lists it as "not observable" and recommends nothing about it.
 
 **Data threshold.** Below ten sessions and fifty prompts over the window (change with `--min-sessions` and `--min-prompts`), the report shows the counts but recommends nothing: too little data to conclude. Above it, it lists the candidates to move to optional: core skills of category `workflow` or `tool` that were never activated, and that are required neither by a typed command nor by an activated skill (the catalog's `requires` dependencies are followed). A skill never activated but required by `/intent`, which itself was typed, is not a candidate.
 
@@ -65,10 +65,10 @@ Candidates to remove from the core (never activated, not required by a used comm
 Procedure: docs/usage-review.md. The logs read are local; nothing is sent.
 ```
 
-Each person exports (`usage --json prenom.json`) and shares if they want to; the team aggregates:
+Each person exports (`usage --json firstname.json`) and shares if they want to; the team aggregates:
 
 ```
-$ python3 scripts/usage-aggregate.py releves/*.json
+$ python3 scripts/usage-aggregate.py reports/*.json
 # Aggregated usage summary
 
 6 machines | 71 sessions | 412 prompts | 9 errors
