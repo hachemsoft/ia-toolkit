@@ -82,5 +82,26 @@ class NewsCommandTests(unittest.TestCase):
         self.assertIn('[Info] session-news hook off', out)
 
 
+class NewsFileCheckTests(unittest.TestCase):
+    """scripts/check_news.py: the CI refuses a NEWS.md the hook could not read in full."""
+    def check(self, text):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('check_news', ROOT/'scripts/check_news.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.problems(text, ['general', 'data-analyst'], ['data'])
+
+    def test_good_file_and_the_repository_one(self):
+        self.assertEqual(self.check('# News\n\nIntro.\n\n## 2026-11-02 hello : Hello\nprofiles: data-analyst\nteams: data\nuntil: 2026-12-31\n\nText.\n'), [])
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = __import__('subprocess').run([__import__('sys').executable, str(ROOT/'scripts/check_news.py')], capture_output=True, text=True).returncode
+        self.assertEqual(code, 0)
+
+    def test_bad_file_names_each_problem(self):
+        found = self.check('## no id here\n\n## 2026-13-01 bad-date : X\n\nT.\n\n## 2026-11-02 twice : A\n\nT.\n\n## 2026-11-02 twice : B\nprofiles: nope\nteams: sales\nuntil: soon\nowner: me\n\nT.\n\n## 2026-11-02 empty : Nothing\n')
+        for expected in ('line 1: a heading must be', 'invalid date 2026-13-01', 'twice: id used twice', 'unknown profile nope', 'unknown team sales', 'invalid until date soon', 'unknown metadata "owner"', 'empty: no text'):
+            self.assertTrue(any(expected in f for f in found), (expected, found))
+
 if __name__ == '__main__':
     unittest.main()
