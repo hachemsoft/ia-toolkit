@@ -54,7 +54,7 @@ def check(output, expect):
 
 def api_error(returncode, output):
     """Tells an infrastructure failure (API, quota, authentication) apart from a behaviour failure."""
-    match = re.search(r'status: (\d{3})', output) or re.search(r'\b(401|402|403|429|5\d\d)\b[^\n]*(error|Error|quota|billing|permission)', output)
+    match = re.search(r'status: (\d{3})', output) or re.search(r'(?<![.:\d])\b(401|402|403|429|5\d\d)\b[^\n]*(error|Error|quota|billing|permission)', output)
     if match:
         return 'API ' + match.group(1) + ': model answer unavailable (authentication, quota or billing), not a behaviour failure'
     if 'headless mode cannot prompt for' in output:

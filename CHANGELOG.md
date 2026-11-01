@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.5
+
+- Evals: a CLI's log line where a timestamp ends in three digits followed by the word "error" (`16:35:10.505 xcodebuild … error`) is no longer taken for an API error, so a real answer is judged instead of left out. The plain-words cases accept French answers (`contrat`, `variable d’environnement`), as the others do.
+- Measured on Codex 0.164.0 with 0.45.4: the fuzzy request is framed with the kit and not without it, as on Claude Code; the two other plain-words cases tie. One run each.
+
 ## 0.45.4
 
 - The kit context stops before code on a business rule: "A request changing a business rule or KPI, or saying people disagree on one, is full: ask the deciding question before code or SQL, even if a definition exists." Measured on Claude Code 2.1.316: the plain-words case `fuzzy-request-aligns-first` failed with the kit before (SQL delivered at once, as without the kit) and passes now; `small-change-without-ceremony` stays quick. One run each. Seven lines of the context are tightened to stay under its 3,800-character ceiling.

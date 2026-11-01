@@ -52,6 +52,7 @@ class EvalSuiteTests(unittest.TestCase):
   self.assertIn('Claude Code not signed in',evals_run.api_error(1,'Not logged in · Please run /login'))
   self.assertIn('Codex not signed in',evals_run.api_error(1,'Error: Not logged in. Run codex login'))
   self.assertIsNone(evals_run.api_error(0,'Start with /intent.'))
+  self.assertIsNone(evals_run.api_error(0,'2026-11-01 16:35:10.505 xcodebuild[46213] DVTDeveloperPaths: error = Error Domain'))
  def test_dry_run_lists_cases(self):
   out=io.StringIO()
   with contextlib.redirect_stdout(out):code=evals_run.main(['--dry-run'])
