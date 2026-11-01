@@ -131,6 +131,39 @@ def organization():
     return org
 
 
+TRACKER_KINDS = ('gitlab', 'github')
+TRACKER_SOURCES = ('agent', 'person', 'doctor')
+
+
+def friction_tracker(org, personal):
+    """[friction_tracker] of organization.toml, validated, with its defaults, or None: no tracker, or the person wrote
+    share_frictions = false. What the /friction script reads from state.json (runtime/friction.py)."""
+    config = org.get('friction_tracker')
+    if config is None:
+        return None
+    if not isinstance(config, dict):
+        raise KitError('organization.toml: friction_tracker must be a table ([friction_tracker]).')
+    kind, project, host = config.get('kind'), config.get('project'), config.get('host', '')
+    if kind not in TRACKER_KINDS:
+        raise KitError('organization.toml: friction_tracker.kind must be gitlab or github.')
+    if not isinstance(project, str) or not re.fullmatch(r'[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)+', project):
+        raise KitError('organization.toml: friction_tracker.project must be the project path on the host (group/project), without URL.')
+    if not isinstance(host, str) or (host and not re.fullmatch(r'[a-z0-9.-]+(:[0-9]+)?', host)):
+        raise KitError('organization.toml: friction_tracker.host must be a host name (gitlab.example.org), without scheme or path.')
+    labels = config.get('labels', ['friction'])
+    if not isinstance(labels, list) or not all(isinstance(label, str) and re.fullmatch(r'[^,\s][^,]{0,49}', label) for label in labels):
+        raise KitError('organization.toml: friction_tracker.labels must be a list of label names.')
+    sources = config.get('sources', ['agent'])
+    if not isinstance(sources, list) or not sources or any(source not in TRACKER_SOURCES for source in sources):
+        raise KitError('organization.toml: friction_tracker.sources must list agent, person or doctor.')
+    share = personal.get('share_frictions', True)
+    if not isinstance(share, bool):
+        raise KitError('overrides.toml: share_frictions must be true or false.')
+    if not share:
+        return None
+    return {'kind': kind, 'project': project, 'host': host, 'labels': labels, 'sources': sources}
+
+
 def team_settings(team):
     """The team's settings in organization.toml (same keys as overrides.toml), between the organization and the person."""
     return organization().get('teams', {}).get(team, {}) if team else {}

@@ -10,7 +10,7 @@
 
 Settings are combined at every `setup` and `update`, in this order, each on top of the previous one: **organization**, **profile** (the skills, commands, agents and MCP servers of your job, `profiles/<profile>.toml`), **team**, **you**. The person keeps the last word.
 
-- **`organization.toml`**, at the root of the kit repository, belongs to the organization. It is changed by merge request and reaches workstations with the next version of the kit. It holds the expected email domains (`allowed_domains`) and the organization defaults (`defaults`, with the same keys as `overrides.toml`: guardrails, MCP, skills, commands, agents, `skill_prefix`, `frictions`).
+- **`organization.toml`**, at the root of the kit repository, belongs to the organization. It is changed by merge request and reaches workstations with the next version of the kit. It holds the expected email domains (`allowed_domains`) and the organization defaults (`defaults`, with the same keys as `overrides.toml`: guardrails, MCP, skills, commands, agents, `skill_prefix`, `frictions`), and optionally the friction tracker (`[friction_tracker]`: `kind` gitlab or github, `project`, `host` for a self-hosted instance, `labels`, `sources`), the project where frictions become issues through each person's own `glab` or `gh`; `share_frictions = false` in a person's `overrides.toml` keeps theirs local.
 - **The team's settings**, in the same `organization.toml`, under `teams` (see [Teams](#teams)).
 - **`~/.ai-kit/overrides.toml`** belongs to the person. It is applied on top: lists add up, objects combine, the person's value wins for a single value. It never replaces the organization or team settings wholesale; `doctor` lists the values a person changed.
 

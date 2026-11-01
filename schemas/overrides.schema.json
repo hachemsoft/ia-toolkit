@@ -159,6 +159,10 @@
         "off"
       ],
       "description": "On a friction signal: propose /friction (default), log it automatically, or say nothing."
+    },
+    "share_frictions": {
+      "type": "boolean",
+      "description": "false: your frictions are never sent to the organization's friction tracker; they stay in ~/.ai-kit/frictions.jsonl (default true, which only matters when the organization set a tracker)."
     }
   },
   "patternProperties": {

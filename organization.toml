@@ -15,6 +15,16 @@ locked_hooks = []
 [defaults]
 frictions = "propose"
 
+# Frictions as issues of a project, created by each person's own glab or gh (signed in with their personal access token:
+# no token in the kit). Without this table, frictions stay local. sources: agent (written by the agent in auto mode, the
+# default), person, doctor. A person turns it off with share_frictions = false in overrides.toml. Example:
+# [friction_tracker]
+# kind = "gitlab"
+# project = "tools/ai-kit"
+# host = "gitlab.example.org"
+# labels = ["friction"]
+# sources = ["agent"]
+
 # A team, between the defaults and each person (chosen at setup with --team, or the setup question); its context goes
 # in practices/20-<team>.md. Example:
 # [teams.data]

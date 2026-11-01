@@ -241,6 +241,28 @@ def command_checks(home, state, status):
               + ('' if os.name == 'nt' or recorded.get('startup_file') else '; add the line the installer gave to your shell startup file'))
 
 
+def tracker_checks(home, state, status):
+    """The friction tracker the organization set: the person's CLI present and signed in, frictions not sent yet."""
+    config = state.get('friction_tracker')
+    if not config:
+        return
+    friction = __import__('installer.core', fromlist=['friction_module']).friction_module()
+    cli = friction.TRACKERS.get(config.get('kind'), {}).get('cli')
+    label = 'Friction tracker: '+str(config.get('kind'))+' '+str(config.get('project'))+', '
+    exe = shutil.which(cli) if cli else None
+    if not exe:
+        status(False, label+str(cli)+' not on the PATH: install it following your IT procedure, then '+str(cli)+' auth login; frictions stay local meanwhile')
+    else:
+        try:
+            signed = run_timed([exe, 'auth', 'status'], 15, text=True, encoding='utf-8', errors='replace', stdin=subprocess.DEVNULL).returncode == 0
+        except (OSError, subprocess.SubprocessError):
+            signed = False
+        status(signed, label+cli+(' signed in' if signed else ' not signed in: run '+cli+' auth login (a personal access token); frictions stay local meanwhile'))
+    pending = len(friction.unsent(str(home), config))
+    if pending:
+        print('[Info] '+str(pending)+' friction'+('s' if pending != 1 else '')+' not sent to the tracker yet: ai-kit friction --sync')
+
+
 def runtime_checks(home, status):
     """The private environment the launcher installs the kit in, and the copies of the kit a person may run instead."""
     from . import command as kit_command
@@ -307,6 +329,7 @@ def doctor_checks(home, cwd=None, problems=None):
     if state:
         print('Profile: '+state['profile']+' | version '+state['version'])
         command_checks(home, state, status)
+        tracker_checks(home, state, status)
         identity = state.get('user', {})
         print('Recorded identity: '+(identity.get('email') or identity.get('name') or 'none')+(' (source '+identity['source']+')' if identity.get('source') else ''))
         profile = load_profile(state['profile'])

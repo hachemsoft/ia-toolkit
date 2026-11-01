@@ -3,9 +3,12 @@
 
 Usage: python3 ~/.ai-kit/bin/friction.py --category <command|skill|guardrail|rule|docs|tool|auth|other> [--command <name>] [--cli gemini|agy|codex|claude] --text "<one sentence>"
        python3 ~/.ai-kit/bin/friction.py --list [N]     the last N frictions (10)
-The context (kit version, profile, system) is added automatically. Nothing is sent; the usage report
-counts these lines and `usage --json` exports them for the usage review. `ai-kit friction` runs this very
-file (installer/cli.py imports it): one implementation, --home for a trial home folder.
+       python3 ~/.ai-kit/bin/friction.py --sync         send to the tracker what was not sent
+The context (kit version, profile, system) is added automatically. Nothing is sent, unless the organization set a
+friction tracker (organization.toml [friction_tracker], recorded by update in state.json): then a friction whose
+source is in its `sources` (agent by default: --source agent when the agent logs on its own) is created as an issue
+through the person's own glab or gh, signed in by them; the kit holds no token. Any failure keeps the friction local.
+`ai-kit friction` runs this very file (installer/cli.py imports it): one implementation, --home for a trial home.
 """
 import argparse
 import hashlib
@@ -13,10 +16,18 @@ import json
 import os
 import platform
 import re
+import shutil
+import subprocess
 import sys
 from datetime import datetime, timezone
 
 CATEGORIES = ('command', 'skill', 'guardrail', 'rule', 'docs', 'tool', 'auth', 'other')
+SOURCES = ('person', 'agent')  # doctor --live records 'doctor' itself
+# The person's CLI for each tracker: the documented long flags, issue create, --flag=value so that a sentence starting
+# with - is a value. glab takes labels as one comma list, gh takes --label several times.
+TRACKERS = {'gitlab': {'cli': 'glab', 'body': '--description', 'labels': 'comma'},
+            'github': {'cli': 'gh', 'body': '--body', 'labels': 'repeat'}}
+SEND_TIMEOUT = 30
 # What looks like a secret (API keys and tokens of common services, bearer tokens, password=..., private keys): never kept
 # in a friction or shown in a diagnosis. installer/core.py imports it from here (one list).
 SECRET = re.compile(r'AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9_-]{20,}|sk_(?:live|test)_[A-Za-z0-9]{16,}|gh[pousr]_[A-Za-z0-9]{30,}'
@@ -84,10 +95,87 @@ def record(category, text, command='none', cli='unknown', source='person', home=
         handle.write(json.dumps(entry, ensure_ascii=False) + '\n')
     return path, entry
 
-def listing(home=None, count=10):
-    """The last frictions, oldest first, one line each: id, date, category, command, sentence."""
+def tracker(home=None):
+    """The tracker update recorded in state.json, or None (no tracker, or the person opted out)."""
+    try:
+        with open(os.path.join(kit_dir(home), 'state.json'), encoding='utf-8') as handle:
+            config = json.load(handle).get('friction_tracker')
+    except (OSError, ValueError):
+        return None
+    return config if isinstance(config, dict) and config.get('kind') in TRACKERS and config.get('project') else None
+
+def sent_file(home=None):
+    return os.path.join(kit_dir(home), 'frictions-sent.json')
+
+def read_sent(home=None):
+    try:
+        with open(sent_file(home), encoding='utf-8') as handle:
+            data = json.load(handle)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+def issue_command(config, entry, exe):
+    """The command that creates the issue: arguments only, no shell."""
+    kind = TRACKERS[config['kind']]
+    repo = ((config.get('host') + '/') if config.get('host') and config['kind'] == 'github' else '') + config['project']
+    if config.get('host') and config['kind'] == 'gitlab':
+        repo = 'https://' + config['host'] + '/' + config['project']
+    context = ', '.join(k + ' ' + str(entry[k]) for k in ('cli', 'os', 'kit', 'profile', 'source') if entry.get(k))
+    body = (entry.get('text', '') + '\n\nContext: ' + context + '\nFriction id: ' + entry['id']
+            + '. When fixed, cite it in the CHANGELOG line of the fix: (frictions: ' + entry['id'] + ').\n'
+            + 'Logged by the AI Kit /friction command on the workstation: one sentence, nothing else is read or sent.')
+    command = [exe, 'issue', 'create', '--repo=' + repo, '--title=[friction] ' + str(entry.get('category')) + ' on /' + str(entry.get('command', 'none')),
+               kind['body'] + '=' + body]
+    labels = [str(label) for label in config.get('labels') or ['friction']]
+    if labels:
+        command += ['--label=' + ','.join(labels)] if kind['labels'] == 'comma' else ['--label=' + label for label in labels]
+    return command
+
+def send(entry, home=None, config=None):
+    """Creates the issue for one friction through the person's CLI. Returns (status, detail): sent (the URL), skipped
+    (not a source the organization sends, or already sent), off (no tracker), failed (why; the friction stays local)."""
+    config = config or tracker(home)
+    if not config:
+        return 'off', ''
+    if entry.get('source') not in (config.get('sources') or ['agent']):
+        return 'skipped', 'source ' + str(entry.get('source'))
+    if entry['id'] in read_sent(home):
+        return 'skipped', 'already sent'
+    cli = TRACKERS[config['kind']]['cli']
+    exe = shutil.which(cli)
+    if not exe:
+        return 'failed', cli + ' not on the PATH'
+    try:
+        proc = subprocess.run(issue_command(config, entry, exe), capture_output=True, text=True, encoding='utf-8', errors='replace',
+                              stdin=subprocess.DEVNULL, timeout=SEND_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        return 'failed', cli + ' did not answer within ' + str(SEND_TIMEOUT) + ' s'
+    except OSError as exc:
+        return 'failed', str(exc)
+    if proc.returncode != 0:
+        reason = (proc.stderr or proc.stdout).strip().splitlines()
+        return 'failed', redact(reason[-1] if reason else cli + ' failed (' + str(proc.returncode) + ')')
+    urls = [word for word in proc.stdout.split() if word.startswith('http')]
+    url = urls[-1] if urls else '(issue created, no URL printed)'
+    sent = read_sent(home)
+    sent[entry['id']] = {'url': url, 'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}
+    descriptor = os.open(sent_file(home), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(descriptor, 'w', encoding='utf-8') as handle:
+        json.dump(sent, handle, ensure_ascii=False, indent=1)
+    return 'sent', url
+
+def send_line(status, detail):
+    """One line for the person after a send; nothing for off and skipped."""
+    if status == 'sent':
+        return 'Issue created: ' + detail
+    if status == 'failed':
+        return 'Issue not created (' + detail + '): the friction is kept locally; ai-kit friction --sync sends it later.'
+    return ''
+
+def entries(home=None):
     path = os.path.join(kit_dir(home), 'frictions.jsonl')
-    entries = []
+    found = []
     try:
         with open(path, encoding='utf-8', errors='replace') as handle:
             for line in handle:
@@ -96,17 +184,50 @@ def listing(home=None, count=10):
                 except ValueError:
                     continue
                 if isinstance(entry, dict):
-                    entries.append(entry)
+                    entry['id'] = entry.get('id') or friction_id(entry.get('ts'), entry.get('text'))
+                    found.append(entry)
     except OSError:
         pass
-    if not entries:
-        return ['No friction logged in ' + path + '.']
+    return path, found
+
+def unsent(home=None, config=None):
+    """The frictions the tracker expects and that were not sent."""
+    config = config or tracker(home)
+    if not config:
+        return []
+    sent = read_sent(home)
+    return [e for e in entries(home)[1] if e.get('source') in (config.get('sources') or ['agent']) and e['id'] not in sent]
+
+def sync(home=None):
+    """Sends what was not sent, one issue each; stops at the first failure (the same cause would repeat)."""
+    config = tracker(home)
+    if not config:
+        return ['No friction tracker set by your organization: frictions stay local.']
+    pending = unsent(home, config)
+    if not pending:
+        return ['Nothing to send: every friction the tracker expects was sent.']
     lines = []
-    for entry in entries[-count:] if count else entries:
-        fid = entry.get('id') or friction_id(entry.get('ts'), entry.get('text'))
-        lines.append(fid + '  ' + str(entry.get('ts', ''))[:10] + '  ' + str(entry.get('category', '?')) + '  /' + str(entry.get('command', 'none'))
-                     + '  ' + str(entry.get('text', '')))
-    lines.append(str(len(entries)) + ' friction' + ('s' if len(entries) != 1 else '') + ' in ' + path + '; nothing is sent.')
+    for entry in pending:
+        status, detail = send(entry, home, config)
+        lines.append(entry['id'] + ': ' + send_line(status, detail))
+        if status == 'failed':
+            lines.append(str(len(pending) - len(lines) + 1) + ' friction(s) still to send: fix the cause, then --sync again.')
+            break
+    return lines
+
+def listing(home=None, count=10):
+    """The last frictions, oldest first, one line each: id, date, category, command, sentence."""
+    path, found = entries(home)
+    if not found:
+        return ['No friction logged in ' + path + '.']
+    sent = read_sent(home)
+    lines = []
+    for entry in found[-count:] if count else found:
+        lines.append(entry['id'] + '  ' + str(entry.get('ts', ''))[:10] + '  ' + str(entry.get('category', '?')) + '  /' + str(entry.get('command', 'none'))
+                     + '  ' + str(entry.get('text', '')) + ('  -> ' + sent[entry['id']]['url'] if entry['id'] in sent else ''))
+    pending = len(unsent(home))
+    lines.append(str(len(found)) + ' friction' + ('s' if len(found) != 1 else '') + ' in ' + path
+                 + ('; ' + str(pending) + ' not sent to the tracker yet (--sync).' if pending else '; nothing is sent.' if not tracker(home) else '.'))
     return lines
 
 def main(argv=None):
@@ -118,6 +239,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Log a friction, locally.')
     parser.add_argument('--category', choices=CATEGORIES, help='required to log a friction')
     parser.add_argument('--list', nargs='?', const=10, type=int, metavar='N', help='show the last N frictions (10) instead of logging one')
+    parser.add_argument('--sync', action='store_true', help='send to the tracker the frictions not sent yet, instead of logging one')
+    parser.add_argument('--source', default='person', choices=SOURCES, help='agent when the agent logs on its own (auto mode); person otherwise')
     parser.add_argument('--home', help='home folder of the kit installation (default: yours)')
     parser.add_argument('--command', default='none', help='current kit command, or none')
     parser.add_argument('--cli', default='unknown', choices=('gemini', 'agy', 'codex', 'claude', 'unknown'))
@@ -126,6 +249,10 @@ def main(argv=None):
     if args.list is not None:
         print('\n'.join(listing(args.home, args.list)))
         return 0
+    if args.sync:
+        lines = sync(args.home)
+        print('\n'.join(lines))
+        return 1 if any('still to send' in line for line in lines) else 0
     if not args.category:
         parser.error('--category is required (or --list)')
     if args.text is None:
@@ -138,8 +265,12 @@ def main(argv=None):
     if not text or len(text) > 300:
         print('The text must be between 1 and 300 characters.', file=sys.stderr)
         return 2
-    path, entry = record(args.category, text, args.command, args.cli, home=args.home)
-    print('Friction ' + entry['id'] + ' logged (' + entry['category'] + ', /' + entry['command'] + ') in ' + path + '; nothing is sent.')
+    path, entry = record(args.category, text, args.command, args.cli, source=args.source, home=args.home)
+    status, detail = send(entry, args.home)
+    print('Friction ' + entry['id'] + ' logged (' + entry['category'] + ', /' + entry['command'] + ') in ' + path + ('.' if status != 'off' else '; nothing is sent.'))
+    line = send_line(status, detail)
+    if line:
+        print(line)
     return 0
 
 if __name__ == '__main__':

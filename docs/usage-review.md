@@ -37,7 +37,7 @@ The report reads, locally and without sending anything, the session logs each CL
 - skills activated by the model;
 - kit agents called;
 - errors (when the CLI logs them, see the [matrix](cli/matrice.md));
-- frictions logged with `/friction` in the agent, or `ai-kit friction --category … --text …` in a terminal (`~/.ai-kit/frictions.jsonl`: date, category, command, one sentence; `ai-kit friction --list` shows the last ones), counted by category;
+- frictions logged with `/friction` in the agent, or `ai-kit friction --category … --text …` in a terminal (`~/.ai-kit/frictions.jsonl`: date, category, command, one sentence; `ai-kit friction --list` shows the last ones), counted by category; when the organization set a friction tracker ([customization](customization.md)), the frictions it expects are also issues of that project, created at logging time by the person's own `glab` or `gh`, with their id in the body (`ai-kit friction --sync` sends the ones that could not be created);
 - the sessions where the kit did something (a kit command typed, a kit skill or agent activated), as a share of all sessions: the first sign of whether the kit is in people's work or beside it;
 - then, by difference, the installed commands, skills and agents that were never used.
 

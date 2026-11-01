@@ -41,6 +41,55 @@
       "additionalProperties": {
         "$ref": "overrides.schema.json"
       }
+    },
+    "friction_tracker": {
+      "type": "object",
+      "description": "The project where frictions become issues, created by each person's own glab or gh (signed in with their personal access token; the kit holds no token). Without it, frictions stay local. A person turns it off with share_frictions = false.",
+      "properties": {
+        "kind": {
+          "enum": [
+            "gitlab",
+            "github"
+          ],
+          "description": "gitlab (glab) or github (gh)."
+        },
+        "project": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)+$",
+          "description": "The project path on the host: group/project (GitLab, subgroups allowed) or owner/repo (GitHub)."
+        },
+        "host": {
+          "type": "string",
+          "pattern": "^([a-z0-9.-]+(:[0-9]+)?)?$",
+          "description": "A self-hosted GitLab or GitHub Enterprise host name, when the CLI is not signed in to gitlab.com or github.com only."
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "description": "Labels put on each issue (default [\"friction\"])."
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "agent",
+              "person",
+              "doctor"
+            ]
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "description": "Which frictions are sent: agent (written by the agent in auto mode, the default), person (typed by the person), doctor (an authentication failure seen by doctor --live)."
+        }
+      },
+      "required": [
+        "kind",
+        "project"
+      ],
+      "additionalProperties": false
     }
   },
   "patternProperties": {

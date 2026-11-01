@@ -16,7 +16,7 @@ from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET,
                    safe_id, inside, load_commands, load_agent, redact, user_context_refusal)
 from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
-from .settings import (practice_file, profile_menu, profile_ids, load_profile, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, organization, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, allowed_domains, domain_allowed, team_ids, profile_practices, RENAMED_SKILLS, resolve_skills, skill_note, RETIRED_KEYS, retired_key_notice, unknown_names, allowed_commands, selected_commands, LEGACY_KIT_DIR, recorded_targets, version_changes, PERSONAL_FILE, LEGACY_PERSONAL_FILE, personal_settings, CHOICE_KEYS)  # noqa: F401 (re-exported)
+from .settings import (practice_file, profile_menu, profile_ids, load_profile, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, organization, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, allowed_domains, domain_allowed, team_ids, profile_practices, RENAMED_SKILLS, resolve_skills, skill_note, RETIRED_KEYS, retired_key_notice, unknown_names, allowed_commands, selected_commands, LEGACY_KIT_DIR, recorded_targets, version_changes, PERSONAL_FILE, LEGACY_PERSONAL_FILE, personal_settings, CHOICE_KEYS, friction_tracker)  # noqa: F401 (re-exported)
 from . import command as kit_command
 from .console import styled_output
 from .commit import (BACKUPS_KEPT, prune_backups, commit_changes, atomic_write, KIT_MANAGED, managed_roots, prune_empty_dirs)  # noqa: F401 (re-exported)
@@ -44,8 +44,8 @@ def friction_rule(mode):
     if mode == 'off':
         return ''
     if mode == 'auto':
-        return ('## Frictions\nLog the friction yourself, without asking, by running the `/friction` command script, then say so in one line and resume the work, when: '
-                + FRICTION_SIGNALS + ' One factual sentence, never the text of a prompt or a secret.\n\n')
+        return ('## Frictions\nLog the friction yourself, without asking, by running the `/friction` command script with `--source agent`, then say so in one line and resume the work, when: '
+                + FRICTION_SIGNALS + ' One factual sentence, never the text of a prompt, a secret, a name of a person or a client.\n\n')
     return '## Frictions\nOffer in one line to log a `/friction` (without writing it yourself) when: ' + FRICTION_SIGNALS + '\n\n'
 
 
@@ -284,7 +284,10 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     changed = version_changes((state.get('installed') or {}).get('versions'), installed_versions)
     if changed:
         p.notices.append('[Info] Updated: '+', '.join(changed)+'. What changed: CHANGELOG.md of the kit.')
-    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,
+    tracker = friction_tracker(org_defaults_root(), personal)
+    if org_defaults_root().get('friction_tracker') and tracker is None:
+        p.notices.append('[Info] Frictions stay local: share_frictions = false in your overrides.toml (your organization set a friction tracker).')
+    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,**({'friction_tracker': tracker} if tracker else {}),
                  'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}
     writes[kit/'state.json'] = json_bytes(new_state)
@@ -378,6 +381,11 @@ def _registry_add():
 def _registry_remove():
     kit_command.registry_entry(False)
     kit_command.announce_environment_change()
+
+
+def org_defaults_root():
+    """The whole organization.toml (friction_tracker is a top-level table, not a default)."""
+    return organization()
 
 
 def plan_command(p, managed_write, choice):
