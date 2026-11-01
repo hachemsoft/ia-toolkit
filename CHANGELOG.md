@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.45.4
+
+- The kit context stops before code on a business rule: "A request changing a business rule or KPI, or saying people disagree on one, is full: ask the deciding question before code or SQL, even if a definition exists." Measured on Claude Code 2.1.316: the plain-words case `fuzzy-request-aligns-first` failed with the kit before (SQL delivered at once, as without the kit) and passes now; `small-change-without-ceremony` stays quick. One run each. Seven lines of the context are tightened to stay under its 3,800-character ceiling.
+
 ## 0.45.3
 
 - `update` after `uninstall` reinstalls with the choices of the last installation (profile, team, CLIs, identity, kept in the backup the uninstall made) instead of stopping at "Kit not installed: run setup"; it says so. With no installation in the backups, it still says to run setup.
