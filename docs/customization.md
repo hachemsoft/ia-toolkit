@@ -66,7 +66,7 @@ Order: organization defaults, then the team, then the person's `overrides.toml`,
 
 ## Context layers
 
-The kit installs short files that the agent loads in all your projects, in this order. They live in `~/.gemini/` if Gemini CLI is installed (among the CLIs you chose; it only reads its own folder), otherwise in `~/.ai-kit/context/`. Details per CLI: [matrix](cli/matrice.md#add-a-cli).
+The kit installs short files that the agent loads in all your projects, in this order. They live in `~/.ai-kit/context/`, whatever the CLIs; a CLI that can only read its own folder gets a copy at each `update`. Details per CLI: [matrix](cli/matrice.md#add-a-cli).
 
 | File | Owner | Content |
 | --- | --- | --- |

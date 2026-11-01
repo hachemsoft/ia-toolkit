@@ -15,7 +15,7 @@ A plugin `~/.gemini/config/plugins/ai-kit/`, validated by `agy plugin validate` 
 | File | Role |
 | --- | --- |
 | `plugin.json` | name, description, kit version |
-| `rules/AGENTS.md` | always-on rules that include the four layers by path (`@[00_kit](~/.gemini/00_KIT.md)`, …, `@[30_user](~/.gemini/30_USER.md)`, or `~/.ai-kit/context/` without Gemini): a single source, no copy |
+| `rules/AGENTS.md` | always-on rules that include the four layers by path (`@[00_kit](~/.ai-kit/context/00_KIT.md)`, …, `@[30_user](~/.ai-kit/context/30_USER.md)`): a single source, no copy |
 | `agents/ai-kit-*.md` | the same agents as Gemini, those of the profile; visible in agy |
 | `hooks.json` | the two guardrails, `enabled` following `overrides.toml`; the scripts understand the agy payload (`toolCall.args.CommandLine`) |
 | `mcp_config.json` | the MCP servers enabled in `overrides.toml`, when there are any |

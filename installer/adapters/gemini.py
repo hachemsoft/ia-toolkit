@@ -10,7 +10,7 @@ import tempfile
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (LIVE_PROMPT, network_problem, ROOT, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
+from ..core import (user_context_refusal, adopt_user_copy, LIVE_PROMPT, network_problem, ROOT, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
                     rename_references, renamed_skill_file, renamed_notice, kit_name,
                     digest, merge_defaults, run_timed,
                     record_auto_friction, _ts)
@@ -190,21 +190,42 @@ def present(home):
     return bool(shutil.which(COMMAND)) or (home/HOME_DIR/'settings.json').is_file()
 
 def context_dir(home):
-    """Gemini only imports files located in ~/.gemini (checked on 0.65): when it is installed, it hosts the layers and 30_USER.md."""
+    """Gemini only imports files located in ~/.gemini (checked on 0.65): it gets a copy of the layers and of 30_USER.md there.
+    Before 0.39 the files themselves lived there."""
     return home/HOME_DIR
 
 def is_managed(rel):
     """Path a kit installation may have put in place for Gemini, so one it can remove if intact."""
     if rel.startswith(MANAGED_PREFIXES):
         return True
-    return rel.startswith('.gemini/') and bool(CONTEXT_NAME.fullmatch(rel[len('.gemini/'):])) and rel != '.gemini/'+USER_CONTEXT
+    return rel.startswith('.gemini/') and bool(CONTEXT_NAME.fullmatch(rel[len('.gemini/'):]))  # 30_USER.md included: a copy since 0.39
 
 def active_account(home):
     return gemini_active_account(home)
 
+def copy_context(p: Plan) -> None:
+    """Copies of the layers and of 30_USER.md in ~/.gemini, the only folder Gemini reads them from. A layer copy edited by
+    hand is put back, as the layers are. The 30_USER.md copy edited by hand while the file itself did not change since
+    the last copy: the person edited the wrong file, so the edit goes into the file itself; if both changed, the file wins
+    and the edited copy is in the backup."""
+    gemini = p.home/HOME_DIR
+    for name in p.context_names:
+        source = p.context_dir/name
+        data = p.writes[source] if source in p.writes else source.read_bytes()
+        p.managed_write(gemini/name, data, 'Context file (copy)', restore=True)
+    data = p.writes[p.user_file] if p.user_file in p.writes else p.user_file.read_bytes() if p.user_file.exists() else b''
+    if user_context_refusal(data):
+        return  # the orchestrator already says why; the previous copy stays
+    copy, rel = gemini/USER_CONTEXT, HOME_DIR+'/'+USER_CONTEXT
+    last = p.old_files.get(rel)
+    if copy.exists() and last and digest(copy.read_bytes()) != last and adopt_user_copy(p, copy, last):
+        data = p.writes[p.user_file]
+    p.managed_write(copy, data, 'Personal context (copy)', replace_edited=True)
+
 def install(p: Plan) -> None:
-    """Skills, TOML commands and agents in ~/.gemini; the layers are already there, written by the orchestrator."""
+    """Skills, TOML commands and agents in ~/.gemini, and a copy of the context files."""
     gemini = p.home/'.gemini'
+    copy_context(p)
     # Block inherited from versions 0.0.x in GEMINI.md: removed if intact.
     context_file = gemini/'GEMINI.md'
     if context_file.exists():
@@ -309,7 +330,9 @@ def remove_kit_settings(p: Plan) -> None:
         context = settings.get('context')
         if isinstance(context, dict) and isinstance(context.get('fileName'), list):
             layers = {rel.split('/', 1)[1] for rel in p.old_files if re.fullmatch(r'\.gemini/\d\d_[A-Z_]+\.md', rel)}
-            context['fileName'] = [n for n in context['fileName'] if n not in layers or n == USER_CONTEXT]
+            # 30_USER.md stays declared only where it is the person's own file (installed before 0.39), not the kit's copy.
+            own_user_file = HOME_DIR+'/'+USER_CONTEXT not in p.old_files
+            context['fileName'] = [n for n in context['fileName'] if n not in layers or (n == USER_CONTEXT and own_user_file)]
         p.writes[settings_file] = json_bytes(settings)
     hand_over_env(p)
 

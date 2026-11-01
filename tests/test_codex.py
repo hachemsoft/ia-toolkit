@@ -39,17 +39,18 @@ class CodexAdapterTests(unittest.TestCase):
   self.assertNotIn(b'\r',(self.home/'.codex/AGENTS.md').read_bytes().split(CODEX_MD[1].encode())[0])
 
  def test_user_context_follows_location_without_deleting(self):
+  # 0.39: one file, ~/.ai-kit/context/30_USER.md, whatever the CLIs; Gemini gets a copy. Editing that copy (the habit
+  # before 0.39), then dropping Gemini: the edit goes into the file, never lost.
   self.run_kit(target='all')
   mine='# Me\nPersonal preference kept.\n'
   (self.home/'.gemini/30_USER.md').write_text(mine,encoding='utf-8')
   self.run_kit(target='codex')
   self.assertEqual((self.home/'.ai-kit/context/30_USER.md').read_text(encoding='utf-8'),mine)
-  self.assertEqual((self.home/'.gemini/30_USER.md').read_text(encoding='utf-8'),mine)
-  self.assertFalse((self.home/'.gemini/00_KIT.md').exists())
+  self.assertFalse((self.home/'.gemini/30_USER.md').exists());self.assertFalse((self.home/'.gemini/00_KIT.md').exists())
   self.assertIn('Personal preference kept',(self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
   self.run_kit(target='all')
-  self.assertTrue((self.home/'.gemini/00_KIT.md').is_file());self.assertFalse((self.home/'.ai-kit/context/00_KIT.md').exists())
-  self.assertEqual((self.home/'.ai-kit/context/30_USER.md').read_text(encoding='utf-8'),mine)
+  self.assertTrue((self.home/'.gemini/00_KIT.md').is_file());self.assertTrue((self.home/'.ai-kit/context/00_KIT.md').is_file())
+  self.assertEqual((self.home/'.gemini/30_USER.md').read_text(encoding='utf-8'),mine)
 
  def test_install_keeps_user_content_and_adds_blocks(self):
   self.run_kit();a=self.agents.read_text(encoding='utf-8');c=self.config.read_text(encoding='utf-8')

@@ -305,7 +305,7 @@ class SecretsAndNetworkTests(unittest.TestCase):
             home = Path(tmp)
             with contextlib.redirect_stdout(io.StringIO()):
                 cli.apply('general', home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
-            (home/'.gemini/30_USER.md').write_text('My key: AIzaSyA1234567890abcdefghijklmnopqrstuv\n', encoding='utf-8')
+            (home/'.ai-kit/context/30_USER.md').write_text('My key: AIzaSyA1234567890abcdefghijklmnopqrstuv\n', encoding='utf-8')
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
                 cli.doctor(home)

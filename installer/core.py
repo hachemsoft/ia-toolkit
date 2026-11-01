@@ -158,6 +158,25 @@ def parse_frontmatter(text):
             meta[key.strip()] = value.strip("'")
     return meta, match.group(2)
 
+def adopt_user_copy(p, copy, last):
+    """A copy of 30_USER.md the person edited by hand (before 0.39 it was the file to edit): when the file itself did not
+    change since it was copied, the edit becomes the file; otherwise the file wins and the person is told. True when the
+    edit was taken."""
+    data = p.writes[p.user_file] if p.user_file in p.writes else p.user_file.read_bytes() if p.user_file.exists() else b''
+    edited = copy.read_bytes()
+    refusal = user_context_refusal(edited)
+    if refusal:
+        p.notices.append('[Check] '+str(copy)+' is a copy and was edited, but '+refusal+': not taken into '+str(p.user_file)
+                         + '. Fix it there; the kit configuration itself is installed.')
+        return False
+    if digest(data) == last:
+        p.writes[p.user_file] = edited
+        p.notices.append('[Info] You edited '+str(copy)+', a copy: your change is now in '+str(p.user_file)+', the file to edit.')
+        return True
+    p.notices.append('[Check] '+str(copy)+' is a copy and was edited, while '+str(p.user_file)+' changed too: the file wins. '
+                     'Your edit is kept in this update\'s backup (or left in place when the copy is no longer needed). Edit '+str(p.user_file)+'.')
+    return False
+
 def load_agent(path):
     """agents/internal/<category>/<name>.md: the agent's settings in the front matter, its instructions as the body."""
     meta, body = parse_frontmatter(Path(path).read_text(encoding='utf-8'))

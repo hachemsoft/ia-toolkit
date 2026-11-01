@@ -21,7 +21,7 @@ class Base(unittest.TestCase):
         self.addCleanup(patcher.stop)
         with contextlib.redirect_stdout(io.StringIO()):
             cli.apply('general', self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini')
-        self.user_file = self.home/'.gemini/30_USER.md'
+        self.user_file = self.home/'.ai-kit/context/30_USER.md'
 
 
 class QuickContextTests(Base):

@@ -18,7 +18,7 @@ from types import SimpleNamespace
 from datetime import datetime, timezone
 
 from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, read_json, json_bytes, digest,
-                   safe_id, inside, hook_command, load_commands, load_agent, _ts, friction_id, fixed_frictions, redact, user_context_refusal)
+                   safe_id, inside, hook_command, load_commands, load_agent, adopt_user_copy, _ts, friction_id, fixed_frictions, redact, user_context_refusal)
 from .toml_files import read_toml, dump_toml, set_list, set_schema
 from .adapters import ADAPTERS
 from .interface import ContextHost, DoctorContext, LiveCheck, Plan
@@ -365,10 +365,9 @@ def context_locations():
     return [a.HOME_DIR for a in ADAPTERS if isinstance(a, ContextHost)] + ['.ai-kit/context']
 
 def context_location(home, active):
-    """Folder for the layers and 30_USER.md: that of an active CLI that only reads its context from its own folder (context_dir),
-    otherwise ~/.ai-kit/context, which the other CLIs include or copy."""
-    host = next((a for a in active if isinstance(a, ContextHost)), None)
-    return host.context_dir(home) if host else home/'.ai-kit'/'context'
+    """Folder for the layers and 30_USER.md: always ~/.ai-kit/context (0.39), whatever the CLIs. The CLIs include them from
+    there by path, or receive a copy at each update (a CLI that only reads its own folder, or that cannot include a file)."""
+    return home/'.ai-kit'/'context'
 
 TARGETS = {'auto': None, **{a.NAME: (a.NAME,) for a in ADAPTERS}, 'both': ('gemini', 'agy'), 'all': tuple(a.NAME for a in ADAPTERS)}
 
@@ -518,12 +517,12 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     files = {}
     old_files = state.get('files',{})
     restored = []  # kit rule layers edited by hand: put back, the edited copy kept in the backup
-    def managed_write(target, data, label, restore=False):
+    def managed_write(target, data, label, restore=False, replace_edited=False):
         rel = target.relative_to(home).as_posix()
         if target.exists():
             previous = target.read_bytes()
             if rel in old_files:
-                if digest(previous) != old_files[rel]:
+                if digest(previous) != old_files[rel] and not replace_edited:
                     if not restore:
                         raise KitError(label+' modified locally: '+str(target))
                     restored.append(target)
@@ -614,10 +613,15 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         if rel in files:
             continue
         target_path = inside(home,rel)
-        if not (rel.startswith(KIT_MANAGED) or any(a.is_managed(rel) for a in ADAPTERS)):
+        if not (rel.startswith(KIT_MANAGED) or any(a.is_managed(rel) for a in ADAPTERS)) or target_path == user_file:
             raise KitError('Invalid state: deletion outside the managed scope.')
         if target_path.exists():
             if digest(target_path.read_bytes()) != previous_hash:
+                if target_path.name == USER_CONTEXT and target_path != user_file:
+                    # A 30_USER.md copy the person edited, no longer needed: their edit is never lost.
+                    if adopt_user_copy(p, target_path, previous_hash):
+                        deletes.append(target_path)
+                    continue
                 raise KitError('Old managed file modified locally: '+str(target_path))
             deletes.append(target_path)
     for adapter in ADAPTERS:
@@ -689,7 +693,9 @@ def relocate_user_context(p, home, state, user_file, kit):
             p.notices.append('[Check] An older, different '+USER_CONTEXT+' was in '+str(user_file.parent)+': kept as '+kept.name+'.')
         if not user_file.exists() or user_file.read_bytes() != data:
             p.writes[user_file] = data
-            p.notices.append('[Info] Personal context moved: '+str(user_file)+' is now the file in effect; '+str(source)+' is no longer read (left in place).')
+            reader = next((a for a in ADAPTERS if a.NAME in p.active and isinstance(a, ContextHost) and a.context_dir(home) == source.parent), None)
+            p.notices.append('[Info] Personal context moved: '+str(user_file)+' is now the file to edit; '+str(source)
+                             + (' becomes the copy '+reader.LABEL+' reads, refreshed at each update.' if reader else ' is no longer read (left in place).'))
         return
     if not user_file.exists():
         # First installation, or a state from before context_dir was recorded: an existing copy is reused, the original stays in place.

@@ -27,7 +27,8 @@ class UninstallTests(unittest.TestCase):
         (self.home/'.codex/AGENTS.md').write_text('# My Codex notes\n', encoding='utf-8')
         (self.home/'.codex/config.toml').write_text('model = "my-model"\n', encoding='utf-8')
         self.quiet(cli.apply, 'general', self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'all')
-        (self.home/'.gemini/30_USER.md').write_text('My preferences\n', encoding='utf-8')
+        (self.home/'.ai-kit/context/30_USER.md').write_text('My preferences\n', encoding='utf-8')
+        self.quiet(cli.apply, 'general', self.home, False, None)  # the copies follow
 
     def quiet(self, function, *args, **kwargs):
         out = io.StringIO()
@@ -52,8 +53,9 @@ class UninstallTests(unittest.TestCase):
         self.assertFalse([n for n in settings['context']['fileName'] if n[:2] in ('00', '10', '20')])
         self.assertEqual((self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'), '# My Codex notes\n')
         self.assertEqual((self.home/'.codex/config.toml').read_text(encoding='utf-8'), 'model = "my-model"\n')
-        # Kept: the personal context, overrides.toml, the backups; the CLIs' folders are never removed.
-        self.assertEqual((self.home/'.gemini/30_USER.md').read_text(encoding='utf-8'), 'My preferences\n')
+        # Kept: the personal context, overrides.toml, the backups; the CLIs' folders are never removed. Gemini's copy goes.
+        self.assertEqual((self.home/'.ai-kit/context/30_USER.md').read_text(encoding='utf-8'), 'My preferences\n')
+        self.assertFalse((self.home/'.gemini/30_USER.md').exists())
         self.assertTrue((self.home/'.ai-kit/overrides.toml').is_file())
         self.assertTrue(any((self.home/'.ai-kit/backups').iterdir()))
         self.assertTrue((self.home/'.gemini').is_dir() and (self.home/'.codex').is_dir())

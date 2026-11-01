@@ -166,7 +166,7 @@ class LauncherRunTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertFalse((self.home/'.ai-kit/state.json').exists())
         self.assertFalse((self.home/'.ai-kit/runtime/venv').exists())
-        self.assertTrue((self.home/'.gemini/30_USER.md').exists())
+        self.assertTrue((self.home/'.ai-kit/context/30_USER.md').exists())
         self.assertIn('Kit runtime removed', out)
 
     def test_a_second_run_waits_for_the_first(self):

@@ -23,7 +23,7 @@ class AgyAdapterTests(unittest.TestCase):
  def test_plugin_generated(self):
   self.run_kit();p=self.plugin()
   self.assertEqual(read_json(p/'plugin.json')['name'],'ai-kit');rules=(p/'rules/AGENTS.md').read_text(encoding='utf-8')
-  for n in ('00_kit','10_company','20_team','30_user'):self.assertIn('@['+n+'](~/.gemini/'+n.upper()+'.md)',rules)
+  for n in ('00_kit','10_company','20_team','30_user'):self.assertIn('@['+n+'](~/.ai-kit/context/'+n.upper()+'.md)',rules)
   self.assertTrue((p/'agents/ai-kit-verifier.md').is_file());self.assertTrue((p/'agents/ai-kit-sql-reviewer.md').is_file())
   hooks=read_json(p/'hooks.json');self.assertEqual(hooks['ai-kit-dbt-prod-guard']['enabled'],False);self.assertEqual(hooks['ai-kit-dbt-prod-guard']['PreToolUse'][0]['matcher'],'run_command')
   self.assertFalse((p/'mcp_config.json').exists());self.assertIn('.gemini/config/plugins/ai-kit/plugin.json',read_json(self.home/'.ai-kit/state.json')['files'])

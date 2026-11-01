@@ -87,24 +87,39 @@ class TargetTests(Base):
 
 
 class PersonalContextTests(Base):
-    def test_last_active_version_wins_on_return(self):
-        """Gemini with A, then Codex with B, then update, then back to Gemini: B is in effect, A is kept beside it."""
+    def test_one_file_whatever_the_clis(self):
+        """0.39: Gemini with A written in its copy (the habit before 0.39), then Codex, then B in the file, then back to
+        Gemini: one file all along, ~/.ai-kit/context/30_USER.md, and B in Gemini's copy."""
         self.run_kit('gemini')
         (self.home/'.gemini/30_USER.md').write_text('Preference A\n', encoding='utf-8')
-        self.run_kit('codex')
-        moved = self.home/'.ai-kit/context/30_USER.md'
-        self.assertEqual(moved.read_text(encoding='utf-8'), 'Preference A\n')
-        moved.write_text('Preference B\n', encoding='utf-8')
+        notices = self.run_kit('codex')
+        user = self.home/'.ai-kit/context/30_USER.md'
+        self.assertEqual(user.read_text(encoding='utf-8'), 'Preference A\n')
+        self.assertTrue(any('your change is now in' in n for n in notices))
+        user.write_text('Preference B\n', encoding='utf-8')
         self.run_kit()
         self.assertIn('Preference B', (self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
-        notices = self.run_kit('gemini')
+        self.run_kit('gemini')
         self.assertEqual((self.home/'.gemini/30_USER.md').read_text(encoding='utf-8'), 'Preference B\n')
-        kept = [p for p in (self.home/'.gemini').iterdir() if p.name.startswith('30_USER.md.before-')]
-        self.assertEqual(len(kept), 1)
-        self.assertEqual(kept[0].read_text(encoding='utf-8'), 'Preference A\n')
-        self.assertTrue(any('now the file in effect' in n for n in notices))
-        self.assertTrue(any('kept as' in n for n in notices))
-        self.assertIn(str(self.home.resolve()/'.gemini/30_USER.md'), self.out)  # resolved: Windows short names (RUNNER~1)
+        self.assertFalse([p for p in (self.home/'.gemini').iterdir() if p.name.startswith('30_USER.md.before-')])
+        self.assertIn(str(self.home.resolve()/'.ai-kit/context/30_USER.md'), self.out)  # resolved: Windows short names (RUNNER~1)
+
+    def test_installation_before_0_39_moves_the_file_and_keeps_it(self):
+        """Gemini installed by 0.38: the file lived in ~/.gemini. The update copies it to ~/.ai-kit/context, the old file
+        becomes Gemini's copy, with the same text."""
+        self.run_kit('gemini')
+        user, copy = self.home/'.ai-kit/context/30_USER.md', self.home/'.gemini/30_USER.md'
+        state_path = self.home/'.ai-kit/state.json'
+        state = json.loads(state_path.read_text(encoding='utf-8'))
+        state['context_dir'] = '.gemini'
+        state['files'] = {rel: h for rel, h in state['files'].items() if not rel.startswith('.ai-kit/context/') and rel != '.gemini/30_USER.md'}
+        state_path.write_text(json.dumps(state), encoding='utf-8')
+        user.unlink()
+        copy.write_text('Mine, from 0.38\n', encoding='utf-8')
+        notices = self.run_kit('gemini')
+        self.assertEqual(user.read_text(encoding='utf-8'), 'Mine, from 0.38\n')
+        self.assertEqual(copy.read_text(encoding='utf-8'), 'Mine, from 0.38\n')
+        self.assertTrue(any('becomes the copy Gemini CLI reads' in n for n in notices))
 
     def test_secret_is_never_copied_to_a_new_location(self):
         self.run_kit('gemini')
@@ -114,7 +129,7 @@ class PersonalContextTests(Base):
         self.assertNotIn(SECRET, (self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
         self.assertTrue(any('secret' in n and 'installed' in n for n in notices))
         self.assertNotIn('abcdefghijklmnop1234', self.out)
-        self.assertIn(SECRET, (self.home/'.gemini/30_USER.md').read_text(encoding='utf-8'))  # the source is untouched
+        self.assertIn(SECRET, (self.home/'.gemini/30_USER.md').read_text(encoding='utf-8'))  # the edited copy is left as it is
 
     def test_codex_keeps_the_last_valid_copy(self):
         self.run_kit('codex')

@@ -120,8 +120,9 @@ class WizardFlowTests(unittest.TestCase):
         # Yes to the quick questions: French (2), detailed (3), ask first (3), then the role; /me is pointed to.
         code, out, _ = self.run_wizard('', '', 'a@example.org', '', '', 'y', '2', '3', '3', 'Data engineer')
         self.assertEqual(code, 0, out)
-        text = (self.home/'.gemini/30_USER.md').read_text(encoding='utf-8')
+        text = (self.home/'.ai-kit/context/30_USER.md').read_text(encoding='utf-8')
         self.assertIn('Reply in French', text)
+        self.assertEqual((self.home/'.gemini/30_USER.md').read_text(encoding='utf-8'), text)  # Gemini's copy follows
         self.assertIn('Explain the why and the alternatives', text)
         self.assertIn('Ask before acting', text)
         self.assertIn('- Data engineer', text)
@@ -231,7 +232,7 @@ class WizardFlowTests(unittest.TestCase):
         code, out, _ = self.run_wizard('5', 'y')
         self.assertEqual(code, 0, out)
         self.assertFalse((self.home/'.ai-kit/state.json').exists())
-        self.assertTrue((self.home/'.gemini/30_USER.md').exists())
+        self.assertTrue((self.home/'.ai-kit/context/30_USER.md').exists())
 
     def test_interface_error_during_the_writes_leaves_nothing_half_done(self):
         def broken(step, done, total):

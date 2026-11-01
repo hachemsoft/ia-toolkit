@@ -42,7 +42,7 @@ class Plan:
     writes: Dict[Path, bytes]  # untracked writes (user files, merged settings)
     deletes: List[Path]
     active: List[str]  # NAME of the active adapters, in ADAPTERS order
-    managed_write: Callable[[Path, bytes, str], None]  # write tracked in the state, refused if the file was modified
+    managed_write: Callable[..., None]  # write tracked in the state, refused if the file was modified (restore=, replace_edited=)
     agent_body: Callable[[Dict[str, Any]], str]  # full prompt of an agent, practices included
     agent_markdown: Dict[str, str] = field(default_factory=dict)  # agents rendered by Gemini, reused by agy
     blocks: Dict[str, str] = field(default_factory=dict)  # digests of the managed blocks in user files
@@ -99,7 +99,8 @@ class Adapter(Protocol):
 
 @runtime_checkable
 class ContextHost(Protocol):
-    """The CLI only reads its context from its own folder: if it is active, the layers and 30_USER.md are written there."""
+    """The CLI only reads its context from its own folder: if it is active, it receives a copy of the layers and of 30_USER.md
+    (context_dir: where an installation before 0.39 kept them)."""
     def context_dir(self, home: Path) -> Path: ...
     def installed_from_files(self, state: Dict[str, Any]) -> Dict[str, List[str]]: ...
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.39.0
+
+One place for your context, whatever the CLIs:
+- The layers (`00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md`) and your `30_USER.md` are always in `~/.ai-kit/context/`, as other kits keep one neutral source. Before, they were in `~/.gemini/` when Gemini CLI was chosen, which puzzled people who never use Gemini.
+- agy and Claude Code include them from there; Gemini CLI, which reads only `~/.gemini`, and Codex CLI get a copy at each `update`. After editing `30_USER.md` by hand, run `update` for these two (`/me` says so).
+- Your edits are never lost: if you edit Gemini's copy, `~/.gemini/30_USER.md` (the habit before 0.39), the next `update` puts your edit into `~/.ai-kit/context/30_USER.md` when that file did not change since it was copied; otherwise that file wins and your edit is in the update's backup. A copy that seems to hold a secret is never taken.
+- Your existing `~/.gemini/30_USER.md` is copied to `~/.ai-kit/context/30_USER.md` at the next `update`, and becomes Gemini's copy, with the same text.
+
 ## 0.38.0
 
 Your personal context, by interview:

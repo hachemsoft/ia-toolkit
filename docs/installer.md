@@ -36,7 +36,7 @@ Nobody activates the environment, runs pip, changes the `PATH` or needs administ
 
 Existing settings must be strict JSON. An invalid JSON file or one with comments is refused without change. Symbolic links on managed paths are not supported.
 
-The context layers and `30_USER.md` are written to `~/.gemini/` when Gemini CLI is among the CLIs you chose (it reads only its own folder), otherwise to `~/.ai-kit/context/`, which the other CLIs include or copy. The guardrail scripts are in `~/.ai-kit/hooks/`.
+The context layers and `30_USER.md` are in `~/.ai-kit/context/`, whatever the CLIs; the CLIs include them from there, or get a copy at each `update` (Gemini CLI, which reads only its own folder, and Codex CLI). The guardrail scripts are in `~/.ai-kit/hooks/`.
 
 Before 0.19, the kit folder was called `~/.ai-toolkit`. The first `setup` or `update` renames it to `~/.ai-kit`, with `overrides.toml`, the state and the backups, then rewrites the files that referenced the old path. If both folders exist, the kit stops without touching anything: keep `~/.ai-kit`, move what is missing into it, remove `~/.ai-toolkit`, then run `update`.
 

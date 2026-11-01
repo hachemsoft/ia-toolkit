@@ -56,7 +56,7 @@ To run `doctor` for a repo (it then also lists the repo skills named like kit sk
 | File | Mac | Windows |
 | --- | --- | --- |
 | Your settings, `overrides.toml` (created by `setup`, with one explanation line) | `~/.ai-kit/overrides.toml` | `%USERPROFILE%\.ai-kit\overrides.toml` |
-| Your personal context, `30_USER.md` | `~/.gemini/30_USER.md` with Gemini CLI, otherwise `~/.ai-kit/context/30_USER.md` | `%USERPROFILE%\.gemini\30_USER.md`, otherwise `%USERPROFILE%\.ai-kit\context\30_USER.md` |
+| Your personal context, `30_USER.md` | `~/.ai-kit/context/30_USER.md` | `%USERPROFILE%\.ai-kit\context\30_USER.md` |
 
 `~` and `%USERPROFILE%` are your home folder. Folders starting with a dot are hidden: on Windows, paste the path into the Explorer address bar (or open it with `notepad "%USERPROFILE%\.ai-kit\overrides.toml"`); on Mac, in Finder press Cmd+Shift+G and paste the path, or Cmd+Shift+. to show hidden files. `doctor` prints the exact path of `30_USER.md`.
 
