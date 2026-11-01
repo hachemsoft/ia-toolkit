@@ -4,7 +4,7 @@ What the kit does for Claude Code, and what is specific to this CLI. Formats rea
 
 ## Install for Claude Code
 
-`setup` and `update` install for Claude Code when the `claude` command is present or `~/.claude/settings.json` exists (`--target auto`, the first time). `--target all` includes it, `--target claude` installs it alone; the guided installer lists it with the other CLIs. Claude Code signs in with its own account (`claude` then `/login`, an API key, Bedrock or Vertex): the kit does not touch it, nor the model or the permissions.
+The first `setup` installs for Claude Code when the `claude` command is present or `~/.claude/settings.json` exists (`--target auto`); afterwards `update` keeps the CLIs you chose. `--target all` includes it, `--target claude` installs it alone; the guided installer lists it with the other CLIs. Claude Code signs in with its own account (`claude` then `/login`, an API key, Bedrock or Vertex): the kit does not touch it, nor the model or the permissions.
 
 ## What the kit installs
 

@@ -31,11 +31,11 @@ Examples:
 @ai-kit-architecture-reviewer Review this ADR and its options.
 ```
 
-The agent can also choose to delegate based on the description. These instructions guide the model; they do not guarantee an invocation. Availability depends on the CLI version and company policies. The kit forces no sub-agent activation setting; Where a CLI has a setting that disables them, `doctor` reports it (see the CLI's page).
+The agent can also choose to delegate based on the description. These instructions guide the model; they do not guarantee an invocation. Availability depends on the CLI version and company policies. The kit forces no sub-agent activation setting; where a CLI has a setting that disables them, `doctor` reports it (see the CLI's page).
 
 ## Tools and limits
 
-Review agents are read-only: they read and search files, without modifying or running anything. `ai-kit-verifier` is the exception: it can also list folders and run commands, because its role is to run the check commands declared in `AGENTS.md` (build, tests, lint, `dbt test` on the development target) and report their real output at the end of a `/build`. It fixes nothing; the `dbt-prod-guard` guardrail also applies to it. They propose checks to the main agent.
+Review agents are read-only: they read and search files, without modifying or running anything. `ai-kit-verifier` is the exception: it can also list folders and run commands, because its role is to run the check commands declared in `AGENTS.md` (build, tests, lint, `dbt test` on the development target) and report their real output at the end of a `/build`. It fixes nothing; the `dbt-prod-guard` guardrail also applies to it. Review agents propose checks to the main agent.
 
 How far the tool list holds depends on the CLI (the `AGENT_TOOLS` contract of each adapter, [matrix](cli/matrice.md)):
 
@@ -60,12 +60,12 @@ Future access to an MCP server must use explicitly allowed tools and be validate
 - `agents/internal/<category>/<name>.md`: role and instructions, independent of any CLI.
 - `agents/defaults.json`: default tools and settings, shared by all CLIs.
 - `profiles/*.toml`: agents selected per role.
-- Output: one file per agent, in the format and location each CLI reads: `ai-kit-<name>.md` for Gemini and agy, `~/.codex/ai-kit/agents/ai-kit-<name>.toml` declared in `config.toml` for Codex, `~/.claude/agents/ai-kit-<name>.md` for Claude Code ([matrix](cli/matrice.md)).
+- Output: one file per agent, in the format and location each CLI reads ([matrix](cli/matrice.md)).
 
 The installer generates the files, records them in its state, protects local modifications and removes old untouched outputs when the profile changes.
 
 Customization in `~/.ai-kit/overrides.toml`: add `extra_agents` and `disabled_agents` as lists of catalog names (without the ai-kit prefix). Keep the file's other keys.
 
-Repo-specific agents stay in that repo (`.agents/`). The same agents are installed in the Antigravity plugin; see [agy](cli/agy.md).
+Repo-specific agents stay in that repo (`.agents/`).
 
 Formats and checks specific to each CLI: see its page. Whether an agent is actually invoked always depends on the model.

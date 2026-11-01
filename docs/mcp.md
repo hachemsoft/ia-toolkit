@@ -9,11 +9,11 @@ An MCP server gives the agent access to a tool or to data: a documentation site,
 | File | Who writes it | What it says | Example |
 | --- | --- | --- | --- |
 | `organization.toml` (kit repository) | the platform team, by merge request | **how** to reach each approved server | `bigquery = { server = { httpUrl = "https://…" } }` under `[defaults.mcp]` |
-| `profiles/<profile>.toml` (kit repository) | the kit maintainers | **which** servers are on for that job | `"mcp": ["bigquery", "dbt"]` |
+| `profiles/<profile>.toml` (kit repository) | the kit maintainers | **which** servers are on for that job | `mcp = ["bigquery", "dbt"]` |
 | `organization.toml`, under `teams.<team>` | the team, by merge request | **the team's exceptions**, same formats as yours | `mcp = { github = true }` |
 | `~/.ai-kit/overrides.toml` (your workstation) | you | **your exceptions**: turn one on or off, or add your own | `mcp = { dbt = false, github = true }` |
 
-A server is installed when it is **defined** (in `organization.toml` or in your file) **and on** (through your profile, through `"enabled": true` in `organization.toml`, through your team, or through your file). Order: organization, profile, team, you; your file has the last word. Teams: [customization](customization.md#teams). After any change: `update`, then restart the CLI.
+A server is installed when it is **defined** (in `organization.toml` or in your file) **and on** (through your profile, through `enabled = true` in `organization.toml`, through your team, or through your file). Order: organization, profile, team, you; your file has the last word. Teams: [customization](customization.md#teams). After any change: `update`, then restart the CLI.
 
 ## For the platform team: define the approved servers
 
@@ -39,7 +39,7 @@ enabled = true
 server = { httpUrl = "https://docs-mcp.example.org/mcp" }
 ```
 
-- `"enabled": true` (here `docs`) turns a server on for **every** profile.
+- `enabled = true` (here `docs`) turns a server on for **every** profile.
 - `server` has a single transport. Use `httpUrl` (streamable HTTP) or `url` (SSE), always `https://`, for a remote server. Use `command`, with `args` and `env`, for a local server. Do not use `cwd`: not every CLI has it, and the kit refuses it there; give the full path in `command`.
 - **Never write a secret.** Write `${VARIABLE}`, and each person defines the variable in their environment. `doctor` flags a key or token written in plain text in `~/.ai-kit/overrides.toml`; nothing checks `organization.toml`, so review it in the merge request.
 - Pin image and package versions (`:1.2.3`, not `:latest`): a new version should arrive by your choice, not by itself.
@@ -62,8 +62,8 @@ In `~/.ai-kit/overrides.toml`, under `mcp`, one line per exception:
 
 | You want | You write |
 | --- | --- |
-| a server of the organization that your profile does not turn on | `"github": true` |
-| to turn off a server your profile turns on | `"dbt": false` |
+| a server of the organization that your profile does not turn on | `github = true` under `[mcp]` |
+| to turn off a server your profile turns on | `dbt = false` under `[mcp]` |
 | your own server, for every installed CLI | `[mcp.mine]` then `server = { command = "my-mcp", env = { TOKEN = "${MY_TOKEN}" } }` |
 | to keep your server's definition but turn it off for now | `enabled = false` under `[mcp.mine]`, next to its `server` |
 
@@ -78,15 +78,13 @@ dbt = false
 server = { httpUrl = "https://my-mcp.example.org/mcp" }
 ```
 
-Then `update`, and restart the CLI (Claude Code: close its sessions before `update`, see [its page](cli/claude-code.md#close-claude-code-before-an-update)). Check with the CLI's own MCP command that the server answers (each CLI's command and settings file: [CLI matrix](cli/matrice.md)). Then run `doctor`: its line `[Info] MCP servers: …` lists what is installed.
-
-The older form, `enabled = true` next to the `server` of your own, or `[mcp.<name>]` with `enabled = true` for one of the organization, still works.
+Then `update`, and restart the CLI (some CLIs must be closed before an update that changes MCP: [CLI matrix](cli/matrice.md#known-limits-of-the-clis)). Check with the CLI's own MCP command that the server answers (each CLI's command and settings file: [CLI matrix](cli/matrice.md)). Then run `doctor`: its line `[Info] MCP servers: …` lists what is installed.
 
 **A server for one CLI only:** add it directly in that CLI's own settings ([CLI matrix](cli/matrice.md)), never in a file the kit manages (it rewrites them). The kit only manages the servers named `ai-kit-<name>` and never touches the others.
 
 ## Removing
 
-Remove the name from the profile or from `organization.toml`, or write `"<name>": false` in your file, then `update`. Only the `ai-kit-<name>` server is removed; the others stay. If a managed server was edited by hand in a CLI's settings, `update` stops and asks you to choose: move the change to `overrides.toml`, or restore the server.
+Remove the name from the profile or from `organization.toml`, or write `<name> = false` under `[mcp]` in your file, then `update`. Only the `ai-kit-<name>` server is removed; the others stay. If a managed server was edited by hand in a CLI's settings, `update` stops and asks you to choose: move the change to `overrides.toml`, or restore the server.
 
 ## BigQuery and dbt
 

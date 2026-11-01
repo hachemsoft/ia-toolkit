@@ -1,6 +1,6 @@
 # Moving from Gemini CLI to Antigravity CLI: what changes, what does not
 
-A page for people moving from Gemini CLI to agy. A two-minute read.
+A page for people moving from Gemini CLI to agy.
 
 ## What does not change
 
@@ -24,4 +24,4 @@ A page for people moving from Gemini CLI to agy. A two-minute read.
 
 ## Install or update
 
-From the kit folder: `sh scripts/bootstrap.sh update --target both` (Mac) or `Installer.cmd update --target both` (Windows), or run the installer, choose **Change my choices** and tick Antigravity. A plain `update` keeps the CLIs chosen at the last installation; detection only applies the first time.
+From the kit folder, run the installer, choose **Change my choices** and tick Antigravity. If Gemini CLI is your only other CLI, `sh scripts/bootstrap.sh update --target both` (Mac) or `Installer.cmd update --target both` (Windows) does the same; a `--target` replaces the CLIs chosen before. A plain `update` keeps the CLIs chosen at the last installation; detection only applies the first time.

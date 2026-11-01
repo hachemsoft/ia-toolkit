@@ -8,7 +8,7 @@ The first `setup` installs for Codex when the `codex` command is present or `~/.
 
 ## What the kit installs
 
-- **Context**: a managed block at the top of `~/.codex/AGENTS.md`, between two `ai-kit` markers, with the kit layers and a copy of `30_USER.md` (in `~/.gemini/` if Gemini is installed, otherwise in `~/.ai-kit/context/`). The rest of the file belongs to you and is never changed. Because Codex does not include other files by path, the copy of `30_USER.md` is refreshed on every `update`: after you edit it, run `update` again (`doctor` reports it).
+- **Context**: a managed block at the top of `~/.codex/AGENTS.md`, between two `ai-kit` markers, with the kit layers and a copy of `~/.ai-kit/context/30_USER.md`. The rest of the file belongs to you and is never changed. Because Codex does not include other files by path, the copy is refreshed on every `update`: after you edit it, run `update` again (`doctor` reports it).
 - **Skills** in `~/.codex/skills/`. Skills marked "on command only" get an `agents/openai.yaml` with `allow_implicit_invocation: false`: Codex honors this flag natively and activates them only when called.
 - **Commands**: one skill per command, also on command only. In Codex, you call them with **`$intent`**, `$build`, `$test`…; `/skills` lists them.
 - **Agents**: one `ai-kit-<name>` role per agent, declared under `[agents.ai-kit-<name>]` in the managed block of `~/.codex/config.toml`, with its instructions in `~/.codex/ai-kit/agents/`.
@@ -21,8 +21,12 @@ The `config.toml` block is appended to the end of the file and checked before wr
 
 Codex runs a hook only after it has been approved. The kit installs one by default (`protected-paths`, which protects the configuration), so on the first launch after installation Codex shows "Hooks need review". Answer "Trust all and continue"; "Continue without trusting" leaves them inactive. The kit never writes this approval for you. In non-interactive mode (`codex exec`), an unapproved hook does not run.
 
+`doctor` reports `[Check]` when no approval is recorded at all (no `[hooks.state."…config.toml:pre_tool_use:…"]` entry). When records exist, it says "approval not verifiable automatically": Codex records each approval with a `trusted_hash` the kit cannot recompute, under group indexes that other hooks share, so a record is never taken as proof that the kit's guardrails are approved. `/hooks` in Codex shows what is approved; Codex asks again when a guardrail command changes after an update.
 
-`doctor` reports `[Check]` when no approval is recorded at all (no `[hooks.state."…config.toml:pre_tool_use:…"]` entry). When records exist, it says "approval not verifiable automatically": Codex records each approval with a `trusted_hash` the kit cannot recompute, under group indexes that other hooks share, so a record is never taken as proof that the kit's guardrails are approved. `/hooks` in Codex shows what is approved; Codex asks again when a guardrail command changes after an update. The `protected-paths` guardrail always blocks agent writes to `~/.codex/config.toml` and `~/.codex/AGENTS.md`.
+## Protected configuration
+
+The `protected-paths` guardrail always blocks agent writes to `~/.codex/config.toml` and `~/.codex/AGENTS.md`.
+
 ## Check in Codex
 
 `codex doctor` (configuration loaded, `config.toml parse ok`), `/skills` and `/agents` (the `ai-kit-*` roles) in Codex, then `$guide I need to …` in a repository.

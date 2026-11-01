@@ -753,7 +753,7 @@ def commit_changes(home, kit, writes, deletes, progress=None):
         raise
     return changed, backup
 
-PERSONAL_KEPT = ('.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learn/', '.ai-kit/runtime/')
+PERSONAL_KEPT = ('.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learning/', '.ai-kit/runtime/')
 
 def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
     """Removes what the kit installed and nothing else: the managed files it can recognise as unchanged, its blocks and

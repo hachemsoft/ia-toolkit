@@ -4,7 +4,7 @@ What the kit does for Gemini CLI, and what is specific to this CLI. Behavior ver
 
 ## What the kit installs
 
-- **Context**: `00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md` and `30_USER.md` in `~/.gemini/`, declared in `context.fileName` of `~/.gemini/settings.json`, followed by `GEMINI.md` and `AGENTS.md` for repositories. Personal names already present in `context.fileName` are kept.
+- **Context**: copies of `00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md` and `30_USER.md` from `~/.ai-kit/context/` in `~/.gemini/` (Gemini imports only files located there), refreshed at each `update` and declared in `context.fileName` of `~/.gemini/settings.json`, followed by `GEMINI.md` and `AGENTS.md` for repositories. Edit `~/.ai-kit/context/30_USER.md`, then run `update`; an edit made to the copy is taken into the file when the file did not change since the copy. Personal names already present in `context.fileName` are kept.
 - **Skills** in `~/.gemini/skills/`, **commands** in `~/.gemini/commands/*.toml`, **agents** in `~/.gemini/agents/ai-kit-*.md`.
 - **Guardrails** that are enabled: scripts in `~/.ai-kit/hooks/` (shared by all CLIs), declared under `hooks.BeforeTool` in groups named `ai-kit-<name>`. Your own hooks are kept.
 - **MCP servers** enabled in `overrides.toml`: `ai-kit-<name>` entries under `mcpServers`.
@@ -25,7 +25,6 @@ The `protected-paths` guardrail always blocks agent writes to `~/.gemini/setting
 ## Specifics
 
 - Gemini CLI 0.65 turns every skill of `~/.gemini/skills/` into a `/<skill>` command. Two commands with the same name are both renamed (`/user.guide`, `/guide1`), so no kit skill shares a command's name, and agy's command skills live in its plugin, where Gemini does not look.
-
 - **`~/.agents/skills` alias**: Gemini reads it too, and it wins over `~/.gemini/skills` when names match ("Skill conflict detected" at startup). `doctor` lists the kit skills hidden this way.
 - **Subfolder context**: when launched at the root of a repository, Gemini also reads the `AGENTS.md` and `GEMINI.md` of subfolders; a `.geminiignore` limits what it walks.
 - **Non-interactive mode (`gemini -p`)**: the skill activation tool is not exposed; the kit commands say what to do without it. `plan` mode also blocks skills.
