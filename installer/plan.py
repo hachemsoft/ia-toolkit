@@ -136,7 +136,7 @@ def guardrails(overrides, hooks_dir):
             continue
         spec = hook_manifest[name]
         script = hooks_dir/spec['script']
-        enabled_hooks[name] = {'event': spec['event'], 'group': {**({'matcher': spec['matcher']} if spec['matcher'] else {}), 'hooks': [{'name': 'ai-kit-'+name, 'type': 'command', 'command': hook_command(script)}]}}
+        enabled_hooks[name] = {'event': spec['event'], 'group': {**({'matcher': spec['matcher']} if spec['matcher'] else {}), 'hooks': [{'name': 'ai-kit-'+name, 'type': 'command', 'command': hook_command(script), 'timeout': 20000}]}}  # ms (Gemini CLI); the other adapters write their own form
     return hook_manifest, enabled_hooks, turned_off
 
 

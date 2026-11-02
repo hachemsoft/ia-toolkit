@@ -28,12 +28,15 @@ def read_json(path):
 
 
 def write_marker(path, marker):
-    with open(path, 'w', encoding='utf-8') as handle:
+    """Atomic, like the hook's own write."""
+    temp = path+'.'+str(os.getpid())+'.tmp'
+    with open(temp, 'w', encoding='utf-8') as handle:
         handle.write(json.dumps(marker, ensure_ascii=False, indent=1))
     try:
-        os.chmod(path, 0o600)
+        os.chmod(temp, 0o600)
     except OSError:
         pass
+    os.replace(temp, path)
 
 
 def hook_module():

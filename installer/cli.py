@@ -12,7 +12,7 @@ import sys
 from types import SimpleNamespace
 from datetime import datetime, timezone
 
-from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, news_module, read_json, json_bytes, digest,
+from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, news_module, is_guardrail, read_json, json_bytes, digest,
                    safe_id, inside, load_commands, load_agent, redact, user_context_refusal)
 from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
@@ -265,7 +265,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     command_state, command_after = plan_command(p, managed_write, command)
     managed_write(kit/'schemas'/'overrides.schema.json', (ROOT/'schemas/overrides.schema.json').read_bytes(), 'Kit schema')
     for name in enabled_hooks:
-        managed_write(hooks_dir/hook_manifest[name]['script'], (ROOT/'runtime/hooks'/hook_manifest[name]['script']).read_bytes(), 'Guardrail')
+        managed_write(hooks_dir/hook_manifest[name]['script'], (ROOT/'runtime/hooks'/hook_manifest[name]['script']).read_bytes(), 'Guardrail' if is_guardrail(hook_manifest[name]) else 'Kit hook')
     # Context layers and 30_USER.md, in the context folder (see context_location).
     # The rule layers (00, 10, 20) are company and team rules, not personal settings: a hand edit is restored, not kept.
     managed_write(context_dir/KIT_CONTEXT, kit_text.encode('utf-8'), 'Context file', restore=True)
@@ -304,7 +304,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
                        'created': sorted(rel(w) for w in writes if not w.exists()), 'modified': sorted(rel(w) for w in writes if w.exists()),
                        'removed': sorted(rel(d) for d in deletes), 'restored': [rel(r) for r in restored], 'notices': p.notices,
                        'context_file': str(p.user_file), 'home': str(home), 'identity': identity})
-    print('Profile: '+profile_id+(' | team '+team if team else '')+' | '+str(len(selected))+' skills | '+str(len(agents))+' agents | '+str(len(enabled_hooks))+' guardrails')
+    print('Profile: '+profile_id+(' | team '+team if team else '')+' | '+str(len(selected))+' skills | '+str(len(agents))+' agents | '+str(sum(1 for n in enabled_hooks if is_guardrail(hook_manifest[n])))+' guardrails')
     if identity.get('email'):
         print('Identity: '+identity['email']+' (source '+identity.get('source','?')+')')
     if dry_run:

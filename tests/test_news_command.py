@@ -95,8 +95,13 @@ class NewsFileCheckTests(unittest.TestCase):
         self.assertEqual(self.check('# News\n\nIntro.\n\n## 2026-11-02 hello : Hello\nprofiles: data-analyst\nteams: data\nuntil: 2026-12-31\n\nText.\n'), [])
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            code = __import__('subprocess').run([__import__('sys').executable, str(ROOT/'scripts/check_news.py')], capture_output=True, text=True).returncode
+            code = __import__('subprocess').run([__import__('sys').executable, str(ROOT/'scripts/check_news.py')], capture_output=True, text=True, encoding='utf-8').returncode
         self.assertEqual(code, 0)
+
+    def test_heading_inside_an_entry_is_refused_and_metadata_stops_at_the_blank_line(self):
+        found = self.check('## 2026-11-02 cut : Cut\n\nFirst.\n\n# Not a new entry\n\nLost.\n')
+        self.assertTrue(any('cut: a "# " heading inside the entry' in f for f in found), found)
+        self.assertEqual(self.check('## 2026-11-02 okay : Ok\n\nowner: me is text, not metadata.\n'), [])
 
     def test_bad_file_names_each_problem(self):
         found = self.check('## no id here\n\n## 2026-13-01 bad-date : X\n\nT.\n\n## 2026-11-02 twice : A\n\nT.\n\n## 2026-11-02 twice : B\nprofiles: nope\nteams: sales\nuntil: soon\nowner: me\n\nT.\n\n## 2026-11-02 empty : Nothing\n')

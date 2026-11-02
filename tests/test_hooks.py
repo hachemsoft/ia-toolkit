@@ -175,6 +175,7 @@ class HookInstallTests(unittest.TestCase):
   for i in range(2):cfg.write_text(cfg.read_text(encoding='utf-8')+'\n[hooks.state."'+str(cfg).replace('\\','/')+':pre_tool_use:'+str(i)+':0"]\ntrusted_hash = "sha256:00"\n',encoding='utf-8')  # dbt-prod-guard + protected-paths (on by default)
   # 0.34: approval records cannot be tied to the kit's guardrails (unknown hash, shared indexes): never reported as OK.
   text=self.doctor_text();self.assertNotIn('[OK] Codex: kit guardrails approved',text);self.assertIn('approval not verifiable automatically',text)
+  cfg.write_text(cfg.read_text(encoding='utf-8').replace('pre_tool_use','session_start'),encoding='utf-8');self.assertIn('approval not verifiable automatically',self.doctor_text())
  def test_defaults_protect_configuration_only(self):
   # protected-paths is on by default (configuration of the kit and CLIs); dbt-prod-guard stays opt-in.
   self.run_kit();self.assertEqual(sorted(read_json(self.home/'.ai-kit/state.json')['hooks']),['protected-paths','session-news'])  # session-news: on by default too (0.47)
@@ -189,8 +190,9 @@ class HookInstallTests(unittest.TestCase):
   self.overrides({'hooks':{'protected-paths':False,'session-news':False}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertFalse((self.home/'.gemini/hooks/ai-kit').exists())
  def test_user_hooks_preserved(self):
   s=self.home/'.gemini/settings.json';s.parent.mkdir(parents=True);s.write_text(json.dumps({'hooks':{'BeforeTool':[{'matcher':'*','hooks':[{'name':'mine','type':'command','command':'echo'}]}],'SessionStart':[{'hooks':[{'type':'command','command':'x'}]}]}}),encoding='utf-8')
-  self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':False}});self.run_kit();h=self.settings()['hooks'];self.assertEqual(h['BeforeTool'][0]['hooks'][0]['name'],'mine');self.assertEqual(len(h['BeforeTool']),2);self.assertIn('SessionStart',h)
-  self.overrides({'hooks':{'protected-paths':False}});self.run_kit();h=self.settings()['hooks'];self.assertEqual(len(h['BeforeTool']),1);self.assertIn('SessionStart',h)
+  self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':False}});self.run_kit();h=self.settings()['hooks'];self.assertEqual(h['BeforeTool'][0]['hooks'][0]['name'],'mine');self.assertEqual(len(h['BeforeTool']),2)
+  self.assertEqual(h['SessionStart'][0]['hooks'][0]['command'],'x');self.assertEqual(len(h['SessionStart']),2);self.assertEqual(h['SessionStart'][1]['hooks'][0]['name'],'ai-kit-session-news');self.assertEqual(h['SessionStart'][1]['hooks'][0]['timeout'],20000)
+  self.overrides({'hooks':{'protected-paths':False,'session-news':False}});self.run_kit();h=self.settings()['hooks'];self.assertEqual(len(h['BeforeTool']),1);self.assertEqual(h['SessionStart'],[{'hooks':[{'type':'command','command':'x'}]}])
  def test_modified_kit_hook_blocks(self):
   self.overrides({'hooks':{'dbt-prod-guard':True}});self.run_kit();s=self.home/'.gemini/settings.json';v=read_json(s);v['hooks']['BeforeTool'][0]['matcher']='.*';s.write_text(json.dumps(v),encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()
@@ -213,7 +215,7 @@ class HookInstallTests(unittest.TestCase):
 S='session-news.py'
 def git(*args,cwd):
  env={**os.environ,'GIT_AUTHOR_NAME':'t','GIT_AUTHOR_EMAIL':'t@example.com','GIT_COMMITTER_NAME':'t','GIT_COMMITTER_EMAIL':'t@example.com','GIT_TERMINAL_PROMPT':'0'}
- return subprocess.run(['git','-c','commit.gpgsign=false','-c','init.defaultBranch=main',*args],cwd=str(cwd),capture_output=True,text=True,env=env,check=True)
+ return subprocess.run(['git','-c','commit.gpgsign=false','-c','init.defaultBranch=main',*args],cwd=str(cwd),capture_output=True,text=True,encoding='utf-8',env=env,check=True)
 class SessionNewsTests(unittest.TestCase):
  """The session-news hook: what is new, said once, at startup and resume; the remote read once a day, never a write."""
  def setUp(self):
@@ -242,6 +244,35 @@ class SessionNewsTests(unittest.TestCase):
   self.marker();(self.home/'.ai-kit/news.json').unlink();self.assertIn('0.47.0',self.context(self.hook({})))  # no source: startup
   proc=subprocess.run([sys.executable,'-I',str(H/S)],input='not json',capture_output=True,text=True,env={**os.environ,**self.env});self.assertEqual(json.loads(proc.stdout),{});self.assertEqual(proc.returncode,0)
   (self.home/'.ai-kit/state.json').unlink();self.assertEqual(self.hook(),{})
+ def test_gemini_and_codex_inputs_and_zip_install(self):
+  gemini={'session_id':'s','timestamp':'2026-11-02T10:00:00Z','hook_event_name':'SessionStart','cwd':str(self.home),'source':'startup'}
+  codex={'session_id':'s','hook_event_name':'SessionStart','cwd':str(self.home),'transcript_path':'/t','source':'startup'}
+  self.assertIn('0.47.0',self.context(self.hook(gemini)));self.assertEqual(self.hook(codex),{})
+  (self.home/'.ai-kit/news.json').unlink();self.assertIn('0.47.0',self.context(self.hook(codex)))
+  self.assertEqual(self.hook({**gemini,'source':'clear'}),{});self.assertEqual(self.hook({**codex,'source':'compact'}),{})
+  # A ZIP install: the kit folder is not a clone; check_remote true runs no git at all (PATH without git) and records no read.
+  self.state(news={'check_remote':True});(self.home/'.ai-kit/news.json').unlink();self.marker(announced_versions=['0.47.0'])
+  self.assertEqual(run_hook(S,{'source':'startup'},{**self.env,'PATH':str(self.home)}),{});self.assertNotIn('last_check',self.marker())
+ def test_remote_default_branch_other_than_main(self):
+  t=Path(self.tmp.name);origin=t/'origin';origin.mkdir();git('init',cwd=origin);git('symbolic-ref','HEAD','refs/heads/trunk',cwd=origin)
+  (origin/'VERSION').write_text('0.47.0\n',encoding='utf-8');git('add','.',cwd=origin);git('commit','-q','-m','0.47.0',cwd=origin)
+  clone=t/'clone';git('clone','-q',str(origin),str(clone),cwd=t);self.kit=clone;self.state(news={'check_remote':True});self.marker(announced_versions=['0.47.0'])
+  (origin/'VERSION').write_text('0.48.0\n',encoding='utf-8');git('commit','-qam','0.48.0',cwd=origin)
+  self.assertIn('0.48.0',self.context(self.hook()));self.assertEqual(self.marker()['last_check']['remote_version'],'0.48.0')
+ def test_remote_failure_detail_is_a_category_never_the_url(self):
+  origin,clone=self.origin_and_clone();git('remote','set-url','origin','https://prenom.nom:glpat-SECRET@gitlab.example/kit.git',cwd=clone)
+  self.assertEqual(self.hook(),{});m=self.marker()['last_check'];self.assertEqual(m['result'],'failed');self.assertNotIn('SECRET',json.dumps(m));self.assertNotIn('prenom',json.dumps(m));self.assertIn(m['detail'],('network','auth','no ref','timeout','git failed'))
+ @unittest.skipIf(os.name=='nt','a shell script stands in for git')
+ def test_fetch_that_hangs_is_cut_at_the_timeout_even_with_a_child_holding_the_pipes(self):
+  import time;origin,clone=self.origin_and_clone();fake=Path(self.tmp.name)/'bin';fake.mkdir()
+  (fake/'git').write_text('#!/bin/sh\ncase "$*" in *fetch*) sleep 30 & sleep 30; exit 0;; esac\nexec '+__import__('shutil').which('git')+' "$@"\n',encoding='utf-8');(fake/'git').chmod(0o755)
+  start=time.monotonic();self.assertEqual(run_hook(S,{'source':'startup'},{**self.env,'PATH':str(fake)+os.pathsep+os.environ['PATH']}),{});elapsed=time.monotonic()-start
+  self.assertLess(elapsed,9,elapsed);self.assertEqual(self.marker()['last_check']['detail'],'timeout')
+ def test_newer_version_item_survives_truncation(self):
+  import importlib.util;spec=importlib.util.spec_from_file_location('h',H/S);h=importlib.util.module_from_spec(spec);spec.loader.exec_module(h)
+  (self.kit/'CHANGELOG.md').write_text('# Changelog\n\n## 0.47.0\n\n'+('- a very long line of changes\n'*2000),encoding='utf-8')
+  h.remote_read=lambda d:('ok','','0.48.0','');items,_=h.whats_new({'version':'0.47.0','profile':'','team':''},{},str(self.kit),'2026-11-02',True)
+  text=h.context_text(items);self.assertLessEqual(len(text),8000);self.assertIn('0.48.0',text);self.assertIn('ai-kit update',text)
  def test_agy_input_gets_agy_output(self):
   # agy's SessionStart contract (its built-in hooks documentation): injectSteps with a nested systemMessage, persisted in the conversation.
   out=self.hook({'conversationId':'c1','workspacePaths':[str(self.home)],'transcriptPath':'/t','modelName':'m'})

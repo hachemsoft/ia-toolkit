@@ -18,9 +18,9 @@ POSIX_HOOKS = '"$HOME/.ai-kit/hooks/'
 def locked(org, manifest):
     """The guardrails to enforce: those the organization locks, or every guardrail on by default when it locks none."""
     names = org.get('locked_hooks') or [n for n, spec in manifest.items() if spec.get('default') and is_guardrail(spec)]
-    unknown = [n for n in names if n not in manifest]
+    unknown = [n for n in names if n not in manifest or not is_guardrail(manifest[n])]
     if unknown:
-        raise KitError('organization.toml locked_hooks: unknown guardrail '+', '.join(unknown)+' (known: '+', '.join(sorted(manifest))+').')
+        raise KitError('organization.toml locked_hooks: unknown guardrail '+', '.join(unknown)+' (known: '+', '.join(sorted(n for n, s in manifest.items() if is_guardrail(s)))+').')
     return names
 
 

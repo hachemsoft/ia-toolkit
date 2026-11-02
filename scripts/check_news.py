@@ -50,6 +50,14 @@ def problems(text, profiles, teams):
                     found.append('line '+str(number)+': unknown metadata "'+key.group(1)+'" (profiles, teams, until)')
                 elif not key:
                     break
+    current = None
+    for number, line in enumerate(lines, 1):
+        if hook.HEADING.match(line):
+            current = hook.HEADING.match(line).group(2)
+        elif line.startswith('## '):
+            current = None
+        elif line.startswith('# ') and current:
+            found.append('line '+str(number)+': entry '+current+': a "# " heading inside the entry cuts its text (use ### or plain text)')
     for entry in hook.parse_news(text):
         where = 'entry '+entry['id']+': '
         if entry['id'] in seen:

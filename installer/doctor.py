@@ -2,6 +2,7 @@
 import contextlib
 import io
 import json
+from datetime import date
 import os
 from pathlib import Path
 import re
@@ -304,7 +305,7 @@ def news_checks(home, state, status):
     if marker.get('declined_version'):
         print('[Info] Version '+str(marker['declined_version'])+' declined (ai-kit news --later): the next one will be proposed.')
     if hook and kit_dir and os.path.isdir(kit_dir):
-        today = __import__('datetime').date.today().isoformat()
+        today = date.today().isoformat()
         waiting = [e for e in hook.parse_news(hook.file_text(os.path.join(kit_dir, 'NEWS.md')))
                    if e['id'] not in (marker.get('announced_news') or []) and hook.aimed_at(e, str(state.get('profile') or ''), str(state.get('team') or ''), today)]
         if waiting:

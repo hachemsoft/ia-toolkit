@@ -22,26 +22,26 @@ EMAIL = re.compile(r'[^@\s]+@[^@\s]+\.[^@\s]+')
 # the kit package loads that very file (one implementation; in the installed package it is ai_kit/kit/runtime/friction.py).
 def friction_module():
     """runtime/friction.py as a module, loaded once from the kit's own files."""
-    if 'module' not in _FRICTION:
+    if 'friction' not in _MODULES:
         import importlib.util
         spec = importlib.util.spec_from_file_location('ai_kit_friction', ROOT/'runtime'/'friction.py')
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        _FRICTION['module'] = module
-    return _FRICTION['module']
+        _MODULES['friction'] = module
+    return _MODULES['friction']
 
 
 def news_module():
     """runtime/news.py as a module (ai-kit news), loaded once from the kit's own files."""
-    if 'news' not in _FRICTION:
+    if 'news' not in _MODULES:
         import importlib.util
         spec = importlib.util.spec_from_file_location('ai_kit_news', ROOT/'runtime'/'news.py')
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        _FRICTION['news'] = module
-    return _FRICTION['news']
+        _MODULES['news'] = module
+    return _MODULES['news']
 
-_FRICTION = {}
+_MODULES = {}  # runtime scripts loaded once: friction.py, news.py
 SECRET = friction_module().SECRET
 redact = friction_module().redact
 friction_id = friction_module().friction_id
