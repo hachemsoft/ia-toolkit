@@ -12,7 +12,7 @@ import sys
 from types import SimpleNamespace
 from datetime import datetime, timezone
 
-from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, read_json, json_bytes, digest,
+from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, news_module, is_guardrail, read_json, json_bytes, digest,
                    safe_id, inside, load_commands, load_agent, redact, user_context_refusal)
 from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
@@ -242,6 +242,8 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     agents = select_agents(profile, overrides, agent_catalog, load_agent)
     hooks_dir = kit/'hooks'  # scripts shared by all CLIs, like kit/bin/friction.py
     hook_manifest, enabled_hooks, turned_off = guardrails(overrides, hooks_dir)
+    news = news_setting(overrides)
+    kit_dir = kit_folder()
     # MCP: resolved from the three sources apart, not from the merged overrides ("github": true must not erase the server).
     servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
     enabled_mcp = {'ai-kit-'+name: server for name, server in servers.items()}
@@ -259,10 +261,11 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         agent_body=lambda definition: practices+'\n'+agent_instruction(definition)+'\n'+definition['instructions']+'\n')
     # Scripts shared by all CLIs: frictions and enabled guardrails.
     managed_write(kit/'bin'/'friction.py', (ROOT/'runtime/friction.py').read_bytes(), 'Kit script')
+    managed_write(kit/'bin'/'news.py', (ROOT/'runtime/news.py').read_bytes(), 'Kit script')
     command_state, command_after = plan_command(p, managed_write, command)
     managed_write(kit/'schemas'/'overrides.schema.json', (ROOT/'schemas/overrides.schema.json').read_bytes(), 'Kit schema')
     for name in enabled_hooks:
-        managed_write(hooks_dir/hook_manifest[name]['script'], (ROOT/'runtime/hooks'/hook_manifest[name]['script']).read_bytes(), 'Guardrail')
+        managed_write(hooks_dir/hook_manifest[name]['script'], (ROOT/'runtime/hooks'/hook_manifest[name]['script']).read_bytes(), 'Guardrail' if is_guardrail(hook_manifest[name]) else 'Kit hook')
     # Context layers and 30_USER.md, in the context folder (see context_location).
     # The rule layers (00, 10, 20) are company and team rules, not personal settings: a hand edit is restored, not kept.
     managed_write(context_dir/KIT_CONTEXT, kit_text.encode('utf-8'), 'Context file', restore=True)
@@ -287,7 +290,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     tracker = friction_tracker(org_defaults_root(), personal)
     if org_defaults_root().get('friction_tracker') and tracker is None:
         p.notices.append('[Info] Frictions stay local: share_frictions = false in your overrides.toml (your organization set a friction tracker).')
-    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,**({'friction_tracker': tracker} if tracker else {}),
+    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'news':news,**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
                  'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}
     writes[kit/'state.json'] = json_bytes(new_state)
@@ -301,7 +304,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
                        'created': sorted(rel(w) for w in writes if not w.exists()), 'modified': sorted(rel(w) for w in writes if w.exists()),
                        'removed': sorted(rel(d) for d in deletes), 'restored': [rel(r) for r in restored], 'notices': p.notices,
                        'context_file': str(p.user_file), 'home': str(home), 'identity': identity})
-    print('Profile: '+profile_id+(' | team '+team if team else '')+' | '+str(len(selected))+' skills | '+str(len(agents))+' agents | '+str(len(enabled_hooks))+' guardrails')
+    print('Profile: '+profile_id+(' | team '+team if team else '')+' | '+str(len(selected))+' skills | '+str(len(agents))+' agents | '+str(sum(1 for n in enabled_hooks if is_guardrail(hook_manifest[n])))+' guardrails')
     if identity.get('email'):
         print('Identity: '+identity['email']+' (source '+identity.get('source','?')+')')
     if dry_run:
@@ -518,6 +521,32 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
 FRICTION_MODES = ('propose', 'auto', 'off')
 
 
+def news_setting(overrides):
+    """[news] of the merged settings, for state.json: check_remote (the session-news hook reads the kit's remote once a day), true by default."""
+    news = overrides.get('news', {})
+    if not isinstance(news, dict) or not isinstance(news.get('check_remote', True), bool) or any(k not in ('check_remote',) for k in news):
+        raise KitError('news must be a table with check_remote = true or false.')
+    return {'check_remote': news.get('check_remote', True)}
+
+
+def kit_folder():
+    """The kit folder the session-news hook reads (git fetch): the one the launcher runs from, else this clone; none for a pip install."""
+    folder = os.environ.get('AI_KIT_SOURCE_DIR')
+    if folder:
+        return folder
+    return str(ROOT) if (ROOT/'.git').exists() else None
+
+
+def news_action(argv):
+    """ai-kit news: the script the agent runs on a refused update (runtime/news.py, one implementation) run from the
+    terminal, with --home: --later, --list, --check."""
+    parser = argparse.ArgumentParser(prog='ai-kit news', add_help=False)
+    parser.add_argument('--home', type=Path, default=Path.home())
+    parser.add_argument('--plain', action='store_true')
+    args, rest = parser.parse_known_args(argv)
+    return news_module().main([*rest, '--home', str(args.home.resolve())])
+
+
 def friction_action(argv):
     """ai-kit friction: the /friction script itself (runtime/friction.py, one implementation) run from the terminal,
     with --home; --list for the last frictions; --mode [propose|auto|off] to show or change the frictions setting of
@@ -645,11 +674,11 @@ def main(argv=None):
         print('Python 3.9 minimum required (3.11 or newer recommended).',file=sys.stderr)
         return 2
     argv = sys.argv[1:] if argv is None else list(argv)
-    if argv and argv[0] == 'friction':
-        # The /friction script from the terminal: its own options, the kit's --home. Colour as for the other actions.
+    if argv and argv[0] in ('friction', 'news'):
+        # The /friction and news scripts from the terminal: their own options, the kit's --home. Colour as for the other actions.
         with styled_output(plain='--plain' in argv):
             try:
-                return friction_action(argv[1:])
+                return friction_action(argv[1:]) if argv[0] == 'friction' else news_action(argv[1:])
             except (KitError, OSError, UnicodeError) as exc:
                 print('Error: '+redact(str(exc)), file=sys.stderr)
                 return 2
@@ -659,8 +688,8 @@ def main(argv=None):
             except SystemExit as exc:  # the script's own argparse: usage already printed
                 return exc.code if isinstance(exc.code, int) else 2
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
-    parser.add_argument('action',nargs='?',choices=['setup','update','doctor','usage','uninstall','managed-settings','friction'],
-                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]')
+    parser.add_argument('action',nargs='?',choices=['setup','update','doctor','usage','uninstall','managed-settings','friction','news'],
+                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now')
     parser.add_argument('--since',type=int,default=42,help='usage: window in days (default 42)')
     parser.add_argument('--json',type=Path,help='usage: write the report to this file')
     parser.add_argument('--min-sessions',type=int,default=10,help='usage: minimum sessions before recommending (default 10)')

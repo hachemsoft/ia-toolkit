@@ -40,6 +40,7 @@ These hold for every change; a test guards each.
 | Each CLI's file layout and settings format | the adapters | a CLI release that moves a folder or renames a key; `doctor` then reports the missing piece |
 | The logs read by `usage` (Gemini chats, agy conversation database, Codex sessions, Claude Code transcripts) | `history` in each adapter | an undocumented format change: `usage` says so when it reads a CLI's logs and recognises nothing |
 | `~/.claude.json`, rewritten by Claude Code while it runs | the Claude adapter | an `update` during an open session; the docs say to close it first |
+| What is new, said at session start | `runtime/hooks/session-news.py`, `NEWS.md`, `runtime/news.py` | the hook reads the kit's remote once a day, never writes it, never runs `update` (ADR 0012) |
 | The CLIs' tool names in the guardrails | `runtime/hooks/` | a new tool name; the guardrails refuse a call that names a protected path in a form they cannot read |
 
 Each adapter declares the CLI version it was checked on (`VERIFIED`, shown in the [CLI matrix](cli/matrice.md)): `doctor` says when a newer one runs. Once a week, `.github/workflows/cli-drift.yml` installs the latest release of each CLI published on npm and runs `scripts/cli_drift.py`: the version, and the options the kit relies on, read from `--help`, without a model call. A red run means an adapter or the evals need a change; a newer version that still has every option is reported, then `VERIFIED` is raised after a check.

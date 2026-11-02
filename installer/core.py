@@ -22,15 +22,26 @@ EMAIL = re.compile(r'[^@\s]+@[^@\s]+\.[^@\s]+')
 # the kit package loads that very file (one implementation; in the installed package it is ai_kit/kit/runtime/friction.py).
 def friction_module():
     """runtime/friction.py as a module, loaded once from the kit's own files."""
-    if 'module' not in _FRICTION:
+    if 'friction' not in _MODULES:
         import importlib.util
         spec = importlib.util.spec_from_file_location('ai_kit_friction', ROOT/'runtime'/'friction.py')
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        _FRICTION['module'] = module
-    return _FRICTION['module']
+        _MODULES['friction'] = module
+    return _MODULES['friction']
 
-_FRICTION = {}
+
+def news_module():
+    """runtime/news.py as a module (ai-kit news), loaded once from the kit's own files."""
+    if 'news' not in _MODULES:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('ai_kit_news', ROOT/'runtime'/'news.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _MODULES['news'] = module
+    return _MODULES['news']
+
+_MODULES = {}  # runtime scripts loaded once: friction.py, news.py
 SECRET = friction_module().SECRET
 redact = friction_module().redact
 friction_id = friction_module().friction_id
@@ -116,6 +127,16 @@ def merge_defaults(current, defaults):
 
 def quote_path(path):
     return '"'+str(path)+'"' if os.name == 'nt' else shlex.quote(str(path))
+
+# Manifest events (Gemini CLI's names) and their name in the CLIs that use Claude Code's: a guardrail runs before a tool,
+# the session-news hook at session start. A hook that is not a guardrail is never locked or managed by IT.
+CLI_EVENTS = {'BeforeTool': 'PreToolUse'}
+
+def cli_event(event):
+    return CLI_EVENTS.get(event, event)
+
+def is_guardrail(spec):
+    return spec.get('event') == 'BeforeTool'
 
 def hook_command(script):
     """Command a CLI runs for a kit guardrail: this Python, isolated (-I: no PYTHON* variables, no current folder on the import path)."""

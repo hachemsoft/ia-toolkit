@@ -223,7 +223,7 @@ def only_reads(program, words, mentions_in):
     return True
 
 PYTHONS = re.compile(r'(python[0-9.]*|py)(\.exe)?')
-KIT_TOOLS = ('/.ai-kit/bin/friction.py',)  # run by the kit's own commands (/friction): they write only outside the protected paths
+KIT_TOOLS = ('/.ai-kit/bin/friction.py', '/.ai-kit/bin/news.py')  # run by the kit's own commands (/friction, a refused update): they write only outside the protected paths
 
 def runs_kit_tool(program, words, mentions_in):
     """True when this program is Python running one of the kit's own tools, and its other words name no protected path."""

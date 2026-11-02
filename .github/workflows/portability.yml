@@ -55,6 +55,8 @@ jobs:
           check-jsonschema --check-metaschema schemas/overrides.schema.json schemas/organization.schema.json
           check-jsonschema --schemafile schemas/organization.schema.json organization.toml
           check-jsonschema --schemafile schemas/overrides.schema.json templates/user-overrides.toml
+      - name: NEWS.md well formed
+        run: python3 scripts/check_news.py
   release-zip:
     name: Release ZIP
     runs-on: ubuntu-latest

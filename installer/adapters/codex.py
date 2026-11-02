@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (USER_CONTEXT, KitError, digest, hook_command, split_block, place_block, command_skill_text, redact, user_context_refusal,
+from ..core import (USER_CONTEXT, KitError, digest, hook_command, cli_event, split_block, place_block, command_skill_text, redact, user_context_refusal,
                     skill_prefix, free_name, rename_references, renamed_skill_file, renamed_notice, _ts, live_call, LIVE_PROMPT, skills_read)
 
 CODEX_DIR = '.codex'
@@ -86,11 +86,12 @@ def codex_context_block(kit_text, practice_texts, user_text, renamed=None):
     return '\n'.join(lines)
 
 def codex_config_block(agent_entries, hook_commands, mcp_servers):
+    """hook_commands: (event, command) pairs; a guardrail (PreToolUse) matches every tool, session-news (SessionStart) every start."""
     lines = [CODEX_TOML[0]]
     for name, (description, config_file) in agent_entries.items():
         lines += ['', '[agents.'+name+']', 'description = '+toml_value(description), 'config_file = '+toml_value(config_file)]
-    for command in hook_commands:
-        lines += ['', '[[hooks.PreToolUse]]', 'matcher = ".*"', '', '[[hooks.PreToolUse.hooks]]', 'type = "command"', 'command = '+toml_value(command), 'timeout = 20']
+    for event, command in hook_commands:
+        lines += ['', '[[hooks.'+event+']]'] + (['matcher = ".*"'] if event == 'PreToolUse' else []) + ['', '[[hooks.'+event+'.hooks]]', 'type = "command"', 'command = '+toml_value(command), 'timeout = 20']
     for name, server in mcp_servers.items():
         lines += ['', '[mcp_servers.'+name+']']
         for key in ('command', 'args', 'env', 'cwd'):
@@ -188,11 +189,11 @@ def finalize(p: Plan, active: bool = True) -> None:
                 user_text = data.decode('utf-8')
             block = codex_context_block(p.kit_text, p.practice_texts, user_text, p.adapter_data.get(NAME, {}).get('renamed'))
         elif active:
-            if p.enabled_hooks and re.search(r'^\s*(hooks\.)?PreToolUse\s*=', outside, re.M):
-                raise KitError('~/.codex/config.toml already defines hooks.PreToolUse in another form: the kit cannot add its guardrails without rewriting it.')
+            if p.enabled_hooks and re.search(r'^\s*(hooks\.)?(PreToolUse|SessionStart)\s*=', outside, re.M):
+                raise KitError('~/.codex/config.toml already defines hooks.PreToolUse or hooks.SessionStart in another form: the kit cannot add its hooks without rewriting it.')
             if re.search(r'^\s*\[\s*(agents|mcp_servers)\.ai-kit-', outside, re.M):
                 raise KitError('~/.codex/config.toml already contains ai-kit- entries outside the kit block: remove them, then update.')
-            hook_commands = [hook_command(p.hooks_dir/p.hook_manifest[name]['script']) for name in p.enabled_hooks]
+            hook_commands = [(cli_event(p.hook_manifest[name]['event']), hook_command(p.hooks_dir/p.hook_manifest[name]['script'])) for name in p.enabled_hooks]
             block = codex_config_block(p.adapter_data.get(NAME, {}).get('agents', {}), hook_commands, p.enabled_mcp)
         if block is not None:
             # Normalised line endings: a 30_USER.md edited on Windows (CRLF) must not change the digest of the block read back.
@@ -252,7 +253,7 @@ def hook_approval(home):
     the kit's guardrails are the ones approved. No record at all means they are not approved."""
     config = home/CODEX_DIR/'config.toml'
     text = config.read_text(encoding='utf-8') if config.is_file() else ''
-    records = re.findall(r'^\[hooks\.state\."(?![^"]*<session-flags>)[^"]*config\.toml:pre_tool_use:\d+:\d+"\]', text, re.M)
+    records = re.findall(r'^\[hooks\.state\."(?![^"]*<session-flags>)[^"]*config\.toml:(?:pre_tool_use|session_start):\d+:\d+"\]', text, re.M)
     if not records:
         return False, ('Codex: kit guardrails approved in Codex (not yet: no approval recorded; start codex and answer'
                        ' "Trust all and continue", otherwise they never run)')

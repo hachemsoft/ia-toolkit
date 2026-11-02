@@ -2,6 +2,7 @@
 import contextlib
 import io
 import json
+from datetime import date
 import os
 from pathlib import Path
 import re
@@ -23,6 +24,17 @@ GUARDRAIL_PROBES = {
     'dbt-prod-guard': lambda home: {'tool_name': 'run_shell_command', 'tool_input': {'command': 'dbt run --target prod'}, 'cwd': str(home)},
     'protected-paths': lambda home: {'tool_name': 'write_file', 'tool_input': {'file_path': str(home/'.ai-kit'/'overrides.toml')}, 'cwd': str(home)},
 }
+# session-news on a /clear: answers {} and writes nothing (a startup probe would mark the real news as announced).
+HOOK_PROBES = {'session-news': lambda home: {'source': 'clear', 'hook_event_name': 'SessionStart'}}
+
+
+def blocks(answer):
+    return answer.get('decision') == 'deny' or answer.get('hookSpecificOutput', {}).get('permissionDecision') == 'deny'
+
+
+
+def proc_ok(proc):
+    return proc is not None and proc.returncode == 0
 
 
 def command_parts(command):
@@ -34,26 +46,30 @@ def command_parts(command):
 def guardrail_checks(home, state, status):
     """Each enabled guardrail: its Python and script exist, and it really blocks a known case. A guardrail that cannot run lets everything through."""
     for name, hook in sorted(state.get('hooks', {}).items()):
+        kind = 'Guardrail' if hook.get('event') == 'BeforeTool' else 'Hook'
         interpreter, script = command_parts(hook['group']['hooks'][0]['command'])
         if not interpreter or not interpreter.is_file():
-            status(False, 'Guardrail '+name+': Python not found ('+str(interpreter)+'); run update to point to the current Python')
+            status(False, kind+' '+name+': Python not found ('+str(interpreter)+'); run update to point to the current Python')
             continue
         if not script.is_file():
-            status(False, 'Guardrail '+name+': script missing ('+str(script)+'); run update')
+            status(False, kind+' '+name+': script missing ('+str(script)+'); run update')
             continue
-        probe = GUARDRAIL_PROBES.get(name)
+        probe = GUARDRAIL_PROBES.get(name) or HOOK_PROBES.get(name)
         if not probe:
             continue
         env = {k: v for k, v in os.environ.items() if k != 'AI_KIT_ALLOW_PROD'}
         env.update({'HOME': str(home), 'USERPROFILE': str(home)})
+        proc = None
         try:
             proc = subprocess.run([str(interpreter), '-I', str(script)], input=json.dumps(probe(home)), capture_output=True, text=True,
                                   encoding='utf-8', errors='replace', timeout=20, env=env)
             answer = json.loads(proc.stdout or '{}')
         except (OSError, ValueError, subprocess.SubprocessError):
             answer = {}
-        blocked = answer.get('decision') == 'deny' or answer.get('hookSpecificOutput', {}).get('permissionDecision') == 'deny'
-        status(blocked, 'Guardrail '+name+': synthetic test, the script blocks a known case when run (this does not prove the CLI calls it)')
+        if name in HOOK_PROBES:
+            status(proc_ok(proc) and answer == {}, 'Hook '+name+': synthetic test, the script runs and answers (this does not prove the CLI calls it)')
+        else:
+            status(blocks(answer), 'Guardrail '+name+': synthetic test, the script blocks a known case when run (this does not prove the CLI calls it)')
 
 
 REPO_SKILL_DIRS = ('.agents/skills', '.gemini/skills', '.codex/skills')
@@ -246,7 +262,8 @@ def tracker_checks(home, state, status):
     config = state.get('friction_tracker')
     if not config:
         return
-    friction = __import__('installer.core', fromlist=['friction_module']).friction_module()
+    from .core import friction_module
+    friction = friction_module()
     cli = friction.TRACKERS.get(config.get('kind'), {}).get('cli')
     label = 'Friction tracker: '+str(config.get('kind'))+' '+str(config.get('project'))+', '
     exe = shutil.which(cli) if cli else None
@@ -261,6 +278,38 @@ def tracker_checks(home, state, status):
     pending = len(friction.unsent(str(home), config))
     if pending:
         print('[Info] '+str(pending)+' friction'+('s' if pending != 1 else '')+' not sent to the tracker yet: ai-kit friction --sync')
+
+
+def news_checks(home, state, status):
+    """The session-news hook: the kit folder it reads, the last remote read, what waits for the next session start."""
+    if 'session-news' not in state.get('hooks', {}):
+        print('[Info] session-news hook off (hooks.session-news = false): nothing announced at session start.')
+        return
+    from .core import news_module
+    news = news_module()
+    hook = news.hook_module()
+    kit_dir = str(state.get('kit_dir') or '')
+    if not kit_dir:
+        print('[Info] Kit folder not recorded: session-news announces the installed version only (run the installer from the kit folder, then update).')
+    else:
+        status(os.path.isdir(kit_dir), 'Kit folder present for session-news: '+kit_dir+('' if os.path.isdir(kit_dir) else ' (moved or deleted: run the installer from its new place, then update)'))
+    marker = read_json(home/'.ai-kit'/'news.json')
+    last = marker.get('last_check') if isinstance(marker.get('last_check'), dict) else {}
+    if (state.get('news') or {}).get('check_remote') is False:
+        print('[Info] Kit remote not read by session-news (news.check_remote = false): a newer version is not proposed.')
+    elif last:
+        print('[Info] Kit remote last read by session-news: '+str(last.get('date'))+', '+str(last.get('result'))+(' ('+last['detail']+')' if last.get('detail') else '')
+              + (', remote version '+last['remote_version'] if last.get('remote_version') else ''))
+    else:
+        print('[Info] Kit remote not read yet by session-news (once a day at session start; ai-kit news --check reads it now).')
+    if marker.get('declined_version'):
+        print('[Info] Version '+str(marker['declined_version'])+' declined (ai-kit news --later): the next one will be proposed.')
+    if hook and kit_dir and os.path.isdir(kit_dir):
+        today = date.today().isoformat()
+        waiting = [e for e in hook.parse_news(hook.file_text(os.path.join(kit_dir, 'NEWS.md')))
+                   if e['id'] not in (marker.get('announced_news') or []) and hook.aimed_at(e, str(state.get('profile') or ''), str(state.get('team') or ''), today)]
+        if waiting:
+            print('[Info] '+str(len(waiting))+' announcement'+('s' if len(waiting) != 1 else '')+' waiting for the next session start: '+', '.join(e['id'] for e in waiting))
 
 
 def runtime_checks(home, status):
@@ -330,6 +379,7 @@ def doctor_checks(home, cwd=None, problems=None):
         print('Profile: '+state['profile']+' | version '+state['version'])
         command_checks(home, state, status)
         tracker_checks(home, state, status)
+        news_checks(home, state, status)
         identity = state.get('user', {})
         print('Recorded identity: '+(identity.get('email') or identity.get('name') or 'none')+(' (source '+identity['source']+')' if identity.get('source') else ''))
         profile = load_profile(state['profile'])
