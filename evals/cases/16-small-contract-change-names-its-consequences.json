@@ -1,0 +1,17 @@
+{
+  "name": "small-contract-change-names-its-consequences",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ]
+  },
+  "prompt": "/build get_order must return None instead of raising KeyError when the order does not exist. It's one line, go ahead.",
+  "expect": {
+    "regex": [
+      "test_unknown_order|test_orders",
+      "(?i)(caller|appelant|contract|contrat)"
+    ]
+  },
+  "_doc": "A one-line change that alters a contract: the level follows what it can break, not its size, so the consequences are named (the test that expects KeyError, the callers). Patterns accept English and French answers."
+}

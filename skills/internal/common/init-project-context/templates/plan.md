@@ -10,7 +10,7 @@ Approved by: <name> · Date: <YYYY-MM-DD> · Ceremony: tweak | small feature | l
 2. <…>
 
 ## Risks
-<What it can break, the riskiest step, the rejected alternatives and why.>
+<What it can break, the riskiest step, the rejected alternatives and why. When the change is hard to undo: how a failure would show (signal, where to look) and how to undo or mitigate it; "not applicable" is an answer.>
 
 ## Proof
 <For each slice: the test, the assertion query or the check that proves it is done. Exact commands.>

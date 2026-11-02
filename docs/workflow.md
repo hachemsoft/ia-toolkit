@@ -10,9 +10,24 @@ Three levels, defined once in the kit context (`00_KIT.md`) and used by every co
 | --- | --- | --- | --- |
 | **quick** | small local change (label, typo, condition), visual or exploratory work | do it, run the check that covers it; no document | none; `/test` if the repo has tests; `/design` for a throwaway prototype |
 | **standard** | small feature, a few files | a short alignment in the conversation, then test-first; no `plan.md` unless asked | `/build`, `/test`, `/ship` |
-| **full** | large or unclear change; production, irreversible or sensitive data | intent, spec, plan, acceptance before code, verification between phases; full review | `/intent`, `/spec`, `/build` per ticket, `/review full`, `/ship`, guardrails active |
+| **full** | large or unclear change; production, a shared contract, irreversible or sensitive data | intent, spec, plan, acceptance before code, verification between phases; full review | `/intent`, `/spec`, `/build` per ticket, `/review full`, `/ship`, guardrails active |
 
-A reply to a change opens with the level chosen, on a fixed first line (`Level: quick`, `Level: standard` or `Level: full`, then why), even when the agent then asks a question or is blocked: the kit context requires it, and so do `/build` and `/intent`. The other steps state their level in one line. A go-ahead already given in the conversation is not asked again. `/review` accepts `quick` or `full` as an argument.
+The level follows what the change can break and whether that can be undone, not its size: a one-line change to a shared contract is not quick. A reply to a change opens with the level chosen, on a fixed first line (`Level: quick`, `Level: standard` or `Level: full`, then why), even when the agent then asks a question or is blocked: the kit context requires it, and so do `/build` and `/intent`. The other steps state their level in one line. A go-ahead already given in the conversation is not asked again. `/review` accepts `quick` or `full` as an argument.
+
+## Operational ownership
+
+An agent can produce the change; the person or team responsible must still be able to understand it, check it, maintain it and handle its consequences. The kit gets there through the steps above, in proportion to the level, with no step, file or command of its own:
+
+| Principle | Where the kit holds it |
+| --- | --- |
+| Understandability | the guarantees of a component stated before it changes (team practices); assumptions in `intent.md` and `spec.md`; contracts and areas of concern in `spec.md`; the visual summary of `/ship` |
+| Verifiability | acceptance criteria in `spec.md`, Proof in `plan.md`; observed output kept apart from assumptions, nothing called verified that was not run (kit context, `/build`, `/test`, the verifier agent); the doubt pass of `/review full` |
+| Traceability | one folder per change, `spec.md` and the merge request description versioned, ADRs |
+| Diagnosability | for a full change, how a failure would show (`plan.md` Risks, `/review full`); `/diagnose` once it happens |
+| Recoverability | for a full change, how to undo or mitigate it, or "not applicable" (`plan.md`, `/ship`); the domain's own method in its playbook (rollback in `infra-change`, reversibility in `architecture-decision`) |
+| Accountability | acceptance before code at the full level, commit, push and production only with the person's agreement, what a human must decide listed in `spec.md` and by `/ship` |
+
+A quick change gets none of this: it is done and checked. The methods of a domain stay in its playbook, so the core names no technology.
 
 ## The steps
 
