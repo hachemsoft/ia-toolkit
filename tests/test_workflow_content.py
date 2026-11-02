@@ -150,5 +150,53 @@ class WelcomeTests(unittest.TestCase):
         self.assertIn('never as a prerequisite', text)
 
 
+class OwnershipTests(unittest.TestCase):
+    """Operational ownership: the level follows the stakes, evidence is told apart from assumption, and a risky change
+    says how a failure shows and how it is undone, without adding a step, a file or a technology to the core."""
+    def template(self, name):
+        return (ROOT/CATALOG['init-project-context']['path']/'templates'/name).read_text(encoding='utf-8')
+
+    def test_level_follows_the_stakes_not_the_size(self):
+        kit = (ROOT/'templates/kit-context.md').read_text(encoding='utf-8')
+        self.assertIn('not its size', kit)
+        self.assertIn('shared contract', kit)
+        self.assertIn('how a failure shows and how to undo or mitigate it', kit)
+
+    def test_evidence_is_told_apart_from_assumption(self):
+        kit = (ROOT/'templates/kit-context.md').read_text(encoding='utf-8')
+        line = next(row for row in kit.splitlines() if row.startswith('Evidence:'))
+        for words in ('observed', 'assume', 'never call verified', 'unknown stays unknown'):
+            self.assertIn(words, line)
+
+    def test_full_plan_and_delivery_cover_detection_recovery_and_decisions(self):
+        build = COMMANDS['build']
+        full = build[build.index('Full:'):build.index('Step 2')]
+        self.assertIn('how a failure would show and how to undo it', full)
+        self.assertIn('how a failure would show', self.template('plan.md'))
+        ship = COMMANDS['ship']
+        for words in ('how to undo or mitigate', 'not verified', 'a human must decide'):
+            self.assertIn(words, ship)
+        self.assertIn('whether a failure would show and how it is undone', COMMANDS['review'])
+
+    def test_recovery_never_blocks_a_change_where_it_does_not_apply(self):
+        for text in ((ROOT/'templates/kit-context.md').read_text(encoding='utf-8'), COMMANDS['build'], COMMANDS['ship'], self.template('plan.md')):
+            self.assertRegex(text, r'when (that|it) applies|"not applicable"|not applicable')
+        quick = COMMANDS['build'][:COMMANDS['build'].index('Standard:')]
+        self.assertNotRegex(quick, r'(?i)rollback|undo|mitigat')
+
+    def test_assumptions_have_a_place_in_the_artifacts(self):
+        for name in ('intent.md', 'spec.md'):
+            self.assertIn('Assumption:', self.template(name), name)
+
+    def test_the_core_names_no_technology(self):
+        # The ownership rules are universal; methods of a domain stay in its playbook.
+        kit = (ROOT/'templates/kit-context.md').read_text(encoding='utf-8')
+        added = [row for row in kit.splitlines() if row.startswith(('Evidence:', 'Reply to a change'))]
+        self.assertEqual(len(added), 2)
+        self.assertNotRegex('\n'.join(added), r'(?i)\b(dbt|sql|bigquery|terraform|kubernetes|helm|java|python|database)\b')
+        ship = COMMANDS['ship']
+        self.assertNotRegex(ship, r'(?i)\b(dbt|sql|bigquery|terraform|kubernetes|helm|java|python)\b')
+
+
 if __name__ == '__main__':
     unittest.main()

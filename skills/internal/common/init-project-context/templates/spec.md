@@ -27,3 +27,4 @@ Each requirement has a verifiable acceptance criterion.
 
 ## Open questions
 - <…>
+- Assumption: <what this spec takes as true without proof, and how to check it.>

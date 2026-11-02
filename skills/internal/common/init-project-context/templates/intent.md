@@ -12,7 +12,8 @@ Author: <name> · Date: <YYYY-MM-DD> · Origin: idea | ticket <link> | incident 
 <Teams, users, sources, models, datasets, APIs involved.>
 
 ## Constraints
-<What does not move: access rights, personal data, scopes, deadlines, mandated tools.>
+<What does not move: invariants to keep, access rights, personal data, scopes, deadlines, mandated tools.>
 
 ## Open questions
 - <Question that blocks acceptance, and who can answer it.>
+- Assumption: <what is taken as true without proof, and how to check it.>

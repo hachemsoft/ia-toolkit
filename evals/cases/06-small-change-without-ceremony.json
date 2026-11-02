@@ -13,12 +13,13 @@
     ],
     "not_contains": [
       "accept the plan",
-      "plan.md"
+      "plan.md",
+      "rollback"
     ],
     "files_absent": [
       "plan.md",
       "intent.md"
     ]
   },
-  "_doc": "Backend, small task: the quick level, no plan.md, no new acceptance round after an explicit go-ahead. Writes are refused by the eval policy: the observable is the answer and the absence of artifacts."
+  "_doc": "Backend, small task: the quick level, no plan.md, no new acceptance round after an explicit go-ahead. Writes are refused by the eval policy: the observable is the answer and the absence of artifacts. No rollback either: recovery is not applicable to a message change and must not add ceremony."
 }
