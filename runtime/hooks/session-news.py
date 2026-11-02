@@ -2,7 +2,9 @@
 """Kit hook (session start): tells the agent, once, what is new, and whether a newer kit version is available.
 
 Input: the CLI's SessionStart JSON (`source`: startup, resume, clear, compact, fork; absent means startup). Output: {}
-or {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "..."}}, exit 0 always: a session is
+or {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "..."}} (Claude Code, Codex, Gemini CLI);
+for Antigravity CLI, recognised by its `conversationId`, {"injectSteps": [{"systemMessage": {"systemMessage": "..."}}]},
+its own SessionStart contract (a message persisted in the conversation, read by the model). Exit 0 always: a session is
 never blocked or slowed by this script. What it announces, each once (marker ~/.ai-kit/news.json):
   - the CHANGELOG section of the version just installed (state.json `version`, CHANGELOG.md of the kit folder);
   - the entries of NEWS.md (the kit folder, and origin/main after the daily read) aimed at this profile and team;
@@ -188,6 +190,14 @@ def context_text(items):
     return text
 
 
+def answer(payload, text):
+    """The hook's answer in the form of the CLI that asked: agy (conversationId) injects a persisted system message; the
+    others read hookSpecificOutput.additionalContext."""
+    if payload.get('conversationId') is not None:
+        return {'injectSteps': [{'systemMessage': {'systemMessage': text}}]}
+    return {'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': text}}
+
+
 def main():
     use_utf8()
     try:
@@ -214,7 +224,7 @@ def main():
                     except OSError:
                         pass
                 if items:
-                    output = {'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': context_text(items)}}
+                    output = answer(payload, context_text(items))
     except Exception:
         output = {}
     print(json.dumps(output, ensure_ascii=False))
