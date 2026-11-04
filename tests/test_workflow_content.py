@@ -160,6 +160,7 @@ class OwnershipTests(unittest.TestCase):
         kit = (ROOT/'templates/kit-context.md').read_text(encoding='utf-8')
         self.assertIn('not its size', kit)
         self.assertIn('shared contract', kit)
+        self.assertIn('**quick** (local, obvious behaviour, no contract changed)', kit)
         self.assertIn('how a failure shows and how to undo or mitigate it', kit)
 
     def test_evidence_is_told_apart_from_assumption(self):
