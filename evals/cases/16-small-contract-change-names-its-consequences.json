@@ -11,7 +11,10 @@
     "regex": [
       "test_unknown_order|test_orders",
       "(?i)(caller|appelant|contract|contrat)"
+    ],
+    "not_contains": [
+      "level: quick"
     ]
   },
-  "_doc": "A one-line change that alters a contract: the level follows what it can break, not its size, so the consequences are named (the test that expects KeyError, the callers). Patterns accept English and French answers."
+  "_doc": "A one-line change that alters a contract: the level follows what it can break, not its size, so it is not quick, and the consequences are named (the test that expects KeyError, the callers). Patterns accept English and French answers."
 }

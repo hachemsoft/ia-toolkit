@@ -4,11 +4,11 @@ The kit follows the cycle from Anthropic's ["AI-native SDLC playbook"](https://c
 
 ## Ceremony matches the stakes
 
-Three levels, defined once in the kit context (`00_KIT.md`) and used by every command:
+Three levels, defined once in the kit context (`00_KIT.md`) and used by every command. The steps and their artifacts come from the SDLC playbook above; the rule that ceremony matches the stakes comes from a published comparison of skill packs ([sources](sources.md)):
 
 | Level | Stakes | What to do | Commands |
 | --- | --- | --- | --- |
-| **quick** | small local change (label, typo, condition), visual or exploratory work | do it, run the check that covers it; no document | none; `/test` if the repo has tests; `/design` for a throwaway prototype |
+| **quick** | small local change (label, typo, condition) that changes no contract, visual or exploratory work | do it, run the check that covers it; no document | none; `/test` if the repo has tests; `/design` for a throwaway prototype |
 | **standard** | small feature, a few files | a short alignment in the conversation, then test-first; no `plan.md` unless asked | `/build`, `/test`, `/ship` |
 | **full** | large or unclear change; production, a shared contract, irreversible or sensitive data | intent, spec, plan, acceptance before code, verification between phases; full review | `/intent`, `/spec`, `/build` per ticket, `/review full`, `/ship`, guardrails active |
 
