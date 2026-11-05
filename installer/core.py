@@ -129,7 +129,7 @@ def quote_path(path):
     return '"'+str(path)+'"' if os.name == 'nt' else shlex.quote(str(path))
 
 # Manifest events (Gemini CLI's names) and their name in the CLIs that use Claude Code's: a guardrail runs before a tool,
-# the session-news hook at session start. A hook that is not a guardrail is never locked or managed by IT.
+# the whats-new hook at session start. A hook that is not a guardrail is never locked or managed by IT.
 CLI_EVENTS = {'BeforeTool': 'PreToolUse'}
 
 def cli_event(event):

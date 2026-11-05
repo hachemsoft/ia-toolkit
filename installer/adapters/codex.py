@@ -86,7 +86,7 @@ def codex_context_block(kit_text, practice_texts, user_text, renamed=None):
     return '\n'.join(lines)
 
 def codex_config_block(agent_entries, hook_commands, mcp_servers):
-    """hook_commands: (event, command) pairs; a guardrail (PreToolUse) matches every tool, session-news (SessionStart) every start."""
+    """hook_commands: (event, command) pairs; a guardrail (PreToolUse) matches every tool, whats-new (SessionStart) every start."""
     lines = [CODEX_TOML[0]]
     for name, (description, config_file) in agent_entries.items():
         lines += ['', '[agents.'+name+']', 'description = '+toml_value(description), 'config_file = '+toml_value(config_file)]

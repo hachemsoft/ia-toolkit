@@ -15,7 +15,7 @@ The first `setup` installs for Claude Code when the `claude` command is present 
 - **Guardrails** that are enabled: groups under `hooks.PreToolUse` in `~/.claude/settings.json` (`Bash` for `dbt-prod-guard`; `Bash|Write|Edit|MultiEdit|NotebookEdit` for `protected-paths`), next to your own hooks, which stay as they are. Claude Code runs them without an approval step.
 - **MCP servers** that are enabled: `ai-kit-<name>` entries in `mcpServers` of `~/.claude.json`, translated from the kit's form (`command` → `stdio`, `httpUrl` → `http`, `url` → `sse`, with `args`, `env` and `headers`). A server with `cwd` is refused: give the full path in `command`. Your own servers and the rest of the file stay as they are.
 
-The `session-news` hook is a group under `hooks.SessionStart` (no matcher: the script reads `source` itself and answers only a new session or a resume), its JSON `additionalContext` reaching Claude before the first prompt. A kit entry edited by hand (the block, a guardrail group, an MCP entry) stops `update` instead of being overwritten. Every file is backed up before a change.
+The `whats-new` hook is a group under `hooks.SessionStart` (no matcher: the script reads `source` itself and answers only a new session or a resume), its JSON `additionalContext` reaching Claude before the first prompt. A kit entry edited by hand (the block, a guardrail group, an MCP entry) stops `update` instead of being overwritten. Every file is backed up before a change.
 
 ## The prefix
 

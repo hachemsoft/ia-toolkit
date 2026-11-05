@@ -1,4 +1,4 @@
-"""Is NEWS.md well formed? The session-news hook skips a section it cannot read; this check refuses it before the merge.
+"""Is NEWS.md well formed? The whats-new hook skips a section it cannot read; this check refuses it before the merge.
 
 Usage: python3 scripts/check_news.py [path to NEWS.md]
 Each entry: `## <YYYY-MM-DD> <id> : <title>` (id: 3 to 32 of a-z, 0-9, -; unique), then optional lines `profiles: a, b`
@@ -19,7 +19,7 @@ META_LINE = re.compile(r'^([a-z_]+):\s')
 
 
 def hook_module():
-    spec = importlib.util.spec_from_file_location('ai_kit_session_news', os.path.join(ROOT, 'runtime', 'hooks', 'session-news.py'))
+    spec = importlib.util.spec_from_file_location('ai_kit_whats_new', os.path.join(ROOT, 'runtime', 'hooks', 'whats-new.py'))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

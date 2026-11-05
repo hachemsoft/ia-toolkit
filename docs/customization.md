@@ -37,7 +37,7 @@ Both files are TOML and have a JSON Schema in `schemas/`, named on their first l
 
 The kit configures; it does not lock. Your `overrides.toml` has the last word, so you can turn off a guardrail or an MCP server that the organization turned on, and `doctor` shows it ("Your overrides.toml changes organization or team defaults"). What must be guaranteed is enforced outside the kit: IAM rights and data access, managed CLI settings pushed by IT, CODEOWNERS on repos. The practices in `10` and `20` are instructions to the agent, followed by default, not a technical barrier.
 
-TOML in four rules: one `key = value` per line, texts in double quotes, lists in `[ ]`, and `#` starts a comment, kept by the kit. A `[section]` groups the keys under it: `[hooks]` then `session-news = false`; `[mcp.github.server]` is the `server` of the `github` entry of `mcp`. A mistake in either file is reported with its line, its column, the line itself and the usual cause (a text without quotes, a key written twice, a list not closed, a backslash in a Windows path). Before 0.37 the personal file was `overrides.json`: the next `setup` or `update` turns it into `overrides.toml` with the same settings, its `_` explanations as comments, and keeps the JSON file in its backup.
+TOML in four rules: one `key = value` per line, texts in double quotes, lists in `[ ]`, and `#` starts a comment, kept by the kit. A `[section]` groups the keys under it: `[hooks]` then `whats-new = false`; `[mcp.github.server]` is the `server` of the `github` entry of `mcp`. A mistake in either file is reported with its line, its column, the line itself and the usual cause (a text without quotes, a key written twice, a list not closed, a backslash in a Windows path). Before 0.37 the personal file was `overrides.json`: the next `setup` or `update` turns it into `overrides.toml` with the same settings, its `_` explanations as comments, and keeps the JSON file in its backup.
 
 ## Teams
 
@@ -150,7 +150,7 @@ frictions = "propose"
 github = true
 
 [hooks]
-session-news = false
+whats-new = false
 ```
 
 `frictions` sets what the agent does on the six friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. Then `update`. Every key is optional; a missing key changes nothing. A command added through `extra_commands` comes with its skills and their dependencies; a skill required by another one cannot be disabled on its own, and `update` says so. In a terminal, `ai-kit friction --mode` shows the current mode and where it comes from, `ai-kit friction --mode auto` (or `propose`, `off`) writes it in your `overrides.toml` and reapplies the agents' context; `ai-kit friction --list` shows your last frictions.
@@ -174,7 +174,7 @@ Two deterministic hooks, set in `overrides.toml` under `[hooks]`: `protected-pat
 
 ## News at session start
 
-The `session-news` hook (on by default, `[hooks] session-news = false` turns it off) tells the agent once what is new: the installed version, the entries of the repository's `NEWS.md`, a newer version available. `[news] check_remote = false` keeps it local: no daily read of the kit's remote, no version proposed. Both keys accept an organization default in `defaults`. An organization announces a skill or a training by adding a section to the `NEWS.md` of its copy of the repository, optionally aimed at `profiles` or `teams`: see [session-news](hooks.md#session-news).
+The `whats-new` hook (on by default, `[hooks] whats-new = false` turns it off) tells the agent once what is new: the installed version, the entries of the repository's `NEWS.md`, a newer version available. `[news] check_remote = false` keeps it local: no daily read of the kit's remote, no version proposed. Both keys accept an organization default in `defaults`. An organization announces a skill or a training by adding a section to the `NEWS.md` of its copy of the repository, optionally aimed at `profiles` or `teams`: see [whats-new](hooks.md#whats-new).
 
 ## Identity
 

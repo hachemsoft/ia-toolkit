@@ -52,7 +52,7 @@ class ManagedSettingsTests(unittest.TestCase):
         with self.assertRaises(KitError):
             self.run_it({'locked_hooks': ['nope']})
         with self.assertRaises(KitError):
-            self.run_it({'locked_hooks': ['session-news']})  # a hook that is not a guardrail is nothing IT locks
+            self.run_it({'locked_hooks': ['whats-new']})  # a hook that is not a guardrail is nothing IT locks
         self.out.mkdir(exist_ok=True)
         (self.out/'x').write_text('keep', encoding='utf-8')
         with self.assertRaises(KitError):

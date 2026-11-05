@@ -66,20 +66,20 @@ class NewsCommandTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': str(kit)}):
             self.run_kit('update')
         code, out = self.run_kit('doctor')
-        self.assertIn('[OK] Kit folder present for session-news: '+str(kit), out)
-        self.assertIn('[Info] Kit remote not read yet by session-news', out)
+        self.assertIn('[OK] Kit folder present for whats-new: '+str(kit), out)
+        self.assertIn('[Info] Kit remote not read yet by whats-new', out)
         self.assertIn('[Info] 1 announcement waiting for the next session start: hello', out)
         (self.home/'.ai-kit/news.json').write_text(json.dumps({'announced_news': ['hello'], 'declined_version': '9.0.0', 'last_check': {'date': '2026-11-02', 'result': 'failed', 'detail': 'no route'}}), encoding='utf-8')
         kit.rename(self.home/'moved')
         code, out = self.run_kit('doctor')
-        self.assertIn('[Check] Kit folder present for session-news: '+str(kit)+' (moved or deleted', out)
-        self.assertIn('[Info] Kit remote last read by session-news: 2026-11-02, failed (no route)', out)
+        self.assertIn('[Check] Kit folder present for whats-new: '+str(kit)+' (moved or deleted', out)
+        self.assertIn('[Info] Kit remote last read by whats-new: 2026-11-02, failed (no route)', out)
         self.assertIn('[Info] Version 9.0.0 declined', out)
         self.assertNotIn('waiting for the next session start', out)
-        (self.home/'.ai-kit/overrides.toml').write_text('[hooks]\nsession-news = false\n', encoding='utf-8')
+        (self.home/'.ai-kit/overrides.toml').write_text('[hooks]\nwhats-new = false\n', encoding='utf-8')
         self.run_kit('update')
         code, out = self.run_kit('doctor')
-        self.assertIn('[Info] session-news hook off', out)
+        self.assertIn('[Info] whats-new hook off', out)
 
 
 class NewsFileCheckTests(unittest.TestCase):

@@ -149,7 +149,7 @@ class SettingsTests(Base):
         with self.assertRaises(KitError):
             self.run_kit()
 
-    def test_session_news_beside_a_personal_session_start_hook_and_edits_detected(self):
+    def test_whats_new_beside_a_personal_session_start_hook_and_edits_detected(self):
         settings = self.home/'.claude/settings.json'
         settings.parent.mkdir()
         settings.write_text(json.dumps({'hooks': {'SessionStart': [PERSONAL_HOOK]}}), encoding='utf-8')
@@ -158,7 +158,7 @@ class SettingsTests(Base):
         self.assertEqual(groups[0], PERSONAL_HOOK)
         self.assertEqual(len(groups), 2)
         self.assertNotIn('matcher', groups[1])
-        self.assertIn('session-news.py', groups[1]['hooks'][0]['command'])
+        self.assertIn('whats-new.py', groups[1]['hooks'][0]['command'])
         data = read_json(settings)
         data['hooks']['SessionStart'][1]['matcher'] = 'startup'
         settings.write_text(json.dumps(data), encoding='utf-8')

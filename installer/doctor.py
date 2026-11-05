@@ -24,8 +24,8 @@ GUARDRAIL_PROBES = {
     'dbt-prod-guard': lambda home: {'tool_name': 'run_shell_command', 'tool_input': {'command': 'dbt run --target prod'}, 'cwd': str(home)},
     'protected-paths': lambda home: {'tool_name': 'write_file', 'tool_input': {'file_path': str(home/'.ai-kit'/'overrides.toml')}, 'cwd': str(home)},
 }
-# session-news on a /clear: answers {} and writes nothing (a startup probe would mark the real news as announced).
-HOOK_PROBES = {'session-news': lambda home: {'source': 'clear', 'hook_event_name': 'SessionStart'}}
+# whats-new on a /clear: answers {} and writes nothing (a startup probe would mark the real news as announced).
+HOOK_PROBES = {'whats-new': lambda home: {'source': 'clear', 'hook_event_name': 'SessionStart'}}
 
 
 def blocks(answer):
@@ -308,27 +308,27 @@ def tracker_checks(home, state, status):
 
 
 def news_checks(home, state, status):
-    """The session-news hook: the kit folder it reads, the last remote read, what waits for the next session start."""
-    if 'session-news' not in state.get('hooks', {}):
-        print('[Info] session-news hook off (hooks.session-news = false): nothing announced at session start.')
+    """The whats-new hook: the kit folder it reads, the last remote read, what waits for the next session start."""
+    if 'whats-new' not in state.get('hooks', {}):
+        print('[Info] whats-new hook off (hooks.whats-new = false): nothing announced at session start.')
         return
     from .core import news_module
     news = news_module()
     hook = news.hook_module()
     kit_dir = str(state.get('kit_dir') or '')
     if not kit_dir:
-        print('[Info] Kit folder not recorded: session-news announces the installed version only (run the installer from the kit folder, then update).')
+        print('[Info] Kit folder not recorded: whats-new announces the installed version only (run the installer from the kit folder, then update).')
     else:
-        status(os.path.isdir(kit_dir), 'Kit folder present for session-news: '+kit_dir+('' if os.path.isdir(kit_dir) else ' (moved or deleted: run the installer from its new place, then update)'))
+        status(os.path.isdir(kit_dir), 'Kit folder present for whats-new: '+kit_dir+('' if os.path.isdir(kit_dir) else ' (moved or deleted: run the installer from its new place, then update)'))
     marker = read_json(home/'.ai-kit'/'news.json')
     last = marker.get('last_check') if isinstance(marker.get('last_check'), dict) else {}
     if (state.get('news') or {}).get('check_remote') is False:
-        print('[Info] Kit remote not read by session-news (news.check_remote = false): a newer version is not proposed.')
+        print('[Info] Kit remote not read by whats-new (news.check_remote = false): a newer version is not proposed.')
     elif last:
-        print('[Info] Kit remote last read by session-news: '+str(last.get('date'))+', '+str(last.get('result'))+(' ('+last['detail']+')' if last.get('detail') else '')
+        print('[Info] Kit remote last read by whats-new: '+str(last.get('date'))+', '+str(last.get('result'))+(' ('+last['detail']+')' if last.get('detail') else '')
               + (', remote version '+last['remote_version'] if last.get('remote_version') else ''))
     else:
-        print('[Info] Kit remote not read yet by session-news (once a day at session start; ai-kit news --check reads it now).')
+        print('[Info] Kit remote not read yet by whats-new (once a day at session start; ai-kit news --check reads it now).')
     if marker.get('declined_version'):
         print('[Info] Version '+str(marker['declined_version'])+' declined (ai-kit news --later): the next one will be proposed.')
     if hook and kit_dir and os.path.isdir(kit_dir):

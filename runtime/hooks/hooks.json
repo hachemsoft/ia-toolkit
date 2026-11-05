@@ -13,10 +13,10 @@
       "default": true,
       "description": "Always blocks agent writes to the configuration of the kit and of the CLIs (also through simple shell commands); also blocks writes under the patterns listed in <repo>/.ai-kit/protected-paths. On by default."
     },
-    "session-news": {
+    "whats-new": {
       "event": "SessionStart",
       "matcher": "",
-      "script": "session-news.py",
+      "script": "whats-new.py",
       "default": true,
       "description": "At session start (startup, resume), tells the agent once what is new: the installed version's CHANGELOG section, the entries of NEWS.md aimed at this profile and team, a newer version on the kit's origin (read once a day, never a pull; [news] check_remote = false keeps it local). The update is never run by the hook. On by default."
     }

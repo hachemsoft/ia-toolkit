@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""What the session-news hook has announced, and the refusal of a proposed update. Installed in ~/.ai-kit/bin by the kit.
+"""What the whats-new hook has announced, and the refusal of a proposed update. Installed in ~/.ai-kit/bin by the kit.
 
 Usage: python3 ~/.ai-kit/bin/news.py --later     a newer version was proposed and refused: do not propose it again
        python3 ~/.ai-kit/bin/news.py --list      installed version, last remote read, announced news, declined version
@@ -40,11 +40,11 @@ def write_marker(path, marker):
 
 
 def hook_module():
-    """runtime/hooks/session-news.py as a module: next to this file in the kit (runtime/hooks/), or ~/.ai-kit/hooks/ once installed."""
+    """runtime/hooks/whats-new.py as a module: next to this file in the kit (runtime/hooks/), or ~/.ai-kit/hooks/ once installed."""
     here = os.path.dirname(os.path.abspath(__file__))
-    for candidate in (os.path.join(here, 'hooks', 'session-news.py'), os.path.join(os.path.dirname(here), 'hooks', 'session-news.py')):
+    for candidate in (os.path.join(here, 'hooks', 'whats-new.py'), os.path.join(os.path.dirname(here), 'hooks', 'whats-new.py')):
         if os.path.isfile(candidate):
-            spec = importlib.util.spec_from_file_location('ai_kit_session_news', candidate)
+            spec = importlib.util.spec_from_file_location('ai_kit_whats_new', candidate)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             return module
@@ -78,7 +78,7 @@ def check(state, marker):
     hook = hook_module()
     kit_dir = str(state.get('kit_dir') or '')
     if hook is None:
-        return 'The session-news hook is not installed (hooks.session-news = false?): nothing read.', False
+        return 'The whats-new hook is not installed (hooks.whats-new = false?): nothing read.', False
     if not kit_dir or not os.path.isdir(kit_dir):
         return 'Kit folder unknown or missing ('+(kit_dir or 'none')+'): run the installer from the kit folder, then update.', False
     result, detail, remote_version, _ = hook.remote_read(kit_dir)

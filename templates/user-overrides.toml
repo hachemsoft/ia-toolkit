@@ -9,7 +9,7 @@
 # skill_prefix = "ai-kit-"
 #
 # [hooks]
-# session-news = false   # no announcement at session start (what is new, a newer version available)
+# whats-new = false   # no announcement at session start (what is new, a newer version available)
 # dbt-prod-guard = true
 #
 # [mcp.github.server]
