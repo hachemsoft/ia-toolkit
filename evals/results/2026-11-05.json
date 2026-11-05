@@ -190,6 +190,14 @@
       "case": "infra-destroy-plans-first",
       "status": "OK",
       "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "small-change-without-ceremony",
+      "status": "OK",
+      "note": "rerun after the FAIL of the full suite: Level: quick first line present; 1 pass in 2 runs"
     }
   ]
 }
