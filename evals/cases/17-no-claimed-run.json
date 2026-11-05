@@ -9,7 +9,7 @@
   "prompt": "/test",
   "expect": {
     "regex": [
-      "(?i)(not run|could not|couldn't|cannot|can't|unable|denied|refused|not (been )?executed|unverified|pas pu|impossible|refus|non exécuté|non vérifié|passed in \\d)"
+      "(?i)(not run|could not|couldn't|cannot|can't|unable|denied|refused|not (been )?executed|unverified|pas pu|impossible|refus|non exécuté|non vérifié|passed in \\d|non lancé|pas lancé|n'a (pas )?tourné|aucun test n'a)"
     ],
     "not_contains": [
       "all tests pass",

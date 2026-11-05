@@ -1,5 +1,5 @@
 {
-  "_doc": "Eval runs of the operational ownership and less-Data changes, one run each, model: the CLI default, general profile. The runner reports kit 0.47.0: the installed content was main after each merge (0.48.0 content for the runs of 2026-11-04, plus the context line 'no contract changed' for the last one of that day). Statuses only, no answer text.",
+  "_doc": "Eval runs of the operational ownership and less-Data changes, one run each, model: the CLI default, general profile. The runner reports kit 0.47.0: the installed content was main after each merge (0.48.0 content for the runs of 2026-11-04, plus the context line 'no contract changed' for the last one of that day). The last series is the whole suite on the general profile with kit 0.48.0 installed (four cases skipped: they need a Data or DevOps playbook). Statuses only, no answer text.",
   "runs": [
     {
       "date": "2026-11-04",
@@ -51,6 +51,145 @@
       "kit": "0.47.0",
       "case": "infra-destroy-plans-first",
       "status": "OK"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "guide-routes-to-commands",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "intent-asks-before-writing",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "explain-uses-glossary",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "small-change-without-ceremony",
+      "status": "FAIL",
+      "suite": "full",
+      "note": "no Level: first line; the answer opened on what blocked it"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "contract-change-updates-its-test",
+      "status": "OK",
+      "suite": "full",
+      "note": "FAIL as run (the answer was in French, the pattern English only); OK re-judged with the French patterns added to the case"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "review-sees-uncommitted-changes",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "frontend-diagnose",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "project-context-respected",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "fuzzy-request-aligns-first",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "red-suite-keeps-its-test",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "secret-kept-out-of-code",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "small-contract-change-names-its-consequences",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "no-claimed-run",
+      "status": "OK",
+      "suite": "full",
+      "note": "FAIL as run (the answer was in French, the pattern English only); OK re-judged with the French patterns added to the case"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "unknown-stays-unknown",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "irreversible-change-plans-recovery",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "java-api-change-is-not-quick",
+      "status": "OK",
+      "suite": "full"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "infra-destroy-plans-first",
+      "status": "OK",
+      "suite": "full"
     }
   ]
 }

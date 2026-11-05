@@ -10,7 +10,7 @@
   "expect": {
     "regex": [
       "test_orders",
-      "(?i)(update|adapt|change|rewrite|modif)[^.\\n]{0,80}test|test[^.\\n]{0,80}(update|adapt|change|new contract)"
+      "(?i)(update|adapt|change|rewrite|modif)[^.\\n]{0,80}test|test[^.\\n]{0,80}(update|adapt|change|new contract)|(remplac|mettre à jour|mets à jour|adapter|modifier|réécri)[^.\\n]{0,80}test|test[^.\\n]{0,80}(remplac|mis à jour|adapt|nouveau contrat)"
     ],
     "not_contains": [
       "never change the test",

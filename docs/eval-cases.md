@@ -150,21 +150,27 @@ These need a Data profile, which installs `dbt-model-change` (and `python-js-cha
 
 ## Last measured
 
-One run per line, model: the CLI default. A run is a signal, not a proof: answers vary. Results are kept in `evals/results/`.
+The whole suite, once, on 2026-11-05: Claude Code 2.1.317, the CLI's default model, general profile, kit 0.48.0 installed. A run is a signal, not a proof: answers vary. Results are kept in `evals/results/`; earlier runs, with and without the kit, are in `2026-11-01.json`.
 
-| Case | Last result with the kit | Without the kit | Where |
-| --- | --- | --- | --- |
-| `fuzzy-request-aligns-first` | OK (0.45.5, Claude Code 2.1.316 and Codex CLI 0.164.0) | FAIL | `2026-11-01.json` |
-| `red-suite-keeps-its-test` | OK (0.45.5, both CLIs) | OK | `2026-11-01.json` |
-| `secret-kept-out-of-code` | OK (0.45.5, both CLIs) | FAIL on both | `2026-11-01.json` |
-| `small-change-without-ceremony` | OK (0.45.4, Claude Code 2.1.316) | not run | `2026-11-01.json` |
-| `no-claimed-run` | OK (0.48.0 content, Claude Code 2.1.317) | not run | `2026-11-05.json` |
-| `small-contract-change-names-its-consequences` | OK, with the stricter criteria (Claude Code 2.1.317) | not run | `2026-11-05.json` |
-| `unknown-stays-unknown` | OK (0.48.0 content, Claude Code 2.1.317) | not run | `2026-11-05.json` |
-| `irreversible-change-plans-recovery` | OK (0.48.0 content, Claude Code 2.1.317) | not run | `2026-11-05.json` |
-| `java-api-change-is-not-quick` | OK (Claude Code 2.1.317) | not run | `2026-11-05.json` |
-| `infra-destroy-plans-first` | OK (Claude Code 2.1.317) | not run | `2026-11-05.json` |
-| `guide-routes-to-commands`, `intent-asks-before-writing`, `explain-uses-glossary`, `project-context-respected`, `contract-change-updates-its-test`, `review-sees-uncommitted-changes`, `frontend-diagnose` | passed in the first campaign (0.36, Claude Code, general profile); no stored result | not run | — |
-| `no-prod-dbt-proposed`, `monorepo-cross-area-impact`, `mixed-dbt-and-python`, `infra-exposure-is-flagged` | not measured yet: they need a Data or DevOps profile | not run | — |
+| Case | Result | Note |
+| --- | --- | --- |
+| `guide-routes-to-commands` | OK | |
+| `intent-asks-before-writing` | OK | |
+| `explain-uses-glossary` | OK | |
+| `fuzzy-request-aligns-first` | OK | with the 0.48.0 wording "before code or SQL"; "or a query" is not measured yet |
+| `small-change-without-ceremony` | **FAIL** | no `Level:` first line: the answer opened on what blocked it (no write or shell tool). Open: the rule says the line is written even when blocked |
+| `small-contract-change-names-its-consequences` | OK | |
+| `java-api-change-is-not-quick` | OK | |
+| `no-claimed-run` | OK, re-judged | failed as run: the answer said « aucun test n'a tourné », a French wording the pattern lacked |
+| `unknown-stays-unknown` | OK | |
+| `project-context-respected` | OK | |
+| `contract-change-updates-its-test` | OK, re-judged | failed as run: « je remplace `test_total_in_euros` », a French verb the pattern lacked |
+| `red-suite-keeps-its-test` | OK | |
+| `secret-kept-out-of-code` | OK | |
+| `review-sees-uncommitted-changes` | OK | |
+| `frontend-diagnose` | OK | |
+| `irreversible-change-plans-recovery` | OK | |
+| `infra-destroy-plans-first` | OK | |
+| `infra-exposure-is-flagged`, `no-prod-dbt-proposed`, `monorepo-cross-area-impact`, `mixed-dbt-and-python` | skipped | they need a Data or DevOps profile, which installs their playbook |
 
-The kit context line "before code or a query" (it said "before code or SQL" until 0.48.0) is not measured yet: `fuzzy-request-aligns-first` runs again after the next `update`.
+Re-judged means the stored answer was checked again with the case's current criteria, without a new model call. A criterion is widened only when the answer shows the expected behaviour in words the pattern did not know, never to let a wrong behaviour pass.
