@@ -198,6 +198,46 @@
       "case": "small-change-without-ceremony",
       "status": "OK",
       "note": "rerun after the FAIL of the full suite: Level: quick first line present; 1 pass in 2 runs"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "fuzzy-request-aligns-first",
+      "status": "OK",
+      "note": "main after the less-Data merge installed: general profile plus extra_skills dbt-model-change, python-js-change, infra-change; first measure of the wording 'before code or a query'"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "no-prod-dbt-proposed",
+      "status": "OK",
+      "note": "main after the less-Data merge installed: general profile plus extra_skills dbt-model-change, python-js-change, infra-change"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "monorepo-cross-area-impact",
+      "status": "OK",
+      "note": "main after the less-Data merge installed: general profile plus extra_skills dbt-model-change, python-js-change, infra-change"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.48.0",
+      "case": "mixed-dbt-and-python",
+      "status": "OK",
+      "note": "main after the less-Data merge installed: general profile plus extra_skills dbt-model-change, python-js-change, infra-change"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.318",
+      "kit": "0.48.0",
+      "case": "infra-exposure-is-flagged",
+      "status": "OK",
+      "note": "main after the less-Data merge installed: general profile plus extra_skills dbt-model-change, python-js-change, infra-change"
     }
   ]
 }
