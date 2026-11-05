@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `managed-settings --managed-mcp-only`: the managed settings allow only the MCP servers `organization.toml` defines (defaults and teams), so a person cannot add one of their own. Claude Code gets `allowedMcpServers` (a remote server by `serverUrl`, a local one by `serverCommand`, never by name) with `allowManagedMcpServersOnly`; Codex CLI gets an `mcp_servers` allowlist in `requirements.toml`, matched by the installed name (`ai-kit-<name>`) and identity (URL, or executable and each argument exactly). Keys taken from each vendor's managed-configuration docs. Gemini CLI gets nothing: its `mcp.allowed`, `mcp.excluded` and `admin.mcp.config` are documented without the shape of an entry; the README says so. Without the option the files are unchanged.
+
 ## 0.49.0
 
 - The whole eval suite, once, with 0.48.0 installed (Claude Code 2.1.317, general profile): 16 of 17 pass once two criteria learn French wordings (`contract-change-updates-its-test`: « je remplace … test », `no-claimed-run`: « aucun test n'a tourné »), four skipped (Data or DevOps playbook). `small-change-without-ceremony` failed (no `Level:` first line) then passed on a rerun: variance, recorded in `docs/eval-cases.md`.

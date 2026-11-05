@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from .core import ROOT, KitError, read_json, is_guardrail
+from .toml_files import toml_value
 from .settings import organization
 
 # Written by an agent, these would switch a guardrail off or change what every session loads. 30_USER.md and
@@ -28,13 +29,53 @@ def command(spec):
     return POSIX_PYTHON+' -I '+POSIX_HOOKS+spec['script']+'"'
 
 
-def claude(names, manifest, hooks_only):
+def org_servers(org):
+    """The MCP servers the organization defines, in its defaults and in its teams: the only ones an MCP lock allows.
+    Named as the kit installs them (ai-kit-<name>); a name defined twice keeps the defaults' definition."""
+    found = {}
+    for layer in [org.get('defaults', {})] + list(org.get('teams', {}).values()):
+        for name, entry in (layer.get('mcp') or {}).items():
+            if isinstance(entry, dict) and isinstance(entry.get('server'), dict):
+                found.setdefault('ai-kit-'+name, entry['server'])
+    return found
+
+
+def claude_mcp(servers):
+    """allowedMcpServers entries: a remote server by its URL, a local one by its exact command and arguments. A name is
+    not a security control (Claude Code docs, managed MCP), so no entry matches by name."""
+    entries = []
+    for server in servers.values():
+        url = server.get('httpUrl') or server.get('url')
+        entries.append({'serverUrl': url} if url else {'serverCommand': [server['command']]+list(server.get('args', []))})
+    return entries
+
+
+def codex_mcp(servers):
+    """requirements.toml mcp_servers: Codex enables a server only when its name and identity match (Codex docs, managed
+    configuration); a local server's executable and each argument must match exactly. Present but empty disables them all."""
+    if not servers:
+        return 'mcp_servers = {}\n'
+    lines = []
+    for name, server in servers.items():
+        url = server.get('httpUrl') or server.get('url')
+        if url:
+            lines += ['[mcp_servers.'+name+']', 'identity = { url = '+toml_value(url)+' }', '']
+        else:
+            args = ', '.join('{ match = "exact", value = '+toml_value(a)+' }' for a in server.get('args', []))
+            lines += ['[mcp_servers.'+name+'.identity]', 'command = { executable = '+toml_value(server['command'])+', args = ['+args+'] }', '']
+    return '\n'.join(lines)
+
+
+def claude(names, manifest, hooks_only, mcp=None):
     from .adapters.claude import hook_matcher
     settings = {'permissions': {'deny': ['Edit('+p+')' for p in KIT_FILES + CLAUDE_FILES]},
                 'hooks': {'PreToolUse': [{'matcher': hook_matcher(manifest[n]['matcher']),
                                           'hooks': [{'type': 'command', 'command': command(manifest[n]), 'timeout': 20}]} for n in names]}}
     if hooks_only:
         settings['allowManagedHooksOnly'] = True
+    if mcp is not None:
+        settings['allowManagedMcpServersOnly'] = True
+        settings['allowedMcpServers'] = claude_mcp(mcp)
     return json.dumps(settings, indent=2)+'\n'
 
 
@@ -47,29 +88,49 @@ def gemini(names, manifest):
     return json.dumps(settings, indent=2)+'\n'
 
 
-def codex():
+def codex(mcp=None):
     return ('# Codex CLI requirements: the agent writes only inside the repo it works in (so never to ~/.codex or ~/.ai-kit),\n'
             '# and the person cannot start it without a sandbox or without approvals.\n'
             'allowed_sandbox_modes = ["read-only", "workspace-write"]\n'
-            'allowed_approval_policies = ["untrusted", "on-request"]\n')
+            'allowed_approval_policies = ["untrusted", "on-request"]\n'
+            + ('' if mcp is None else '\n# MCP: only the servers organization.toml defines, by name and identity.\n'+codex_mcp(mcp)))
 
 
 
 
-def managed_settings(out, hooks_only=False):
+def mcp_readme(mcp):
+    if mcp is None:
+        return ''
+    listed = ', '.join(sorted(mcp)) or 'none: every MCP server is blocked'
+    return ('\n\nMCP lock (--managed-mcp-only): only the servers organization.toml defines are allowed ('+listed+').\n'
+            '  Claude Code: allowedMcpServers with allowManagedMcpServersOnly, so a person cannot widen the list; a remote\n'
+            '  server matches by URL, a local one by its exact command and arguments.\n'
+            '  Codex CLI: mcp_servers in requirements.toml, matched by the name the kit installs (ai-kit-<name>) and the\n'
+            '  same URL or exact command.\n'
+            '  Gemini CLI: not generated. Its settings have mcp.allowed, mcp.excluded and admin.mcp.config, but their docs\n'
+            '  do not say what an entry holds; set them by hand after checking your version.\n'
+            '  A URL or an argument that uses ${VARIABLE} may not match once expanded: try one workstation first.')
+
+
+def managed_settings(out, hooks_only=False, mcp_only=False):
     out = Path(out)
     if out.exists() and any(out.iterdir()):
         raise KitError(str(out)+' is not empty: give a new folder, nothing is overwritten.')
     manifest = read_json(ROOT/'runtime'/'hooks'/'hooks.json')['hooks']
-    names = locked(organization(), manifest)
-    files = {'claude-code/managed-settings.json': claude(names, manifest, hooks_only),
+    org = organization()
+    names = locked(org, manifest)
+    mcp = org_servers(org) if mcp_only else None
+    files = {'claude-code/managed-settings.json': claude(names, manifest, hooks_only, mcp),
              'gemini-cli/settings.json': gemini(names, manifest),
-             'codex/requirements.toml': codex(),
+             'codex/requirements.toml': codex(mcp),
              'README.txt': (ROOT/'templates'/'managed-settings-README.txt').read_text(encoding='utf-8').format(version=(ROOT/'VERSION').read_text(encoding='utf-8').strip(), hooks=', '.join(names),
-                                         hooks_only=' With allowManagedHooksOnly, hooks from any other source are ignored.' if hooks_only else '')}
+                                         hooks_only=' With allowManagedHooksOnly, hooks from any other source are ignored.' if hooks_only else '',
+                                         mcp=mcp_readme(mcp))}
     for rel, text in files.items():
         path = out/rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding='utf-8')
+    if mcp is not None and not mcp:
+        print('[Info] organization.toml defines no MCP server: the MCP lock allows none, in Claude Code and Codex CLI.')
     print('Managed settings written to '+str(out)+' ('+', '.join(sorted(files))+'). Where to deploy them: README.txt.')
     return 0
