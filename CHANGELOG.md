@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.49.0
 
 - The whole eval suite, once, with 0.48.0 installed (Claude Code 2.1.317, general profile): 16 of 17 pass once two criteria learn French wordings (`contract-change-updates-its-test`: « je remplace … test », `no-claimed-run`: « aucun test n'a tourné »), four skipped (Data or DevOps playbook). `small-change-without-ceremony` failed (no `Level:` first line) then passed on a rerun: variance, recorded in `docs/eval-cases.md`.
 - The five cases left: `fuzzy-request-aligns-first` with "before code or a query", and the four playbook cases (`no-prod-dbt-proposed`, `monorepo-cross-area-impact`, `mixed-dbt-and-python`, `infra-exposure-is-flagged`), all OK once with their playbooks installed through `extra_skills`. Every eval case is now measured at least once.
