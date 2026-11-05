@@ -113,6 +113,10 @@ def select_agents(profile, overrides, agent_catalog, load_agent):
     return agents
 
 
+# 0.51: session-news renamed whats-new; a setting written with the old name keeps its effect (update says so).
+RENAMED_HOOKS = {'session-news': 'whats-new'}
+
+
 def guardrails(overrides, hooks_dir):
     """The guardrails to enable. A guardrail marked "default" in the manifest is on unless overrides.toml sets it to false;
     one the organization locks stays on, whatever a team or a person writes (organization.toml locked_hooks).
@@ -121,6 +125,7 @@ def guardrails(overrides, hooks_dir):
     wanted_hooks = overrides.get('hooks', {})
     if not isinstance(wanted_hooks, dict) or not all(isinstance(v, bool) for v in wanted_hooks.values()):
         raise KitError('hooks must be an object name → true/false.')
+    wanted_hooks = {RENAMED_HOOKS.get(n, n): v for n, v in wanted_hooks.items() if not (n in RENAMED_HOOKS and RENAMED_HOOKS[n] in wanted_hooks)}
     wanted_hooks = {**{n: True for n, spec in hook_manifest.items() if spec.get('default')}, **wanted_hooks}
     locked = organization().get('locked_hooks', [])
     if not isinstance(locked, list) or not all(isinstance(n, str) and n in hook_manifest and is_guardrail(hook_manifest[n]) for n in locked):

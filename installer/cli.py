@@ -21,7 +21,7 @@ from . import command as kit_command
 from .console import styled_output
 from .commit import (BACKUPS_KEPT, prune_backups, commit_changes, atomic_write, KIT_MANAGED, managed_roots, prune_empty_dirs)  # noqa: F401 (re-exported)
 from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKILL_DIRS, repo_root, repo_skill_overrides, mcp_report, print_summary, doctor, kit_version, source_folder, version_line, SCRIPT_INTERPRETER, kit_commands_on_path, runtime_checks, doctor_checks, release_check, live_checks, plain_text_problem)  # noqa: F401 (re-exported)
-from .plan import (effective_settings, resolve_selection, personal_file, practice_layers, skill_sources, select_agents,
+from .plan import (RENAMED_HOOKS, effective_settings, resolve_selection, personal_file, practice_layers, skill_sources, select_agents,
                    guardrails, remove_stale_files, refuse_links)
 from .usage import (usage)  # noqa: F401 (re-exported)
 
@@ -248,6 +248,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
     enabled_mcp = {'ai-kit-'+name: server for name, server in servers.items()}
     notices = personal_notices + ['[Info] Guardrail '+n+' stays on: your organization locks it (organization.toml locked_hooks).' for n in turned_off]
+    notices += ['[Info] hooks.'+old+' is now hooks.'+new+': your setting is applied; rename it in your overrides.toml.' for old, new in RENAMED_HOOKS.items() if old in (overrides.get('hooks') or {})]
     unknown_names(overrides, catalog, agent_catalog, notices)
     notices += [retired_key_notice(key) for key in RETIRED_KEYS if key in overrides]
     p = Plan(active=[a.NAME for a in active], notices=notices,
@@ -522,7 +523,7 @@ FRICTION_MODES = ('propose', 'auto', 'off')
 
 
 def news_setting(overrides):
-    """[news] of the merged settings, for state.json: check_remote (the session-news hook reads the kit's remote once a day), true by default."""
+    """[news] of the merged settings, for state.json: check_remote (the whats-new hook reads the kit's remote once a day), true by default."""
     news = overrides.get('news', {})
     if not isinstance(news, dict) or not isinstance(news.get('check_remote', True), bool) or any(k not in ('check_remote',) for k in news):
         raise KitError('news must be a table with check_remote = true or false.')
@@ -530,7 +531,7 @@ def news_setting(overrides):
 
 
 def kit_folder():
-    """The kit folder the session-news hook reads (git fetch): the one the launcher runs from, else this clone; none for a pip install."""
+    """The kit folder the whats-new hook reads (git fetch): the one the launcher runs from, else this clone; none for a pip install."""
     folder = os.environ.get('AI_KIT_SOURCE_DIR')
     if folder:
         return folder

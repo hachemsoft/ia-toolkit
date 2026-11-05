@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The `session-news` hook is now `whats-new`: its name says what it tells, not when. The setting is `[hooks] whats-new = false`; a setting still written `session-news` keeps its effect and `update` says to rename it (the schema accepts both). The script is `runtime/hooks/whats-new.py`; `update` replaces the old hook entries in the four CLIs and removes `~/.ai-kit/hooks/session-news.py`. The `[news]` section, `ai-kit news` and `NEWS.md` keep their names; the announcement ids already shown are kept, so nothing is announced twice.
+
 ## 0.50.0
 
 - Skills reviewed like code. `runtime/check_skills.py` refuses, in `skills/`, `agents/` and `commands/` or any folder given, a download piped into a shell, an instruction to drop previous instructions, a permission bypass, an instruction to turn a guardrail off or to change the kit's or a CLI's configuration, a secret (the kit's one list), and a script or binary not declared; it runs in CI and in the tests, and a project repo runs it on `.agents/skills` from a checkout of the kit (snippets for GitHub Actions and GitLab CI in `docs/extending.md`). `doctor` lists the skills of the home folder the kit did not install and what the same check finds in them, as `[Info] To review`, never as a failure. A root `CODEOWNERS`, commented: an organization's copy names its groups. `.gitlab-ci.yml`: the same model-free checks for a GitLab copy, on Linux runners (tests on Python 3.9, 3.11 and 3.14, ruff, schemas, `NEWS.md`, skills check, release ZIP as an artifact).

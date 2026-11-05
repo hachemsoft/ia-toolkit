@@ -211,7 +211,7 @@ def finalize(p: Plan, active: bool = True) -> None:
         for name, spec in p.hook_manifest.items():
             if name in p.enabled_hooks:
                 group = {'hooks': [{'type': 'command', 'command': hook_command(p.hooks_dir/spec['script']), 'timeout': 20}]}
-                if spec['matcher']:  # a guardrail runs on some tools; session-news on every session start (it reads `source` itself)
+                if spec['matcher']:  # a guardrail runs on some tools; whats-new on every session start (it reads `source` itself)
                     group = {'matcher': hook_matcher(spec['matcher']), **group}
                 new_groups[cli_event(spec['event'])].append(group)
     if mine or any(new_groups.values()):

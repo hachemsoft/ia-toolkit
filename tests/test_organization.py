@@ -122,7 +122,9 @@ class OrganizationTests(unittest.TestCase):
         schema = read_json(ROOT/'schemas/overrides.schema.json')
         declared = {k for k in schema['properties'] if not k.startswith('$')}
         self.assertEqual(read, declared)
-        self.assertEqual(set(schema['properties']['hooks']['properties']), set(read_json(ROOT/'runtime/hooks/hooks.json')['hooks']))
+        # The hooks of the manifest, plus the old names still read (0.51: session-news is now whats-new).
+        from installer.plan import RENAMED_HOOKS
+        self.assertEqual(set(schema['properties']['hooks']['properties']), set(read_json(ROOT/'runtime/hooks/hooks.json')['hooks']) | set(RENAMED_HOOKS))
 
     def test_shipped_files_follow_the_schemas(self):
         text = (ROOT/'organization.toml').read_text(encoding='utf-8')

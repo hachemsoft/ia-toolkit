@@ -63,7 +63,7 @@
     },
     "hooks": {
       "type": "object",
-      "description": "Guardrails and hooks: true turns one on, false turns it off. protected-paths and session-news are on by default.",
+      "description": "Guardrails and hooks: true turns one on, false turns it off. protected-paths and whats-new are on by default.",
       "properties": {
         "dbt-prod-guard": {
           "type": "boolean"
@@ -71,9 +71,13 @@
         "protected-paths": {
           "type": "boolean"
         },
-        "session-news": {
+        "whats-new": {
           "type": "boolean",
           "description": "At session start, tells the agent once what is new (installed version, NEWS.md, a newer version available). On by default."
+        },
+        "session-news": {
+          "type": "boolean",
+          "description": "Old name of whats-new (before 0.51), still read: write whats-new instead."
         }
       },
       "additionalProperties": false
@@ -170,7 +174,7 @@
     },
     "news": {
       "type": "object",
-      "description": "The session-news hook. check_remote: read VERSION and NEWS.md on the kit's origin once a day (git fetch, never a pull); false keeps the hook local.",
+      "description": "The whats-new hook. check_remote: read VERSION and NEWS.md on the kit's origin once a day (git fetch, never a pull); false keeps the hook local.",
       "properties": {
         "check_remote": {
           "type": "boolean"

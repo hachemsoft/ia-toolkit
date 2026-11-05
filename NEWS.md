@@ -5,7 +5,7 @@ One section per entry, `## <YYYY-MM-DD> <id> : <title>`, then optional lines `pr
 (ids of `profiles/`), `teams: data` (teams of `organization.toml`) and `until: YYYY-MM-DD` (not shown after that day),
 then the text. Without `profiles` or `teams`, an entry goes to everyone. An organization writes its own entries in its
 copy of this repository; the public repository keeps only generic ones. `python3 scripts/check_news.py` checks the file
-(the CI runs it). How it reaches people: [docs/hooks.md](docs/hooks.md#session-news).
+(the CI runs it). How it reaches people: [docs/hooks.md](docs/hooks.md#whats-new).
 
 ## 2026-11-02 session-news : The kit now tells you what is new at session start
 
