@@ -1,0 +1,18 @@
+# Who must approve a change, read by GitHub and GitLab from the repository root. The public kit names nobody: an
+# organization's copy uncomments these lines with its own groups (GitLab: @group/subgroup; GitHub: @org/team), then
+# turns on "require review from code owners" for the default branch. Without it, CODEOWNERS only suggests reviewers.
+#
+# What an agent reads at every session, and what runs on the workstations:
+# /skills/            @your-org/ai-kit-maintainers
+# /agents/            @your-org/ai-kit-maintainers
+# /commands/          @your-org/ai-kit-maintainers
+# /templates/         @your-org/ai-kit-maintainers
+# /runtime/           @your-org/ai-kit-maintainers
+# /organization.toml  @your-org/platform
+# /practices/         @your-org/platform
+#
+# A contributed skill keeps its owner (skills/contrib/README.md):
+# /skills/contrib/<name>/  @your-org/<owning-team>
+#
+# A team's own practices, reviewed by that team:
+# /practices/20-<team>.md  @your-org/<team>

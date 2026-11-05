@@ -21,6 +21,20 @@ Developers may run the kit from a clone without the launcher: `python3 -m instal
 
 Before a merge request (MR): `python3 scripts/offline_tests.py` (the tests with every supported CLI taken off the PATH: it fails if a test reaches one of them) and `ruff check .`. Run them in a virtual environment of your own, with the interface libraries (`pip install -r packaging/runtime.txt`); without them, the interface tests are skipped. The launcher tests install the kit from a local folder of wheels standing for a package index, `build/wheelhouse` (the command to fill it is at the top of `tests/wheelhouse.py`); without it, they are skipped. CI runs all of them.
 
+## Review of skills, agents and commands
+
+What an agent reads is reviewed like code, at three levels. None of them blocks a person on their workstation.
+
+| Check | Where it runs | What it does |
+| --- | --- | --- |
+| `CODEOWNERS` at the root | on the merge request, GitHub or GitLab | names who approves a change to `skills/`, `agents/`, `commands/`, `templates/`, `runtime/`, `organization.toml` and `practices/`; the public file names nobody, an organization's copy uncomments its lines and requires the code owners' review on the default branch |
+| `python3 runtime/check_skills.py` | in CI (`portability.yml`, `.gitlab-ci.yml`), in `tests/test_check_skills.py`, and locally | refuses a download piped into a shell, an instruction to drop previous instructions, a permission bypass, an instruction to turn a guardrail off or to change the kit's or a CLI's configuration, a secret, and a script or binary not declared in its `KIT_ALLOWED` list |
+| `doctor` | on the workstation, when the person runs it | lists the skills in the home folder that the kit did not install and shows what the same check finds in them, as `[Info] To review`, never as a failure |
+
+A new script in a skill is reviewed, then added to `KIT_ALLOWED` in `runtime/check_skills.py`. The check finds the obvious forms only: a skill is text the model reads, and the barriers stay the review, the CLIs' permissions and the managed settings ([guardrails](hooks.md#a-lock-nobody-on-the-workstation-can-remove)).
+
+`.gitlab-ci.yml` runs the same model-free checks as the GitHub workflow for an organization's GitLab copy, on Linux runners: the tests on Python 3.9, 3.11 and 3.14, ruff, the schemas, `NEWS.md`, the skills check, and the release ZIP as an artifact. The macOS and Windows jobs and the publication of the release stay on GitHub.
+
 ## Add a team
 
 1. `practices/20-<team>.md`: the team's practices, short and checkable.

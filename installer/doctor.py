@@ -73,6 +73,33 @@ def guardrail_checks(home, state, status):
 
 
 REPO_SKILL_DIRS = ('.agents/skills', '.gemini/skills', '.codex/skills')
+# A skills folder that some CLIs read in the home folder, where the kit writes nothing.
+SHARED_SKILL_DIRS = ('.agents/skills',)
+
+
+def foreign_skills(home, state):
+    """Skills in the home folder that the kit did not install: in every skills folder the kit writes to (read from the
+    state, so no CLI is named here) and in the shared ones. Shown, never removed."""
+    files = state.get('files', {})
+    roots = {m.group(1) for rel in files if (m := re.match(r'^(.*/skills)/[^/]+/SKILL\.md$', rel))} | set(SHARED_SKILL_DIRS)
+    found = []
+    for rel in sorted(roots):
+        base = home/rel
+        if base.is_dir():
+            found += [base/child.name for child in sorted(base.iterdir())
+                      if (child/'SKILL.md').is_file() and rel+'/'+child.name+'/SKILL.md' not in files]
+    return found
+
+
+def skill_findings(folders):
+    """What runtime/check_skills.py finds in those skills: the same rules as the kit's own CI."""
+    if not folders:
+        return []
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('ai_kit_check_skills', ROOT/'runtime'/'check_skills.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.scan(folders, set())
 
 
 def repo_root(start):
@@ -435,6 +462,12 @@ def doctor_checks(home, cwd=None, problems=None):
                   + ' give repo skills names of their own, and protect .agents/ with CODEOWNERS.')
         elif root:
             print('[OK] No repo skill named like a kit skill ('+root.name+')')
+        own = foreign_skills(home, state)
+        if own:
+            print('[Info] Skills not installed by the kit: '+', '.join('~/'+f.relative_to(home).as_posix() for f in own))
+            # Shown to review, not counted as failed checks: these skills are the person's own choice.
+            for path, line, rule, _ in skill_findings(own):
+                print('[Info] To review: ~/'+path.relative_to(home).as_posix()+(':'+str(line) if line else '')+' ('+rule+')')
         installed = set(state.get('installed', {}).get('clis') or [a.NAME for a in ADAPTERS])
         for adapter in ADAPTERS:
             if adapter.NAME in installed:
