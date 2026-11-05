@@ -1,0 +1,21 @@
+{
+  "name": "java-api-change-is-not-quick",
+  "cwd": "java-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ]
+  },
+  "prompt": "/build make PriceCalculator.total return a BigDecimal instead of a double. Small change, go ahead.",
+  "expect": {
+    "regex": [
+      "(?i)checkout|caller|appelant|consumer|consommateur|published|publi",
+      "PriceCalculatorTest",
+      "(?i)mvn"
+    ],
+    "not_contains": [
+      "level: quick"
+    ]
+  },
+  "_doc": "Java: a short change to a published API is not quick; the dependent service and the test are named, and the repo's Maven command is the evidence. Universal behaviour, no playbook required. Patterns accept English and French answers."
+}

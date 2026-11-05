@@ -14,7 +14,7 @@ Reply in the person's language. Artifact headings stay in English, their content
 ## Ceremony
 Evidence: separate what you observed (command, output) from what you assume; never call verified what you did not run; unknown stays unknown.
 Reply to a change with a first line `Level: quick|standard|full` and why, even if blocked; a go-ahead already given stands. Level by what it can break and whether that can be undone, not its size. **quick** (local, obvious behaviour, no contract changed): no artifact, do it, run the check that covers it. **standard** (small feature, a few files): short alignment, then test-first. **full** (large or fuzzy; production, a shared contract, irreversible or personal data): the useful artifacts, acceptance before code, risks: how a failure shows and how to undo or mitigate it, or why not applicable.
-A request changing a business rule or KPI, or saying people disagree on one, is full: ask the deciding question before code or SQL, even if a definition exists.
+A request changing a business rule or KPI, or saying people disagree on one, is full: ask the deciding question before code or a query, even if a definition exists.
 Tests: never weaken, skip or delete one to hide a regression; for a contract changed on purpose, update it, say which and why, keep one proving the new behaviour.
 
 ## Commands
@@ -34,7 +34,7 @@ Base skills target other tools; map silently:
 - "PR", "pull request", "GitHub": the repo's own flow and host (merge request on GitLab, or per AGENTS.md); none is needed.
 - `/setup-workflow`, `/pr` (`mr`), `/tdd`, `/code-review`, `/implement-spec`: skills, not commands.
 - `disable-model-invocation: true`: only if the person asks.
-- Bash scripts on Windows: PowerShell equivalent or manual steps.
+- Bash on Windows: PowerShell equivalent or manual steps.
 
 ## Artifacts and git
 AGENTS.md conventions first; otherwise one folder per change, `docs/sdlc/<YYYY-MM-DD>-<slug>/`; `spec.md`, `REVIEW.md` committed; `intent.md`, `plan.md` local, git-ignored.

@@ -18,7 +18,7 @@ Settings are combined at every `setup` and `update`, in this order, each on top 
 allowed_domains = ["company.com"]
 
 [defaults]
-hooks = { dbt-prod-guard = true }
+extra_agents = ["security-reviewer"]
 ```
 
 Both files are TOML and have a JSON Schema in `schemas/`, named on their first line (`#:schema …`): an editor with TOML support that reads that line (VS Code with Even Better TOML, for example) completes the keys, shows each key's description and flags a typo or a wrong value as you type. `organization.toml` points to its schema; the personal file points to the copy in `~/.ai-kit/schemas/` (`setup` updates that line, and changes nothing else in the file). `doctor` also reports an unknown key (usually a typo), and the CI checks the shipped files against the schemas.
@@ -37,7 +37,7 @@ Both files are TOML and have a JSON Schema in `schemas/`, named on their first l
 
 The kit configures; it does not lock. Your `overrides.toml` has the last word, so you can turn off a guardrail or an MCP server that the organization turned on, and `doctor` shows it ("Your overrides.toml changes organization or team defaults"). What must be guaranteed is enforced outside the kit: IAM rights and data access, managed CLI settings pushed by IT, CODEOWNERS on repos. The practices in `10` and `20` are instructions to the agent, followed by default, not a technical barrier.
 
-TOML in four rules: one `key = value` per line, texts in double quotes, lists in `[ ]`, and `#` starts a comment, kept by the kit. A `[section]` groups the keys under it: `[hooks]` then `dbt-prod-guard = true`; `[mcp.github.server]` is the `server` of the `github` entry of `mcp`. A mistake in either file is reported with its line, its column, the line itself and the usual cause (a text without quotes, a key written twice, a list not closed, a backslash in a Windows path). Before 0.37 the personal file was `overrides.json`: the next `setup` or `update` turns it into `overrides.toml` with the same settings, its `_` explanations as comments, and keeps the JSON file in its backup.
+TOML in four rules: one `key = value` per line, texts in double quotes, lists in `[ ]`, and `#` starts a comment, kept by the kit. A `[section]` groups the keys under it: `[hooks]` then `session-news = false`; `[mcp.github.server]` is the `server` of the `github` entry of `mcp`. A mistake in either file is reported with its line, its column, the line itself and the usual cause (a text without quotes, a key written twice, a list not closed, a backslash in a Windows path). Before 0.37 the personal file was `overrides.json`: the next `setup` or `update` turns it into `overrides.toml` with the same settings, its `_` explanations as comments, and keeps the JSON file in its backup.
 
 ## Teams
 
@@ -48,19 +48,18 @@ Profiles describe a job; teams describe who you work with. A person has one prof
 **Its tools: `teams` in `organization.toml`.** The same keys and formats as `overrides.toml`: skills, commands, agents, guardrails, MCP servers.
 
 ```toml
-[defaults.mcp.dbt]
-server = { command = "dbt-mcp" }
+[defaults.mcp.docs]
+server = { httpUrl = "https://docs-mcp.example.org/mcp" }
 
-[teams.data-platform]
+[teams.payments]
 extra_skills = ["prototype"]
 extra_commands = ["ask"]
-hooks = { dbt-prod-guard = true }
-mcp = { dbt = true }
+mcp = { docs = true }
 ```
 
-Order: organization defaults, then the team, then the person's `overrides.toml`, which keeps the last word (`dbt = false`, `disabled_skills = ["prototype"]`). For MCP servers, the team uses the person's formats: `true` or `false` for a server the organization defines, a `server` table for one of its own (`[teams.<team>.mcp.<name>.server]`) ([MCP](mcp.md)).
+Order: organization defaults, then the team, then the person's `overrides.toml`, which keeps the last word (`docs = false`, `disabled_skills = ["prototype"]`). For MCP servers, the team uses the person's formats: `true` or `false` for a server the organization defines, a `server` table for one of its own (`[teams.<team>.mcp.<name>.server]`) ([MCP](mcp.md)).
 
-**Choosing the team.** `setup` lists the teams (those with a practices file or settings) and asks; or `setup --team <team>`. The team is kept for `update`. The usual way: IT gives each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile java-developer --team data-platform`. To change team, run `setup --team <other>`. `doctor` shows the team and where its content comes from.
+**Choosing the team.** `setup` lists the teams (those with a practices file or settings) and asks; or `setup --team <team>`. The team is kept for `update`. The usual way: IT gives each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile java-developer --team payments`. To change team, run `setup --team <other>`. `doctor` shows the team and where its content comes from.
 
 **Adding a team** is one merge request on the kit repository: the practices file, the `teams` entry, or both. Protect them with a CODEOWNERS line so that the team reviews its own changes.
 
@@ -136,7 +135,7 @@ A project skill named like a kit skill behaves differently per CLI ([matrix](cli
 
 ## Full `overrides.toml` example
 
-A General-profile developer who wants `/ask` and `/handoff`, prototyping, no `/retro`, the security review agent, the dbt guardrail on and the GitHub MCP server of the organization:
+A General-profile developer who wants `/ask` and `/handoff`, prototyping, no `/retro`, the security review agent, no news at session start and the GitHub MCP server of the organization:
 
 ```toml
 extra_commands = ["ask", "handoff"]
@@ -151,7 +150,7 @@ frictions = "propose"
 github = true
 
 [hooks]
-dbt-prod-guard = true
+session-news = false
 ```
 
 `frictions` sets what the agent does on the six friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. In all cases the line stays on your workstation. Then `update`. Every key is optional; a missing key changes nothing. A command added through `extra_commands` comes with its skills and their dependencies; a skill required by another one cannot be disabled on its own, and `update` says so. In a terminal, `ai-kit friction --mode` shows the current mode and where it comes from, `ai-kit friction --mode auto` (or `propose`, `off`) writes it in your `overrides.toml` and reapplies the agents' context; `ai-kit friction --list` shows your last frictions.
