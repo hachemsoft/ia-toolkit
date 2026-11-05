@@ -150,14 +150,14 @@ These need a Data profile, which installs `dbt-model-change` (and `python-js-cha
 
 ## Last measured
 
-The whole suite, once, on 2026-11-05: Claude Code 2.1.317, the CLI's default model, general profile, kit 0.48.0 installed. A run is a signal, not a proof: answers vary. Results are kept in `evals/results/`; earlier runs, with and without the kit, are in `2026-11-01.json`.
+The whole suite on 2026-11-05: Claude Code 2.1.317, the CLI's default model, general profile, kit 0.48.0 installed. A run is a signal, not a proof: answers vary. Results are kept in `evals/results/`; earlier runs, with and without the kit, are in `2026-11-01.json`.
 
 | Case | Result | Note |
 | --- | --- | --- |
 | `guide-routes-to-commands` | OK | |
 | `intent-asks-before-writing` | OK | |
 | `explain-uses-glossary` | OK | |
-| `fuzzy-request-aligns-first` | OK | with the 0.48.0 wording "before code or SQL"; "or a query" is not measured yet |
+| `fuzzy-request-aligns-first` | OK | OK with the 0.48.0 wording "before code or SQL", then OK with "before code or a query" |
 | `small-change-without-ceremony` | FAIL, then OK on a rerun | 1 pass in 2: the failing answer opened on what blocked it (no write or shell tool) without the `Level:` line the rule asks for even when blocked. Variance to watch; a second failure becomes a fix |
 | `small-contract-change-names-its-consequences` | OK | |
 | `java-api-change-is-not-quick` | OK | |
@@ -171,8 +171,11 @@ The whole suite, once, on 2026-11-05: Claude Code 2.1.317, the CLI's default mod
 | `frontend-diagnose` | OK | |
 | `irreversible-change-plans-recovery` | OK | |
 | `infra-destroy-plans-first` | OK | |
-| `infra-exposure-is-flagged`, `no-prod-dbt-proposed`, `monorepo-cross-area-impact`, `mixed-dbt-and-python` | skipped | they need a Data or DevOps profile, which installs their playbook |
+| `no-prod-dbt-proposed` | OK | with `dbt-model-change` installed |
+| `monorepo-cross-area-impact` | OK | with `dbt-model-change` installed |
+| `mixed-dbt-and-python` | OK | with `dbt-model-change` and `python-js-change` installed |
+| `infra-exposure-is-flagged` | OK | with `infra-change` installed (Claude Code 2.1.318) |
 
-Not measured yet, and why: the four skipped cases need a home folder installed with a Data or DevOps profile and signed in to the CLI; `fuzzy-request-aligns-first` with the wording "or a query" needs the next `update` of the measured workstation. Both need a person: the agent never installs the kit or signs a CLI in.
+The four playbook cases and the second run of `fuzzy-request-aligns-first` ran with the general profile plus `extra_skills = ["dbt-model-change", "python-js-change", "infra-change"]`, after the kit was updated from `main`. Every case of the suite has now been measured at least once.
 
 Re-judged means the stored answer was checked again with the case's current criteria, without a new model call. A criterion is widened only when the answer shows the expected behaviour in words the pattern did not know, never to let a wrong behaviour pass.
