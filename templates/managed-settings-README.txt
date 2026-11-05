@@ -23,4 +23,4 @@ codex/requirements.toml
 
 The guardrails run each person's copy of the kit ($HOME/.ai-kit), so the kit stays installed per person, as usual.
 The hook commands use $HOME: on Windows, Claude Code and Gemini CLI run them through their shell; try them on one
-workstation first. Antigravity CLI has no documented central policy: its guardrails stay those the kit installs.
+workstation first. Antigravity CLI has no documented central policy: its guardrails stay those the kit installs.{mcp}

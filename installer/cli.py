@@ -707,6 +707,7 @@ def main(argv=None):
     parser.add_argument('--plain',action='store_true',help='plain text questions and output, without colours or arrow-key menus')
     parser.add_argument('--out',type=Path,help='managed-settings: an empty folder to write the files IT deploys')
     parser.add_argument('--managed-hooks-only',action='store_true',help='managed-settings: Claude Code ignores hooks from any other source')
+    parser.add_argument('--managed-mcp-only',action='store_true',help='managed-settings: Claude Code and Codex CLI allow only the MCP servers organization.toml defines')
     parser.add_argument('--version',action='store_true',help='which copy of the kit runs, and with which Python')
     args = parser.parse_args(argv)
     if args.version:
@@ -743,7 +744,7 @@ def main(argv=None):
                 if not args.out:
                     raise KitError('managed-settings needs --out <empty folder>.')
                 from .managed import managed_settings
-                return managed_settings(args.out, args.managed_hooks_only)
+                return managed_settings(args.out, args.managed_hooks_only, args.managed_mcp_only)
             if args.action == 'usage':
                 return usage(home, args.since, args.json, args.min_sessions, args.min_prompts)
             if not args.dry_run:

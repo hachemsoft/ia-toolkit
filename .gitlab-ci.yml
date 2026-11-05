@@ -1,0 +1,49 @@
+# The same model-free checks as .github/workflows/portability.yml, for an organization's GitLab copy of the kit.
+# No API key, no CLI installed, and AI_KIT_NO_LIVE=1 refuses any real call. Linux runners only: the macOS and Windows
+# jobs of the GitHub workflow have no equivalent on a default GitLab runner; the release ZIP itself is built and tested
+# on GitHub, which publishes it. Images are pinned by tag; pin them by digest if your registry policy asks for it.
+variables:
+  AI_KIT_NO_LIVE: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+stages: [test, release]
+
+tests:
+  stage: test
+  image: python:${PYTHON}
+  parallel:
+    matrix:
+      - PYTHON: ["3.9", "3.11", "3.14"]
+  script:
+    # The launcher tests install the kit with pip from a local folder of wheels, standing for a company's package index.
+    - python -m pip download --quiet --only-binary=:all: --no-deps -d build/wheelhouse -r packaging/runtime.txt hatchling==1.27.0 packaging pathspec pluggy trove-classifiers tomli
+    - python -m pip download --quiet --only-binary=:all: --no-deps --python-version 3.9 -d build/wheelhouse tomli==2.2.1
+    - python -m pip install --quiet --no-index --find-links build/wheelhouse -r packaging/runtime.txt
+    - python scripts/offline_tests.py discover -s tests -v
+
+lint:
+  stage: test
+  image: python:3.12
+  script:
+    - pip install --quiet ruff==0.6.9 check-jsonschema==0.29.4
+    - ruff check .
+    - check-jsonschema --check-metaschema schemas/overrides.schema.json schemas/organization.schema.json
+    - check-jsonschema --schemafile schemas/organization.schema.json organization.toml
+    - check-jsonschema --schemafile schemas/overrides.schema.json templates/user-overrides.toml
+    - python3 scripts/check_news.py
+    - python3 runtime/check_skills.py
+
+release-zip:
+  stage: release
+  image: python:3.12
+  script:
+    - python scripts/build_release.py
+  artifacts:
+    paths: [dist/*.zip]
+    expire_in: 30 days

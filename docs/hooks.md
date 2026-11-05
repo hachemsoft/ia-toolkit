@@ -70,9 +70,9 @@ The kit writes these files for you, from `organization.toml`: `managed-settings 
 
 | File written | What it holds |
 | --- | --- |
-| `claude-code/managed-settings.json` | edits to the kit's and Claude Code's configuration denied; the guardrails as managed hooks; with `--managed-hooks-only`, hooks from any other source ignored |
+| `claude-code/managed-settings.json` | edits to the kit's and Claude Code's configuration denied; the guardrails as managed hooks; with `--managed-hooks-only`, hooks from any other source ignored; with `--managed-mcp-only`, only the MCP servers `organization.toml` defines (`allowedMcpServers` and `allowManagedMcpServersOnly`) |
 | `gemini-cli/settings.json` (system settings) | the guardrails; YOLO mode off |
-| `codex/requirements.toml` | sandbox and approvals kept on: the agent writes only inside its repo |
+| `codex/requirements.toml` | sandbox and approvals kept on: the agent writes only inside its repo; with `--managed-mcp-only`, an `mcp_servers` allowlist of the same servers, by name and identity |
 
 | CLI | Where IT deploys it | What to set |
 | --- | --- | --- |
@@ -82,6 +82,15 @@ The kit writes these files for you, from `organization.toml`: `managed-settings 
 | Antigravity CLI | no central policy documented by the vendor | the kit's guardrails and each person's permissions |
 
 Check the exact keys against your CLI's version: they change with each release.
+
+**Lock the MCP servers.** `managed-settings --out <empty folder> --managed-mcp-only` allows only the servers `organization.toml` defines, in its defaults and its teams: a remote server by its URL, a local one by its exact command and arguments, never by its name alone. A person's own server (`[mcp.mine]`) is then refused. If `organization.toml` defines none, every MCP server is blocked, and the command says so. A server whose URL or arguments use `${VARIABLE}` may not match once expanded: try one workstation first.
+
+| CLI | What the MCP lock writes |
+| --- | --- |
+| Claude Code | `allowedMcpServers` (`serverUrl` or `serverCommand` entries) with `allowManagedMcpServersOnly`, so a person cannot widen the list |
+| Codex CLI | `mcp_servers` in `requirements.toml`: the name the kit installs (`ai-kit-<name>`) and its identity (URL, or executable and each argument exactly) |
+| Gemini CLI | nothing: `mcp.allowed`, `mcp.excluded` and `admin.mcp.config` exist, but their docs do not say what an entry holds; the README asks IT to set them by hand |
+| Antigravity CLI | nothing: no central policy documented |
 
 ## Add a guardrail
 

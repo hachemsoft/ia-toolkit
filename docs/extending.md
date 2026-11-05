@@ -22,6 +22,34 @@ Two things to know. If a folder in that location has the name of a kit skill, th
 
 Create `<repo>/.agents/skills/<name>/SKILL.md` and version it. In a monorepo, prefix the name with the zone (`finance-cloture-mensuelle`): repo skills apply to all teams. CLIs that read `.agents/skills/` find it in that repo. **Give it a name of its own**: a repo skill named like a kit skill replaces it in one CLI, is ignored in another, and is listed next to it in a third, verified ([matrix](cli/matrice.md)). To adapt a shipped playbook for one project (for example the repo's SQL conventions), write `<repo>-sql-review` and say in `AGENTS.md`: "for SQL reviews in this repo, use the `<repo>-sql-review` skill". `doctor`, run from the repo, lists clashing names.
 
+Repo skills escape the kit's own review: protect `.agents/` with a `CODEOWNERS` line, and run the kit's skills check in the repo's CI, from a checkout of the kit at a tag (the URL of your organization's copy, or the public one):
+
+```yaml
+# GitHub Actions, in .github/workflows/skills-check.yml
+on: { pull_request: { paths: ['.agents/**'] } }
+jobs:
+  skills-check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: |
+          git clone --depth 1 --branch v0.49.0 <kit repository URL> "$RUNNER_TEMP/ai-kit"
+          python3 "$RUNNER_TEMP/ai-kit/runtime/check_skills.py" .agents/skills
+```
+
+```yaml
+# GitLab CI, in .gitlab-ci.yml
+skills-check:
+  image: python:3.12
+  rules:
+    - changes: [".agents/**/*"]
+  script:
+    - git clone --depth 1 --branch v0.49.0 <kit repository URL> /tmp/ai-kit
+    - python3 /tmp/ai-kit/runtime/check_skills.py .agents/skills
+```
+
+A script the repo's skills really need is listed with `--allow <path>` after review.
+
 A kit command can be overridden in a repo only where the CLI supports it ([matrix](cli/matrice.md)); elsewhere, write the project rule in `AGENTS.md`.
 
 ## For the organization: in the kit

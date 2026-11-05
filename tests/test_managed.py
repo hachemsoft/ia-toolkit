@@ -20,9 +20,9 @@ class ManagedSettingsTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def run_it(self, org=None, hooks_only=False):
+    def run_it(self, org=None, hooks_only=False, mcp_only=False):
         with mock.patch.object(managed, 'organization', return_value=org or {}), contextlib.redirect_stdout(io.StringIO()):
-            return managed_settings(self.out, hooks_only)
+            return managed_settings(self.out, hooks_only, mcp_only)
 
     def test_default_guardrails_and_denied_paths_for_claude(self):
         self.run_it()
@@ -58,6 +58,43 @@ class ManagedSettingsTests(unittest.TestCase):
         with self.assertRaises(KitError):
             self.run_it()
         self.assertEqual((self.out/'x').read_text(encoding='utf-8'), 'keep')
+
+    ORG = {'defaults': {'mcp': {'docs': {'server': {'httpUrl': 'https://docs-mcp.example.org/mcp'}},
+                                'github': {'server': {'command': 'docker', 'args': ['run', '-i', '--rm', 'ghcr.io/github/github-mcp-server:1.2.3']}}}},
+           'teams': {'payments': {'mcp': {'ledger': {'server': {'url': 'https://ledger.example.org/sse'}}}}}}
+
+    def test_no_mcp_lock_by_default(self):
+        self.run_it(self.ORG)
+        claude = json.loads((self.out/'claude-code/managed-settings.json').read_text(encoding='utf-8'))
+        for key in ('allowedMcpServers', 'allowManagedMcpServersOnly'):
+            self.assertNotIn(key, claude)
+        self.assertNotIn('mcp_servers', parse_toml((self.out/'codex/requirements.toml').read_text(encoding='utf-8')))
+
+    def test_mcp_allowlist_from_the_servers_the_organization_defines(self):
+        self.run_it(self.ORG, mcp_only=True)
+        claude = json.loads((self.out/'claude-code/managed-settings.json').read_text(encoding='utf-8'))
+        self.assertTrue(claude['allowManagedMcpServersOnly'])
+        self.assertCountEqual(claude['allowedMcpServers'], [
+            {'serverUrl': 'https://docs-mcp.example.org/mcp'},
+            {'serverCommand': ['docker', 'run', '-i', '--rm', 'ghcr.io/github/github-mcp-server:1.2.3']},
+            {'serverUrl': 'https://ledger.example.org/sse'}])
+        codex = parse_toml((self.out/'codex/requirements.toml').read_text(encoding='utf-8'))['mcp_servers']
+        self.assertEqual(sorted(codex), ['ai-kit-docs', 'ai-kit-github', 'ai-kit-ledger'])  # the names the kit installs
+        self.assertEqual(codex['ai-kit-docs']['identity'], {'url': 'https://docs-mcp.example.org/mcp'})
+        command = codex['ai-kit-github']['identity']['command']
+        self.assertEqual(command['executable'], 'docker')
+        self.assertEqual([a['value'] for a in command['args']], ['run', '-i', '--rm', 'ghcr.io/github/github-mcp-server:1.2.3'])
+        self.assertEqual({a['match'] for a in command['args']}, {'exact'})
+        readme = (self.out/'README.txt').read_text(encoding='utf-8')
+        self.assertIn('allowManagedMcpServersOnly', readme)
+        self.assertIn('Gemini CLI', readme)
+        self.assertNotIn('mcp', json.loads((self.out/'gemini-cli/settings.json').read_text(encoding='utf-8')))
+
+    def test_mcp_lock_without_any_server_blocks_them_all(self):
+        self.run_it({}, mcp_only=True)
+        claude = json.loads((self.out/'claude-code/managed-settings.json').read_text(encoding='utf-8'))
+        self.assertEqual(claude['allowedMcpServers'], [])
+        self.assertEqual(parse_toml((self.out/'codex/requirements.toml').read_text(encoding='utf-8'))['mcp_servers'], {})
 
 
 if __name__ == '__main__':

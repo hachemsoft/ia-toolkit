@@ -58,6 +58,8 @@ jobs:
           check-jsonschema --schemafile schemas/overrides.schema.json templates/user-overrides.toml
       - name: NEWS.md well formed
         run: python3 scripts/check_news.py
+      - name: Skills, agents and commands carry no risky instruction, secret or undeclared script
+        run: python3 runtime/check_skills.py
   release-zip:
     name: Release ZIP
     runs-on: ubuntu-latest
