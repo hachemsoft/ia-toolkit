@@ -12,7 +12,7 @@ Each sheet follows the same template: when, command, output, needs, skill, examp
 - **Output**: a short answer in the person's language, with an example prompt.
 - **Needs**: nothing.
 - **Skill**: `routing` (internal). `workflow-guide` as an option for the full map of the upstream flow.
-- **Example**: `/guide I need to change a KPI definition, where do I start?`
+- **Example**: `/guide I need to change how orders are validated, where do I start?`
 
 ## `/learn` — learn an area or a concept
 - **When**: newcomer to an area, building skills on a topic, over several sessions. **Not** for a one-off question (`/explain`).

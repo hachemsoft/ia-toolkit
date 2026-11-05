@@ -1,0 +1,56 @@
+{
+  "_doc": "Eval runs of the operational ownership and less-Data changes, one run each, model: the CLI default, general profile. The runner reports kit 0.47.0: the installed content was main after each merge (0.48.0 content for the runs of 2026-11-04, plus the context line 'no contract changed' for the last one of that day). Statuses only, no answer text.",
+  "runs": [
+    {
+      "date": "2026-11-04",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.47.0",
+      "case": "no-claimed-run",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-04",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.47.0",
+      "case": "small-contract-change-names-its-consequences",
+      "status": "OK",
+      "note": "criteria before the case refused Level: quick; the agent chose quick"
+    },
+    {
+      "date": "2026-11-04",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.47.0",
+      "case": "unknown-stays-unknown",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-04",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.47.0",
+      "case": "irreversible-change-plans-recovery",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-04",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.47.0",
+      "case": "small-contract-change-names-its-consequences",
+      "status": "OK",
+      "note": "criteria refusing Level: quick, kit context with 'no contract changed'"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.47.0",
+      "case": "java-api-change-is-not-quick",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-05",
+      "cli": "Claude Code 2.1.317",
+      "kit": "0.47.0",
+      "case": "infra-destroy-plans-first",
+      "status": "OK"
+    }
+  ]
+}

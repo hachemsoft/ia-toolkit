@@ -133,7 +133,9 @@ def audit(scores, theme):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    source = Path(argv[0]) if argv else sorted((ROOT / 'evals' / 'results').glob('*.json'))[-1]
+    # The charts read the latest results file that carries the with/without comparison and the audit scores.
+    charted = [p for p in sorted((ROOT / 'evals' / 'results').glob('*.json')) if 'audit' in json.loads(p.read_text(encoding='utf-8'))]
+    source = Path(argv[0]) if argv else charted[-1]
     data = json.loads(source.read_text(encoding='utf-8'))
     out = ROOT / 'docs' / 'img'
     out.mkdir(parents=True, exist_ok=True)
