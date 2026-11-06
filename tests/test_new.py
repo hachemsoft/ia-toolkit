@@ -294,7 +294,8 @@ class NewTests(unittest.TestCase):
         return [' '.join(str(c) for c in command) for command in self.calls if command[0] != 'git']
 
     def test_checks_run_in_order_and_only_what_applies(self):
-        self.new('skill', '--name', 'demo', '--owner', 'team-x', '--yes', '--no-mr')
+        with mock.patch.object(new, 'WINDOWS', False):  # on Windows the snapshot is left alone: its own test below
+            self.new('skill', '--name', 'demo', '--owner', 'team-x', '--yes', '--no-mr')
         run = self.commands_run()
         self.assertIn('check_skills.py', run[0])
         self.assertIn('skills/contrib/demo', run[0])
