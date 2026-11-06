@@ -17,6 +17,10 @@ launcher (scripts/launcher.py)          the private venv ~/.ai-kit/runtime, the 
 
 `setup` and `update` run the same `apply` (`installer/cli.py`, with the commands and migrations), which runs the steps of `installer/plan.py` in order; `doctor` (`installer/doctor.py`), `usage` (`installer/usage.py`) and `uninstall` read `~/.ai-kit/state.json`, which records every file the kit wrote with its digest, the managed blocks inside files it shares (`~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`), the guardrails, MCP servers, versions and choices.
 
+## Creating a component
+
+`ai-kit new` (`installer/new.py`) works on a git clone of the kit, not on the installed copy: it writes a component, runs the repo's own scripts, then commits and pushes after two answers from a person at a terminal. It installs nothing and calls no model. Its contract: [create a component](extending.md#create-a-component-with-ai-kit-new).
+
 ## The adapter contract
 
 A CLI is a module in `installer/adapters/`, listed in `ADAPTERS`, that follows the `Adapter` protocol of `installer/interface.py`: `install(plan)` adds its files, `finalize(plan, active)` merges its settings (and, when the CLI is no longer chosen, removes what the kit had put there), `doctor(ctx)`, `history(home, state)` for the usage review, and the declarations `AGENT_TOOLS` (does the CLI enforce an agent's tool list) and `OBSERVES` (what its logs show). Two optional capabilities: `ContextHost` (the CLI reads its context only from its own folder, so it gets a copy) and `LiveCheck` (`doctor --live`). `cli.py` names no CLI.

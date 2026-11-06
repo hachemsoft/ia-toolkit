@@ -43,6 +43,8 @@ A new script in a skill is reviewed, then added to `KIT_ALLOWED` in `runtime/che
 
 ## Add a profile
 
+`ai-kit new profile`, from a clone of the kit, does steps 1, 3 and 4, then a branch and a merge request after two confirmations ([create a component](extending.md#create-a-component-with-ai-kit-new)). The steps by hand:
+
 1. `profiles/<id>.toml`: `practices`, `skills` (start from `general.toml`, then add the domain playbook), `agents`, `mcp` (names of servers defined in `organization.toml`, see [MCP](mcp.md)), and `commands` only to restrict the list (otherwise all those whose skills are installed).
 2. The domain playbook, if there is one: [add a skill](extending.md#for-the-organization-in-the-kit), category `domain`. Do not wire it into the commands: they stay neutral and send to "the installed playbook matching the files or the task". Give the playbook a `## In the kit commands` section saying what it changes in each step it concerns (`/build`, `/diagnose`, `/review`, `/test`…); a test checks that no command names a domain.
 3. In the same file, `label` (shown in the `setup` menu) and `order` (its position): the menu is built from the `profiles/` folder, no code to change.
