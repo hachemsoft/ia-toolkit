@@ -105,6 +105,12 @@ def files_matching(repo, rel):
         return [repo / rel] if (repo / rel).exists() else []
     return [path for path in repo.rglob(rel) if '.git' not in path.relative_to(repo).parts]
 
+def blocked(case, state, baseline):
+    """Why a case does not run: its preconditions, or a skeleton from ai-kit new whose prompt is still to write (never sent to a model)."""
+    if '<…' in case['prompt']:
+        return ['skeleton to complete: its prompt and criteria are placeholders']
+    return unmet_preconditions(case, state) if case.get('requires') and not baseline else []
+
 def unmet_preconditions(case, state):
     """What the case needs from the installed kit (profile, commands, skills) and is not there."""
     needs, installed = case.get('requires', {}), state.get('installed', {}) if state else {}
@@ -229,7 +235,7 @@ def main(argv=None):
         return 2
     if args.dry_run:
         for case in cases:
-            unmet = unmet_preconditions(case, state) if case.get('requires') and not args.baseline else []
+            unmet = blocked(case, state, args.baseline)
             print(case['name'] + ' : ' + case['prompt'][:80] + (' [precondition: ' + '; '.join(unmet) + ']' if unmet else ''))
         print('Dry run: no model called.')
         return 0
@@ -252,7 +258,7 @@ def main(argv=None):
     print('Kit ' + kit_version + ' | ' + args.cli + ' ' + str(meta['cli_version']) + ' | model ' + meta['model'] + (' | stand-in, no model' if args.stand_in else ''))
     results, failed = [], 0
     for case in cases:
-        unmet = unmet_preconditions(case, state) if case.get('requires') and not args.baseline else []
+        unmet = blocked(case, state, args.baseline)
         if unmet:
             print('[SKIP] ' + case['name'] + ' — precondition: ' + '; '.join(unmet))
             results.append({'name': case['name'], 'status': 'SKIP', 'failures': unmet, 'attempts': 0, 'output': ''})

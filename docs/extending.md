@@ -54,6 +54,38 @@ A kit command can be overridden in a repo only where the CLI supports it ([matri
 
 ## For the organization: in the kit
 
+### Create a component with `ai-kit new`
+
+From a git clone of the kit, one command does the steps below that can be automated. A ZIP installation has no clone, so it is refused there.
+
+```sh
+ai-kit new skill --name dashboard-check --owner team-reporting   # asks what is missing
+ai-kit new agent --name release-reviewer --owner team-platform
+ai-kit new command --name dashboard-check-run --skill dashboard-check
+ai-kit new profile --name mobile-developer --label "Mobile Developer: iOS and Android"
+```
+
+| What | Where it goes | What the command adds |
+| --- | --- | --- |
+| skill | always `skills/contrib/<name>/`, with an owner | its catalog entry at version `1.0.0`, a skeleton eval case and its section in [eval cases](eval-cases.md); a `domain` playbook gets its two required sections |
+| agent | always `agents/contrib/<name>.md`, with an owner | its catalog entry at version `1.0.0`; read-only tools |
+| command | `commands/<name>.md` | the pivot format, activating an existing skill |
+| profile | `profiles/<name>.toml` | a start from `general.toml`, the playbooks and agents you choose, the profile table |
+
+Moving a skill or an agent from `contrib/` to `internal/` stays a maintainer's act, at a usage review.
+
+Then the checks run: `runtime/check_skills.py`, `scripts/versions.py --update`, `tests/snapshot.py --update`, `scripts/profile_table.py --write` for a profile or a command, and the tests a new component must respect. A failure stops before any commit and shows the real output; the files stay for review. An uncommitted change in a file these steps rewrite, or in what the version lock and the snapshot read (`skills/`, `agents/`, `commands/`, `installer/`…), stops the command before it writes anything: they would record it without the commit carrying it.
+
+Last, two questions, always asked: the commit on a branch `new-<type>-<name>`, then the push and the merge request, through your own `glab` or `gh` when signed in, otherwise the page to open it by hand. `--yes` answers only the questions about the content, never these two; `--no-mr` stops after the checks. Without a terminal, a pipe or an agent's shell for instance, the command refuses before writing anything, unless both `--no-mr` and `--yes` are given: nothing but a person answers these two questions.
+
+Every stop says how to undo it, Ctrl+C included. Before the commit, it gives the `git restore` line and what to delete. After the commit, it gives `git switch` and `git branch -D`. After the push, it adds closing the merge request and `git push origin --delete`. A commit that fails, on a hook or a missing identity, comes back to the branch it started from. The push question names where the push really goes, even when it differs from where git fetches.
+
+What the command does not write is marked `<…>`, and listed at the end: the skill's instructions, the eval case's prompt and criteria. A skeleton eval case is never sent to a model: `evals/run.py` skips it until its prompt is written. The `write-a-skill` skill helps with the content. The skeleton is recorded at `1.0.0`, so its first content takes a new version: `1.0.1` in the catalog, then `python3 scripts/versions.py --update`.
+
+A command joins every profile that installs its skill and has no `commands` list of its own, so it can change the snapshot and the profile table: the command refreshes both and shows the size of the changes to existing files before the commit; the new files are listed before they are written. On Windows the snapshot is not rewritten, because its reference holds POSIX paths: after a command or a profile, run `python3 tests/snapshot.py --update` on Mac or Linux.
+
+### The steps by hand
+
 Two folders, two levels of commitment. `skills/internal/`: shipped and maintained by the kit maintainers, in the profiles. `skills/contrib/`: proposed by a person or a team who stays its owner, never installed by default (`tier: optional`, `origin: contrib`, `owner` in the catalog), enabled with one line by anyone who wants it. A contributed skill that is widely used moves to `internal` at a usage review; a skill without a reachable owner is removed. The rules are in `skills/contrib/README.md` and checked by the tests. The steps below apply to both; only the folder and the `origin`, `owner`, `tier` fields change.
 
 

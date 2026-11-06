@@ -2,6 +2,8 @@
 
 This is where the skills that people in the organization propose to the kit go, one folder per skill: `skills/contrib/<name>/SKILL.md`. What is under `skills/internal/` is shipped and maintained by the kit maintainers; what is here is maintained by the person named in the catalog.
 
+`ai-kit new skill` creates the folder, its catalog entry and its eval case ([create a component](../../docs/extending.md#create-a-component-with-ai-kit-new)).
+
 Rules (the first and the last are checked by the tests):
 
 - an entry in `skills/catalog.json` with `"origin": "contrib"`, `"owner": "<firstname.lastname or team>"`, and `"tier": "optional"`: a contributed skill is never installed by default, each person enables it with one line (`extra_skills` in `~/.ai-kit/overrides.toml`);

@@ -548,6 +548,12 @@ def news_action(argv):
     return news_module().main([*rest, '--home', str(args.home.resolve())])
 
 
+def new_action(argv):
+    """ai-kit new: a component of the kit, in its clone (installer/new.py)."""
+    from .new import main as new_main
+    return new_main(argv, repo=kit_folder())
+
+
 def friction_action(argv):
     """ai-kit friction: the /friction script itself (runtime/friction.py, one implementation) run from the terminal,
     with --home; --list for the last frictions; --mode [propose|auto|off] to show or change the frictions setting of
@@ -675,11 +681,11 @@ def main(argv=None):
         print('Python 3.9 minimum required (3.11 or newer recommended).',file=sys.stderr)
         return 2
     argv = sys.argv[1:] if argv is None else list(argv)
-    if argv and argv[0] in ('friction', 'news'):
-        # The /friction and news scripts from the terminal: their own options, the kit's --home. Colour as for the other actions.
+    if argv and argv[0] in ('friction', 'news', 'new'):
+        # The /friction and news scripts, and new, from the terminal: their own options. Colour as for the other actions.
         with styled_output(plain='--plain' in argv):
             try:
-                return friction_action(argv[1:]) if argv[0] == 'friction' else news_action(argv[1:])
+                return {'friction': friction_action, 'news': news_action, 'new': new_action}[argv[0]](argv[1:])
             except (KitError, OSError, UnicodeError) as exc:
                 print('Error: '+redact(str(exc)), file=sys.stderr)
                 return 2
@@ -689,8 +695,8 @@ def main(argv=None):
             except SystemExit as exc:  # the script's own argparse: usage already printed
                 return exc.code if isinstance(exc.code, int) else 2
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
-    parser.add_argument('action',nargs='?',choices=['setup','update','doctor','usage','uninstall','managed-settings','friction','news'],
-                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now')
+    parser.add_argument('action',nargs='?',choices=['setup','update','doctor','usage','uninstall','managed-settings','friction','news','new'],
+                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now; new: create a skill, an agent, a command or a profile in a clone of the kit')
     parser.add_argument('--since',type=int,default=42,help='usage: window in days (default 42)')
     parser.add_argument('--json',type=Path,help='usage: write the report to this file')
     parser.add_argument('--min-sessions',type=int,default=10,help='usage: minimum sessions before recommending (default 10)')
@@ -711,6 +717,8 @@ def main(argv=None):
     parser.add_argument('--managed-mcp-only',action='store_true',help='managed-settings: Claude Code and Codex CLI allow only the MCP servers organization.toml defines')
     parser.add_argument('--version',action='store_true',help='which copy of the kit runs, and with which Python')
     args = parser.parse_args(argv)
+    if args.action == 'new':  # an option before it: the early branch of new did not see it; never fall through to apply
+        parser.error('write the options after it: ai-kit new <type> ...')
     if args.version:
         print(version_line())
         return 0

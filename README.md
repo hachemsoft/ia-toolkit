@@ -89,7 +89,7 @@ Where each file goes and what differs: [CLI matrix](docs/cli/matrice.md).
 ## Documentation
 
 - **Use**: [getting started](docs/getting-started.md), [workflow](docs/workflow.md), [tools](docs/tools.md), [agents](docs/agents.md), [project layer](docs/project-context.md), [Troubleshooting](docs/troubleshooting.md).
-- **Customize**: [customization](docs/customization.md), [extending](docs/extending.md), [guardrails](docs/hooks.md), [MCP](docs/mcp.md), [identity](docs/identity.md).
+- **Customize**: [customization](docs/customization.md), [extending and `ai-kit new`](docs/extending.md), [guardrails](docs/hooks.md), [MCP](docs/mcp.md), [identity](docs/identity.md).
 - **Per CLI**: [matrix](docs/cli/matrice.md), [Gemini CLI](docs/cli/gemini.md), [Antigravity CLI](docs/cli/agy.md), [Codex CLI](docs/cli/codex.md), [Claude Code](docs/cli/claude-code.md), [moving from Gemini to agy](docs/cli/gemini-to-agy.md).
 - **Deploy and maintain**: [installer](docs/installer.md), [validation](docs/validation.md), [compliance](docs/compliance.md), [architecture](docs/architecture.md), [contributing](docs/contributing.md), [command format](docs/format.md), [skills reference](docs/skills-reference.md), [evals](docs/evals.md), [eval cases](docs/eval-cases.md), [usage review](docs/usage-review.md), [pilot](docs/pilot.md), [sources](docs/sources.md), [changelog](CHANGELOG.md).
 

@@ -35,6 +35,13 @@ class StyledOutputTests(unittest.TestCase):
         self.assertEqual(self.styled(plain), plain+'\n')
 
     @unittest.skipUnless(libraries(), 'rich not installed')
+    def test_the_binary_buffer_is_the_real_streams(self):
+        # prompt_toolkit writes to sys.stdout.buffer: a question asked under this layer crashed on a text attribute of that name.
+        from rich.console import Console
+        real = io.TextIOWrapper(io.BytesIO(), encoding='utf-8')
+        rich = Console(file=real, force_terminal=True, color_system='standard', width=200)
+        self.assertIs(console.StyledOutput(rich, real).buffer, real.buffer)
+
     def test_partial_writes_and_markup_characters_are_safe(self):
         self.assertEqual(ANSI.sub('', self.styled('[OK] a [bold]b[/] ' + '\n'.join(['x', '[Check] y']))), '[OK] a [bold]b[/] x\n[Check] y\n')
         from rich.console import Console

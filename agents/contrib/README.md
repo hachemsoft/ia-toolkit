@@ -2,6 +2,8 @@
 
 This is where the agents that people in the organization propose to the kit go, one file per agent: `agents/contrib/<name>.md`, in the same format as the kit's own agents (a front matter with `name`, `description`, `tools`, `max_turns`, `timeout_mins`, then the instructions). What is under `agents/internal/` is shipped and maintained by the kit maintainers; what is here is maintained by the person named in the catalog.
 
+`ai-kit new agent` creates the file and its catalog entry ([create a component](../../docs/extending.md#create-a-component-with-ai-kit-new)).
+
 Rules, checked by the tests:
 
 - an entry in `agents/catalog.json` with `"origin": "contrib"`, `"owner": "<firstname.lastname or team>"` and a `"version"` (`1.0.0` to start): a contributed agent is in no profile; each person enables it with one line (`extra_agents` in `~/.ai-kit/overrides.toml`);

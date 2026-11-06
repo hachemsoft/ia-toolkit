@@ -25,15 +25,16 @@ def style_of(line):
 
 class StyledOutput:
     """A text stream in place of sys.stdout: lines go through a Rich console with a style, partial writes wait for
-    their end of line, everything else (encoding, fileno, isatty) is the real stream's."""
+    their end of line, everything else (encoding, fileno, isatty, the binary buffer an interface library writes to) is the
+    real stream's."""
     def __init__(self, rich, stream):
         from rich.text import Text
-        self.rich, self.stream, self.buffer, self.Text = rich, stream, '', Text
+        self.rich, self.stream, self.pending, self.Text = rich, stream, '', Text
 
     def write(self, data):
-        self.buffer += data
-        while '\n' in self.buffer:
-            line, self.buffer = self.buffer.split('\n', 1)
+        self.pending += data
+        while '\n' in self.pending:
+            line, self.pending = self.pending.split('\n', 1)
             self.emit(line, newline=True)
         return len(data)
 
@@ -49,9 +50,9 @@ class StyledOutput:
             self.stream.write(line+('\n' if newline else ''))
 
     def flush(self):
-        if self.buffer:
-            self.stream.write(self.buffer)
-            self.buffer = ''
+        if self.pending:
+            self.stream.write(self.pending)
+            self.pending = ''
         self.stream.flush()
 
     def __getattr__(self, name):
