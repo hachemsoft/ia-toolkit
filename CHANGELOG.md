@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.51.0
 
 - `ai-kit new <profile|skill|agent|command>`: from a git clone of the kit, a component with its catalog entry, its version and its eval case, then the kit's own checks, then a branch `new-<type>-<name>`, a commit and a merge request. Skills and agents always go under `contrib/` with an owner; moving one to `internal/` stays a maintainer's act; profiles go in `profiles/`. The commit and the push are two questions always asked: `--yes` answers only the questions about the content, `--no-mr` stops after the checks. The merge request goes through the person's own `glab` or `gh`, otherwise the command gives the page. Refused before writing from a ZIP installation, without a terminal (unless `--no-mr`: a pipe never answers for the commit), on a name taken, on a detached HEAD, and on uncommitted changes in what it rewrites or what the version lock and the snapshot read. Every stop says how to undo. `evals/run.py` never sends a skeleton case to a model. No model call. Tested at a real pseudo-terminal, up to a real push to a local repository. Spec: `docs/sdlc/2026-11-05-new-component-command/spec.md`.
 - The colour layer of `update`, `doctor` and `usage` hid the real stream's binary buffer behind a text attribute of the same name: any question asked under it (Questionary, `prompt_toolkit`) crashed. Seen with `ai-kit new`; the layer now lets it through.
