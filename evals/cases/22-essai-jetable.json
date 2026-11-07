@@ -1,0 +1,15 @@
+{
+  "name": "essai-jetable",
+  "requires": {
+    "skills": [
+      "essai-jetable"
+    ]
+  },
+  "prompt": "<… what a person types …>",
+  "expect": {
+    "regex": [
+      "<… what the answer must show …>"
+    ]
+  },
+  "_doc": "Skeleton to complete: the prompt and the criteria are placeholders, so evals/run.py skips this case until they are written."
+}

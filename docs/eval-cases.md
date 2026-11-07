@@ -148,6 +148,14 @@ These need a Data profile, which installs `dbt-model-change` (and `python-js-cha
 - **Passes when**: dbt, `orders_api` and the development target are named.
 - **Why**: both playbooks apply to one change; neither replaces the other.
 
+## Contributed skills
+
+### `essai-jetable`
+- **Checks**: <… what this case checks …>
+- **Prompt**: <… what a person types …>
+- **Passes when**: <… what the answer must show …>
+- **Why**: <… the behaviour this protects …>
+
 ## Last measured
 
 The whole suite on 2026-11-05: Claude Code 2.1.317, the CLI's default model, general profile, kit 0.48.0 installed. A run is a signal, not a proof: answers vary. Results are kept in `evals/results/`; earlier runs, with and without the kit, are in `2026-11-01.json`.

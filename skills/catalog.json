@@ -539,5 +539,14 @@
     "optional": {
       "prototype": "settle a question that needs evidence with a throwaway script, deleted afterwards"
     }
+  },
+  "essai-jetable": {
+    "path": "skills/contrib/essai-jetable",
+    "version": "1.0.0",
+    "origin": "contrib",
+    "owner": "moi",
+    "description": "generate report when /report-it is called",
+    "category": "domain",
+    "tier": "optional"
   }
 }
