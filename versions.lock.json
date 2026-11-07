@@ -171,6 +171,10 @@
     "architecture-decision": {
       "version": "1.0.0",
       "digest": "8d9375455a24b232"
+    },
+    "essai-jetable": {
+      "version": "1.0.0",
+      "digest": "75b69ec2c4c6562d"
     }
   },
   "agents": {
