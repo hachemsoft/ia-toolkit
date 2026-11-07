@@ -50,7 +50,7 @@ def bars(runs, theme):
             return sum(r['status'] == 'OK' for r in picked), len(picked)
         rows.append((label, count(True), count(False)))
     body = text(24, 34, 'Plain-words tasks: with and without the kit', t['text'], 16, weight='600')
-    body += text(24, 54, 'Claude Code 2.1.316 and Codex CLI 0.164.0, kit 0.45.4+, 2 runs per CLI and side, 1 Nov 2026', t['muted'], 12)
+    body += text(24, 54, 'Claude Code 2.1.316, Codex CLI 0.164.0, kit 0.45.4 and 0.45.5, 3 or 4 runs per side: not a study', t['muted'], 12)
     body += legend(24, 80, t)
     y = 110
     for x in (0, 0.5, 1):

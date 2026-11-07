@@ -11,7 +11,7 @@
 [![Platforms](https://img.shields.io/badge/platforms-Mac%20%7C%20Windows%20%7C%20Linux-informational)](docs/getting-started.md)
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-A foundation for working with a coding agent as a team, on Mac and Windows. It configures the agent CLIs you choose (**Gemini CLI**, **Antigravity CLI**, **Codex CLI** and **Claude Code**) with the same content: layered context, a command-based workflow, domain playbooks, review agents and guardrails. It installs without administrator rights or download, and never calls the model on its own.
+One set of rules, methods and anti-error guardrails for the agent CLIs you choose (**Gemini CLI**, **Antigravity CLI**, **Codex CLI** and **Claude Code**), on Mac and Windows: layered context, a command-based workflow, domain playbooks and review agents. It installs without administrator rights, can be undone, downloads nothing from the release ZIP, and never calls the model on its own. It enforces nothing: for rules that must hold, deploy the policies it generates with your device management ([guardrails](docs/hooks.md#rules-it-can-enforce)).
 
 ## Getting started
 
@@ -34,7 +34,7 @@ A foundation for working with a coding agent as a team, on Mac and Windows. It c
    `/guide I need to …` tells you which command fits (`$` instead of `/` in Codex).
 3. **When something goes wrong**: run the installer again and choose **Check the installation**, then [Troubleshooting](docs/troubleshooting.md).
 
-You need Python 3.9 or later and your CLI, provided by your company; signing in and choosing the model are done in the CLI. Step by step: [getting started](docs/getting-started.md). For IT: [validation on enterprise workstations](docs/validation.md) and [compliance](docs/compliance.md).
+You need Python 3.9 or later and your CLI, provided by your company; signing in and choosing the model are done in the CLI. With conda, run the installer and `ai-kit` from a conda prompt, on `base` rather than a project environment. Step by step: [getting started](docs/getting-started.md). For IT: [validation on enterprise workstations](docs/validation.md) and [compliance](docs/compliance.md). Windows is covered by CI on administrator runners and by a trial on one virtual machine, not yet on a locked-down company workstation: a policy that blocks programs under the user profile also blocks the kit ([what to ask IT](docs/validation.md#what-it-may-have-to-provide-or-allow)).
 
 **Update**: `ai-kit update` in a terminal (the installer adds the `ai-kit` command to your own PATH, unless you said no: then `Installer.cmd update`, Mac `sh scripts/bootstrap.sh update`, from the cloned folder) fetches the new version, reinstalls and reapplies; your choices and files are kept. Never `pip install` the kit next to it: that makes a second copy `update` does not touch. From a ZIP: extract the new ZIP and run its installer. **Uninstall**: run the installer and choose **Uninstall**; only what the kit installed goes.
 
@@ -55,8 +55,8 @@ A profile is a starting point: the installer adds or removes a playbook, a comma
 
 - **Layered context**: company practices, team practices and your preferences, read before each repo's own `AGENTS.md`; the organization decides its layer in `organization.toml`.
 - **A workflow**: one command per step (`/intent`, `/spec`, `/build`, `/test`, `/review`, `/ship`, `/diagnose`), with ceremony matched to the stakes; the agent states the level on its first line. See [workflow](docs/workflow.md).
-- **Domain playbooks and review agents** that activate when the task calls for them; yours are added the same way ([extending](docs/extending.md)).
-- **Guardrails** that refuse an agent's writes to the configuration of the kit and of the CLIs, and dbt commands on production ([guardrails](docs/hooks.md)).
+- **Domain playbooks and review agents** that the model can activate when the task calls for them, without guarantee; yours are added the same way ([extending](docs/extending.md)).
+- **Anti-error guardrails**, not a security barrier: on by default, a refusal when an agent writes to the configuration of the kit and of the CLIs in a form they recognise, active on Codex once you approve them; off by default, a refusal of dbt commands on production ([guardrails](docs/hooks.md)).
 - **A feedback loop**: `/friction`, a local usage review, and per-skill versions so an update says what changed.
 
 ## Does it help?
@@ -73,7 +73,7 @@ The same tasks, run with and without the kit, judged on the outcome ([evals](doc
   <img alt="Asking the deciding question before writing SQL, run by run: never without the kit or with kit 0.45.3; every run with kit 0.45.4 and 0.45.5, on Claude Code and Codex." src="docs/img/evals-framing-light.svg" width="720">
 </picture>
 
-Two runs per task, side and CLI, on Claude Code 2.1.316 and Codex CLI 0.164.0: a clear signal, not a study. The results are in `evals/results/`; `scripts/eval_charts.py` redraws the charts.
+3 or 4 runs per side on 3 of the 21 cases, Claude Code 2.1.316 and Codex CLI 0.164.0, kit 0.45.4 and 0.45.5: regression tests for the kit's prompts, not a study. They do not compare the kit with a short `AGENTS.md` holding the same rules, the rule behind the first result was written after its case, and no run on Gemini CLI or Antigravity CLI is stored. The results are in `evals/results/`; `scripts/eval_charts.py` redraws the charts.
 
 ## Supported CLIs
 

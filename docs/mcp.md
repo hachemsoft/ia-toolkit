@@ -39,7 +39,7 @@ server = { httpUrl = "https://docs-mcp.example.org/mcp" }
 - Pin image and package versions (`:1.2.3`, not `:latest`): a new version should arrive by your choice, not by itself.
 - A local server needs its executable on the workstation (`docker`, a language runtime…), installed by the IT procedure. The kit does not install it. Prefer a remote server when one exists: nothing to install on the workstations.
 - `trust: true` is refused: the CLI must keep asking before a server's tools act.
-- To make this list the only one allowed on the workstations, IT deploys the managed settings generated with `managed-settings --managed-mcp-only` ([guardrails](hooks.md#a-lock-nobody-on-the-workstation-can-remove)). Without them, a person can still add a server of their own.
+- To make this list the only one allowed on the workstations, IT deploys the managed settings generated with `managed-settings --managed-mcp-only` ([guardrails](hooks.md#rules-it-can-enforce)). Without them, a person can still add a server of their own.
 
 ## For the kit maintainers: choose per profile
 

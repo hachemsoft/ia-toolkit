@@ -35,8 +35,11 @@ Install or update
 What happens
   The installer needs Python 3.9 or newer with its standard venv and pip modules. It creates the kit's private Python
   environment in your home folder (.ai-kit/runtime), installs the kit from the wheels/ folder of this ZIP (no download,
-  no administrator rights, no change to your Python, PATH or shell), then asks your choices and configures your CLI.
-  Once installed, this folder can be deleted: nothing points back to it. A new version comes as a new ZIP: run its installer.
+  no administrator rights, no change to your Python), then asks your choices and configures your CLI. Unless you say no
+  (--command-on-path no), it adds the ai-kit command to your own PATH: a registry key of your user on Windows, one marked
+  block in your shell startup file on Mac and Linux; uninstall removes it.
+  Keep this folder: the ai-kit command runs from it, and it is how you come back to this version later. The agents and
+  their guardrails keep working without it. A new version comes as a new ZIP: run its installer.
 
 Other actions (same command, followed by)
   update      reapply the configuration (after editing your choices)

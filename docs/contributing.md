@@ -31,7 +31,7 @@ What an agent reads is reviewed like code, at three levels. None of them blocks 
 | `python3 runtime/check_skills.py` | in CI (`portability.yml`, `.gitlab-ci.yml`), in `tests/test_check_skills.py`, and locally | refuses a download piped into a shell, an instruction to drop previous instructions, a permission bypass, an instruction to turn a guardrail off or to change the kit's or a CLI's configuration, a secret, and a script or binary not declared in its `KIT_ALLOWED` list |
 | `doctor` | on the workstation, when the person runs it | lists the skills in the home folder that the kit did not install and shows what the same check finds in them, as `[Info] To review`, never as a failure |
 
-A new script in a skill is reviewed, then added to `KIT_ALLOWED` in `runtime/check_skills.py`. The check finds the obvious forms only: a skill is text the model reads, and the barriers stay the review, the CLIs' permissions and the managed settings ([guardrails](hooks.md#a-lock-nobody-on-the-workstation-can-remove)).
+A new script in a skill is reviewed, then added to `KIT_ALLOWED` in `runtime/check_skills.py`. The check finds the obvious forms only: a skill is text the model reads, and the barriers stay the review, the CLIs' permissions and the managed settings ([guardrails](hooks.md#rules-it-can-enforce)).
 
 `.gitlab-ci.yml` runs the same model-free checks as the GitHub workflow for an organization's GitLab copy, on Linux runners: the tests on Python 3.9, 3.11 and 3.14, ruff, the schemas, `NEWS.md`, the skills check, and the release ZIP as an artifact. The macOS and Windows jobs and the publication of the release stay on GitHub.
 
