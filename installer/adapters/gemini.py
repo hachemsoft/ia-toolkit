@@ -10,6 +10,7 @@ import tempfile
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
+from .. import resolve
 from ..core import (content_root, user_context_refusal, adopt_user_copy, LIVE_PROMPT, network_problem, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
                     rename_references, renamed_skill_file, renamed_notice, kit_name,
                     digest, merge_defaults, run_timed,
@@ -454,7 +455,7 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     agents_enabled = settings.get('experimental',{}).get('enableAgents',True) is not False
     status(agents_enabled,'Agents not disabled in the user settings')
     if not agents_enabled:
-        catalog = read_json(content_root()/'skills/catalog.json')
+        catalog = resolve.skill_catalog(content_root())
         needing = sorted(s for s in skills if catalog.get(s,{}).get('needs_agents'))
         if needing:
             print('[Info] Skills that delegate to subagents, degraded without them: '+', '.join(needing))

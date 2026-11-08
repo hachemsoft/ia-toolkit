@@ -2,6 +2,23 @@
 name: setup-workflow
 description: "Configure this repo for the engineering skills: set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills."
 disable-model-invocation: true
+metadata:
+  aikit-version: "1.0.0"
+  aikit-origin: "upstream"
+  aikit-license: "skills/LICENSE-UPSTREAM-MIT"
+  aikit-summary: "Configure a repo for the flow: ticket tracker (GitHub, GitLab, local), triage labels, location of the glossary and the ADRs. Run once per repo."
+  aikit-category: "setup"
+  aikit-tier: "core"
+  aikit-optional-domain-modeling: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-grill-with-docs: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-grilling: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-improve-codebase-architecture: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-mr: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-prototype: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-ticket-sorting: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-to-spec: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-to-tickets: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-wayfinder: "not installed in this profile: skip that part, or add it with extra_skills"
 ---
 
 # Setup Workflow Skills

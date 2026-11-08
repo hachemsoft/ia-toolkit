@@ -194,27 +194,9 @@ def place_block(text, block, position):
     return block+'\n\n'+rest+'\n' if position == 'top' else rest+'\n\n'+block+'\n'
 
 def parse_frontmatter(text):
-    """Minimal YAML front matter (key: value, lists [a, b] or JSON quotes) and body, without dependencies."""
-    match = re.match(r'---\n(.*?)\n---\n?(.*)$', text, re.S)
-    if not match:
-        raise KitError('Front matter --- expected.')
-    meta = {}
-    for line in match.group(1).splitlines():
-        if not line.strip() or line.lstrip().startswith('#'):
-            continue
-        key, sep, value = line.partition(':')
-        if not sep or not re.fullmatch(r'[a-z_]+', key.strip()):
-            raise KitError('Unreadable front matter line: ' + redact(line))
-        value = value.strip()
-        if value.startswith('[') and value.endswith(']'):
-            meta[key.strip()] = [v.strip().strip('"\'') for v in value[1:-1].split(',') if v.strip()]
-        elif value.startswith('"'):
-            meta[key.strip()] = json.loads(value)
-        elif re.fullmatch(r'-?\d+', value):
-            meta[key.strip()] = int(value)
-        else:
-            meta[key.strip()] = value.strip("'")
-    return meta, match.group(2)
+    """Front matter and body (installer/frontmatter.py: scalars, lists, one-level metadata table, no dependency)."""
+    from .frontmatter import parse
+    return parse(text)
 
 def adopt_user_copy(p, copy, last):
     """A copy of 30_USER.md the person edited by hand (before 0.39 it was the file to edit): when the file itself did not
@@ -238,6 +220,7 @@ def adopt_user_copy(p, copy, last):
 def load_agent(path):
     """agents/internal/<category>/<name>.md: the agent's settings in the front matter, its instructions as the body."""
     meta, body = parse_frontmatter(Path(path).read_text(encoding='utf-8'))
+    meta.pop('metadata', None)  # AI Kit's own keys (aikit-version...), never written into a CLI's agent file
     return {**meta, 'instructions': body.strip()}
 
 DEFAULT_PREFIX = 'ai-kit-'

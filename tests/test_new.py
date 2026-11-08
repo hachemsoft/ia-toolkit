@@ -177,7 +177,8 @@ class NewTests(unittest.TestCase):
         code, out = self.new('skill', '--name', 'demo', '--owner', 'team-x', '--description', 'Check a demo. Triggers: demo.', '--yes', '--no-mr')
         self.assertEqual(code, 0, out)
         text = (self.repo/'skills/contrib/demo/SKILL.md').read_text(encoding='utf-8')
-        self.assertTrue(text.startswith('---\nname: demo\ndescription: "Check a demo. Triggers: demo."\n---\n'))
+        # 2.0 slice 3: the skill describes itself (aikit-* metadata, stripped at install).
+        self.assertTrue(text.startswith('---\nname: demo\ndescription: "Check a demo. Triggers: demo."\nmetadata:\n  aikit-version: "1.0.0"\n  aikit-origin: "contrib"\n'))
         self.assertIn('<…', text)
         self.assertEqual(self.catalog()['demo'], {'path': 'skills/contrib/demo', 'version': '1.0.0', 'origin': 'contrib', 'owner': 'team-x',
                                                   'description': 'Check a demo. Triggers: demo.', 'category': 'tool', 'tier': 'optional'})
@@ -239,7 +240,8 @@ class NewTests(unittest.TestCase):
         code, out = self.new('agent', '--name', 'demo-agent', '--owner', 'team-x', '--description', 'Review a demo.', '--yes', '--no-mr')
         self.assertEqual(code, 0, out)
         text = (self.repo/'agents/contrib/demo-agent.md').read_text(encoding='utf-8')
-        self.assertTrue(text.startswith('---\nname: demo-agent\ndescription: "Review a demo."\ntools: [read_file, grep_search]\nmax_turns: 12\ntimeout_mins: 5\n---\n'))
+        # 2.0 slice 3: the agent describes itself (aikit-* metadata), read by AI Kit, never written into a CLI's agent file.
+        self.assertTrue(text.startswith('---\nname: demo-agent\ndescription: "Review a demo."\ntools: [read_file, grep_search]\nmax_turns: 12\ntimeout_mins: 5\nmetadata:\n  aikit-version: "1.0.0"\n  aikit-origin: "contrib"\n'))
         self.assertIn('<…', text)
         self.assertEqual(self.catalog('agents')['demo-agent'], {'path': 'agents/contrib/demo-agent.md', 'version': '1.0.0', 'origin': 'contrib', 'owner': 'team-x'})
         for profile in (self.repo/'profiles').glob('*.toml'):

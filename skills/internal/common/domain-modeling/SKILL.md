@@ -1,6 +1,13 @@
 ---
 name: domain-modeling
 description: Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing a GLOSSARY.md, or recording or editing an ADR.
+metadata:
+  aikit-version: "1.0.0"
+  aikit-origin: "upstream"
+  aikit-license: "skills/LICENSE-UPSTREAM-MIT"
+  aikit-summary: "Project glossary (GLOSSARY.md) and architecture decisions (ADRs)."
+  aikit-category: "reference"
+  aikit-tier: "core"
 ---
 
 # Domain Modeling

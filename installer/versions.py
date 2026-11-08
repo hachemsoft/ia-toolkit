@@ -7,10 +7,13 @@ import json
 import re
 
 from .core import ROOT, KitError, inside, read_json
+from .frontmatter import strip_aikit
+from .resolve import agent_catalog, skill_catalog
 
 LOCK = ROOT/'versions.lock.json'
 SEMVER = re.compile(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)')
-CATALOGS = (('skills', 'skills/catalog.json'), ('agents', 'agents/catalog.json'))
+CATALOGS = (('skills', 'skills/<name>/SKILL.md metadata aikit-version'), ('agents', 'agents/<name>.md metadata aikit-version'))
+BUILD = {'skills': skill_catalog, 'agents': agent_catalog}
 
 
 def parse(version):
@@ -26,13 +29,16 @@ def content_digest(path):
     files = sorted((p for p in path.rglob('*') if p.is_file()), key=lambda p: p.relative_to(path).as_posix()) if path.is_dir() else [path]
     for file in files:
         rel = file.relative_to(path).as_posix() if path.is_dir() else file.name
-        digest.update(rel.encode('utf-8') + b'\0' + file.read_bytes().replace(b'\r\n', b'\n') + b'\0')
+        data = file.read_bytes().replace(b'\r\n', b'\n')
+        if file.suffix == '.md':
+            data = strip_aikit(data.decode('utf-8')).encode('utf-8')  # V2: the content as installed, without aikit-* metadata
+        digest.update(rel.encode('utf-8') + b'\0' + data + b'\0')
     return digest.hexdigest()[:16]
 
 
 def catalog_versions():
     """{kind: {name: version}} from the catalogs (entries with a path; a skill replaced_by another has none)."""
-    return {kind: {name: entry.get('version') for name, entry in read_json(ROOT/rel).items() if 'path' in entry}
+    return {kind: {name: entry.get('version') for name, entry in BUILD[kind](ROOT).items() if 'path' in entry}
             for kind, rel in CATALOGS}
 
 
@@ -41,7 +47,7 @@ def current():
     result = {}
     for kind, rel in CATALOGS:
         entries = {}
-        for name, entry in read_json(ROOT/rel).items():
+        for name, entry in BUILD[kind](ROOT).items():
             if 'path' in entry:
                 entries[name] = {'version': entry.get('version'), 'digest': content_digest(inside(ROOT, entry['path']))}
         result[kind] = entries

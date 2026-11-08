@@ -1,6 +1,13 @@
 ---
 name: to-questionnaire
 description: "Turn a decision you can't fully answer into a questionnaire for someone else to fill in. Use when the user types /ask or explicitly asks for this step; do not activate on your own for unrelated requests."
+metadata:
+  aikit-version: "1.1.0"
+  aikit-origin: "upstream"
+  aikit-license: "skills/LICENSE-UPSTREAM-MIT"
+  aikit-summary: "Turn a decision you cannot make alone into a questionnaire for someone else."
+  aikit-category: "tool"
+  aikit-tier: "optional"
 ---
 
 Turn something the user can't answer alone into a **questionnaire**: a Markdown document they hand to one person to fill in async, or fill out together over a meeting. The recipient holds knowledge the user lacks; the questionnaire pulls it out of them.

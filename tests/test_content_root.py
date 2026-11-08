@@ -45,7 +45,7 @@ class ContentRootTests(unittest.TestCase):
         with content_from(self.source), contextlib.redirect_stdout(io.StringIO()):
             with self.assertRaises(KitError) as caught:
                 apply('general', self.home, False, None, 'claude')
-        self.assertIn('SKILL.md missing: tdd', str(caught.exception))
+        self.assertIn('requires tdd, which does not exist', str(caught.exception))  # 2.0 slice 3: refused by the requirement check
 
 
 if __name__ == '__main__':

@@ -11,6 +11,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
+from . import resolve
 from .core import (content_root, STATE_SCHEMA, check_state_schema, _PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, news_module, is_guardrail, read_json, json_bytes, digest,
                    safe_id, load_commands, load_agent, redact, user_context_refusal)
 from .adapters import ADAPTERS
@@ -212,7 +213,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     hook_specs = read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})
     managed = load_managed(managed_file, [n for n, s in hook_specs.items() if is_guardrail(s)])
     overrides, managed_notices = apply_values(overrides, managed)
-    catalog = read_json(content_root()/'skills/catalog.json')
+    catalog = resolve.skill_catalog(content_root())
     manifest = load_commands()
     selected, allowed = resolve_selection(profile, overrides, catalog, manifest)
     writes, deletes = {}, []
@@ -245,7 +246,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     practice_names, practice_texts = practice_layers(profile)
     practices = '\n'.join(practice_texts)
     sources = skill_sources(selected, catalog)
-    agent_catalog = read_json(content_root()/'agents/catalog.json')
+    agent_catalog = resolve.agent_catalog(content_root())
     agents = select_agents(profile, overrides, agent_catalog, load_agent)
     hooks_dir = kit/'hooks'  # scripts shared by all CLIs, like kit/bin/friction.py
     hook_manifest, enabled_hooks, turned_off = guardrails(overrides, hooks_dir, locked_guardrails(managed), [n for n, v in (managed or {}).get('hooks', {}).items() if v is False])
@@ -588,8 +589,8 @@ def main(argv=None):
             except SystemExit as exc:  # the script's own argparse: usage already printed
                 return exc.code if isinstance(exc.code, int) else 2
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
-    parser.add_argument('action',nargs='?',choices=['setup','update','sync','rollback','doctor','usage','uninstall','managed-settings','friction','news','new'],
-                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices; sync: install the highest stable tag of your Core source (--dry-run to preview); rollback: back to the previous Core; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now; new: create a skill, an agent, a command or a profile in a clone of the kit')
+    parser.add_argument('action',nargs='?',choices=['setup','update','sync','rollback','validate','doctor','usage','uninstall','managed-settings','friction','news','new'],
+                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices; sync: install the highest stable tag of your Core source (--dry-run to preview); rollback: back to the previous Core; validate [--path FOLDER]: check a content tree (default: the kit content) before it is tagged; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now; new: create a skill, an agent, a command or a profile in a clone of the kit')
     parser.add_argument('--since',type=int,default=42,help='usage: window in days (default 42)')
     parser.add_argument('--json',type=Path,help='usage: write the report to this file')
     parser.add_argument('--min-sessions',type=int,default=10,help='usage: minimum sessions before recommending (default 10)')
@@ -609,6 +610,7 @@ def main(argv=None):
     parser.add_argument('--managed-hooks-only',action='store_true',help='managed-settings: Claude Code ignores hooks from any other source')
     parser.add_argument('--managed-mcp-only',action='store_true',help='managed-settings: Claude Code and Codex CLI allow only the MCP servers organization.toml defines')
     parser.add_argument('--version',action='store_true',help='which copy of the kit runs, and with which Python')
+    parser.add_argument('--path',type=Path,help='validate: the content tree to check (a Core repository); default the kit\'s own content')
     parser.add_argument('--migrate-config',action='store_true',help='update: write ~/.ai-kit/aikit.toml (AI Kit 2) from your overrides.toml, which stays as it is for AI Kit 0.52, and say where each setting went')
     args = parser.parse_args(argv)
     if args.action == 'new':  # an option before it: the early branch of new did not see it; never fall through to apply
@@ -648,6 +650,9 @@ def main(argv=None):
                     raise KitError('managed-settings needs --out <empty folder>.')
                 from .managed import managed_settings
                 return managed_settings(args.out, args.managed_hooks_only, args.managed_mcp_only)
+            if args.action == 'validate':
+                from .validate import validate
+                return validate(args.path or content_root(), (ROOT/'VERSION').read_text(encoding='utf-8').strip())
             if args.action == 'usage':
                 return usage(home, args.since, args.json, args.min_sessions, args.min_prompts)
             if args.migrate_config:

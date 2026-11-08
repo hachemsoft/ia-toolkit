@@ -2,6 +2,15 @@
 name: to-tickets
 description: Break a plan, spec, or the current conversation into a set of tracer-bullet tickets, each declaring its blocking edges, published to the configured tracker (edges as text in one file per ticket locally, or native blocking links on a real tracker).
 disable-model-invocation: true
+metadata:
+  aikit-version: "1.0.0"
+  aikit-origin: "upstream"
+  aikit-license: "skills/LICENSE-UPSTREAM-MIT"
+  aikit-summary: "Split a plan or a spec into tracer-bullet tickets with their blocking dependencies."
+  aikit-category: "workflow"
+  aikit-tier: "profile"
+  aikit-requires: "to-spec"
+  aikit-optional-setup-workflow: "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue"
 ---
 
 # To Tickets

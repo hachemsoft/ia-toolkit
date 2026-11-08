@@ -2,6 +2,13 @@
 name: teach
 description: "Teach the user a new skill or concept, within this workspace. Use when the user types /learn or explicitly asks for this step; do not activate on your own for unrelated requests."
 argument-hint: "What would you like to learn about?"
+metadata:
+  aikit-version: "1.1.0"
+  aikit-origin: "upstream"
+  aikit-license: "skills/LICENSE-UPSTREAM-MIT"
+  aikit-summary: "Learn a perimeter or a concept over several sessions: lessons, quizzes and briefs; shared material in the repo's docs/learn/<topic>/, personal progress in ~/.ai-kit/learning/."
+  aikit-category: "tool"
+  aikit-tier: "core"
 ---
 
 The user has asked you to teach them something. This is a stateful request - they intend to learn the topic over multiple sessions.

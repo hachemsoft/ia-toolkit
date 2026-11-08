@@ -2,6 +2,34 @@
 name: workflow-guide
 description: Ask which skill or flow fits your situation. A router over the skills in this repo.
 disable-model-invocation: true
+metadata:
+  aikit-version: "1.0.0"
+  aikit-origin: "upstream"
+  aikit-license: "skills/LICENSE-UPSTREAM-MIT"
+  aikit-summary: "Which skill or which flow for the current situation: router across all skills."
+  aikit-category: "tool"
+  aikit-tier: "optional"
+  aikit-optional-code-review: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-codebase-design: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-diagnosing-bugs: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-domain-modeling: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-grill-me: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-grill-with-docs: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-grilling: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-implement: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-implement-spec: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-improve-codebase-architecture: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-mr: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-prototype: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-setup-workflow: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-tdd: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-teach: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-to-questionnaire: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-to-spec: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-to-tickets: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-wait-what: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-wayfinder: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-writing-for-agents: "not installed in this profile: skip that part, or add it with extra_skills"
 ---
 
 # Workflow Guide

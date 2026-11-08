@@ -1,6 +1,13 @@
 ---
 name: infra-change
 description: "Prepare or review an infrastructure or delivery change: Terraform, Kubernetes, Helm, CI/CD pipeline, Dockerfile, cloud configuration. Triggers: modify the pipeline, add a resource, change a deployment, open a port, bump an image version, review this Terraform plan. Not for: application code."
+metadata:
+  aikit-version: "1.0.0"
+  aikit-origin: "internal"
+  aikit-summary: "Prepare or review an infrastructure or delivery change: Terraform, Kubernetes, Helm, CI/CD pipeline, Dockerfile, cloud configuration."
+  aikit-category: "domain"
+  aikit-tier: "profile"
+  aikit-optional-mr: "describe the delivery in the merge request (MR) or pull request (PR) format the repo uses: what changed, why, how it was verified"
 ---
 
 # infra-change
