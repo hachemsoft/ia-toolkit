@@ -43,21 +43,23 @@
             "type": "string",
             "minLength": 1
           },
-          "description": "MCP servers never installed (adds to the organization's)."
-        },
-        "allowed_executables": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Programs a local MCP server may run (name or full path)."
+          "description": "Servers never installed: a name, a URL prefix (https://host/path) or an executable."
         },
         "allowed_http": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
           },
-          "description": "host/prefix a remote MCP server URL must start with."
+          "description": "Exact identities of the remote servers allowed."
+        },
+        "allowed_stdio": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "description": "Exact identities of the local servers allowed (ai-kit status --verbose shows them)."
         }
       }
     },

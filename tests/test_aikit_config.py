@@ -167,7 +167,7 @@ class SchemaTests(unittest.TestCase):
         s = self.schema('managed')
         self.assertEqual(set(s['properties']), {'managed_schema', 'hooks', 'mcp', 'frictions', 'enterprise', 'git', 'teams'})
         self.assertEqual(set(s['properties']['git']['properties']), set(config.MANAGED_GIT))
-        self.assertEqual(set(s['properties']['mcp']['properties']), {'allow_stdio', 'denied', 'allowed_executables', 'allowed_http'})
+        self.assertEqual(set(s['properties']['mcp']['properties']), {'allow_stdio', 'denied', 'allowed_stdio', 'allowed_http'})
         self.assertEqual(s['properties']['frictions']['properties']['capture']['enum'], list(config.FRICTION_CAPTURE))
         self.assertEqual(s['properties']['frictions']['properties']['publication']['enum'], list(config.FRICTION_PUBLICATION))
         self.assertEqual(s['properties']['managed_schema']['const'], max(config.MANAGED_SCHEMAS))
