@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.1
+
+- The 2.1.0 release was not published: two tests failed on Windows, where Git leaves its object files read-only and the tests could not delete a test repository. The tests now remove it the Windows way. No change to the kit itself.
+
 ## 2.1.0
 
 Core and Team content from Git, at stable tags, with rollback. Without a Core or Team source configured, nothing changes.
