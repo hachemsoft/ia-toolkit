@@ -1,4 +1,4 @@
-# Core source from Git
+# Core and Team sources from Git
 
 Since AI Kit 2, the kit's content (skills, agents, commands, practices, profiles) can come from a Core Git repository at a
 stable tag instead of the copy shipped with the kit. Without a Core source, nothing changes.
@@ -45,3 +45,36 @@ in the same transaction as the installed files; `doctor` says when it was edited
   by case are refused.
 - A failure before the writes changes nothing; Ctrl+C during the writes puts everything back; a power cut is repaired at the
   next start.
+
+## Teams
+
+A Team repository adds to the Core what one team needs: its own skills and agents, the optional Core resources it turns on,
+and its context. One Team is active at a time, for every CLI.
+
+```toml
+# aikit.toml at the root of a Team repository
+schema = 1
+name = "data"
+kind = "team"
+
+[defaults]
+extra_skills = ["sql-review", "data-check"]   # Core optional resources, or the Team's own
+extra_agents = ["sql-reviewer"]
+```
+
+Its `skills/<name>/SKILL.md` and `agents/<name>.md` follow the Core's conventions; `context/*.md` becomes the team layer of the
+context. A Team never brings commands, policies, hooks or profiles, and cannot replace a Core resource marked
+`aikit-protected: "true"`: the activation is refused and nothing changes.
+
+| Command | Does | Network |
+| --- | --- | --- |
+| `ai-kit team list` | known Teams, the active one, the version in cache | no |
+| `ai-kit team use <name> --url <URL>` | adds a Team and activates it (its highest stable tag) | yes |
+| `ai-kit team use <name>` | activates a known Team; from the cache when it was downloaded | only the first time |
+| `ai-kit team use none` | no Team; its cache stays | no |
+| `ai-kit sync` | also updates the active Team to its highest stable tag | yes |
+| `ai-kit rollback` | back to the previous Core and Team | no |
+
+IT can restrict Teams in `managed.toml`: `[teams] allowed = ["https://gitlab.example.org/ai-toolkit/"]` (URL prefixes) and
+`allow_unknown = false` (only the Teams already known). `ai-kit status` (`--verbose` for details) shows the active Core and
+Team without network; `ai-kit init` installs the kit and runs the first `sync` when a Core source is set.

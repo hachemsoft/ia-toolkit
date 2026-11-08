@@ -43,6 +43,10 @@ allowed_schemes = ["https"]     # https | ssh
 allow_prerelease = false
 revoked = []                    # commit SHAs never activated
 
+[teams]
+allowed = ["https://gitlab.example.org/ai-toolkit/"]   # Team repositories accepted (URL prefixes)
+allow_unknown = true            # false: only the Teams already known
+
 [frictions]
 capture = "propose"              # propose | auto | off: what the agent does on a friction
 publication = "approval"         # approval (default) | auto | disabled

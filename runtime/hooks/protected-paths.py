@@ -229,7 +229,7 @@ KIT_TOOLS = ('/.ai-kit/bin/friction.py', '/.ai-kit/bin/news.py')  # run by the k
 
 # The kit's own subcommands that change the installation or bill a model call: the agent tells the person, it does not run them
 # (0.52.0). Reading ones (doctor, usage, news, friction logging, --version, managed-settings into an empty folder) stay allowed.
-KIT_REFUSED = {'setup', 'update', 'sync', 'rollback', 'uninstall', 'new'}
+KIT_REFUSED = {'init', 'setup', 'update', 'sync', 'rollback', 'uninstall', 'new'}
 KIT_COMMAND_BLOCKED = ('Blocked by the kit: `ai-kit {}` changes the installation or bills a model call; the agent does not run it. '
                        'Tell the person the command to run in a terminal.')
 
@@ -257,7 +257,7 @@ def kit_command_reason(command):
             sub = next((w for w in arguments if not w.startswith('-')), '')
             rest = arguments[arguments.index(sub) + 1:] if sub else []
             mode = rest.index('--mode') if '--mode' in rest else None
-            if (sub in KIT_REFUSED or (sub == 'doctor' and '--live' in rest) or (sub == 'friction' and '--sync' in rest)
+            if (sub in KIT_REFUSED or (sub == 'doctor' and '--live' in rest) or (sub == 'friction' and '--sync' in rest) or (sub == 'team' and 'use' in rest)
                     or (sub == 'friction' and mode is not None and mode + 1 < len(rest) and not rest[mode + 1].startswith('-'))):
                 return KIT_COMMAND_BLOCKED.format(' '.join([sub] + rest[:2]).strip())
     return None

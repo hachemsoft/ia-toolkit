@@ -45,6 +45,8 @@ def skill_catalog(root):
         if name in catalog:
             raise KitError('Two skills named '+name+': '+catalog[name]['path']+' and '+path.parent.relative_to(root).as_posix())
         catalog[name] = entry_from(meta, SKILL_KEYS, path.parent.relative_to(root).as_posix())
+        if 'description' not in catalog[name] and isinstance(meta.get('description'), str):
+            catalog[name]['description'] = meta['description']  # no aikit-summary: the skill's own description
     for name, alias in SKILL_ALIASES.items():
         catalog.setdefault(name, dict(alias))
     check_graph(catalog)

@@ -165,8 +165,13 @@ def friction_tracker(org, personal):
 
 
 def team_settings(team):
-    """The team's settings in organization.toml (same keys as overrides.toml), between the organization and the person."""
-    return organization().get('teams', {}).get(team, {}) if team else {}
+    """The team's settings in organization.toml (same keys as overrides.toml), between the organization and the person; a V2
+    Team's [defaults] (teams/<team>.toml in the active content) on top."""
+    if not team:
+        return {}
+    layer = dict(organization().get('teams', {}).get(team, {}))
+    layer.update(read_toml(content_root()/'teams'/(safe_id(team)+'.toml'), {}))
+    return layer
 
 
 def resolve_mcp(org_mcp, profile_mcp, personal_mcp, team_mcp=None):
@@ -255,7 +260,8 @@ def team_ids():
     """Teams: those with their own practices (practices/20-<team>.md, besides the shared 20-team.md) or their own settings
     (teams in organization.toml): context, tools, or both."""
     files = {p.stem[3:] for p in (content_root()/'practices').glob('20-*.md') if p.stem != '20-team'}
-    return sorted(files | set(organization().get('teams', {})))
+    v2 = {p.stem for p in (content_root()/'teams').glob('*.toml')} if (content_root()/'teams').is_dir() else set()
+    return sorted(files | set(organization().get('teams', {})) | v2)
 
 
 def profile_practices(profile, team):

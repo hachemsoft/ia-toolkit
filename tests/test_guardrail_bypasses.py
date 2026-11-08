@@ -189,7 +189,7 @@ class KitCommandTests(Base):
                'python -I -m installer setup --profile general', '~/.ai-kit/bin/ai-kit update', 'cd /tmp && ai-kit update',
                'sh scripts/bootstrap.sh update', 'Installer.cmd uninstall', 'ai-kit --yes uninstall',
                # 2.0.0: sending frictions is the person's approval, never the agent's
-               'ai-kit friction --sync', 'python3 ~/.ai-kit/bin/friction.py --sync')
+               'ai-kit friction --sync', 'python3 ~/.ai-kit/bin/friction.py --sync', 'ai-kit init', 'ai-kit sync', 'ai-kit rollback', 'ai-kit team use data')
     ALLOWED = ('ai-kit doctor', 'ai-kit usage --since 30', 'ai-kit news --later', 'ai-kit news --list', 'ai-kit --version',
                'ai-kit friction --category docs --text x', 'ai-kit friction --list', 'ai-kit friction --mode',
                'ai-kit managed-settings --out /tmp/managed', 'echo run ai-kit update yourself', 'grep -r "ai-kit update" docs')

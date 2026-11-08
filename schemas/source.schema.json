@@ -27,6 +27,48 @@
         "core",
         "team"
       ]
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "extra_skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extra_agents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extra_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "disabled_skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "disabled_agents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "disabled_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     }
   }
 }

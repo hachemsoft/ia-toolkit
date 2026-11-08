@@ -63,11 +63,11 @@ def load_managed(path=None, guardrail_names=()):
         refuse('unreadable ('+str(exc)+')')
     if data.get('managed_schema') not in MANAGED_SCHEMAS or isinstance(data.get('managed_schema'), bool):
         refuse('managed_schema must be one of '+', '.join(str(s) for s in sorted(MANAGED_SCHEMAS))+' (this AI Kit understands those)')
-    allowed = {'managed_schema', 'hooks', 'mcp', 'frictions', 'enterprise', 'git'}
+    allowed = {'managed_schema', 'hooks', 'mcp', 'frictions', 'enterprise', 'git', 'teams'}
     unknown = sorted(set(data) - allowed)
     if unknown:
         refuse('unknown key '+', '.join(unknown)+' (this version applies: '+', '.join(sorted(allowed))+')')
-    for table in ('hooks', 'mcp', 'frictions', 'enterprise', 'git'):
+    for table in ('hooks', 'mcp', 'frictions', 'enterprise', 'git', 'teams'):
         if table in data and not isinstance(data[table], dict):
             refuse('['+table+'] must be a table')
     hooks, mcp, frictions = data.get('hooks', {}), data.get('mcp', {}), data.get('frictions', {})
@@ -112,6 +112,14 @@ def load_managed(path=None, guardrail_names=()):
         refuse('git.revoked must list full commit SHAs (40 hexadecimal characters)')
     if 'allow_prerelease' in git and not isinstance(git['allow_prerelease'], bool):
         refuse('git.allow_prerelease must be true or false')
+    teams = data.get('teams', {})
+    unknown = sorted(set(teams) - {'allowed', 'allow_unknown'})
+    if unknown:
+        refuse('unknown key teams.'+', teams.'.join(unknown))
+    if 'allowed' in teams and (not isinstance(teams['allowed'], list) or not all(isinstance(v, str) and v for v in teams['allowed'])):
+        refuse('teams.allowed must be a list of Team repository URLs or URL prefixes')
+    if 'allow_unknown' in teams and not isinstance(teams['allow_unknown'], bool):
+        refuse('teams.allow_unknown must be true or false')
     return data
 
 
@@ -220,8 +228,8 @@ def summary(managed, path=None):
 AIKIT_FILE = 'aikit.toml'
 AIKIT_SCHEMAS = {1}
 USER_LISTS = ('extra_skills', 'disabled_skills', 'extra_commands', 'disabled_commands', 'extra_agents', 'disabled_agents')
-AIKIT_SECTIONS = {'user': USER_LISTS + ('skill_prefix',), 'hooks': None, 'mcp': ('denied', 'enabled'), 'frictions': ('capture', 'publication'),
-                  'core': ('repo',), 'git': ('allow_prerelease',)}
+AIKIT_SECTIONS = {'user': USER_LISTS + ('skill_prefix', 'active_team'), 'hooks': None, 'mcp': ('denied', 'enabled'), 'frictions': ('capture', 'publication'),
+                  'core': ('repo',), 'git': ('allow_prerelease',), 'teams': None}
 PERSONAL_PUBLICATION = ('approval', 'disabled')  # the person can only restrict (auto is set by IT or the organization)
 
 
@@ -242,6 +250,12 @@ def load_aikit(path):
             warnings += ['[Check] '+where+': unknown key '+section+'.'+k+', ignored.' for k in sorted(set(table) - set(keys))]
         for key, value in table.items():
             name = section+'.'+key
+            if section == 'teams':
+                if not isinstance(value, dict) or set(value) - {'repo'} or not isinstance(value.get('repo'), str) or not value.get('repo'):
+                    raise KitError(where+': [teams.'+key+'] must hold repo = "<URL of the Team repository>".')
+                continue
+            if key == 'active_team' and not isinstance(value, str):
+                raise KitError(where+': user.active_team must be a Team name or "none".')
             if section == 'hooks' and not isinstance(value, bool):
                 raise KitError(where+': '+name+' must be true or false.')
             if (key in USER_LISTS or section == 'mcp') and not (isinstance(value, list) and all(isinstance(v, str) and v for v in value)):
@@ -318,6 +332,7 @@ def aikit_from_overrides(overrides, schema_uri=None):
 # --- The content's manifest: aikit.toml at the root of a content tree (a Core source later) ------------------------------
 
 SOURCE_SCHEMAS = {1}
+TEAM_DEFAULTS = ('extra_skills', 'extra_agents', 'extra_commands', 'disabled_skills', 'disabled_agents', 'disabled_commands')
 
 
 def version_tuple(text):
@@ -337,13 +352,19 @@ def check_source(root, engine_version):
     where = str(path)
     if data.get('schema') not in SOURCE_SCHEMAS or isinstance(data.get('schema'), bool):
         raise KitError(where+': schema must be one of '+', '.join(str(s) for s in sorted(SOURCE_SCHEMAS))+'.')
-    unknown = sorted(set(data) - {'schema', 'name', 'kind', 'min_engine'})
+    unknown = sorted(set(data) - {'schema', 'name', 'kind', 'min_engine', 'defaults'})
     if unknown:
         raise KitError(where+': unknown key '+', '.join(unknown)+'.')
     if not isinstance(data.get('name'), str) or not data['name']:
         raise KitError(where+': name must be a text.')
     if data.get('kind', 'core') not in ('core', 'team'):
         raise KitError(where+': kind must be core or team.')
+    defaults = data.get('defaults', {})
+    if 'defaults' in data and data.get('kind') != 'team':
+        raise KitError(where+': [defaults] is for a Team repository (kind = "team").')
+    if not isinstance(defaults, dict) or set(defaults) - set(TEAM_DEFAULTS) or not all(
+            isinstance(v, list) and all(isinstance(n, str) and n for n in v) for v in defaults.values()):
+        raise KitError(where+': [defaults] accepts lists of names: '+', '.join(TEAM_DEFAULTS)+'.')
     try:
         needed = version_tuple(data.get('min_engine', '0.0.0'))
     except ValueError:

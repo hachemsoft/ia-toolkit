@@ -119,6 +119,21 @@
           "description": "Commits never activated, even by rollback."
         }
       }
+    },
+    "teams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allow_unknown": {
+          "type": "boolean"
+        }
+      }
     }
   }
 }

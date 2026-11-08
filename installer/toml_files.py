@@ -180,7 +180,10 @@ def set_section_key(text, section, key, value, path='aikit.toml'):
             lines[start:value_end(lines, start) + 1] = [new_line]
     result = '\n'.join(lines)
     expected = parse_toml(text, path)
-    expected.setdefault(section, {})[key] = value
+    table = expected
+    for part in section.split('.'):  # [teams.data] is the table data inside teams
+        table = table.setdefault(part, {})
+    table[key] = value
     if parse_toml(result, path) != expected:
         raise KitError(str(path) + ': ' + section + '.' + key + ' could not be updated without changing something else; edit it by hand.')
     return result

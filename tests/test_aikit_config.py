@@ -165,7 +165,7 @@ class SchemaTests(unittest.TestCase):
 
     def test_managed_schema_matches_the_loader(self):
         s = self.schema('managed')
-        self.assertEqual(set(s['properties']), {'managed_schema', 'hooks', 'mcp', 'frictions', 'enterprise', 'git'})
+        self.assertEqual(set(s['properties']), {'managed_schema', 'hooks', 'mcp', 'frictions', 'enterprise', 'git', 'teams'})
         self.assertEqual(set(s['properties']['git']['properties']), set(config.MANAGED_GIT))
         self.assertEqual(set(s['properties']['mcp']['properties']), {'allow_stdio', 'denied'})
         self.assertEqual(s['properties']['frictions']['properties']['capture']['enum'], list(config.FRICTION_CAPTURE))
@@ -181,7 +181,7 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(s['properties']['frictions']['properties']['publication']['enum'], list(config.PERSONAL_PUBLICATION))
 
     def test_source_schema_matches_the_loader(self):
-        self.assertEqual(set(self.schema('source')['properties']), {'schema', 'name', 'kind', 'min_engine'})
+        self.assertEqual(set(self.schema('source')['properties']), {'schema', 'name', 'kind', 'min_engine', 'defaults'})
 
 
 if __name__ == '__main__':

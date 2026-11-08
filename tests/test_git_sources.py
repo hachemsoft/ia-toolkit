@@ -62,10 +62,10 @@ class Base(unittest.TestCase):
         if push:
             run_git('push', '-q', str(self.bare), 'main', tag, cwd=self.work)
 
-    def run_action(self, action, dry_run=False, confirm=True):
+    def run_action(self, action, dry_run=False, confirm=True, team=None, url=None):
         with contextlib.redirect_stdout(io.StringIO()) as out:
-            with sync.activation(self.home, action, dry_run, (lambda q: confirm), managed_file=self.managed) as extra:
-                cli.apply('general', self.home, dry_run, None, 'claude', extra_writes=extra, managed_file=self.managed)
+            with sync.activation(self.home, action, dry_run, (lambda q: confirm), managed_file=self.managed, team_name=team, team_url=url) as act:
+                cli.apply('general', self.home, dry_run, None, 'claude', act.team, extra_writes=act.writes, managed_file=self.managed)
         return out.getvalue()
 
     def installed(self):
@@ -87,6 +87,24 @@ class SyncTests(Base):
         self.assertEqual(len(state['lock']), 64)
         self.run_action('update')
         self.assertIn('Marker v1.0.0.', self.installed())  # update reads the locked Core, not the package
+
+    def test_a_plain_reapply_keeps_the_locked_core(self):
+        # The guided installer and the re-apply after /me call apply() directly: they must not fall back to the package content.
+        self.run_action('sync')
+        with contextlib.redirect_stdout(io.StringIO()):
+            cli.apply('general', self.home, False, None, 'claude', managed_file=self.managed)
+        self.assertIn('Marker v1.0.0.', self.installed())
+
+    def test_init_installs_then_syncs_the_core(self):
+        home = self.base/'fresh'
+        (home/'.ai-kit').mkdir(parents=True)
+        (home/'.ai-kit/aikit.toml').write_text(dump_toml({'schema': 1, 'core': {'repo': self.url}}), encoding='utf-8')
+        self.managed.write_text(dump_toml({'managed_schema': 1, 'enterprise': {'core': self.url}}), encoding='utf-8')
+        with mock.patch('installer.config.managed_path', return_value=self.managed), contextlib.redirect_stdout(io.StringIO()) as out:
+            code = cli.main(['init', '--home', str(home), '--target', 'claude', '--user', 'a@example.org'])
+        self.assertEqual(code, 0, out.getvalue())
+        self.assertIn('Marker v1.0.0.', (home/'.claude/skills/ai-kit-tdd/SKILL.md').read_text(encoding='utf-8'))
+        self.assertEqual(json.loads((home/'.ai-kit/state.json').read_text(encoding='utf-8'))['profile'], 'general')
 
     def test_a_branch_is_never_followed(self):
         self.run_action('sync')

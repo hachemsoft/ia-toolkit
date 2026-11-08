@@ -23,6 +23,7 @@ from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKI
 from .plan import (RENAMED_HOOKS, effective_settings, resolve_selection, personal_file, practice_layers, skill_sources, select_agents,
                    guardrails, remove_stale_files, refuse_links)
 from .usage import (usage)  # noqa: F401 (re-exported)
+from .toml_files import read_toml  # noqa: F401 (also re-exported)
 from .config import (ManagedConfigError, load_managed, apply_values, locked_guardrails, filter_mcp, publication, managed_digest, AIKIT_FILE, check_source, load_aikit, aikit_from_overrides)  # noqa: F401 (re-exported)
 from .lifecycle import (PERSONAL_KEPT, plan_command, remove_command, uninstall)  # noqa: F401 (re-exported)
 
@@ -198,6 +199,12 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     if migrate_kit_dir(home, dry_run):
         return []  # --dry-run: the old folder is not renamed yet, the plan would be wrong
     kit = home / '.ai-kit'
+    # V2: with a Core or a Team synced, every installation (the guided installer, a re-apply) uses the locked content, never the
+    # package's; sync, team use and rollback pass their own content and writes (extra_writes).
+    if extra_writes is None and content_root() == ROOT and read_toml(kit/'lock.toml', {}).get('sources'):
+        from .sync import activation
+        with activation(home, 'update', dry_run, managed_file=managed_file) as act:
+            return apply(profile_id, home, dry_run, user, target, act.team or team, choices, report, progress, command, managed_file, act.writes)
     state = read_json(kit/'state.json')
     check_state_schema(state, kit/'state.json')
     check_source(content_root(), (ROOT/'VERSION').read_text(encoding='utf-8').strip())  # min_engine of the content (2.0)
@@ -408,6 +415,12 @@ def migrate_config(home, dry_run=False):
         print('[OK] ~/.ai-kit/aikit.toml written; overrides.toml is kept for AI Kit 0.52 and no longer read.')
 
 
+def sync_configured(home):
+    """init runs a first sync when a Core source is set (managed.toml enterprise.core or aikit.toml [core] repo)."""
+    from .sync import git_settings
+    return bool(git_settings(home, load_managed(None))[1])
+
+
 def org_defaults_root():
     """The whole organization.toml (friction_tracker is a top-level table, not a default)."""
     return organization()
@@ -589,8 +602,11 @@ def main(argv=None):
             except SystemExit as exc:  # the script's own argparse: usage already printed
                 return exc.code if isinstance(exc.code, int) else 2
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
-    parser.add_argument('action',nargs='?',choices=['setup','update','sync','rollback','validate','doctor','usage','uninstall','managed-settings','friction','news','new'],
-                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices; sync: install the highest stable tag of your Core source (--dry-run to preview); rollback: back to the previous Core; validate [--path FOLDER]: check a content tree (default: the kit content) before it is tagged; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now; new: create a skill, an agent, a command or a profile in a clone of the kit')
+    parser.add_argument('action',nargs='?',choices=['init','setup','update','sync','rollback','team','status','validate','doctor','usage','uninstall','managed-settings','friction','news','new'],
+                        help='none in a terminal: the guided installer (or its menu once installed); init: first installation (setup with the general profile when none is given, then sync when a Core source is set); setup without --profile: the guided choices; team list | team use <name> [--url URL] | team use none: the active Team; status [--verbose]: Core, Team, CLIs, IT keys (no network); sync: install the highest stable tag of your Core source (--dry-run to preview); rollback: back to the previous Core; validate [--path FOLDER]: check a content tree (default: the kit content) before it is tagged; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now; new: create a skill, an agent, a command or a profile in a clone of the kit')
+    parser.add_argument('rest',nargs='*',help='team: list, or use <name>')
+    parser.add_argument('--url',help='team use: the repository URL of a Team not known yet')
+    parser.add_argument('--verbose',action='store_true',help='status: where each setting comes from, installed resources, capabilities')
     parser.add_argument('--since',type=int,default=42,help='usage: window in days (default 42)')
     parser.add_argument('--json',type=Path,help='usage: write the report to this file')
     parser.add_argument('--min-sessions',type=int,default=10,help='usage: minimum sessions before recommending (default 10)')
@@ -613,6 +629,8 @@ def main(argv=None):
     parser.add_argument('--path',type=Path,help='validate: the content tree to check (a Core repository); default the kit\'s own content')
     parser.add_argument('--migrate-config',action='store_true',help='update: write ~/.ai-kit/aikit.toml (AI Kit 2) from your overrides.toml, which stays as it is for AI Kit 0.52, and say where each setting went')
     args = parser.parse_args(argv)
+    if args.rest and args.action != 'team':
+        parser.error('unexpected argument: '+' '.join(args.rest))
     if args.action == 'new':  # an option before it: the early branch of new did not see it; never fall through to apply
         parser.error('write the options after it: ai-kit new <type> ...')
     if args.version:
@@ -653,6 +671,14 @@ def main(argv=None):
             if args.action == 'validate':
                 from .validate import validate
                 return validate(args.path or content_root(), (ROOT/'VERSION').read_text(encoding='utf-8').strip())
+            if args.action == 'status':
+                from .status import status
+                return status(home, args.verbose)
+            if args.action == 'team' and args.rest[:1] == ['list']:
+                from .sync import team_list
+                return team_list(home)
+            if args.action == 'team' and (args.rest[:1] != ['use'] or len(args.rest) != 2):
+                raise KitError('team needs: team list, team use <name> [--url <URL>], or team use none.')
             if args.action == 'usage':
                 return usage(home, args.since, args.json, args.min_sessions, args.min_prompts)
             if args.migrate_config:
@@ -675,7 +701,10 @@ def main(argv=None):
                 identity = state['user']
             role = args.profile or state.get('profile')
             if not role:
-                raise KitError('Kit not installed: run setup.' if args.action in ('update', 'sync', 'rollback') else 'Specify --profile among: '+', '.join(profile_ids())+'.')
+                if args.action == 'init':
+                    role = 'general'  # V2: the Core default; a Team brings the rest (profiles go with the migration)
+                else:
+                    raise KitError('Kit not installed: run setup.' if args.action in ('update', 'sync', 'rollback', 'team') else 'Specify --profile among: '+', '.join(profile_ids())+'.')
             team = args.team or state.get('team')
             # V2 slice 2: the content is the locked Core when one is synced; sync and rollback change it (lock.toml in the same transaction).
             from .sync import activation
@@ -685,8 +714,15 @@ def main(argv=None):
                     return False
                 from .ui import make_ui
                 return make_ui(args.plain).confirm(question, default=False)
-            with activation(home, args.action, args.dry_run, confirm, guardrail_names=[n for n, s in hook_specs.items() if is_guardrail(s)]) as extra:
-                apply(role,home,args.dry_run,identity,target,team,command={'yes': True, 'no': False}.get(args.command_on_path), extra_writes=extra)
+            def ask_url(name):
+                if not interactive():
+                    return None
+                from .ui import make_ui
+                return make_ui(args.plain).text('Repository URL of the Team '+name+' (https://... or git@...)') or None
+            action = 'team-use' if args.action == 'team' else 'sync' if args.action == 'init' and sync_configured(home) else args.action
+            with activation(home, action, args.dry_run, confirm, guardrail_names=[n for n, s in hook_specs.items() if is_guardrail(s)],
+                            team_name=args.rest[1] if args.action == 'team' else None, team_url=args.url, ask_url=ask_url) as act:
+                apply(role,home,args.dry_run,identity,target,act.team or team,command={'yes': True, 'no': False}.get(args.command_on_path), extra_writes=act.writes)
             # setup and update never call the model: the summary says "connection not verified"; doctor --live is the only real call.
             live = None
             if args.action == 'setup' and not args.dry_run and interactive():

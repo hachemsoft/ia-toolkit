@@ -9,6 +9,10 @@
 - Resources describe themselves (V2 slice 3): each `SKILL.md` and agent file carries its `aikit-*` metadata (version, origin, summary, category, tier, requires, one `aikit-optional-<skill>` per optional skill); the engine rebuilds the catalogs from the files and no longer reads `skills/catalog.json` or `agents/catalog.json` (kept until a later release; a test checks they agree). The metadata is removed from the installed files, so every CLI receives the same files as before (the `mr` credit is now one line). Front matter is read by a dependency-free parser (scalars, lists, one-level tables). A required skill that does not exist, or a cycle, is refused.
 - `ai-kit validate [--path FOLDER]` checks a content tree before it is tagged: manifest, metadata, names, requirements and cycles, commands' skills, check_skills.
 - `doctor` says, for each CLI installed, which kit capabilities work natively, which are degraded and which are blocked, and why (V2 slice 4). The adapters no longer receive the profile: they work from the resolved selection; the installed files are unchanged.
+- Teams from Git (V2 slice 5): `ai-kit team use <name> [--url URL]`, `team use none`, `team list`. The active Team adds its skills and agents on top of the Core (never replacing a protected one, never bringing commands, policies or hooks), turns on the resources of its `[defaults]`, and its `context/` becomes the team layer of the context. A known Team is activated from the cache without network; `sync` updates it; `rollback` restores the previous Core and Team. IT restricts Teams with `managed.toml` `[teams] allowed` and `allow_unknown`.
+- `ai-kit status [--verbose]`: active Core and Team, rollback target, CLIs, IT keys; with `--verbose`, where each setting comes from, installed resources, capabilities. No network.
+- `ai-kit init`: first installation (the general selection when no profile is given), then a first `sync` when a Core source is set.
+- Fixed: with a Core synced, the guided installer and the re-apply after `/me` now use the locked Core instead of the package content.
 
 ## 2.0.0
 
