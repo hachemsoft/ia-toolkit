@@ -22,7 +22,7 @@ from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKI
 from .plan import (RENAMED_HOOKS, effective_settings, resolve_selection, personal_file, practice_layers, skill_sources, select_agents,
                    guardrails, remove_stale_files, refuse_links)
 from .usage import (usage)  # noqa: F401 (re-exported)
-from .config import (ManagedConfigError, load_managed, apply_values, locked_guardrails, filter_mcp, publication, managed_digest)  # noqa: F401 (re-exported)
+from .config import (ManagedConfigError, load_managed, apply_values, locked_guardrails, filter_mcp, publication, managed_digest, AIKIT_FILE, check_source, load_aikit, aikit_from_overrides)  # noqa: F401 (re-exported)
 from .lifecycle import (PERSONAL_KEPT, plan_command, remove_command, uninstall)  # noqa: F401 (re-exported)
 
 
@@ -199,6 +199,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     kit = home / '.ai-kit'
     state = read_json(kit/'state.json')
     check_state_schema(state, kit/'state.json')
+    check_source(content_root(), (ROOT/'VERSION').read_text(encoding='utf-8').strip())  # min_engine of the content (2.0)
     active = selected_adapters(target, home, recorded_targets(state))
     context_dir = context_location(home, active)
     profile_id = safe_id(profile_id)
@@ -253,7 +254,8 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     # MCP: resolved from the three sources apart, not from the merged overrides ("github": true must not erase the server).
     servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
     enabled_mcp, mcp_notices = filter_mcp({'ai-kit-'+name: server for name, server in servers.items()}, managed)
-    notices = personal_notices + managed_notices + mcp_notices + ['[Info] Guardrail '+n+' stays on: your organization or IT locks it (organization.toml locked_hooks, managed.toml hooks.locked).' for n in turned_off]
+    aikit_notices = load_aikit(kit/AIKIT_FILE)[1] if (kit/AIKIT_FILE).exists() else []
+    notices = personal_notices + aikit_notices + managed_notices + mcp_notices + ['[Info] Guardrail '+n+' stays on: your organization or IT locks it (organization.toml locked_hooks, managed.toml hooks.locked).' for n in turned_off]
     notices += ['[Info] hooks.'+old+' is now hooks.'+new+': your setting is applied; rename it in your overrides.toml.' for old, new in RENAMED_HOOKS.items() if old in (overrides.get('hooks') or {})]
     unknown_names(overrides, catalog, agent_catalog, notices)
     notices += [retired_key_notice(key) for key in RETIRED_KEYS if key in overrides]
@@ -271,6 +273,8 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     managed_write(kit/'bin'/'news.py', (ROOT/'runtime/news.py').read_bytes(), 'Kit script')
     command_state, command_after = plan_command(p, managed_write, command)
     managed_write(kit/'schemas'/'overrides.schema.json', (ROOT/'schemas/overrides.schema.json').read_bytes(), 'Kit schema')
+    if (kit/AIKIT_FILE).exists():  # 2.0: the schema the person's aikit.toml points to
+        managed_write(kit/'schemas'/'aikit.schema.json', (ROOT/'schemas/aikit.schema.json').read_bytes(), 'Kit schema')
     for name in enabled_hooks:
         managed_write(hooks_dir/hook_manifest[name]['script'], (ROOT/'runtime/hooks'/hook_manifest[name]['script']).read_bytes(), 'Guardrail' if is_guardrail(hook_manifest[name]) else 'Kit hook')
     # Context layers and 30_USER.md, in the context folder (see context_location).
@@ -377,6 +381,24 @@ def relocate_user_context(p, home, state, user_file, kit):
             p.notices.append('[Check] Personal context not copied from '+str(previous)+': '+user_context_refusal(data)+'. A new one is created; fix the old one and move its content by hand.')
             data = p.user_context_text.encode('utf-8')
         p.writes[user_file] = data
+
+
+def migrate_config(home, dry_run=False):
+    """overrides.toml -> aikit.toml (2.0), once: overrides.toml is kept as it is (AI Kit 0.52 reads it after a return), and
+    is no longer read once aikit.toml exists. Prints where each setting went."""
+    kit = home/'.ai-kit'
+    if (kit/AIKIT_FILE).exists():
+        print('[Info] ~/.ai-kit/aikit.toml already exists: nothing to migrate.')
+        return
+    text, report = aikit_from_overrides(personal_settings(kit), (kit/'schemas'/'aikit.schema.json').as_uri())
+    print('Migration of your settings to ~/.ai-kit/aikit.toml'+(' (preview, nothing written)' if dry_run else '')+':')
+    for line in report or ['nothing to carry over: aikit.toml starts empty']:
+        print('  '+line)
+    if not dry_run:
+        refuse_links(home, [kit/AIKIT_FILE])
+        kit.mkdir(parents=True, exist_ok=True)
+        atomic_write(kit/AIKIT_FILE, text.encode('utf-8'))
+        print('[OK] ~/.ai-kit/aikit.toml written; overrides.toml is kept for AI Kit 0.52 and no longer read.')
 
 
 def org_defaults_root():
@@ -581,6 +603,7 @@ def main(argv=None):
     parser.add_argument('--managed-hooks-only',action='store_true',help='managed-settings: Claude Code ignores hooks from any other source')
     parser.add_argument('--managed-mcp-only',action='store_true',help='managed-settings: Claude Code and Codex CLI allow only the MCP servers organization.toml defines')
     parser.add_argument('--version',action='store_true',help='which copy of the kit runs, and with which Python')
+    parser.add_argument('--migrate-config',action='store_true',help='update: write ~/.ai-kit/aikit.toml (AI Kit 2) from your overrides.toml, which stays as it is for AI Kit 0.52, and say where each setting went')
     args = parser.parse_args(argv)
     if args.action == 'new':  # an option before it: the early branch of new did not see it; never fall through to apply
         parser.error('write the options after it: ai-kit new <type> ...')
@@ -621,6 +644,10 @@ def main(argv=None):
                 return managed_settings(args.out, args.managed_hooks_only, args.managed_mcp_only)
             if args.action == 'usage':
                 return usage(home, args.since, args.json, args.min_sessions, args.min_prompts)
+            if args.migrate_config:
+                if args.action != 'update':
+                    raise KitError('--migrate-config goes with update: ai-kit update --migrate-config.')
+                migrate_config(home, args.dry_run)
             if not args.dry_run:
                 migrate_kit_dir(home)  # with --dry-run, apply announces it without renaming
             state = read_json(home/'.ai-kit/state.json') or read_json(home/LEGACY_KIT_DIR/'state.json')

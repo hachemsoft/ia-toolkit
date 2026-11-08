@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "managed.schema.json",
+  "title": "AI Kit managed.toml",
+  "description": "Settings IT imposes on AI Kit (docs/managed.md). Closed: an unknown key refuses the file.",
+  "type": "object",
+  "required": [
+    "managed_schema"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "managed_schema": {
+      "const": 1
+    },
+    "hooks": {
+      "type": "object",
+      "description": "locked: guardrails nobody can turn off; <guardrail> = true or false for everyone.",
+      "properties": {
+        "locked": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Guardrails kept on."
+        }
+      },
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "mcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow_stdio": {
+          "type": "boolean",
+          "description": "false: no local (stdio) MCP server is installed."
+        },
+        "denied": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "MCP servers never installed (adds to the organization's)."
+        }
+      }
+    },
+    "frictions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "capture": {
+          "enum": [
+            "propose",
+            "auto",
+            "off"
+          ]
+        },
+        "publication": {
+          "enum": [
+            "approval",
+            "auto",
+            "disabled"
+          ],
+          "description": "approval (default): the person sends from a terminal."
+        }
+      }
+    }
+  }
+}

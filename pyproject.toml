@@ -38,6 +38,7 @@ sources = { "installer" = "ai_kit" }
 [tool.hatch.build.targets.wheel.force-include]
 "VERSION" = "ai_kit/kit/VERSION"
 "organization.toml" = "ai_kit/kit/organization.toml"
+"aikit.toml" = "ai_kit/kit/aikit.toml"
 "CHANGELOG.md" = "ai_kit/kit/CHANGELOG.md"
 "runtime" = "ai_kit/kit/runtime"
 "agents" = "ai_kit/kit/agents"

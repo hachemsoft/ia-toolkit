@@ -34,6 +34,7 @@ class ShellTests(Base):
         "python3 -c \"open('/h/.ai-kit/overrides.toml','w').write('x')\"",
         "node -e \"require('fs').writeFileSync(process.env.HOME+'/.ai-kit/overrides.toml','x')\"",
         "perl -pi -e 's/true/false/' ~/.ai-kit/overrides.toml",
+        "sed -i 's/a/b/' ~/.ai-kit/aikit.toml",  # 2.0: the person's V2 settings file
         "sed -Ei 's/a/b/' ~/.ai-kit/overrides.toml",
         "gsed -i 's/a/b/' ~/.ai-kit/overrides.toml",
         "awk -i inplace '{print}' ~/.ai-kit/overrides.toml",

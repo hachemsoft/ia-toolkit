@@ -158,6 +158,33 @@ def set_key(text, key, value, path='overrides.toml', label=''):
         raise KitError(str(path) + ': ' + label + key + ' could not be updated without changing something else; edit it by hand.')
     return result
 
+def set_section_key(text, section, key, value, path='aikit.toml'):
+    """The document with section.key set to value, everything else untouched (comments, order, other keys); the key is added at
+    the end of its [section], and the section at the end of the file when absent. Checked by reading the result back."""
+    lines = text.split('\n')
+    header = next((i for i, line in enumerate(lines) if line.strip() == '[' + section + ']'), None)
+    new_line = toml_key(key) + ' = ' + toml_value(value)
+    if header is None:
+        while lines and lines[-1].strip() == '':
+            lines.pop()
+        lines += ['', '[' + section + ']', new_line, '']
+    else:
+        end = next((i for i in range(header + 1, len(lines)) if re.match(r'\s*\[', lines[i])), len(lines))
+        start = next((i for i in range(header + 1, end) if re.match(r'\s*' + re.escape(toml_key(key)) + r'\s*=', lines[i])), None)
+        if start is None:
+            insert = end
+            while insert > header + 1 and lines[insert - 1].strip() == '':
+                insert -= 1
+            lines[insert:insert] = [new_line]
+        else:
+            lines[start:value_end(lines, start) + 1] = [new_line]
+    result = '\n'.join(lines)
+    expected = parse_toml(text, path)
+    expected.setdefault(section, {})[key] = value
+    if parse_toml(result, path) != expected:
+        raise KitError(str(path) + ': ' + section + '.' + key + ' could not be updated without changing something else; edit it by hand.')
+    return result
+
 def value_end(lines, start):
     """Index of the last line of the value that starts at lines[start] (a list can span lines): brackets are counted
     outside texts and comments."""
