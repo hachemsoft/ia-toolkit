@@ -122,7 +122,7 @@ def credential_helper(home):
     return match if match in CREDENTIAL_HELPERS else None
 
 
-def git(args, kit, git_dir=None, schemes=('https', 'ssh'), input_bytes=None, timeout=300, home=None):
+def git(args, kit, git_dir=None, schemes=('https', 'ssh'), input_bytes=None, timeout=300, home=None, local_bundle=False):
     """git with the neutralized environment; returns stdout bytes or raises SourceError classified."""
     folder = engine_dir(kit)
     env = {k: os.environ[k] for k in ENV_KEPT if k in os.environ}
@@ -133,8 +133,8 @@ def git(args, kit, git_dir=None, schemes=('https', 'ssh'), input_bytes=None, tim
                  'http.followRedirects=false', 'core.autocrlf=false', 'http.sslVerify=true', 'core.sshCommand=ssh', 'credential.helper=']
     if 'ssh' in schemes:
         overrides.append('protocol.ssh.allow=always')
-    if LOCAL_FOR_TESTS:
-        overrides.append('protocol.file.allow=always')
+    if LOCAL_FOR_TESTS or local_bundle:
+        overrides.append('protocol.file.allow=always')  # a git bundle file the person gave (sync --from-bundle)
     if os.name == 'nt':
         overrides.append('core.longpaths=true')
     helper = credential_helper(home or Path.home())
@@ -247,6 +247,37 @@ def fetch(kit, url, tag, expected_commit, schemes=('https', 'ssh'), home=None):
     if commit != expected_commit:
         raise SourceError('tag-moved', 'Tag '+tag+' fetched at '+commit+' while the remote announced '+expected_commit+'. Nothing was changed.')
     return cache
+
+
+def bundle_tags(kit, bundle):
+    """{tag: {'tag_object', 'commit'}} of a git bundle file (sync --from-bundle): the offline origin of the configured Core."""
+    bundle = Path(bundle).resolve()
+    if not bundle.is_file():
+        raise SourceError('not-found', 'Bundle not found: '+str(bundle))
+    git(['bundle', 'verify', '--quiet', str(bundle)], kit, local_bundle=True)
+    tags = {}
+    for line in git(['bundle', 'list-heads', str(bundle)], kit, local_bundle=True).decode('utf-8').splitlines():
+        sha, _, ref = line.partition(' ')
+        if not ref.startswith('refs/tags/'):
+            continue
+        name = ref[len('refs/tags/'):]
+        peeled = name.endswith('^{}')
+        name = name[:-3] if peeled else name
+        if STABLE_TAG.match(name) or PRERELEASE_TAG.match(name):
+            entry = tags.setdefault(name, {'tag_object': sha, 'commit': sha})
+            entry['commit' if peeled else 'tag_object'] = sha
+    return tags  # an annotated tag's commit is known once fetched (fetch_bundle)
+
+
+def fetch_bundle(kit, url, bundle, tag):
+    """The tag from the bundle file into the cache of the configured Core URL; returns (cache, commit)."""
+    cache = cache_dir(kit, url)
+    if not (cache/'HEAD').exists():
+        cache.mkdir(parents=True, exist_ok=True)
+        git(['init', '--bare', '--quiet', str(cache)], kit)
+    git(['fetch', '--quiet', '--no-tags', str(Path(bundle).resolve()), 'refs/tags/'+tag+':refs/tags/'+tag], kit, git_dir=cache, local_bundle=True)
+    commit = git(['rev-parse', 'refs/tags/'+tag+'^{commit}'], kit, git_dir=cache).decode().strip()
+    return cache, commit
 
 
 def safe_path(path, seen_lower):

@@ -1,0 +1,10 @@
+# A Team repository: what one team adds on top of the Core. Copy this folder into a new Git repository, rename the Team,
+# then tag a release vX.Y.Z; people activate it with: ai-kit team use reporting --url <URL of the repository>.
+schema = 1
+name = "reporting"
+kind = "team"
+
+[defaults]
+# Core optional resources the team turns on, and the team's own skills and agents.
+extra_skills = ["sql-review", "report-check"]
+extra_agents = ["sql-reviewer"]

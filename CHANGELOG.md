@@ -11,6 +11,8 @@
 - `/me` reads only a bounded list of local facts; `/retro` proposes changes to the current repository only, and turns what concerns the kit, a Core or a Team into a friction.
 - `skills/catalog.json` and `agents/catalog.json` are gone (V2 slice 8): each skill and agent describes itself in its front matter (`aikit-*` metadata), which `ai-kit new` now writes.
 - Analysis (ADR 0026): `/explain` also answers a question about the project with evidence, through the new `analysis` skill (frame, explore, verify each claim, report verdict, evidence and unknowns); `/research` and its `investigation` skill join the general selection.
+- `scripts/export_core.py` writes the kit's content as a Core repository in its V2 layout (skills and agents flattened, manifest `kind = "core"`, a Git repository tagged `v<version>` with `--git`; nothing pushed); `examples/team-repo/` is a Team repository to copy; `ai-kit validate --path` checks both (a Team may not hold commands, policies, hooks or profiles).
+- `ai-kit sync --from-bundle <file>` installs the Core from a `git bundle` without network, with the same tag checks, recorded under the configured Core URL.
 
 ## 2.1.1
 
