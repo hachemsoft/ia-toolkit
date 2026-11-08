@@ -13,7 +13,7 @@ from unittest import mock
 from installer import cli, sources, sync
 from installer.core import ROOT, KitError
 from installer.toml_files import dump_toml, read_toml
-from test_git_sources import HAS_GIT, run_git
+from test_git_sources import HAS_GIT, remove_repository, run_git
 
 
 @unittest.skipUnless(HAS_GIT, 'git not installed')
@@ -85,7 +85,7 @@ class TeamTests(unittest.TestCase):
         self.assertNotIn('data-check', self.state()['installed']['skills'])
         self.assertNotIn('team', read_toml(self.kit/'lock.toml').get('sources', {}))
         self.assertIn('data', read_toml(self.kit/'lock.toml')['known_teams'])
-        shutil.rmtree(self.bare)  # no remote: the cached version is activated
+        remove_repository(self.bare)  # no remote: the cached version is activated
         self.use('data')
         self.assertIn('data-check', self.state()['installed']['skills'])
 

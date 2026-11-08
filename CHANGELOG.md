@@ -7,6 +7,10 @@
 - `state.json` records where each installed skill and agent comes from (package, Core, or Team).
 - The session hook no longer puts any remote text in the agent's context: from the daily remote read, only the remote `VERSION` (checked `X.Y.Z`) is used; announcements come from the installed `NEWS.md`.
 
+## 2.1.1
+
+- The 2.1.0 release was not published: two tests failed on Windows, where Git leaves its object files read-only and the tests could not delete a test repository. The tests now remove it the Windows way. No change to the kit itself.
+
 ## 2.1.0
 
 Core and Team content from Git, at stable tags, with rollback. Without a Core or Team source configured, nothing changes.

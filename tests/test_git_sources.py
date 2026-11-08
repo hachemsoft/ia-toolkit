@@ -6,7 +6,9 @@ import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -19,6 +21,14 @@ CONTENT = ('skills', 'agents', 'commands', 'practices', 'profiles', 'organizatio
 GIT_ENV = {**os.environ, 'GIT_CONFIG_NOSYSTEM': '1', 'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_AUTHOR_NAME': 't', 'GIT_AUTHOR_EMAIL': 't@example.org',
            'GIT_COMMITTER_NAME': 't', 'GIT_COMMITTER_EMAIL': 't@example.org'}
 HAS_GIT = shutil.which('git') is not None
+
+
+def remove_repository(path):
+    """shutil.rmtree for a Git repository: on Windows, Git leaves its object files read-only, which rmtree cannot delete."""
+    def writable(function, target, _):
+        os.chmod(target, stat.S_IWRITE)
+        function(target)
+    shutil.rmtree(path, onexc=writable) if sys.version_info >= (3, 12) else shutil.rmtree(path, onerror=writable)
 
 
 def run_git(*args, cwd):
@@ -121,7 +131,7 @@ class SyncTests(Base):
         self.run_action('sync')
         self.assertIn('Marker v1.1.0.', self.installed())
         self.assertEqual(self.lock()['previous']['sources']['core']['tag'], 'v1.0.0')
-        shutil.rmtree(self.bare)  # no remote any more: rollback uses the cache only
+        remove_repository(self.bare)  # no remote any more: rollback uses the cache only
         self.run_action('rollback')
         self.assertIn('Marker v1.0.0.', self.installed())
         self.assertEqual((self.lock()['sources']['core']['tag'], self.lock()['previous']['sources']['core']['tag']), ('v1.0.0', 'v1.1.0'))
