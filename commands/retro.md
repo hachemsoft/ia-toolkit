@@ -6,7 +6,7 @@ skills: [retrospective]
 order: 140
 ---
 
-Activate the retrospective skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+Activate the retrospective skill (if this skill is not installed here, follow the instructions below directly).
 
 Input: {{args}} (optional: a session log path when the session was cleared).
 

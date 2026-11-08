@@ -6,7 +6,7 @@ skills: [investigation]
 order: 170
 ---
 
-Activate the investigation skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+Activate the investigation skill (if this skill is not installed here, follow the instructions below directly).
 
 Question: {{args}}
 

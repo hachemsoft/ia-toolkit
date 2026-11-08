@@ -72,7 +72,7 @@ class InstallTests(Base):
         self.assertIn('"ai-kit-tdd"', implement)
         self.assertIn('"ai-kit-code-review"', implement)
         build = self.read('.claude/commands/build.md')
-        self.assertIn('the ai-kit-implement skill', build)
+        self.assertIn('the ai-kit-tdd skill', build)  # 0.52.0: /build chains tdd and code-review directly (implement is user-only)
         self.assertIn('$ARGUMENTS', build)
         self.assertNotIn('{{args}}', build)
 

@@ -180,6 +180,28 @@ class RepoTests(Base):
         self.assertEqual(self.decide({'tool_name': 'Write', 'tool_input': {'file_path': str(repo/'models/legacy/a.sql')}}, str(repo)), 'deny')
 
 
+class KitCommandTests(Base):
+    """0.52.0: the agent could run every ai-kit subcommand (only two scripts were exempted by path; a bare command name was never
+    seen). The ones that change the installation or bill a model call are refused in the agent's shell; reading ones stay."""
+    REFUSED = ('ai-kit setup --profile general', 'ai-kit update', 'ai-kit uninstall --yes', 'ai-kit new skill --name demo',
+               'ai-kit doctor --live', 'ai-kit friction --mode auto --yes', 'python3 -m ai_kit uninstall --yes', 'py -m ai_kit update',
+               'python -I -m installer setup --profile general', '~/.ai-kit/bin/ai-kit update', 'cd /tmp && ai-kit update',
+               'sh scripts/bootstrap.sh update', 'Installer.cmd uninstall', 'ai-kit --yes uninstall')
+    ALLOWED = ('ai-kit doctor', 'ai-kit usage --since 30', 'ai-kit news --later', 'ai-kit news --list', 'ai-kit --version',
+               'ai-kit friction --category docs --text x', 'ai-kit friction --list', 'ai-kit friction --mode',
+               'ai-kit managed-settings --out /tmp/managed', 'echo run ai-kit update yourself', 'grep -r "ai-kit update" docs')
+
+    def test_writing_and_billed_subcommands_are_refused(self):
+        for command in self.REFUSED:
+            with self.subTest(command):
+                self.assertEqual(self.shell(command), 'deny')
+
+    def test_reading_subcommands_stay_allowed(self):
+        for command in self.ALLOWED:
+            with self.subTest(command):
+                self.assertIsNone(self.shell(command))
+
+
 class McpToolTests(Base):
     def test_an_mcp_write_tool_is_judged_like_a_write(self):
         # 0.51.1 (V1-SEC-04): Claude Code now sends MCP tools to the guardrail; the script must refuse their protected writes.

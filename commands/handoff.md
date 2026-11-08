@@ -6,7 +6,7 @@ skills: [handover]
 order: 160
 ---
 
-Activate the handover skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+Activate the handover skill (if this skill is not installed here, follow the instructions below directly).
 
 Input: {{args}} (optional: destination or focus).
 

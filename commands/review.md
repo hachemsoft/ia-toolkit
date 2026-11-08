@@ -8,7 +8,7 @@ artifact: "review findings"
 order: 50
 ---
 
-Activate the code-review skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly) and follow it: it is the kit's single review behaviour, the same whether the person types /review or asks in a sentence.
+Activate the code-review skill (if this skill is not installed here, follow the instructions below directly) and follow it: it is the kit's single review behaviour, the same whether the person types /review or asks in a sentence.
 
 Stage: Deploy. Goal: ranked findings a human can act on before merging.
 

@@ -8,7 +8,7 @@ artifact: "root cause + regression test"
 order: 70
 ---
 
-Activate the diagnosing-bugs skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+Activate the diagnosing-bugs skill (if this skill is not installed here, follow the instructions below directly).
 
 Stage: Maintain. Goal: a confirmed root cause, a fix, and a regression test, with evidence.
 

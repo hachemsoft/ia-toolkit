@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.52.0
+
+- Commands chain only skills the model can invoke. Claude Code (2.1.316 to 2.1.319) hides a skill marked `disable-model-invocation` from the model and refuses it in its Skill tool ("do not replicate this skill's workflow"); Codex (0.167.0) leaves it out of the model's skill list. So `/build` never reached `implement`, and through it `tdd` and `code-review` (in recorded eval sessions: `tdd` once in 22 `/build` runs, `code-review` never). `/build` now activates `tdd` for each slice and `code-review` on the whole change; `/intent` activates `grilling` and `domain-modeling`; `implement` and `grill-with-docs` stay on command only, for the person. The skills a command carries (`to-spec`, `teach`, `retrospective`, `wayfinder`, `ticket-sorting`, `to-questionnaire`, `improve-codebase-architecture`, `zoom-out`, `wait-what`, `handover`) become model-invocable, with a description that says to use them only on their command (the guard already used for Codex command skills); their version is raised to 1.1.0. The commands' fallback now reads "if this skill is not installed here": the old "if the skill tool is unavailable" was wrong on Claude Code, where the tool exists. A test fails when a command chains a skill the model cannot invoke.
+- The agent may no longer run the kit's subcommands that change the installation or bill a model call (`ai-kit setup`, `update`, `uninstall`, `new`, `doctor --live`, `friction --mode <value>`, also through `python -m ai_kit` and the launchers): `protected-paths` refuses them in the agent's shell and the agent tells the person. Before, only a sentence of the kit context stopped it. Reading subcommands stay allowed. Defence in depth on the text of a command, not a barrier (`docs/hooks.md`).
+
 ## 0.51.1
 
 Security fixes, no change of behaviour otherwise; update from a clone of the kit soon.

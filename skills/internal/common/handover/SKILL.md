@@ -1,8 +1,7 @@
 ---
 name: handover
-description: Compact the current conversation into a handoff document for another agent to pick up.
+description: "Compact the current conversation into a handoff document for another agent to pick up. Use when the user types /handoff or explicitly asks for this step; do not activate on your own for unrelated requests."
 argument-hint: "What will the next session be used for?"
-disable-model-invocation: true
 ---
 
 Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to the temporary directory of the user's OS (`$TMPDIR`, else `/tmp`; `%TEMP%` on Windows) - not the current workspace.

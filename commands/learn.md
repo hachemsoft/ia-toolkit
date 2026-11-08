@@ -6,7 +6,7 @@ skills: [teach]
 order: 120
 ---
 
-Activate the teach skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+Activate the teach skill (if this skill is not installed here, follow the instructions below directly).
 
 Topic: {{args}}
 
