@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- MCP policy (V2 slice 6): a server's keys are a closed list (`command`, `args`, `env`, `cwd`, `httpUrl`, `url`, `headers`, `required`), and a shell as the command or a `-c` script is reported; both are warnings in this release and will be refused in a later one. IT can allow only some programs (`managed.toml` `mcp.allowed_executables`) and URLs (`mcp.allowed_http`). A server refused by IT and marked `required = true` stops the installation; an optional one is removed with a notice; `required` is never written into a CLI.
+- `managed-settings` also applies `managed.toml`: its locked guardrails and its MCP refusals go into the files IT deploys.
+- `state.json` records where each installed skill and agent comes from (package, Core, or Team).
+- The session hook no longer puts any remote text in the agent's context: from the daily remote read, only the remote `VERSION` (checked `X.Y.Z`) is used; announcements come from the installed `NEWS.md`.
+
 ## 2.1.0
 
 Core and Team content from Git, at stable tags, with rollback. Without a Core or Team source configured, nothing changes.

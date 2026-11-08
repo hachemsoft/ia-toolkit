@@ -300,9 +300,10 @@ class SessionNewsTests(unittest.TestCase):
  def test_remote_newer_version_and_news_read_once_a_day_without_pulling(self):
   origin,clone=self.origin_and_clone()
   (origin/'VERSION').write_text('0.48.0\n',encoding='utf-8');(origin/'NEWS.md').write_text('# News\n\n## 2026-11-02 dbt-training : dbt training on Thursday\n\nRoom 2.\n',encoding='utf-8');git('commit','-qam','0.48.0',cwd=origin)
-  c=self.context(self.hook());self.assertIn('0.48.0',c);self.assertIn('ai-kit update',c);self.assertIn('dbt training on Thursday',c);self.assertIn('ai-kit news --later',c)
+  c=self.context(self.hook());self.assertIn('0.48.0',c);self.assertIn('ai-kit update',c);self.assertNotIn('dbt training on Thursday',c);  # 2.1: the remote's NEWS text never reaches the agent, only its checked VERSION
+  self.assertIn('ai-kit news --later',c)
   self.assertEqual((clone/'VERSION').read_text(encoding='utf-8').strip(),'0.47.0')  # fetched, never pulled
-  m=self.marker();self.assertEqual(m['last_check']['result'],'ok');self.assertEqual(m['last_check']['remote_version'],'0.48.0');self.assertIn('dbt-training',m['announced_news'])
+  m=self.marker();self.assertEqual(m['last_check']['result'],'ok');self.assertEqual(m['last_check']['remote_version'],'0.48.0');self.assertNotIn('dbt-training',m.get('announced_news',[]))
   git('remote','remove','origin',cwd=clone)  # a second session the same day: no fetch, nothing new
   self.assertEqual(self.hook(),{});self.assertEqual(self.marker()['last_check']['result'],'ok')
  @unittest.skipIf(os.name=='nt','shell scripts stand in for the trapped commands')

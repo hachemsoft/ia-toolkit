@@ -76,6 +76,8 @@ class TeamTests(unittest.TestCase):
         mine = read_toml(self.kit/'aikit.toml')
         self.assertEqual((mine['teams']['data']['repo'], mine['user']['active_team']), (self.url, 'data'))
         self.assertEqual(self.state()['team'], 'data')
+        self.assertEqual(self.state()['installed']['sources']['data-check'], 'team:data')
+        self.assertEqual(self.state()['installed']['sources']['tdd'], 'package')
 
     def test_none_then_back_from_the_cache_without_network(self):
         self.use('data', self.url)

@@ -23,7 +23,7 @@ from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKI
 from .plan import (RENAMED_HOOKS, effective_settings, resolve_selection, personal_file, practice_layers, skill_sources, select_agents,
                    guardrails, remove_stale_files, refuse_links)
 from .usage import (usage)  # noqa: F401 (re-exported)
-from .toml_files import read_toml  # noqa: F401 (also re-exported)
+from .toml_files import parse_toml, read_toml  # noqa: F401 (also re-exported)
 from .config import (ManagedConfigError, load_managed, apply_values, locked_guardrails, filter_mcp, publication, managed_digest, AIKIT_FILE, check_source, load_aikit, aikit_from_overrides)  # noqa: F401 (re-exported)
 from .lifecycle import (PERSONAL_KEPT, plan_command, remove_command, uninstall)  # noqa: F401 (re-exported)
 
@@ -313,7 +313,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     if org_defaults_root().get('friction_tracker') and tracker is None:
         p.notices.append('[Info] Frictions stay local: share_frictions = false in your overrides.toml (your organization set a friction tracker).')
     new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'news':news,**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
-                 'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
+                 'installed':{'sources':resource_sources(selected, catalog, agents, agent_catalog, core_synced(kit, extra_writes)),'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}
     # V2 slice 2: lock.toml (written by sync and rollback) goes in the same transaction as the files it describes; its digest
     # in state.json lets doctor see a hand edit.
@@ -413,6 +413,25 @@ def migrate_config(home, dry_run=False):
         kit.mkdir(parents=True, exist_ok=True)
         atomic_write(kit/AIKIT_FILE, text.encode('utf-8'))
         print('[OK] ~/.ai-kit/aikit.toml written; overrides.toml is kept for AI Kit 0.52 and no longer read.')
+
+
+def core_synced(kit, extra_writes):
+    """True when the content's base is a synced Core (the lock being written, or the one on disk), not the package's."""
+    data = (extra_writes or {}).get(kit/'lock.toml')
+    lock = parse_toml(data.decode('utf-8')) if data is not None else read_toml(kit/'lock.toml', {})
+    return bool(lock.get('sources', {}).get('core'))
+
+
+def resource_sources(selected, catalog, agents, agent_catalog, synced=False):
+    """Where each installed skill and agent comes from (V2 slice 6): team:<name>, core (a synced Core) or package. doctor and
+    status read it; a Team resource is the Team's to fix, a Core one the Core's."""
+    base = 'core' if synced else 'package'
+    def origin(path):
+        parts = path.split('/')
+        return 'team:'+parts[1][len('team-'):] if len(parts) > 1 and parts[1].startswith('team-') else base
+    sources = {skill: origin(catalog[skill]['path']) for skill in selected if 'path' in catalog.get(skill, {})}
+    sources.update({'ai-kit-'+agent: origin(agent_catalog[agent]['path']) for agent, _ in agents if agent in agent_catalog})
+    return dict(sorted(sources.items()))
 
 
 def sync_configured(home):

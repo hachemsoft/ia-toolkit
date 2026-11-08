@@ -58,6 +58,8 @@ def validate_server(server):
         raise KitError('Remote MCP: HTTPS URL expected.')
     if 'args' in server and (not isinstance(server['args'],list) or not all(isinstance(x,str) for x in server['args'])):
         raise KitError('MCP: args must be a list of strings.')
+    if 'required' in server and not isinstance(server['required'], bool):
+        raise KitError('MCP: required must be true or false.')
     # Never preselect automatic trust, whatever its form: "true" as a string went through to Gemini and agy before 0.51.1.
     if 'trust' in server:
         raise KitError('MCP: trust is not supported by this kit (the CLI asks before running a server\'s tools).')

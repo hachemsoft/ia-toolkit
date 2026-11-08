@@ -112,7 +112,7 @@ def mcp_readme(mcp):
             '  A URL or an argument that uses ${VARIABLE} may not match once expanded: try one workstation first.')
 
 
-def managed_settings(out, hooks_only=False, mcp_only=False):
+def managed_settings(out, hooks_only=False, mcp_only=False, managed_file=None):
     out = Path(out)
     if out.exists() and any(out.iterdir()):
         raise KitError(str(out)+' is not empty: give a new folder, nothing is overwritten.')
@@ -120,6 +120,17 @@ def managed_settings(out, hooks_only=False, mcp_only=False):
     org = organization()
     names = locked(org, manifest)
     mcp = org_servers(org) if mcp_only else None
+    # V2 slice 6: managed.toml goes into the native files too. Its hooks.locked add to the organization's locked guardrails,
+    # a guardrail it turns off is not locked, and its MCP refusals (denied, allow_stdio, allowlists) apply to the MCP lock.
+    from .config import filter_mcp, load_managed
+    imposed = load_managed(managed_file, [n for n, s in manifest.items() if is_guardrail(s)])
+    if imposed:
+        off = [n for n, v in imposed.get('hooks', {}).items() if v is False]
+        names = [n for n in dict.fromkeys(list(names) + list(imposed.get('hooks', {}).get('locked', []))) if n not in off]
+        if mcp is not None:
+            mcp, notices = filter_mcp(mcp, imposed)
+            for line in notices:
+                print(line)
     files = {'claude-code/managed-settings.json': claude(names, manifest, hooks_only, mcp),
              'gemini-cli/settings.json': gemini(names, manifest),
              'codex/requirements.toml': codex(mcp),

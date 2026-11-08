@@ -7,7 +7,8 @@ for Antigravity CLI, recognised by its `conversationId`, {"injectSteps": [{"syst
 its own SessionStart contract (a message persisted in the conversation, read by the model). Exit 0 always: a session is
 never blocked or slowed by this script. What it announces, each once (marker ~/.ai-kit/news.json):
   - the CHANGELOG section of the version just installed (state.json `version`, CHANGELOG.md of the kit folder);
-  - the entries of NEWS.md (the kit folder, and origin/main after the daily read) aimed at this profile and team;
+  - the entries of NEWS.md of the installed kit (never the remote's: 2.1, no remote text in the agent's context) aimed at this
+    profile and team;
   - a newer version on origin/main, unless the person declined it (`ai-kit news --later`).
 The remote read: at most once a day, only when the kit folder (state.json `kit_dir`) is a git clone with an origin and
 `news.check_remote` is not false: `git fetch origin main` (5 s, no credential prompt), then `git show` of VERSION and
@@ -230,7 +231,8 @@ def whats_new(state, marker, kit_dir, today, check_remote=True):
         result, detail, remote_version, remote_news = remote_read(kit_dir)
         if result != 'skipped':
             marker['last_check'] = {'date': today, 'result': result, **({'detail': detail} if detail else {}), **({'remote_version': remote_version} if remote_version else {})}
-        news_texts.append(remote_news)
+        # V2 slice 6: no remote text reaches the agent's context; only the remote VERSION (checked X.Y.Z) is announced.
+        del remote_news
     for text in news_texts:
         for entry in parse_news(text):
             if entry['id'] in announced_news or not aimed_at(entry, profile, team, today):
