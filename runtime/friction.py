@@ -40,8 +40,23 @@ SECRET = re.compile(r'AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9_-]{20,}|sk_(?:live|te
                     r'|(?i:\b(?:[a-z0-9]+_)*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key)(?:_[a-z0-9_]*)?\b["\']?\s*[:=]\s*["\']?)'
                     r'(?!\$\{)(?=[^\s"\',;]*[A-Za-z])[^\s"\',;]{6,}')
 
+# 2.1 (ADR 0023): what could identify a person or a machine is redacted too, before a friction is stored or sent.
+PERSONAL = ((re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'), '[email]'),
+            (re.compile(r'(?:/Users|/home)/[^/\s]+|[A-Za-z]:\\Users\\[^\\\s]+'), '~'),
+            (re.compile(r'\b(?:[a-z0-9-]+\.)+(?:internal|corp|lan|local|intra)\b', re.I), '[host]'))
+RETENTION_DAYS = 30
+
 def redact(text):
-    return SECRET.sub('[redacted]', str(text))
+    text = SECRET.sub('[redacted]', str(text))
+    for pattern, replacement in PERSONAL:
+        text = pattern.sub(replacement, text)
+    return text
+
+def fingerprint(entry):
+    """The same friction told twice has the same fingerprint: category, command, component and the text without digits."""
+    text = re.sub(r'[0-9]+', '', ' '.join(str(entry.get('text', '')).lower().split()))
+    key = '|'.join(str(entry.get(k, '')) for k in ('category', 'command', 'component')) + '|' + text
+    return hashlib.sha256(key.encode('utf-8')).hexdigest()[:12]
 
 def kit_dir(home=None):
     return os.path.join(home or os.path.expanduser('~'), '.ai-kit')
@@ -95,6 +110,7 @@ def record(category, text, command='none', cli='unknown', source='person', home=
     if version:
         entry['component'] = version
     entry['id'] = friction_id(entry['ts'], entry['text'])
+    entry['fingerprint'] = fingerprint(entry)
     os.makedirs(kit_dir(home), exist_ok=True)
     path = os.path.join(kit_dir(home), 'frictions.jsonl')
     # Readable by the person only: the lines say what they worked on.
@@ -130,7 +146,7 @@ def issue_command(config, entry, exe):
     repo = ((config.get('host') + '/') if config.get('host') and config['kind'] == 'github' else '') + config['project']
     if config.get('host') and config['kind'] == 'gitlab':
         repo = 'https://' + config['host'] + '/' + config['project']
-    context = ', '.join(k + ' ' + str(entry[k]) for k in ('cli', 'os', 'kit', 'profile', 'source') if entry.get(k))
+    context = ', '.join(k + ' ' + str(entry[k]) for k in ('cli', 'os', 'kit', 'profile', 'source', 'occurrences', 'fingerprint') if entry.get(k))
     body = (entry.get('text', '') + '\n\nContext: ' + context + '\nFriction id: ' + entry['id']
             + '. When fixed, cite it in the CHANGELOG line of the fix: (frictions: ' + entry['id'] + ').\n'
             + 'Logged by the AI Kit /friction command on the workstation: one sentence, nothing else is read or sent.')
@@ -168,7 +184,7 @@ def send(entry, home=None, config=None):
     urls = [word for word in proc.stdout.split() if word.startswith('http')]
     url = urls[-1] if urls else '(issue created, no URL printed)'
     sent = read_sent(home)
-    sent[entry['id']] = {'url': url, 'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}
+    sent[entry['id']] = {'url': url, 'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'fingerprint': entry.get('fingerprint') or fingerprint(entry)}
     descriptor = os.open(sent_file(home), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     private(descriptor)
     with os.fdopen(descriptor, 'w', encoding='utf-8') as handle:
@@ -208,7 +224,55 @@ def unsent(home=None, config=None):
     if not config:
         return []
     sent = read_sent(home)
-    return [e for e in entries(home)[1] if e.get('source') in (config.get('sources') or ['agent']) and e['id'] not in sent]
+    sent_prints = {v.get('fingerprint') for v in sent.values() if isinstance(v, dict)}
+    pending, seen = [], {}
+    for entry in entries(home)[1]:
+        if entry.get('source') not in (config.get('sources') or ['agent']) or entry['id'] in sent:
+            continue
+        mark = entry.get('fingerprint') or fingerprint(entry)
+        if mark in sent_prints:
+            continue  # the same friction was already published once
+        if mark in seen:
+            seen[mark]['occurrences'] = seen[mark].get('occurrences', 1) + 1  # one issue, its count
+            continue
+        seen[mark] = dict(entry, fingerprint=mark)
+        pending.append(seen[mark])
+    return pending
+
+def housekeep(home=None, retention_days=None, now=None):
+    """Local upkeep (ADR 0023), run at session start and by engine commands: entries older than the retention are purged
+    (a rewrite under a lock, atomic; skipped when another process holds the lock), and the frictions waiting for the
+    person's approval are counted. Reads frictions.jsonl only; never the network. Returns {'purged': n, 'waiting': n}."""
+    path, found = entries(home)
+    days = retention_days or RETENTION_DAYS
+    now = now or datetime.now(timezone.utc)
+    def recent(entry):
+        try:
+            return (now - datetime.strptime(str(entry.get('ts')), '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)).days < days
+        except ValueError:
+            return True
+    kept = [e for e in found if recent(e)]
+    purged = len(found) - len(kept)
+    if purged:
+        lock = path + '.lock'
+        try:
+            descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        except OSError:
+            purged = 0  # another process is rewriting it: next time
+        else:
+            os.close(descriptor)
+            try:
+                temp = path + '.tmp'
+                handle_fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+                private(handle_fd)
+                with os.fdopen(handle_fd, 'w', encoding='utf-8') as handle:
+                    handle.writelines(json.dumps(e, ensure_ascii=False) + '\n' for e in kept)
+                os.replace(temp, path)
+            finally:
+                os.unlink(lock)
+    config = tracker(home)
+    waiting = len(unsent(home, config)) if config and config.get('publication', 'auto') == 'approval' else 0
+    return {'purged': purged, 'waiting': waiting}
 
 def sync(home=None):
     """Sends what was not sent, one issue each; stops at the first failure (the same cause would repeat)."""

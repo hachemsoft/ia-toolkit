@@ -81,6 +81,11 @@
             "disabled"
           ],
           "description": "approval (default): the person sends from a terminal."
+        },
+        "retention_days": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Local frictions older than this are purged (default 30)."
         }
       }
     },

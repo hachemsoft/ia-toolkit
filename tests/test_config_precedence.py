@@ -63,7 +63,7 @@ class SchemaTests(Base):
                      {'managed_schema': 1, 'hooks': {'locked': ['protected-paths'], 'protected-paths': False}},  # contradiction
                      {'managed_schema': 1, 'mcp': {'allow_stdio': 'false'}}, {'managed_schema': 1, 'mcp': {'denied': 'x'}},
                      {'managed_schema': 1, 'mcp': {'allowed': ['x']}},
-                     {'managed_schema': 1, 'frictions': {'publication': 'sometimes'}}, {'managed_schema': 1, 'frictions': {'retention_days': 30}}):
+                     {'managed_schema': 1, 'frictions': {'publication': 'sometimes'}}, {'managed_schema': 1, 'frictions': {'retention_days': 0}}):
             with self.subTest(data):
                 self.refused(data)
 

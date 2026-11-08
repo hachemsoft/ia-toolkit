@@ -12,7 +12,7 @@ Goal: a 30_USER.md that changes how you answer this person, at most 20 lines. In
 
 Where it is: ~/.ai-kit/context/30_USER.md (before 0.39: ~/.gemini/30_USER.md). Read it first: it is theirs; keep what they wrote unless they change it.
 
-1. Facts first, never asked: read the current file, git config user.name, the operating system and shell, the repo's languages, the profile and team in the kit context. Say in two lines what you found and how many questions remain.
+1. Facts first, never asked, only these: the current file, git config user.name, OS and shell, CLIs on the PATH, the repo's languages, profile and team in the kit context. Say in two lines what you found and how many questions remain.
 
 2. Ask, as simply as possible. Every question:
    - is short (twelve words at most), in everyday words, in their language: never "autonomy", "verbosity" or "persona";

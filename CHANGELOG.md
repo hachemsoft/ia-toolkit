@@ -6,6 +6,9 @@
 - `managed-settings` also applies `managed.toml`: its locked guardrails and its MCP refusals go into the files IT deploys.
 - `state.json` records where each installed skill and agent comes from (package, Core, or Team).
 - The session hook no longer puts any remote text in the agent's context: from the daily remote read, only the remote `VERSION` (checked `X.Y.Z`) is used; announcements come from the installed `NEWS.md`.
+- Frictions (V2 slice 7, ADR 0023): local entries older than 30 days are purged (`managed.toml` `frictions.retention_days`), at session start and by `status`; the same friction told several times is one issue with its count; emails, home paths and internal host names are redacted before a friction is stored; with approval, the agent says at session start how many frictions wait, and never sends them.
+- `ai-kit user edit` opens your personal context in your editor (its path when there is no terminal).
+- `/me` reads only a bounded list of local facts; `/retro` proposes changes to the current repository only, and turns what concerns the kit, a Core or a Team into a friction.
 
 ## 2.1.0
 

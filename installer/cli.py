@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import shlex
 import sys
 from datetime import datetime, timezone
 
@@ -312,7 +313,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         tracker = None if publication(managed) == 'disabled' else {**tracker, 'publication': publication(managed)}
     if org_defaults_root().get('friction_tracker') and tracker is None:
         p.notices.append('[Info] Frictions stay local: share_frictions = false in your overrides.toml (your organization set a friction tracker).')
-    new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'news':news,**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
+    new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'news':news,'frictions_retention':(managed or {}).get('frictions', {}).get('retention_days', 30),**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
                  'installed':{'sources':resource_sources(selected, catalog, agents, agent_catalog, core_synced(kit, extra_writes)),'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}
     # V2 slice 2: lock.toml (written by sync and rollback) goes in the same transaction as the files it describes; its digest
@@ -432,6 +433,24 @@ def resource_sources(selected, catalog, agents, agent_catalog, synced=False):
     sources = {skill: origin(catalog[skill]['path']) for skill in selected if 'path' in catalog.get(skill, {})}
     sources.update({'ai-kit-'+agent: origin(agent_catalog[agent]['path']) for agent, _ in agents if agent in agent_catalog})
     return dict(sorted(sources.items()))
+
+
+def user_edit(home):
+    """ai-kit user edit (V2 slice 7): the person's context file in their own editor ($VISUAL, $EDITOR, else the system's text
+    editor); off a terminal, only its path. The kit writes nothing: the editor does."""
+    state = read_json(home/'.ai-kit/state.json')
+    if not state:
+        raise KitError('Kit not installed: run setup.')
+    path = home/state.get('context_dir', '.ai-kit/context')/USER_CONTEXT
+    if not path.is_file():
+        raise KitError(str(path)+' does not exist yet: run /me in your CLI, or update to create it.')
+    if not interactive():
+        print(str(path))
+        return 0
+    editor = os.environ.get('VISUAL') or os.environ.get('EDITOR')
+    command = (shlex.split(editor) if editor else ['notepad'] if os.name == 'nt' else ['open', '-t'] if sys.platform == 'darwin' else ['xdg-open'])
+    print('Opening '+str(path)+' with '+command[0]+'. Start a new CLI session afterwards to load it.')
+    return subprocess.run(command+[str(path)]).returncode
 
 
 def sync_configured(home):
@@ -621,8 +640,8 @@ def main(argv=None):
             except SystemExit as exc:  # the script's own argparse: usage already printed
                 return exc.code if isinstance(exc.code, int) else 2
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
-    parser.add_argument('action',nargs='?',choices=['init','setup','update','sync','rollback','team','status','validate','doctor','usage','uninstall','managed-settings','friction','news','new'],
-                        help='none in a terminal: the guided installer (or its menu once installed); init: first installation (setup with the general profile when none is given, then sync when a Core source is set); setup without --profile: the guided choices; team list | team use <name> [--url URL] | team use none: the active Team; status [--verbose]: Core, Team, CLIs, IT keys (no network); sync: install the highest stable tag of your Core source (--dry-run to preview); rollback: back to the previous Core; validate [--path FOLDER]: check a content tree (default: the kit content) before it is tagged; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now; new: create a skill, an agent, a command or a profile in a clone of the kit')
+    parser.add_argument('action',nargs='?',choices=['init','setup','update','sync','rollback','team','status','user','validate','doctor','usage','uninstall','managed-settings','friction','news','new'],
+                        help='none in a terminal: the guided installer (or its menu once installed); init: first installation (setup with the general profile when none is given, then sync when a Core source is set); setup without --profile: the guided choices; team list | team use <name> [--url URL] | team use none: the active Team; status [--verbose]: Core, Team, CLIs, IT keys (no network); user edit: open your personal context in your editor (its path off a terminal); sync: install the highest stable tag of your Core source (--dry-run to preview); rollback: back to the previous Core; validate [--path FOLDER]: check a content tree (default: the kit content) before it is tagged; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now; new: create a skill, an agent, a command or a profile in a clone of the kit')
     parser.add_argument('rest',nargs='*',help='team: list, or use <name>')
     parser.add_argument('--url',help='team use: the repository URL of a Team not known yet')
     parser.add_argument('--verbose',action='store_true',help='status: where each setting comes from, installed resources, capabilities')
@@ -648,7 +667,7 @@ def main(argv=None):
     parser.add_argument('--path',type=Path,help='validate: the content tree to check (a Core repository); default the kit\'s own content')
     parser.add_argument('--migrate-config',action='store_true',help='update: write ~/.ai-kit/aikit.toml (AI Kit 2) from your overrides.toml, which stays as it is for AI Kit 0.52, and say where each setting went')
     args = parser.parse_args(argv)
-    if args.rest and args.action != 'team':
+    if args.rest and args.action not in ('team', 'user'):
         parser.error('unexpected argument: '+' '.join(args.rest))
     if args.action == 'new':  # an option before it: the early branch of new did not see it; never fall through to apply
         parser.error('write the options after it: ai-kit new <type> ...')
@@ -690,6 +709,10 @@ def main(argv=None):
             if args.action == 'validate':
                 from .validate import validate
                 return validate(args.path or content_root(), (ROOT/'VERSION').read_text(encoding='utf-8').strip())
+            if args.action == 'user':
+                if args.rest != ['edit']:
+                    raise KitError('user needs: user edit.')
+                return user_edit(home)
             if args.action == 'status':
                 from .status import status
                 return status(home, args.verbose)

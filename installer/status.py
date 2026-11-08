@@ -20,6 +20,11 @@ def status(home, verbose=False):
     except ManagedConfigError as exc:
         managed = None
         print('[Check] '+str(exc))
+    if state:
+        from .core import friction_module
+        upkeep = friction_module().housekeep(str(home), state.get('frictions_retention'))
+        if upkeep['waiting']:
+            print(str(upkeep['waiting'])+' friction(s) wait for your approval: ai-kit friction --sync sends them.')
     if not verbose or not state:
         return 0
     from .plan import effective_settings
