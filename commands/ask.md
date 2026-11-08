@@ -6,7 +6,7 @@ skills: [to-questionnaire]
 order: 150
 ---
 
-Activate the to-questionnaire skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+Activate the to-questionnaire skill (if this skill is not installed here, follow the instructions below directly).
 
 Input: {{args}} (who it goes to, and what decision it unblocks).
 

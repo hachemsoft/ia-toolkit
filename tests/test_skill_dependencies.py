@@ -37,6 +37,54 @@ class CatalogTests(unittest.TestCase):
             self.assertFalse(set(entry.get('requires', [])) & set(entry.get('optional', {})), skill)
 
 
+def frontmatter(path):
+    text = path.read_text(encoding='utf-8')
+    return text.split('\n---', 1)[0] if text.startswith('---') else ''
+
+
+def user_only(skill):
+    """disable-model-invocation: true — Claude Code hides it from the model and refuses it in the Skill tool; Codex hides it."""
+    return bool(re.search(r'^disable-model-invocation:\s*true\s*$', frontmatter(ROOT/CATALOG[skill]['path']/'SKILL.md'), re.M))
+
+
+# 0.52.0: these skills carry a whole command's method; they became model-invocable with a guard so /spec, /learn… can chain them.
+COMMAND_SKILLS = {'to-spec': 'spec', 'teach': 'learn', 'retrospective': 'retro', 'wayfinder': 'map', 'ticket-sorting': 'triage',
+                  'to-questionnaire': 'ask', 'improve-codebase-architecture': 'audit', 'zoom-out': 'explain', 'wait-what': 'explain',
+                  'handover': 'handoff'}
+
+
+class ChainTests(unittest.TestCase):
+    """0.52.0: a command chains only skills the model can invoke. Observed on Claude Code 2.1.317 to 2.1.319 and Codex 0.167.0: a
+    user-only skill is absent from the model's skill list, and Claude Code refuses it ("do not replicate this skill's workflow")."""
+    def commands(self):
+        return sorted((ROOT/'commands').glob('*.md'))
+
+    def test_no_command_chains_a_user_only_skill(self):
+        for path in self.commands():
+            head = frontmatter(path)
+            listed = re.search(r'^skills:\s*\[(.*)\]', head, re.M)
+            names = [n.strip() for n in listed.group(1).split(',') if n.strip()] if listed else []
+            names += re.findall(r'[Aa]ctivate the ([a-z0-9-]+) skill', path.read_text(encoding='utf-8'))
+            for name in names:
+                with self.subTest(command=path.stem, skill=name):
+                    self.assertIn(name, CATALOG)
+                    self.assertFalse(user_only(name), '/'+path.stem+' chains '+name+', which the model cannot invoke')
+
+    def test_command_skills_are_guarded_against_activating_on_their_own(self):
+        for skill, command in COMMAND_SKILLS.items():
+            with self.subTest(skill):
+                head = frontmatter(ROOT/CATALOG[skill]['path']/'SKILL.md')
+                self.assertFalse(user_only(skill))
+                self.assertIn('/'+command, head)
+                self.assertIn('do not activate on your own', head)
+
+    def test_no_command_keeps_the_old_fallback(self):
+        # "if the skill tool is unavailable" was wrong on Claude Code (the tool exists) and contradicted the CLI's refusal.
+        for path in self.commands():
+            with self.subTest(path.stem):
+                self.assertNotIn('skill tool is unavailable', path.read_text(encoding='utf-8'))
+
+
 class InstallTests(unittest.TestCase):
     def setUp(self):
         temp = tempfile.TemporaryDirectory()

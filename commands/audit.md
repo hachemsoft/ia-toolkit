@@ -6,7 +6,7 @@ skills: [improve-codebase-architecture]
 order: 190
 ---
 
-Activate the improve-codebase-architecture skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly) (it uses codebase-design and grilling).
+Activate the improve-codebase-architecture skill (if this skill is not installed here, follow the instructions below directly) (it uses codebase-design and grilling).
 
 Scope: {{args}} (optional: a directory or package).
 

@@ -36,12 +36,13 @@ class Base(unittest.TestCase):
 
 class GeminiTests(Base):
     def test_personal_skill_kept_kit_skill_prefixed_and_referenced(self):
-        mine = self.mine('.gemini/skills/implement/SKILL.md')
+        # 0.52.0: /build names tdd directly (implement is user-only), so the reference rewriting is checked on tdd.
+        mine = self.mine('.gemini/skills/tdd/SKILL.md')
         notices = self.run_kit('gemini')
         self.assertEqual(mine.read_text(encoding='utf-8'), 'mine\n')
-        self.assertIn('name: ai-kit-implement', self.read('.gemini/skills/ai-kit-implement/SKILL.md'))
-        self.assertIn('the ai-kit-implement skill', self.read('.gemini/commands/build.toml'))
-        self.assertTrue(any('skill implement as ai-kit-implement' in n for n in notices))
+        self.assertIn('name: ai-kit-tdd', self.read('.gemini/skills/ai-kit-tdd/SKILL.md'))
+        self.assertIn('the ai-kit-tdd skill', self.read('.gemini/commands/build.toml'))
+        self.assertTrue(any('skill tdd as ai-kit-tdd' in n for n in notices))
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             cli.doctor_checks(self.home)

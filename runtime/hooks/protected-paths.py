@@ -227,6 +227,39 @@ def only_reads(program, words, mentions_in):
 PYTHONS = re.compile(r'(python[0-9.]*|py)(\.exe)?')
 KIT_TOOLS = ('/.ai-kit/bin/friction.py', '/.ai-kit/bin/news.py')  # run by the kit's own commands (/friction, a refused update): they write only outside the protected paths
 
+# The kit's own subcommands that change the installation or bill a model call: the agent tells the person, it does not run them
+# (0.52.0). Reading ones (doctor, usage, news, friction logging, --version, managed-settings into an empty folder) stay allowed.
+KIT_REFUSED = {'setup', 'update', 'uninstall', 'new'}
+KIT_COMMAND_BLOCKED = ('Blocked by the kit: `ai-kit {}` changes the installation or bills a model call; the agent does not run it. '
+                       'Tell the person the command to run in a terminal.')
+
+def kit_arguments(program, words):
+    """The words after the kit's entry point when this program runs the kit (ai-kit, python -m ai_kit, a launcher), else None."""
+    if program in ('ai-kit', 'ai-kit.cmd', 'installer.cmd'):
+        return words
+    if PYTHONS.fullmatch(program) and '-m' in words:
+        index = words.index('-m')
+        return words[index + 2:] if index + 1 < len(words) and words[index + 1] in ('ai_kit', 'installer') else None
+    if program in SHELLS:
+        index = next((i for i, w in enumerate(words) if w.endswith('bootstrap.sh')), None)
+        return words[index + 1:] if index is not None else None
+    return None
+
+def kit_command_reason(command):
+    """Reason to refuse a kit subcommand the agent must not run, or None."""
+    for pipeline in shell_segments(command):
+        for program, words in command_words(normalised(pipeline)):
+            arguments = kit_arguments(program, words)
+            if arguments is None:
+                continue
+            sub = next((w for w in arguments if not w.startswith('-')), '')
+            rest = arguments[arguments.index(sub) + 1:] if sub else []
+            mode = rest.index('--mode') if '--mode' in rest else None
+            if (sub in KIT_REFUSED or (sub == 'doctor' and '--live' in rest)
+                    or (sub == 'friction' and mode is not None and mode + 1 < len(rest) and not rest[mode + 1].startswith('-'))):
+                return KIT_COMMAND_BLOCKED.format(' '.join([sub] + rest[:2]).strip())
+    return None
+
 def runs_kit_tool(program, words, mentions_in):
     """True when this program is Python running one of the kit's own tools, and its other words name no protected path."""
     if not PYTHONS.fullmatch(program):
@@ -405,7 +438,7 @@ def shell_config_write(command, cwd=None):
         whole = normalised(command)
         name = mention(whole, names) or next((f for f in CONFIG_FOLDERS if f in whole), None)
         return BLOCKED.format(name) if name else None
-    reason = kit_shell_reason(command, cwd or os.getcwd())
+    reason = kit_shell_reason(command, cwd or os.getcwd()) or kit_command_reason(command)
     if reason:
         return reason
     for pipeline in shell_segments(command):

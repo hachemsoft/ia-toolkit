@@ -6,7 +6,7 @@ skills: [zoom-out, wait-what]
 order: 130
 ---
 
-Answer in the user's language (where wait-what asks for Simplified Technical English, keep its rules of short sentences and one idea per sentence, in the user's language). If the input names a code area, module, model or data flow, activate the zoom-out skill (if the skill tool is unavailable here, do not look for an agent of that name: follow these instructions directly) and give a map one level up: the relevant modules or models, their callers and dependencies, in the vocabulary of GLOSSARY.md. If the input is empty or says the last answer was unclear, activate the wait-what skill and re-pitch the last message with context, in plain language, using the glossary's terms.
+Answer in the user's language (where wait-what asks for Simplified Technical English, keep its rules of short sentences and one idea per sentence, in the user's language). If the input names a code area, module, model or data flow, activate the zoom-out skill (if this skill is not installed here, follow these instructions directly) and give a map one level up: the relevant modules or models, their callers and dependencies, in the vocabulary of GLOSSARY.md. If the input is empty or says the last answer was unclear, activate the wait-what skill and re-pitch the last message with context, in plain language, using the glossary's terms.
 
 Input: {{args}}
 

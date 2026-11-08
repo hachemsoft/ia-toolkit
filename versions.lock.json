@@ -49,20 +49,20 @@
       "digest": "461f5e19db887ddd"
     },
     "to-questionnaire": {
-      "version": "1.0.0",
-      "digest": "9ef517ebb4ceebd7"
+      "version": "1.1.0",
+      "digest": "d2f020e8517b1970"
     },
     "to-spec": {
-      "version": "1.0.0",
-      "digest": "d136fe7cb4c73e6c"
+      "version": "1.1.0",
+      "digest": "853b766b43ab5953"
     },
     "to-tickets": {
       "version": "1.0.0",
       "digest": "6e0c2ecfc298d9b7"
     },
     "wayfinder": {
-      "version": "1.0.0",
-      "digest": "5f81af709c1ec83e"
+      "version": "1.1.0",
+      "digest": "d98d20f0f8508813"
     },
     "implement": {
       "version": "1.0.0",
@@ -77,32 +77,32 @@
       "digest": "64934eff55634298"
     },
     "ticket-sorting": {
-      "version": "1.0.0",
-      "digest": "5228b1b1b7e620af"
+      "version": "1.1.0",
+      "digest": "c12c268f261b837e"
     },
     "retrospective": {
-      "version": "1.0.0",
-      "digest": "1b9710b7bc1da144"
+      "version": "1.1.0",
+      "digest": "15ebacab6d1e8ab1"
     },
     "handover": {
-      "version": "1.0.0",
-      "digest": "b0a47378af3a24aa"
+      "version": "1.1.0",
+      "digest": "0f113b64a386c9da"
     },
     "wait-what": {
-      "version": "1.0.0",
-      "digest": "8e010228e64f4bf9"
+      "version": "1.1.0",
+      "digest": "84343325c82b2d7c"
     },
     "zoom-out": {
-      "version": "1.0.0",
-      "digest": "34f4bab271b9b9bb"
+      "version": "1.1.0",
+      "digest": "fbb060a6a07e5a9c"
     },
     "teach": {
-      "version": "1.0.0",
-      "digest": "021fbb68770b67e5"
+      "version": "1.1.0",
+      "digest": "ddbe33f046572ad8"
     },
     "improve-codebase-architecture": {
-      "version": "1.0.0",
-      "digest": "69dd715a6ab6abd4"
+      "version": "1.1.0",
+      "digest": "520ef079ce23173b"
     },
     "manual-steps": {
       "version": "1.0.0",

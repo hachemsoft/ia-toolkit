@@ -144,7 +144,7 @@ The need: review a dashboard before publishing. One skill, one command, one eval
    order: 140
    ---
 
-   Activate the dashboard-check skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+   Activate the dashboard-check skill (if this skill is not installed here, follow the instructions below directly).
 
    Input: {{args}} (the dashboard, its SQL or a screenshot description).
 

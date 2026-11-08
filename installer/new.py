@@ -177,7 +177,7 @@ def agent_answers(args, ui, repo):
 def command_changes(name, description, skill):
     body = ['---', 'name: '+name, 'description: '+json.dumps(description, ensure_ascii=False), 'category: tool',
             'skills: ['+skill+']', 'order: 1000', '---', '',
-            'Activate the '+skill+' skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).',
+            'Activate the '+skill+' skill (if this skill is not installed here, follow the instructions below directly).',
             '', 'Input: {{args}}', '', "Answer in the user's language. State in one line the level of ceremony (quick, standard or full) and why.",
             '<… what the command does and how it ends …>']
     return {'commands/'+name+'.md': '\n'.join(body)+'\n'}

@@ -9,7 +9,7 @@ order: 60
 ---
 
 State in one line the level of ceremony this change had (tweak, small feature, large change, production) so the reviewer knows what evidence to expect.
-Activate the mr skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+Activate the mr skill (if this skill is not installed here, follow the instructions below directly).
 
 Stage: Deploy. Goal: a merge request description that reads without opening the diff.
 

@@ -125,7 +125,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/to-questionnaire",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Turn a decision you cannot make alone into a questionnaire for someone else.",
     "category": "tool",
     "tier": "optional"
@@ -134,7 +134,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/to-spec",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Turn the conversation into a specification: in this kit, /spec writes it as spec.md, never a ticket.",
     "category": "workflow",
     "tier": "profile",
@@ -161,7 +161,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/wayfinder",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "requires": [
       "grilling"
     ],
@@ -219,7 +219,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/ticket-sorting",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "requires": [
       "grilling"
     ],
@@ -234,7 +234,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/retrospective",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Retrospective of a work session: improve the agent's environment, not the code.",
     "category": "tool",
     "tier": "profile",
@@ -246,7 +246,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/handover",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Compact the conversation into a handover document for another agent or another session.",
     "category": "tool",
     "tier": "optional"
@@ -255,7 +255,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/wait-what",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Rephrase the last message that was not understood, using the glossary's vocabulary.",
     "category": "tool",
     "tier": "profile"
@@ -264,7 +264,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/zoom-out",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Step back: wider context and big picture.",
     "category": "tool",
     "tier": "profile"
@@ -273,7 +273,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/teach",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Learn a perimeter or a concept over several sessions: lessons, quizzes and briefs; shared material in the repo's docs/learn/<topic>/, personal progress in ~/.ai-kit/learning/.",
     "category": "tool",
     "tier": "core"
@@ -282,7 +282,7 @@
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "path": "skills/internal/common/improve-codebase-architecture",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "requires": [
       "grilling",
       "codebase-design"

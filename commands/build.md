@@ -3,12 +3,12 @@ name: build
 description: "Build: implement test-first, one slice at a time, with a plan proportionate to the change"
 category: workflow
 stage: Build
-skills: [implement]
+skills: [tdd, code-review]
 artifact: "diff + tests (plan.md for a full change)"
 order: 30
 ---
 
-Activate the implement skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly) (it drives tdd and code-review).
+Activate the tdd skill for each slice of step 2, then the code-review skill on the whole change before step 3 (if a skill is not installed here, follow the instructions below directly). If the input cites a ticket, fetch it and state its title before starting; if the reference is ambiguous, ask.
 
 Stage: Build. Goal: an implementation that does what was asked, verified, with no more ceremony than the change needs.
 

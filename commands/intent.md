@@ -3,12 +3,12 @@ name: intent
 description: "Plan: capture an idea, ticket or incident as intent.md"
 category: workflow
 stage: Plan
-skills: [grill-with-docs]
+skills: [grilling, domain-modeling]
 artifact: "intent.md"
 order: 10
 ---
 
-Activate the grill-with-docs skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly) (it builds on grilling and domain-modeling).
+Activate the grilling skill for the interview, and the domain-modeling skill for the glossary terms and the decisions it records (if a skill is not installed here, follow the instructions below directly).
 
 Stage: Plan. Goal: an intent.md the Design stage can act on, written in the originator's own words.
 

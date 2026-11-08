@@ -8,7 +8,7 @@ artifact: "interface sketch or prototype"
 order: 80
 ---
 
-Activate the codebase-design skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly); activate the prototype skill when the question needs running code to be answered.
+Activate the codebase-design skill (if this skill is not installed here, follow the instructions below directly); activate the prototype skill when the question needs running code to be answered.
 
 Input: {{args}}
 

@@ -251,7 +251,7 @@ class NewTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         text = (self.repo/'commands/demo-cmd.md').read_text(encoding='utf-8')
         self.assertTrue(text.startswith('---\nname: demo-cmd\ndescription: "Do a demo"\ncategory: tool\nskills: [tdd]\norder: 1000\n---\n'))
-        for words in ('Activate the tdd skill', 'if the skill tool is unavailable here', '{{args}}', 'level of ceremony'):
+        for words in ('Activate the tdd skill', 'if this skill is not installed here', '{{args}}', 'level of ceremony'):
             self.assertIn(words, text)
 
     def test_command_refuses_an_unknown_skill(self):

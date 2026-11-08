@@ -8,7 +8,7 @@ artifact: "agent-ready issues"
 order: 100
 ---
 
-Activate the ticket-sorting skill (if the skill tool is unavailable here, do not look for an agent of that name: follow the instructions below directly).
+Activate the ticket-sorting skill (if this skill is not installed here, follow the instructions below directly).
 
 Input: {{args}} (optional: an issue id or a filter).
 

@@ -30,7 +30,7 @@ class AgyAdapterTests(unittest.TestCase):
  def test_command_skills_only_when_no_homonym(self):
   self.run_kit('data-developer');base=self.plugin()/'skills'
   for n in ('intent','build','test','review','ship','diagnose','learn','explain','spec','design','map'):self.assertTrue((base/n/'SKILL.md').is_file(),n)
-  text=(base/'intent/SKILL.md').read_text(encoding='utf-8');self.assertTrue(text.startswith('---\nname: intent\ndescription: "Kit command /intent.'));self.assertNotIn('{{args}}',text);self.assertIn('grill-with-docs',text)
+  text=(base/'intent/SKILL.md').read_text(encoding='utf-8');self.assertTrue(text.startswith('---\nname: intent\ndescription: "Kit command /intent.'));self.assertNotIn('{{args}}',text);self.assertIn('grilling',text)  # 0.52.0: /intent chains grilling and domain-modeling directly
   # No skill shares a command's name any more: /retro and /triage are kit commands, their skills have their own names.
   self.assertIn('Kit command /retro',(base/'retro/SKILL.md').read_text(encoding='utf-8'));self.assertIn('Kit command /triage',(base/'triage/SKILL.md').read_text(encoding='utf-8'))
   shared=self.home/'.gemini/skills';self.assertTrue((shared/'retrospective/SKILL.md').is_file());self.assertTrue((shared/'ticket-sorting/SKILL.md').is_file())
