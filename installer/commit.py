@@ -1,4 +1,5 @@
 """Writing a plan to disk: backup, atomic writes, rollback on any error, and backup retention."""
+import json
 import os
 import re
 import shutil
@@ -49,7 +50,8 @@ def commit_changes(home, kit, writes, deletes, progress=None):
                 dest.write_bytes(data)
                 if os.name != 'nt':
                     dest.chmod(0o600)
-        (backup/'manifest.json').write_bytes(json_bytes({'created':[p.relative_to(home).as_posix() for p,b in originals.items() if b is None],'restore':'Copy the backed-up files to the home folder; remove the created files only if unchanged.'}))
+        manifest = {'status':'pending','created':[p.relative_to(home).as_posix() for p,b in originals.items() if b is None],'restore':'Copy the backed-up files to the home folder; remove the created files only if unchanged.'}
+        (backup/'manifest.json').write_bytes(json_bytes(manifest))
         if os.name != 'nt':
             (backup/'manifest.json').chmod(0o600)
         for done, (path, data) in enumerate(writes.items(), 1):
@@ -67,8 +69,34 @@ def commit_changes(home, kit, writes, deletes, progress=None):
             else:
                 atomic_write(path,data)
         raise
+    # V2 slice 2: done once every write landed; a pending manifest at the next start means a machine stop during the writes.
+    (backup/'manifest.json').write_bytes(json_bytes({**manifest, 'status': 'done'}))
     prune_backups(kit)
     return changed, backup
+
+
+def resume_pending(home, kit):
+    """An activation stopped by a power cut or a killed process left its backup manifest pending: put back the files it had
+    backed up and remove those it had created, so that the previous configuration (and lock.toml) is whole again."""
+    folder = kit/'backups'
+    if not folder.is_dir():
+        return None
+    for backup in sorted((p for p in folder.iterdir() if p.is_dir()), key=lambda p: p.name, reverse=True)[:1]:
+        manifest_path = backup/'manifest.json'
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        except (OSError, ValueError):
+            return None
+        if manifest.get('status') != 'pending':
+            return None
+        for saved in backup.rglob('*'):
+            if saved.is_file() and saved != manifest_path:
+                atomic_write(home/saved.relative_to(backup), saved.read_bytes())
+        for rel in manifest.get('created', []):
+            (home/rel).unlink(missing_ok=True)
+        manifest_path.write_bytes(json_bytes({**manifest, 'status': 'restored'}))
+        return backup
+    return None
 
 
 KIT_MANAGED = ('.ai-kit/bin/', '.ai-kit/hooks/', '.ai-kit/context/', '.ai-kit/schemas/')

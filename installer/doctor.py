@@ -415,6 +415,15 @@ def doctor_checks(home, cwd=None, problems=None):
     if state:
         print('Profile: '+state['profile']+' | version '+state['version'])
         command_checks(home, state, status)
+        # Git sources (2.0, slice 2): the active Core, and lock.toml as written by sync or rollback.
+        from .sync import lock_summary, LOCK_FILE
+        core_line = lock_summary(home/'.ai-kit')
+        if core_line:
+            print('[Info] '+core_line)
+        lock_path = home/'.ai-kit'/LOCK_FILE
+        if state.get('lock'):
+            status(lock_path.is_file() and digest(lock_path.read_bytes()) == state['lock'], '~/.ai-kit/'+LOCK_FILE+' as written by the last sync or rollback'
+                   + ('' if lock_path.is_file() and digest(lock_path.read_bytes()) == state['lock'] else ': it was edited or removed; run ai-kit sync'))
         managed_change = drift(state.get('managed', {}).get('digest'))
         if managed_change:
             status(False, managed_change)
