@@ -186,7 +186,9 @@ class KitCommandTests(Base):
     REFUSED = ('ai-kit setup --profile general', 'ai-kit update', 'ai-kit uninstall --yes', 'ai-kit new skill --name demo',
                'ai-kit doctor --live', 'ai-kit friction --mode auto --yes', 'python3 -m ai_kit uninstall --yes', 'py -m ai_kit update',
                'python -I -m installer setup --profile general', '~/.ai-kit/bin/ai-kit update', 'cd /tmp && ai-kit update',
-               'sh scripts/bootstrap.sh update', 'Installer.cmd uninstall', 'ai-kit --yes uninstall')
+               'sh scripts/bootstrap.sh update', 'Installer.cmd uninstall', 'ai-kit --yes uninstall',
+               # 2.0.0: sending frictions is the person's approval, never the agent's
+               'ai-kit friction --sync', 'python3 ~/.ai-kit/bin/friction.py --sync')
     ALLOWED = ('ai-kit doctor', 'ai-kit usage --since 30', 'ai-kit news --later', 'ai-kit news --list', 'ai-kit --version',
                'ai-kit friction --category docs --text x', 'ai-kit friction --list', 'ai-kit friction --mode',
                'ai-kit managed-settings --out /tmp/managed', 'echo run ai-kit update yourself', 'grep -r "ai-kit update" docs')

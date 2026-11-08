@@ -117,7 +117,7 @@ def select_agents(profile, overrides, agent_catalog, load_agent):
 RENAMED_HOOKS = {'session-news': 'whats-new'}
 
 
-def guardrails(overrides, hooks_dir):
+def guardrails(overrides, hooks_dir, managed_locked=(), managed_off=()):
     """The guardrails to enable. A guardrail marked "default" in the manifest is on unless overrides.toml sets it to false;
     one the organization locks stays on, whatever a team or a person writes (organization.toml locked_hooks).
     Returns (manifest, enabled guardrails, the locked ones a setting tried to turn off)."""
@@ -130,6 +130,9 @@ def guardrails(overrides, hooks_dir):
     locked = organization().get('locked_hooks', [])
     if not isinstance(locked, list) or not all(isinstance(n, str) and n in hook_manifest and is_guardrail(hook_manifest[n]) for n in locked):
         raise KitError('organization.toml: locked_hooks must list guardrails of the kit ('+', '.join(sorted(n for n, s in hook_manifest.items() if is_guardrail(s)))+').')
+    # managed.toml: hooks.locked adds to the organization's locks (a restriction); a guardrail IT turns off is no longer forced on
+    # by organization.toml, whose lock binds the team and the person, not IT (ADR 0015).
+    locked = [n for n in dict.fromkeys(list(locked) + list(managed_locked)) if n not in managed_off]
     turned_off = [n for n in locked if wanted_hooks.get(n) is False]
     wanted_hooks.update({n: True for n in locked})
     enabled_hooks = {}

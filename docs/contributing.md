@@ -33,7 +33,7 @@ What an agent reads is reviewed like code, at three levels. None of them blocks 
 
 A new script in a skill is reviewed, then added to `KIT_ALLOWED` in `runtime/check_skills.py`. The check finds the obvious forms only: a skill is text the model reads, and the barriers stay the review, the CLIs' permissions and the managed settings ([guardrails](hooks.md#rules-it-can-enforce)).
 
-`.gitlab-ci.yml` runs the same model-free checks as the GitHub workflow for an organization's GitLab copy, on Linux runners: the tests on Python 3.9, 3.11 and 3.14, ruff, the schemas, `NEWS.md`, the skills check, and the release ZIP as an artifact. The macOS and Windows jobs and the publication of the release stay on GitHub.
+`.gitlab-ci.yml` runs the same model-free checks as the GitHub workflow for an organization's GitLab copy, on Linux runners: the tests on Python 3.11, 3.12, 3.13 and 3.14, ruff, the schemas, `NEWS.md`, the skills check, and the release ZIP as an artifact. The macOS and Windows jobs and the publication of the release stay on GitHub.
 
 ## Add a team
 

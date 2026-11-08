@@ -22,7 +22,7 @@ class StyledOutputTests(unittest.TestCase):
 
     @unittest.skipUnless(libraries(), 'rich not installed (pip install -r packaging/runtime.txt)')
     def test_prefixes_get_a_colour_and_the_text_stays_the_same(self):
-        for line, colour in (('[OK] Python 3.9 minimum', '32'), ('[Check] Kit installation; run setup if missing.', '33'),
+        for line, colour in (('[OK] Python 3.11 minimum', '32'), ('[Check] Kit installation; run setup if missing.', '33'),
                              ('[Info] Updated: skill tdd 1.0.0 → 1.1.0.', '36'), ('Error: Kit not installed: run setup.', '31')):
             out = self.styled(line)
             self.assertRegex(out, r'\x1b\[[0-9;]*'+colour+'m', line)
@@ -54,13 +54,13 @@ class StyledOutputTests(unittest.TestCase):
     def test_redirected_or_plain_output_has_no_colour_code(self):
         out = io.StringIO()
         with contextlib.redirect_stdout(out), console.styled_output():
-            print('[OK] Python 3.9 minimum')
+            print('[OK] Python 3.11 minimum')
             print('Error: x')
-        self.assertEqual(out.getvalue(), '[OK] Python 3.9 minimum\nError: x\n')
+        self.assertEqual(out.getvalue(), '[OK] Python 3.11 minimum\nError: x\n')
         out = io.StringIO()
         with contextlib.redirect_stdout(out), console.styled_output(plain=True):
-            print('[OK] Python 3.9 minimum')
-        self.assertEqual(out.getvalue(), '[OK] Python 3.9 minimum\n')
+            print('[OK] Python 3.11 minimum')
+        self.assertEqual(out.getvalue(), '[OK] Python 3.11 minimum\n')
 
 
 if __name__ == '__main__':

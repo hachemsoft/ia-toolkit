@@ -7,8 +7,8 @@ class PackagingTests(unittest.TestCase):
  def test_version_matches_VERSION(self):
   self.assertEqual(re.search(r'^version = "([^"]+)"',self.text,re.M).group(1),(ROOT/'VERSION').read_text(encoding='utf-8').strip())
  def test_runtime_dependencies_pinned_within_their_ranges_and_python39(self):
-  # 0.34: the interface uses rich and questionary; every pin in packaging/runtime.txt is a pure-Python wheel supporting 3.9.
-  self.assertIn('requires-python = ">=3.9"',self.text)
+  # 0.34: the interface uses rich and questionary; every pin in packaging/runtime.txt is a pure-Python wheel supporting 3.11 (2.0.0 raised the minimum from 3.9, D4).
+  self.assertIn('requires-python = ">=3.11"',self.text)
   declared=re.search(r'^dependencies = \[(.*)\]$',self.text,re.M).group(1)
   self.assertIn('"rich>=',declared);self.assertIn('"questionary>=',declared)
   pins=dict(line.split('==') for line in (ROOT/'packaging/runtime.txt').read_text(encoding='utf-8').splitlines() if '==' in line and not line.startswith('#'))

@@ -1,5 +1,5 @@
 """The kit's TOML files: the person's overrides.toml, the organization's organization.toml and the profiles. Read with
-tomllib (Python 3.11 and later) or tomli; written only in two narrow ways, both checked by reading the result back:
+tomllib (standard library); written only in two narrow ways, both checked by reading the result back:
 a whole file when an overrides.json is migrated, and one top-level list at a time, the rest of the file (comments
 included) kept as is."""
 import json
@@ -8,13 +8,7 @@ import re
 
 from .core import KitError, redact
 
-try:
-    import tomllib
-except ModuleNotFoundError:  # Python 3.9 and 3.10: the launcher installs tomli
-    try:
-        import tomli as tomllib
-    except ModuleNotFoundError:
-        tomllib = None
+import tomllib  # standard library since Python 3.11, the kit's minimum (2.0.0)
 
 TOML_HINTS = (
     ('Invalid value', 'a value is not valid: a text must be in double quotes, a list in [ ], true and false in lower case'),
@@ -47,9 +41,6 @@ def toml_error(path, text, exc):
             + 'TOML: one key = value per line, texts in double quotes, lists in [ ], # starts a comment. A valid example: docs/customization.md.')
 
 def parse_toml(text, path='TOML'):
-    if tomllib is None:
-        raise KitError('Reading ' + str(path) + ' needs Python 3.11 or later, or the tomli package: run the kit through its launcher '
-                       '(Installer.cmd, or sh scripts/bootstrap.sh), which provides it.')
     try:
         return tomllib.loads(text)
     except tomllib.TOMLDecodeError as exc:

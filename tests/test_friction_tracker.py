@@ -45,7 +45,9 @@ class Base(unittest.TestCase):
         real = settings.read_toml
         for patcher in (mock.patch('shutil.which', side_effect=lambda name, path=None: self.fake_which(name, path)),
                         mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': '', 'PATH': str(self.bin)+os.pathsep+os.environ.get('PATH', '')}),
-                        mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: self.org if Path(p).name == 'organization.toml' else real(p, d))):
+                        mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: self.org if Path(p).name == 'organization.toml' else real(p, d)),
+                        # 2.0.0: approval is the default (D5, ADR 0023, tested in test_config_precedence); these tests cover the auto mode.
+                        mock.patch('installer.cli.publication', return_value='auto')):
             patcher.start()
             self.addCleanup(patcher.stop)
         self.install_fake('glab')
@@ -89,7 +91,7 @@ class Base(unittest.TestCase):
 class TrackerTests(Base):
     def test_update_records_the_tracker_and_the_person_can_opt_out(self):
         recorded = read_json(self.home/'.ai-kit/state.json')['friction_tracker']
-        self.assertEqual(recorded, {'kind': 'gitlab', 'project': 'tools/ai-kit', 'host': '', 'labels': ['friction', 'kit'], 'sources': ['agent']})
+        self.assertEqual(recorded, {'kind': 'gitlab', 'project': 'tools/ai-kit', 'host': '', 'labels': ['friction', 'kit'], 'sources': ['agent'], 'publication': 'auto'})  # 2.0.0: publication recorded
         overrides = self.home/'.ai-kit/overrides.toml'
         overrides.write_text(overrides.read_text(encoding='utf-8')+'\nshare_frictions = false\n', encoding='utf-8')
         code, out = self.run_kit('update')
@@ -100,6 +102,20 @@ class TrackerTests(Base):
         overrides.write_text(overrides.read_text(encoding='utf-8').replace('share_frictions = false', ''), encoding='utf-8')
         self.run_kit('update')
         self.assertNotIn('friction_tracker', read_json(self.home/'.ai-kit/state.json'))
+
+    def test_approval_keeps_the_friction_until_the_person_sends_it(self):
+        # 2.0.0 default (D5, ADR 0023): nothing leaves on its own; ai-kit friction --sync, run by the person, sends it.
+        with mock.patch('installer.cli.publication', return_value='approval'):
+            code, out = self.run_kit('update')
+        self.assertEqual(code, 0, out)
+        self.assertEqual(read_json(self.home/'.ai-kit/state.json')['friction_tracker']['publication'], 'approval')
+        proc = self.script('--category', 'docs', '--command', '/build', '--cli', 'gemini', '--source', 'agent')
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn('Not sent yet', proc.stdout)
+        self.assertEqual(self.calls(), [])
+        proc = self.script('--sync')
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(len(self.calls()), 1)
 
     def test_agent_friction_becomes_an_issue_once_and_a_person_friction_stays_local(self):
         proc = self.script('--category', 'docs', '--command', '/build', '--cli', 'gemini', '--source', 'agent')

@@ -128,14 +128,14 @@ class LauncherTests(unittest.TestCase):
         proc = self.run_launcher(self.kit, 'setup', '--home', str(self.home), env={**self.env, 'PATH': self.python_free_path()})
         self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
         output = proc.stdout + proc.stderr
-        self.assertIn('Python 3.9 or newer was not found', output)
+        self.assertIn('Python 3.11 or newer was not found', output)
         self.assertIn('What to ask IT support', output)
         self.assertFalse((self.home/'.ai-kit').exists())
 
     @unittest.skipIf(WINDOWS, 'Fake interpreters as shell scripts: Unix only')
     def test_old_or_blocked_python_is_explained(self):
         path = self.python_free_path()
-        for code, expected in ((3, 'older than 3.9'), (1, 'could not be started')):
+        for code, expected in ((3, 'older than 3.11'), (1, 'could not be started')):
             fake = Path(path)/'python3'
             fake.write_text('#!/bin/sh\nexit ' + str(code) + '\n', encoding='utf-8')
             fake.chmod(0o755)
@@ -172,7 +172,12 @@ class ReleaseFilesTests(unittest.TestCase):
         # registry key, a marked block in the shell startup file), when chosen, removed by uninstall; nowhere else.
         forbidden = re.compile(r'winreg|\bsetx\b|reg add|ExecutionPolicy|\bxattr\b|\bspctl\b|\bsudo\b|\brunas\b|HKEY_|Set-ItemProperty'
                                r'|\.zshrc|\.bashrc|\.bash_profile|\.zprofile|/etc/|launchctl|defaults write', re.I)
-        sources = [p for p in (ROOT/'installer').rglob('*.py') if p.name != 'command.py'] + [ROOT/'Installer.cmd', ROOT/'scripts/bootstrap.sh', ROOT/'scripts/launcher.py', ROOT/'runtime/friction.py']
+        # Second exception (2.0.0, ADR 0015): installer/config.py reads managed.toml from the administered path (/etc/ai-kit on
+        # Linux) and never writes anything; asserted below.
+        sources = [p for p in (ROOT/'installer').rglob('*.py') if p.name not in ('command.py', 'config.py')] + [ROOT/'Installer.cmd', ROOT/'scripts/bootstrap.sh', ROOT/'scripts/launcher.py', ROOT/'runtime/friction.py']
+        managed = (ROOT/'installer/config.py').read_text(encoding='utf-8')
+        self.assertFalse(re.search(r'write_text|write_bytes|atomic_write|os\.replace|os\.remove|unlink|rmtree|mkdir|winreg|\bsetx\b|\bsudo\b', managed))
+        self.assertFalse(re.search(r"open\([^)]*['\"](w|a|x)", managed))  # 'r+b' only probes whether the user could write it
         command = (ROOT/'installer/command.py').read_text(encoding='utf-8')
         self.assertIn('HKEY_CURRENT_USER', command)
         self.assertNotIn('HKEY_LOCAL_MACHINE', command)

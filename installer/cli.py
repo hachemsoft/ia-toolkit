@@ -22,6 +22,7 @@ from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKI
 from .plan import (RENAMED_HOOKS, effective_settings, resolve_selection, personal_file, practice_layers, skill_sources, select_agents,
                    guardrails, remove_stale_files, refuse_links)
 from .usage import (usage)  # noqa: F401 (re-exported)
+from .config import (ManagedConfigError, load_managed, apply_values, locked_guardrails, filter_mcp, publication)  # noqa: F401 (re-exported)
 from .lifecycle import (PERSONAL_KEPT, plan_command, remove_command, uninstall)  # noqa: F401 (re-exported)
 
 
@@ -183,14 +184,15 @@ def migrate_kit_dir(home, dry_run=False):
     return False
 
 
-def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None, command=None):
+def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None, command=None, managed_file=None):
     """Full prevalidation, neutral plan, adapters, backup, then atomic write file by file.
     target: a --target value or a list of CLI names; None keeps the CLIs recorded by the previous installation.
     choices: new values for keys of the person's overrides.toml (CHOICE_KEYS), written with the rest of the installation,
     never before: a preview (dry_run) or a cancelled run leaves the file as it was.
     report: a dict filled with what the plan writes and removes (the interface's summary). progress(step, done, total):
     called as the files are really written. command: True/False to add or remove the `ai-kit` command (installer/command.py);
-    None keeps the recorded choice (yes on a first installation). Returns the notices shown to the person (also printed)."""
+    None keeps the recorded choice (yes on a first installation). managed_file: the managed.toml to read instead of the administered
+    path (tests only; never taken from the environment). Returns the notices shown to the person (also printed)."""
     home = home.resolve()
     if migrate_kit_dir(home, dry_run):
         return []  # --dry-run: the old folder is not renamed yet, the plan would be wrong
@@ -205,6 +207,10 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     # 'none' (setup --team none) leaves the team; no value keeps the recorded one.
     team = None if team == 'none' else safe_id(team) if team else state.get('team')
     org_defaults, team_layer, personal, overrides, choices = effective_settings(kit, team, choices)
+    # managed.toml (IT): every key it sets wins over the organization, the team and the person (ADR 0015).
+    hook_specs = read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})
+    managed = load_managed(managed_file, [n for n, s in hook_specs.items() if is_guardrail(s)])
+    overrides, managed_notices = apply_values(overrides, managed)
     catalog = read_json(ROOT/'skills/catalog.json')
     manifest = load_commands()
     selected, allowed = resolve_selection(profile, overrides, catalog, manifest)
@@ -241,13 +247,13 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     agent_catalog = read_json(ROOT/'agents/catalog.json')
     agents = select_agents(profile, overrides, agent_catalog, load_agent)
     hooks_dir = kit/'hooks'  # scripts shared by all CLIs, like kit/bin/friction.py
-    hook_manifest, enabled_hooks, turned_off = guardrails(overrides, hooks_dir)
+    hook_manifest, enabled_hooks, turned_off = guardrails(overrides, hooks_dir, locked_guardrails(managed), [n for n, v in (managed or {}).get('hooks', {}).items() if v is False])
     news = news_setting(overrides)
     kit_dir = kit_folder()
     # MCP: resolved from the three sources apart, not from the merged overrides ("github": true must not erase the server).
     servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
-    enabled_mcp = {'ai-kit-'+name: server for name, server in servers.items()}
-    notices = personal_notices + ['[Info] Guardrail '+n+' stays on: your organization locks it (organization.toml locked_hooks).' for n in turned_off]
+    enabled_mcp, mcp_notices = filter_mcp({'ai-kit-'+name: server for name, server in servers.items()}, managed)
+    notices = personal_notices + managed_notices + mcp_notices + ['[Info] Guardrail '+n+' stays on: your organization or IT locks it (organization.toml locked_hooks, managed.toml hooks.locked).' for n in turned_off]
     notices += ['[Info] hooks.'+old+' is now hooks.'+new+': your setting is applied; rename it in your overrides.toml.' for old, new in RENAMED_HOOKS.items() if old in (overrides.get('hooks') or {})]
     unknown_names(overrides, catalog, agent_catalog, notices)
     notices += [retired_key_notice(key) for key in RETIRED_KEYS if key in overrides]
@@ -289,6 +295,9 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     if changed:
         p.notices.append('[Info] Updated: '+', '.join(changed)+'. What changed: CHANGELOG.md of the kit.')
     tracker = friction_tracker(org_defaults_root(), personal)
+    if tracker:
+        # approval (default): nothing is sent on its own; the person sends from a terminal (ai-kit friction --sync). D5, ADR 0023.
+        tracker = None if publication(managed) == 'disabled' else {**tracker, 'publication': publication(managed)}
     if org_defaults_root().get('friction_tracker') and tracker is None:
         p.notices.append('[Info] Frictions stay local: share_frictions = false in your overrides.toml (your organization set a friction tracker).')
     new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'news':news,**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
@@ -533,8 +542,8 @@ def main(argv=None):
             stream.reconfigure(errors='replace')  # console that cannot encode a character: replace it rather than crash
         except (AttributeError, ValueError):
             pass
-    if sys.version_info < (3,9):
-        print('Python 3.9 minimum required (3.11 or newer recommended).',file=sys.stderr)
+    if sys.version_info < (3,11):
+        print('Python 3.11 minimum required (AI Kit 2.0; workstations on Python 3.9 or 3.10 stay on AI Kit 0.52).',file=sys.stderr)
         return 2
     argv = sys.argv[1:] if argv is None else list(argv)
     if argv and argv[0] in ('friction', 'news', 'new'):
@@ -544,7 +553,7 @@ def main(argv=None):
                 return {'friction': friction_action, 'news': news_action, 'new': new_action}[argv[0]](argv[1:])
             except (KitError, OSError, UnicodeError) as exc:
                 print('Error: '+redact(str(exc)), file=sys.stderr)
-                return 2
+                return 3 if isinstance(exc, ManagedConfigError) else 2  # 3: managed.toml cannot be applied (ADR 0015)
             except (EOFError, KeyboardInterrupt):
                 print('\nOperation cancelled.', file=sys.stderr)
                 return 130
@@ -647,7 +656,7 @@ def main(argv=None):
             return 0
         except (KitError,OSError,UnicodeError) as exc:
             print('Error: '+redact(str(exc)),file=sys.stderr)
-            return 2
+            return 3 if isinstance(exc, ManagedConfigError) else 2  # 3: managed.toml cannot be applied (ADR 0015)
         except (EOFError,KeyboardInterrupt):
             print('\nOperation cancelled.',file=sys.stderr)
             return 130

@@ -1,5 +1,5 @@
 @echo off
-rem AI Kit launcher for Windows: finds Python 3.9 or newer, then hands over to scripts\launcher.py, which installs the kit
+rem AI Kit launcher for Windows: finds Python 3.11 or newer, then hands over to scripts\launcher.py, which installs the kit
 rem in its private environment (%USERPROFILE%\.ai-kit\runtime) and opens the installer (the menu when no argument is given).
 rem Command prompt only: no PowerShell, no administrator rights, no change to the system or the execution policy. The only
 rem change outside %USERPROFILE%\.ai-kit: the ai-kit command on your own user PATH, if you chose it (removed by uninstall).
@@ -18,13 +18,13 @@ if not defined KIT_PY call :try_python python3
 if defined KIT_PY goto :launch
 echo.
 if "%KIT_FOUND%"=="old" (
-  echo The Python found is older than 3.9: the AI Kit needs Python 3.9 or newer ^(3.11 recommended^).
+  echo The Python found is older than 3.11: the AI Kit needs Python 3.11 or newer.
 ) else if "%KIT_FOUND%"=="blocked" (
   echo Python is present but could not be started: a security policy or an incomplete installation may prevent it.
 ) else (
-  echo Python 3.9 or newer was not found ^(commands py, python, python3^).
+  echo Python 3.11 or newer was not found ^(commands py, python, python3^).
 )
-echo What to ask IT support: Python 3.9 or newer ^(3.11 recommended^) with its standard venv and pip modules, usable by your
+echo What to ask IT support: Python 3.11 or newer with its standard venv and pip modules, usable by your
 echo standard account from a command prompt, as provided or approved by the company ^(software centre^). Then run Installer.cmd again.
 set "KIT_CODE=2"
 goto :end
@@ -47,7 +47,7 @@ endlocal & exit /b %KIT_CODE%
 
 :try_python
 where %1 >nul 2>nul || exit /b 0
-%* -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 3)" >nul 2>nul
+%* -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 3)" >nul 2>nul
 if not errorlevel 1 (
   set "KIT_PY=%*"
   exit /b 0

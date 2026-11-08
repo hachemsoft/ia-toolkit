@@ -179,6 +179,8 @@ def send_line(status, detail):
     """One line for the person after a send; nothing for off and skipped."""
     if status == 'sent':
         return 'Issue created: ' + detail
+    if status == 'waiting':
+        return 'Not sent yet: your organization asks for your approval. Run ai-kit friction --sync in a terminal to send it.'
     if status == 'failed':
         return 'Issue not created (' + detail + '): the friction is kept locally; ai-kit friction --sync sends it later.'
     return ''
@@ -276,7 +278,9 @@ def main(argv=None):
         print('The text must be between 1 and 300 characters.', file=sys.stderr)
         return 2
     path, entry = record(args.category, text, args.command, args.cli, source=args.source, home=args.home)
-    status, detail = send(entry, args.home)
+    config = tracker(args.home)
+    # approval (the default since 2.0.0): nothing leaves on its own; the person sends from a terminal (--sync).
+    status, detail = ('waiting', '') if config and config.get('publication', 'auto') == 'approval' else send(entry, args.home, config)
     print('Friction ' + entry['id'] + ' logged (' + entry['category'] + ', /' + entry['command'] + ') in ' + path + ('.' if status != 'off' else '; nothing is sent.'))
     line = send_line(status, detail)
     if line:
