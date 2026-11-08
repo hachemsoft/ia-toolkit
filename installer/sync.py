@@ -15,8 +15,8 @@ from .commit import resume_pending
 from .config import AIKIT_FILE, check_source, load_aikit, load_managed
 from .core import ROOT, KitError, content_from, content_root, safe_id
 from .resolve import agent_catalog, skill_catalog
-from .sources import (EngineLock, SourceError, authorize, cache_dir, canonical_url, check_seen, choose_tag, extract, fetch, new_temp,
-                      prune_cache, remote_tags, remove_temp, revoked)
+from .sources import (EngineLock, SourceError, authorize, bundle_tags, cache_dir, canonical_url, check_seen, choose_tag, extract, fetch,
+                      fetch_bundle, git, new_temp, prune_cache, remote_tags, remove_temp, revoked)
 from .toml_files import dump_toml, read_toml, set_section_key
 
 LOCK_FILE = 'lock.toml'
@@ -94,16 +94,25 @@ def materialize(kit, entry, settings, label):
         raise
 
 
-def fetch_highest(kit, url, current, settings, label):
-    """(entry, folder) for the highest eligible tag of url: ls-remote, tag-moved check, fetch of that tag only, extraction."""
-    tags = remote_tags(url, kit, tuple(settings['allowed_schemes']))
-    check_seen(kit, url, tags)
+def fetch_highest(kit, url, current, settings, label, bundle=None):
+    """(entry, folder) for the highest eligible tag of url: ls-remote (or the tags of a bundle file, the offline origin of the
+    same URL), tag-moved check, fetch of that tag only, extraction."""
     same_origin = current and current.get('url') == url
-    tag = choose_tag(tags, current['tag'] if same_origin else None, settings['allow_prerelease'])
-    announced = tags[tag]
+    if bundle:
+        tags = bundle_tags(kit, bundle)
+        tag = choose_tag(tags, current['tag'] if same_origin else None, settings['allow_prerelease'])
+        cache, commit = fetch_bundle(kit, url, bundle, tag)
+        announced = {'commit': commit, 'tag_object': git(['rev-parse', 'refs/tags/'+tag], kit, git_dir=cache).decode().strip()}
+        check_seen(kit, url, {tag: announced})
+    else:
+        tags = remote_tags(url, kit, tuple(settings['allowed_schemes']))
+        check_seen(kit, url, tags)
+        tag = choose_tag(tags, current['tag'] if same_origin else None, settings['allow_prerelease'])
+        announced = tags[tag]
     if revoked(announced['commit'], settings):
         raise SourceError('revoked', label+' '+tag+' is revoked by IT (managed.toml git.revoked); nothing was changed.')
-    cache = fetch(kit, url, tag, announced['commit'], tuple(settings['allowed_schemes']))
+    if not bundle:
+        cache = fetch(kit, url, tag, announced['commit'], tuple(settings['allowed_schemes']))
     folder = new_temp()
     try:
         digest = extract(kit, cache, announced['commit'], folder)
@@ -173,7 +182,7 @@ def aikit_text(home, updates):
 
 
 @contextlib.contextmanager
-def activation(home, action, dry_run=False, confirm=None, managed_file=None, guardrail_names=(), team_name=None, team_url=None, ask_url=None):
+def activation(home, action, dry_run=False, confirm=None, managed_file=None, guardrail_names=(), team_name=None, team_url=None, ask_url=None, bundle=None):
     """Yields an Activation for apply(), with the content root set to the active Core and Team."""
     kit = home/'.ai-kit'
     managed = load_managed(managed_file, guardrail_names)
@@ -198,16 +207,17 @@ def activation(home, action, dry_run=False, confirm=None, managed_file=None, gua
                 if core_url:
                     url = check_origin(core_url, settings)
                     if not (core and core.get('url') == url) and not anchored:
-                        tags = remote_tags(url, kit, tuple(settings['allowed_schemes']))
-                        check_seen(kit, url, tags)
+                        tags = bundle_tags(kit, bundle) if bundle else remote_tags(url, kit, tuple(settings['allowed_schemes']))
+                        if not bundle:
+                            check_seen(kit, url, tags)
                         tag = choose_tag(tags, None, settings['allow_prerelease'])
                         # First use of an origin outside managed mode: the person confirms what will be trusted (ADR 0016).
-                        question = 'First use of this Core: '+url+' at '+tag+' (commit '+tags[tag]['commit'][:12]+'). Trust it?'
+                        question = 'First use of this Core: '+url+' at '+tag+(' from the bundle '+str(bundle) if bundle else ' (commit '+tags[tag]['commit'][:12]+')')+'. Trust it?'
                         if confirm is None or not confirm(question):
                             raise KitError('First use of '+url+' needs your confirmation in a terminal: run ai-kit sync there.')
-                    new_core, folders['core'] = fetch_highest(kit, url, core, settings, 'Core')
+                    new_core, folders['core'] = fetch_highest(kit, url, core, settings, 'Core', bundle)
                     summary.append('Core '+new_core['tag']+' is already active.' if new_core == core else 'Core '+(core['tag']+' -> ' if core else '')+new_core['tag']+' ('+url+').')
-                if team:
+                if team and not bundle:  # offline: the Team stays at its locked version
                     check_origin(team['url'], settings)
                     check_team_allowed(team['url'], managed)
                     new_team, folders['team'] = fetch_highest(kit, team['url'], team, settings, 'Team '+team['name'])

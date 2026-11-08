@@ -8,7 +8,7 @@ skills = [
   "routing", "grilling", "grill-with-docs", "domain-modeling", "implement", "tdd", "code-review",
   "mr", "diagnosing-bugs", "teach", "writing-for-agents", "setup-workflow", "init-project-context",
   "sql-review", "dbt-model-change", "bigquery-query-review", "kpi-definition", "incremental-replay",
-  "bigquery-cost-review", "perimeter-brief",
+  "bigquery-cost-review", "perimeter-brief", "analysis",
 ]
 mcp = ["bigquery", "dbt"]
 agents = ["repo-investigator", "sql-reviewer", "dbt-reviewer", "verifier"]

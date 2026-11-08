@@ -644,6 +644,7 @@ def main(argv=None):
                         help='none in a terminal: the guided installer (or its menu once installed); init: first installation (setup with the general profile when none is given, then sync when a Core source is set); setup without --profile: the guided choices; team list | team use <name> [--url URL] | team use none: the active Team; status [--verbose]: Core, Team, CLIs, IT keys (no network); user edit: open your personal context in your editor (its path off a terminal); sync: install the highest stable tag of your Core source (--dry-run to preview); rollback: back to the previous Core; validate [--path FOLDER]: check a content tree (default: the kit content) before it is tagged; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now; new: create a skill, an agent, a command or a profile in a clone of the kit')
     parser.add_argument('rest',nargs='*',help='team: list, or use <name>')
     parser.add_argument('--url',help='team use: the repository URL of a Team not known yet')
+    parser.add_argument('--from-bundle',type=Path,help='sync: install the Core from a git bundle file (offline), as the release ZIP may ship it')
     parser.add_argument('--verbose',action='store_true',help='status: where each setting comes from, installed resources, capabilities')
     parser.add_argument('--since',type=int,default=42,help='usage: window in days (default 42)')
     parser.add_argument('--json',type=Path,help='usage: write the report to this file')
@@ -669,6 +670,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.rest and args.action not in ('team', 'user'):
         parser.error('unexpected argument: '+' '.join(args.rest))
+    if args.from_bundle and args.action != 'sync':
+        parser.error('--from-bundle goes with sync: ai-kit sync --from-bundle <file>')
     if args.action == 'new':  # an option before it: the early branch of new did not see it; never fall through to apply
         parser.error('write the options after it: ai-kit new <type> ...')
     if args.version:
@@ -763,7 +766,7 @@ def main(argv=None):
                 return make_ui(args.plain).text('Repository URL of the Team '+name+' (https://... or git@...)') or None
             action = 'team-use' if args.action == 'team' else 'sync' if args.action == 'init' and sync_configured(home) else args.action
             with activation(home, action, args.dry_run, confirm, guardrail_names=[n for n, s in hook_specs.items() if is_guardrail(s)],
-                            team_name=args.rest[1] if args.action == 'team' else None, team_url=args.url, ask_url=ask_url) as act:
+                            team_name=args.rest[1] if args.action == 'team' else None, team_url=args.url, ask_url=ask_url, bundle=args.from_bundle) as act:
                 apply(role,home,args.dry_run,identity,target,act.team or team,command={'yes': True, 'no': False}.get(args.command_on_path), extra_writes=act.writes)
             # setup and update never call the model: the summary says "connection not verified"; doctor --live is the only real call.
             live = None

@@ -19,12 +19,21 @@ kind = "core"
 min_engine = "2.0.0"   # optional: an older AI Kit refuses this content
 ```
 
+## Creating the Core repository
+
+`python3 scripts/export_core.py <empty folder> --git` (in a clone of the kit) writes the kit's content in the Core layout
+(`skills/<name>/`, `agents/<name>.md`, commands, practices, the manifest) as a Git repository with one commit and the tag
+`v<version>`. Nothing is pushed: add the remote your organization chose, push `main` and the tag, protect the tags, then
+set `enterprise.core` (IT) or `[core] repo` to its URL. `ai-kit validate --path <folder>` checks a Core or a Team
+repository before each tag; a starting point for a Team is in `examples/team-repo/`.
+
 ## Commands
 
 | Command | Does | Network |
 | --- | --- | --- |
 | `ai-kit sync` | installs the highest stable tag `vX.Y.Z` (prereleases `-rc.N` only with `git.allow_prerelease`), never a branch | yes |
 | `ai-kit sync --dry-run` | shows what would change, writes nothing | yes |
+| `ai-kit sync --from-bundle <file>` | the same, from a `git bundle` of the Core (offline); recorded under the configured URL | no |
 | `ai-kit rollback` | back to the previous Core; a second rollback comes back | no |
 | `ai-kit update` | re-applies the locked Core | no |
 

@@ -1,7 +1,8 @@
 import contextlib, io, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply
-from installer.core import read_json, ROOT
+from installer.resolve import skill_catalog
+from installer.core import ROOT
 class ProjectContextTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
@@ -19,7 +20,7 @@ class ProjectContextTests(unittest.TestCase):
   a=(ROOT/'skills/internal/common/init-project-context/templates/AGENTS.md').read_text(encoding='utf-8')
   self.assertLess(a.count('\n'),60);self.assertIn('GLOSSARY.md',a);self.assertIn('docs/adr/',a)
  def test_skill_requires_declared(self):
-  e=read_json(ROOT/'skills/catalog.json')['init-project-context'];self.assertEqual(sorted(e['requires']),['domain-modeling','writing-for-agents'])
+  e=skill_catalog(ROOT)['init-project-context'];self.assertEqual(sorted(e['requires']),['domain-modeling','writing-for-agents'])
  def test_kit_writes_only_under_gemini_and_kit_dirs(self):
   self.run_kit('data-developer');written={p.relative_to(self.home).parts[0] for p in self.home.rglob('*') if p.is_file()};self.assertTrue(written<={'.gemini','.ai-kit','.codex'},written)
   outside=[p for p in self.home.rglob('*') if p.name in ('AGENTS.md','GLOSSARY.md') and '.gemini/skills' not in p.as_posix() and '.gemini/config/plugins/ai-kit' not in p.as_posix() and '.codex/skills' not in p.as_posix() and p.relative_to(self.home).as_posix()!='.codex/AGENTS.md'];self.assertEqual(outside,[])

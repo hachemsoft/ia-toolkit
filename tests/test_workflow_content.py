@@ -8,8 +8,9 @@ import tempfile
 import unittest
 
 from installer.core import ROOT, load_commands, read_json
+from installer.resolve import skill_catalog
 
-CATALOG = read_json(ROOT/'skills/catalog.json')
+CATALOG = skill_catalog(ROOT)
 COMMANDS = {c['name']: c['prompt'] for c in load_commands()}
 
 

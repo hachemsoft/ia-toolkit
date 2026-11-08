@@ -7,10 +7,11 @@ import tempfile
 import unittest
 
 from installer.cli import apply, resolve_skills, ROOT
+from installer.resolve import skill_catalog
 from installer.core import KitError, read_json
 from installer.toml_files import dump_toml, read_toml
 
-CATALOG = read_json(ROOT/'skills/catalog.json')
+CATALOG = skill_catalog(ROOT)
 
 
 def cited(skill):

@@ -1,6 +1,7 @@
 import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply
+from installer.resolve import skill_catalog
 from installer.core import KitError, read_json, START, ROOT
 from installer.toml_files import dump_toml
 class InstallationTests(unittest.TestCase):
@@ -53,7 +54,7 @@ class InstallationTests(unittest.TestCase):
   self.overrides({'mcp':{'dbt':{'enabled':True,'server':{'command':'x','trust':True}}}})
   with self.assertRaises(KitError):self.run_kit()
  def test_skill_frontmatter(self):
-  for name,e in read_json(ROOT/'skills/catalog.json').items():
+  for name,e in skill_catalog(ROOT).items():
    if 'replaced_by' in e:continue
    text=(ROOT/e['path']/'SKILL.md').read_text(encoding='utf-8');self.assertTrue(text.startswith('---\nname: '+name+'\ndescription: '),name);self.assertIn('\n---\n',text);self.assertLess(len(text.encode('utf-8')),20000,name)
  @unittest.skipIf(__import__('os').name=='nt','Symlinks not guaranteed on Windows')

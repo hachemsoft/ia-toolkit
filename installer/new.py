@@ -1,4 +1,4 @@
-"""ai-kit new: creates a skill, an agent, a command or a profile in a clone of the kit, with its catalog entry, its version,
+"""ai-kit new: creates a skill, an agent, a command or a profile in a clone of the kit, with its metadata (aikit-*), its version,
 its checks, then a branch and a merge request after two answers. No model call; the only network is the push and the merge
 request the person accepts. Skills and agents always go under contrib/: moving one to internal/ is a maintainer's act."""
 import argparse
@@ -12,6 +12,7 @@ from pathlib import Path
 
 from .adapters import ADAPTERS
 from .core import KitError, redact
+from .resolve import agent_catalog, skill_catalog
 from .toml_files import read_toml, toml_value
 from .ui import Cancelled, make_ui
 
@@ -56,14 +57,14 @@ def read(repo, rel):
 
 
 def kit_repo(repo, run):
-    """The clone of the kit to work in: a git repository of its own, holding the catalogs; a ZIP installation has none."""
+    """The clone of the kit to work in: a git repository of its own, holding the content (aikit.toml, skills/); a ZIP installation has none."""
     problem = 'ai-kit new needs a git clone of the kit (a ZIP installation has none): clone it, then run this from there.'
     if not repo:
         raise KitError(problem)
     repo = Path(repo).resolve()
     code, top = run(['git', 'rev-parse', '--show-toplevel'])
     # samefile: on Windows a temporary folder can be written in two forms, its short name and its long one.
-    if code != 0 or not os.path.isdir(top.strip()) or not os.path.samefile(top.strip(), repo) or not (repo/'skills/catalog.json').is_file() or not (repo/'profiles').is_dir():
+    if code != 0 or not os.path.isdir(top.strip()) or not os.path.samefile(top.strip(), repo) or not (repo/'aikit.toml').is_file() or not (repo/'skills').is_dir() or not (repo/'profiles').is_dir():
         raise KitError(problem)
     return repo
 
@@ -74,7 +75,7 @@ def component_path(kind, name):
 
 def name_problem(repo, name, kind, run):
     """Why this name cannot be used, or None, before any other question: the format, a built-in command, a path git ignores,
-    the two catalogs, commands, profiles and the disk."""
+    the skills and agents found in the clone, commands, profiles and the disk."""
     if not name or not NAME.fullmatch(name):
         return 'Invalid name "'+str(name)+'": lowercase letters, digits and dashes, starting with a letter or a digit.'
     if name.startswith('ai-kit-'):
@@ -84,8 +85,8 @@ def name_problem(repo, name, kind, run):
         return 'The name "'+name+'" is a built-in command of '+', '.join(builtin)+': choose another.'
     if run(['git', 'check-ignore', '--', component_path(kind, name)])[0] == 0:
         return 'The name "'+name+'" gives a path the repo\'s .gitignore ignores: choose another.'
-    taken = {'a skill': name in json.loads(read(repo, 'skills/catalog.json')),
-             'an agent': name in json.loads(read(repo, 'agents/catalog.json')),
+    taken = {'a skill': name in skill_catalog(repo),
+             'an agent': name in agent_catalog(repo),
              'a command': (repo/'commands'/(name+'.md')).exists(),
              'a profile': (repo/'profiles'/(name+'.toml')).exists(),
              'a folder of skills/contrib': (repo/'skills/contrib'/name).exists(),
@@ -94,13 +95,6 @@ def name_problem(repo, name, kind, run):
         if found:
             return 'The name "'+name+'" is already '+label+' of the kit: choose another.'
     return None
-
-
-def with_entry(text, name, entry):
-    """A catalog's text with one more entry at the end, in the catalog's own format."""
-    catalog = json.loads(text)
-    catalog[name] = entry
-    return json.dumps(catalog, indent=2, ensure_ascii=False)+'\n'
 
 
 def with_case_section(page, name):
@@ -129,13 +123,10 @@ def skill_changes(repo, name, owner, description, category):
         body += ['| "<… a reason an agent gives to skip a step …>" | <… the reply it gets …> |']*3
         body += ['', '## In the kit commands',
                  '- `/build`: <… what this playbook changes in this step …>']
-    entry = {'path': 'skills/contrib/'+name, 'version': '1.0.0', 'origin': 'contrib', 'owner': owner, 'description': description,
-             'category': category, 'tier': 'optional'}
     case = {'name': name, 'requires': {'skills': [name]}, 'prompt': '<… what a person types …>',
             'expect': {'regex': ['<… what the answer must show …>']},
             '_doc': 'Skeleton to complete: the prompt and the criteria are placeholders, so evals/run.py skips this case until they are written.'}
     return {'skills/contrib/'+name+'/SKILL.md': '\n'.join(body)+'\n',
-            'skills/catalog.json': with_entry(read(repo, 'skills/catalog.json'), name, entry),
             next_case_file(repo, name): json.dumps(case, indent=2, ensure_ascii=False)+'\n',
             'docs/eval-cases.md': with_case_section(read(repo, 'docs/eval-cases.md'), name)}
 
@@ -166,9 +157,7 @@ def agent_changes(repo, name, owner, description):
             'max_turns: 12', 'timeout_mins: 5', 'metadata:', '  aikit-version: "1.0.0"', '  aikit-origin: "contrib"',
             '  aikit-owner: '+json.dumps(owner, ensure_ascii=False), '---', '',
             '<… its mission: what the parent gives it, what it looks for, what it never does, what it delivers …>']
-    entry = {'path': 'agents/contrib/'+name+'.md', 'version': '1.0.0', 'origin': 'contrib', 'owner': owner}
-    return {'agents/contrib/'+name+'.md': '\n'.join(body)+'\n',
-            'agents/catalog.json': with_entry(read(repo, 'agents/catalog.json'), name, entry)}
+    return {'agents/contrib/'+name+'.md': '\n'.join(body)+'\n'}
 
 
 def agent_answers(args, ui, repo):
@@ -188,9 +177,9 @@ def command_changes(name, description, skill):
 
 def command_answers(args, ui, repo):
     skill = ask_text(ui, args.skill, 'The skill it activates', '--skill', args.yes)
-    entry = json.loads(read(repo, 'skills/catalog.json')).get(skill, {})
+    entry = skill_catalog(repo).get(skill, {})
     if 'path' not in entry:
-        raise KitError('Unknown skill "'+skill+'": a command activates a skill of skills/catalog.json; create it first (ai-kit new skill).')
+        raise KitError('Unknown skill "'+skill+'": a command activates a skill of the kit (skills/**/SKILL.md); create it first (ai-kit new skill).')
     if entry.get('category') == 'domain':
         raise KitError('"'+skill+'" is a domain playbook: the steps of the workflow chain it through its "In the kit commands" section; commands stay neutral.')
     description = ask_text(ui, args.description, 'One line in English, shown by /help', None, args.yes, '<… one line in English, shown by /help …>')
@@ -219,9 +208,9 @@ def profile_answers(args, ui, repo):
     general = read_toml(repo/'profiles/general.toml')
     playbooks, agents = [], general['agents']
     if not args.yes:
-        catalog = json.loads(read(repo, 'skills/catalog.json'))
+        catalog = skill_catalog(repo)
         playbooks = ui.checkbox('Domain playbooks to add', [(n, n, False) for n, e in catalog.items() if e.get('category') == 'domain' and e.get('origin') != 'contrib'])
-        known = json.loads(read(repo, 'agents/catalog.json'))
+        known = agent_catalog(repo)
         agents = ui.checkbox('Agents', [(n, n, n in agents) for n, e in known.items() if e.get('origin') != 'contrib'])
     return profile_changes(repo, args.name, label, playbooks, agents), 'Add profile '+args.name
 
@@ -265,7 +254,7 @@ def finish(kind, changes):
         for rel in left:
             print('  '+rel)
     if kind in ('skill', 'agent'):
-        print('After writing the content: raise its version to 1.0.1 in its catalog, then python3 scripts/versions.py --update (the tests refuse a change under the same version).')
+        print('After writing the content: raise its aikit-version to 1.0.1 in its front matter, then python3 scripts/versions.py --update (the tests refuse a change under the same version).')
         print('To write the content, ask your agent in your CLI to use the write-a-skill skill (extra_skills if it is not installed).')
     if kind == 'profile':
         print('Left to you: the profile table of README.md.')

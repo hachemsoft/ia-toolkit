@@ -127,7 +127,9 @@ class NewTests(unittest.TestCase):
         return code, out.getvalue()
 
     def catalog(self, name='skills'):
-        return json.loads((self.repo/name/'catalog.json').read_text(encoding='utf-8'))
+        # 2.1 slice 8: no catalog file; the resources describe themselves (aikit-* metadata).
+        from installer.resolve import agent_catalog, skill_catalog
+        return (skill_catalog if name == 'skills' else agent_catalog)(self.repo)
 
     def status(self):
         return git(self.repo, 'status', '--porcelain')
@@ -166,9 +168,9 @@ class NewTests(unittest.TestCase):
             self.new('skill', '--name', 'demo', '--yes', '--no-mr')
 
     def test_a_changed_shared_file_stops_before_writing(self):
-        with (self.repo/'skills/catalog.json').open('a', encoding='utf-8') as f:
+        with (self.repo/'docs/eval-cases.md').open('a', encoding='utf-8') as f:
             f.write('\n')
-        with self.assertRaisesRegex(KitError, 'skills/catalog.json'):
+        with self.assertRaisesRegex(KitError, 'docs/eval-cases.md'):
             self.new('skill', '--name', 'demo', '--owner', 'team-x', '--yes', '--no-mr')
         self.assertFalse((self.repo/'skills/contrib/demo').exists())
 
@@ -182,9 +184,6 @@ class NewTests(unittest.TestCase):
         self.assertIn('<…', text)
         self.assertEqual(self.catalog()['demo'], {'path': 'skills/contrib/demo', 'version': '1.0.0', 'origin': 'contrib', 'owner': 'team-x',
                                                   'description': 'Check a demo. Triggers: demo.', 'category': 'tool', 'tier': 'optional'})
-        raw = (self.repo/'skills/catalog.json').read_text(encoding='utf-8')
-        self.assertEqual(raw, json.dumps(self.catalog(), indent=2, ensure_ascii=False)+'\n')
-        self.assertEqual(list(self.catalog())[-1], 'demo')
 
     def test_skill_gets_a_skeleton_eval_case_and_its_section(self):
         self.new('skill', '--name', 'demo', '--owner', 'team-x', '--yes', '--no-mr')
@@ -365,7 +364,7 @@ class NewTests(unittest.TestCase):
         self.deliver(True, False)
         files = git(self.repo, 'show', '--name-only', '--format=', 'HEAD').split()
         self.assertIn('skills/contrib/demo/SKILL.md', files)
-        self.assertIn('skills/catalog.json', files)
+        self.assertIn('docs/eval-cases.md', files)
         self.assertNotIn('README.md', files)
         self.assertNotIn('unrelated.txt', files)
         self.assertIn('owner team-x', git(self.repo, 'log', '-1', '--format=%s'))
@@ -475,7 +474,7 @@ class NewTests(unittest.TestCase):
 
     def test_an_unrelated_change_the_digests_read_stops_before_writing(self):
         # The lock and the snapshot read the whole tree: they would record this edit, and the commit would not carry it.
-        for rel in ('commands/build.md', 'practices/20-team.md', 'installer/new.py', 'agents/catalog.json'):
+        for rel in ('commands/build.md', 'practices/20-team.md', 'installer/new.py', 'agents/defaults.json'):
             with self.subTest(rel=rel):
                 saved = (self.repo/rel).read_bytes()
                 (self.repo/rel).write_bytes(saved+b'\n')
@@ -506,7 +505,7 @@ class NewTests(unittest.TestCase):
 
     def test_every_stop_before_the_commit_says_how_to_undo(self):
         _, out = self.new('skill', '--name', 'demo', '--owner', 'team-x', '--yes', '--no-mr')
-        self.assertIn('git restore -- skills/catalog.json', out)
+        self.assertIn('git restore -- docs/eval-cases.md', out)
         self.assertIn('skills/contrib/demo', out[out.index('To undo'):])
         self.origin('git@gitlab.example.org:team/kit.git')
         git(self.repo, 'restore', '--', '.')
@@ -516,7 +515,7 @@ class NewTests(unittest.TestCase):
 
     def test_undoing_as_told_lets_the_same_name_run_again(self):
         _, out = self.new('skill', '--name', 'demo', '--owner', 'team-x', '--yes', '--no-mr')
-        git(self.repo, 'restore', '--', 'skills/catalog.json', 'docs/eval-cases.md', 'versions.lock.json', 'tests/golden/install-snapshot.json')
+        git(self.repo, 'restore', '--', 'docs/eval-cases.md', 'versions.lock.json', 'tests/golden/install-snapshot.json')
         git(self.repo, 'clean', '-fdq')
         self.assertEqual(self.new('skill', '--name', 'demo', '--owner', 'team-x', '--yes', '--no-mr')[0], 0)
 
@@ -542,7 +541,7 @@ class NewTests(unittest.TestCase):
         with mock.patch.object(new.shutil, 'which', return_value=None):
             _, out = self.new('skill', '--name', 'demo', '--owner', 'team-x', '--yes', ui=ui)
         self.assertIn('gitlab.example.org/team/kit', out)
-        self.assertIn('skills/catalog.json |', out)  # the size of the change, snapshot and lock included
+        self.assertIn('docs/eval-cases.md |', out)  # the size of the change, snapshot and lock included
 
     def test_a_token_in_a_push_error_is_never_shown(self):
         self.origin('https://user:s3cret-value@github.com/org/kit.git')
@@ -575,8 +574,8 @@ class NewTests(unittest.TestCase):
         with self.assertRaisesRegex(KitError, 'label'):
             self.new('profile', '--name', 'demo-job', '--label', 'A | B', '--yes', '--no-mr')
 
-    def test_a_damaged_catalog_is_a_clear_error_not_a_traceback(self):
-        (self.repo/'skills/catalog.json').write_text('{ not json', encoding='utf-8')
+    def test_a_damaged_skill_is_a_clear_error_not_a_traceback(self):
+        (self.repo/'skills/internal/common/tdd/SKILL.md').write_text('no front matter', encoding='utf-8')
         git(self.repo, 'add', '-A')
         git(self.repo, 'commit', '--quiet', '-m', 'damaged')
         with self.assertRaises(KitError):
@@ -750,7 +749,7 @@ class NewTests(unittest.TestCase):
         with (self.repo/'docs/eval-cases.md').open('a', encoding='utf-8') as f:
             f.write('\n')
         self.assertEqual(self.new('agent', '--name', 'demo-a', '--owner', 'x', '--yes', '--no-mr')[0], 0)
-        git(self.repo, 'restore', '--', 'agents/catalog.json', 'versions.lock.json', 'tests/golden/install-snapshot.json')
+        git(self.repo, 'restore', '--', 'versions.lock.json', 'tests/golden/install-snapshot.json')
         (self.repo/'agents/contrib/demo-a.md').unlink()
         with self.assertRaisesRegex(KitError, 'docs/eval-cases.md'):
             self.new('skill', '--name', 'demo', '--owner', 'x', '--yes', '--no-mr')

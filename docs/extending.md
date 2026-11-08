@@ -90,7 +90,7 @@ Two folders, two levels of commitment. `skills/internal/`: shipped and maintaine
 
 
 1. **The folder**: `skills/internal/<category>/<name>/SKILL.md` (existing categories: `common` for workflow and tools, then one per domain: `development`, `operations`, `architecture`, `analytics`), or `skills/contrib/<name>/SKILL.md` for a contribution. The folder name and the header `name` are identical.
-2. **Its metadata** (AI Kit 2): the skill describes itself in its front matter, `metadata` keys `aikit-version`, `aikit-origin`, `aikit-summary`, `aikit-category`, `aikit-tier`, `aikit-requires` (comma-separated), and one `aikit-optional-<skill>: "<what to do without it>"` per optional skill; AI Kit reads them and removes them from the installed file. `ai-kit validate` checks a content tree. Until AI Kit removes it, **the catalog** `skills/catalog.json` mirrors them, one entry per skill, and a test checks both agree (an example in the [full example](#full-example-a-dashboard-check-tool-in-twenty-minutes)): `path`, `origin`, `description`, `category`, `tier`, `requires`.
+2. **Its metadata** (AI Kit 2): the skill describes itself in its front matter, `metadata` keys `aikit-version`, `aikit-origin`, `aikit-summary`, `aikit-category`, `aikit-tier`, `aikit-requires` (comma-separated), and one `aikit-optional-<skill>: "<what to do without it>"` per optional skill; AI Kit reads them and removes them from the installed file. `ai-kit validate` checks a content tree. An example in the [full example](#full-example-a-dashboard-check-tool-in-twenty-minutes).
    `category`: `workflow` (a step, behind a command), `tool` (utility, behind a command), `domain` (domain playbook, activated by the task), `reference` (vocabulary read by other skills), `setup`. `tier`: `core` (in all profiles, a test checks it), `profile` (depends on the profile), `optional` (installed by the profiles that list it, otherwise through `extra_skills` or `extra_commands`). `requires` installs the skills it cannot work without, with it; `optional` maps a skill it cites but can do without to what to do instead (`{"codebase-design": "keep interfaces small…"}`): when that skill is not installed, the installed `SKILL.md` ends with a "Not installed here" section giving the alternative. A test checks that every skill a `SKILL.md` cites is in one of the two. `needs_agents: true` signals that it delegates to subagents.
 3. **The profiles** `profiles/*.toml`: add it to the profiles that need it, or leave it `optional`. A domain playbook is never in the `general` profile. A playbook that a step chains ends with a `## In the kit commands` section (what it changes in `/build`, `/diagnose`, `/review`…): the commands stay neutral and send to the matching playbook.
 4. **A command, if it is a step or a tool**: a `commands/<name>.md` file, with a header (`name`, `description` in English, `category`, `stage` for a workflow, `skills`, `order`) and a prompt with `{{args}}`; see [the pivot format](format.md). Each adapter turns it into its CLI's command. Add an entry in `docs/tools.md` for a tool.
@@ -120,17 +120,16 @@ The need: review a dashboard before publishing. One skill, one command, one eval
    No validation on a sample; no "roughly right" total.
    ```
 
-2. The catalog entry, in `skills/catalog.json`:
+2. Its metadata, in the front matter of the same `SKILL.md` (AI Kit reads it and removes it from the installed file):
 
-   ```json
-   "dashboard-check": {
-     "path": "skills/contrib/dashboard-check",
-     "origin": "contrib",
-     "owner": "equipe-reporting",
-     "description": "Review a dashboard before publishing: filters, period, totals, labels.",
-     "category": "tool",
-     "tier": "optional"
-   }
+   ```yaml
+   metadata:
+     aikit-version: "1.0.0"
+     aikit-origin: "contrib"
+     aikit-owner: "equipe-reporting"
+     aikit-summary: "Review a dashboard before publishing: filters, period, totals, labels."
+     aikit-category: "tool"
+     aikit-tier: "optional"
    ```
 
 3. The command, `commands/dashboard-check.md`:
@@ -178,4 +177,4 @@ For yourself: `disabled_skills = ["<name>"]` in `~/.ai-kit/overrides.toml`, then
 
 ## What a skill does not customize
 
-Form and language preferences: `~/.ai-kit/context/30_USER.md` (`/me` fills it). A repo's rules: its `AGENTS.md`. Deterministic guardrails: the `[hooks]` section of `overrides.toml` and the repo's `.ai-kit/protected-paths` file. Agents: `extra_agents` and `disabled_agents`, or an `agents/internal/<category>/<name>.md` file in the kit with its entry in `agents/catalog.json`. See [customization](customization.md).
+Form and language preferences: `~/.ai-kit/context/30_USER.md` (`/me` fills it). A repo's rules: its `AGENTS.md`. Deterministic guardrails: the `[hooks]` section of `overrides.toml` and the repo's `.ai-kit/protected-paths` file. Agents: `extra_agents` and `disabled_agents`, or an `agents/internal/<category>/<name>.md` file in the kit with its `aikit-*` metadata. See [customization](customization.md).

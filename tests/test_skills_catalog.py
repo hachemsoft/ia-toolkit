@@ -1,6 +1,7 @@
 import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply, doctor, resolve_skills, command_lines, playbook_lines
+from installer.resolve import skill_catalog
 from installer.core import KitError, read_json, ROOT
 from installer.toml_files import dump_toml, read_toml
 FAKE={'a':{'path':'x','requires':['b']},'b':{'path':'x'},'c':{'path':'x','stage':'ship'},'old':{'replaced_by':['a','c']}}
@@ -28,7 +29,7 @@ class SkillCatalogTests(unittest.TestCase):
   self.assertEqual(command_lines(cmds),'### Steps\n- /intent — Plan\n### Tools\n- /learn — Learn');self.assertEqual(command_lines([]),'- No command installed.')
   cat={'a':{'category':'domain','description':'A'},'b':{'category':'tool','description':'B'}};self.assertEqual(playbook_lines(['a','b'],cat),'- a : A')
  def test_real_catalog_consistent(self):
-  catalog=read_json(ROOT/'skills/catalog.json')
+  catalog=skill_catalog(ROOT)
   for name,e in catalog.items():
    if 'replaced_by' in e:
     for r in e['replaced_by']:self.assertIn(r,catalog);self.assertNotIn('replaced_by',catalog[r])

@@ -127,7 +127,7 @@ extra_skills = ["python-js-change"]
 disabled_skills = ["bigquery-cost-review"]
 ```
 
-Added skills must exist in `skills/catalog.json`. A skill required by another one (`requires`) cannot be disabled on its own; `update` reports it. An old name (`clarify-request`, `debug-systematically`, `verify-change`) redirects to its replacement. Apply with `update` from the kit folder. See [workflow](workflow.md) for the role of each skill.
+Added skills must exist in the kit content (a `SKILL.md` with its metadata). A skill required by another one (`requires`) cannot be disabled on its own; `update` reports it. An old name (`clarify-request`, `debug-systematically`, `verify-change`) redirects to its replacement. Apply with `update` from the kit folder. See [workflow](workflow.md) for the role of each skill.
 
 CLI-specific settings stay editable in the CLI's own files; the kit keeps existing keys. To change a default value already installed, change the value in the CLI settings.
 

@@ -1,6 +1,6 @@
 # Skills reference
 
-Full list of the catalog (`skills/catalog.json`). Users do not need to know these names: they go through the commands. This page is for people who want to see what is underneath or extend the kit. On Claude Code the kit's skills are installed as `ai-kit-<name>` (`skill_prefix`); elsewhere a kit skill or command takes that prefix only when one of your own already has its name.
+Full list of the kit's skills (each `SKILL.md` describes itself with its `aikit-*` metadata). Users do not need to know these names: they go through the commands. This page is for people who want to see what is underneath or extend the kit. On Claude Code the kit's skills are installed as `ai-kit-<name>` (`skill_prefix`); elsewhere a kit skill or command takes that prefix only when one of your own already has its name.
 
 Categories: `workflow` (an SDLC step), `tool` (utility outside the flow), `domain` (domain playbook: Java, infrastructure, architecture, Data…), `reference` (vocabulary consulted by other skills), `setup` (repository setup). Tiers: `core` installed in all profiles (checked by a test), `profile` depending on the profile, `optional` installed by the profiles that list it, otherwise through `extra_skills` or `extra_commands`.
 

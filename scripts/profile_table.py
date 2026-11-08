@@ -11,7 +11,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from installer.cli import allowed_commands, load_profile, profile_menu, resolve_skills, selected_commands  # noqa: E402
-from installer.core import load_commands, read_json  # noqa: E402
+from installer.resolve import skill_catalog  # noqa: E402
+from installer.core import load_commands  # noqa: E402
 
 PAGE = ROOT/'docs/getting-started.md'
 START, END = '<!-- profile-table:start -->', '<!-- profile-table:end -->'
@@ -20,7 +21,7 @@ WORKFLOW = ('intent', 'spec', 'build', 'test', 'review', 'ship', 'diagnose')
 
 def table():
     commands = load_commands()
-    catalog = read_json(ROOT/'skills/catalog.json')
+    catalog = skill_catalog(ROOT)
     rows = ['| Profile | Workflow steps | Other commands | Agents |', '| --- | --- | --- | --- |']
     for pid, label in profile_menu():
         profile = load_profile(pid)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Aggregates several `installer usage --json` reports (one per machine) into a Markdown summary for the usage review.
 
-Usage: python3 scripts/usage-aggregate.py report-a.json report-b.json ... [--catalog skills/catalog.json] [--draft-issues]
+Usage: python3 scripts/usage-aggregate.py report-a.json report-b.json ... [--content FOLDER] [--draft-issues]
 No dependencies. Nothing is sent: the files are the ones people chose to share. --draft-issues prints one ticket
 draft per group of frictions, to paste into the team's tracker by hand; nothing is created automatically.
 """
@@ -61,7 +61,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Aggregate usage reports.')
     parser.add_argument('files', nargs='+')
     parser.add_argument('--draft-issues', action='store_true', help='print one ticket draft per group of frictions (nothing is created)')
-    parser.add_argument('--catalog', default=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'skills', 'catalog.json'))
+    parser.add_argument('--content', default=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'),
+                        help='the kit content whose skills are described (default: this clone)')
     args = parser.parse_args(argv)
     reports = []
     for path in args.files:
@@ -87,8 +88,10 @@ def main(argv=None):
         unused = set(r.get('unused_skills', []))
         unused_everywhere = unused if unused_everywhere is None else unused_everywhere & unused
     try:
-        catalog = load(args.catalog)
-    except (OSError, ValueError):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+        from installer.resolve import skill_catalog  # the skills describe themselves (aikit-* metadata)
+        catalog = skill_catalog(args.content)
+    except Exception:  # no readable content next to the script: no candidate to retire
         catalog = {}
     candidates = sorted(s for s in (unused_everywhere or set()) if catalog.get(s, {}).get('tier') == 'core' and catalog.get(s, {}).get('category') in ('workflow', 'tool'))
     out = ['# Aggregated usage summary', '', str(len(reports)) + ' machines | ' + str(totals['sessions']) + ' sessions | ' + str(totals['prompts']) + ' prompts | ' + str(totals['errors']) + ' errors'

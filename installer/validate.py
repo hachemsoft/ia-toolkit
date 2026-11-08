@@ -25,11 +25,15 @@ def check_skills_module():
 def problems(root, engine_version):
     root = Path(root).resolve()
     found = []
+    manifest = None
     try:
-        if check_source(root, engine_version) is None:
+        manifest = check_source(root, engine_version)
+        if manifest is None:
             found.append('aikit.toml: no manifest at the root (schema, name, kind, min_engine).')
     except KitError as exc:
         found.append(str(exc))
+    if manifest and manifest.get('kind') == 'team':
+        return found + team_problems(root, manifest)
     try:
         skills = skill_catalog(root)
     except KitError as exc:
@@ -59,9 +63,29 @@ def problems(root, engine_version):
             if skill in skills:
                 found.append('commands/'+command['name']+'.md: activates '+skill+' without listing it in skills:.')
     module = check_skills_module()
-    allowed = {(root/p).resolve() for p in module.KIT_ALLOWED}
+    # The reviewed scripts, recognised by their path inside their skill: the same in the V1 layout and in a flattened Core.
+    inside_skill = tuple('/'+'/'.join(p.split('/')[3:]) for p in module.KIT_ALLOWED)
+    allowed = {f.resolve() for f in (root/'skills').rglob('*') if f.is_file() and f.as_posix().endswith(inside_skill)}
     paths = [root/p for p in module.KIT_PATHS if (root/p).exists()]
     for path, line, rule, why in module.scan(paths, allowed):
+        found.append(path.relative_to(root).as_posix()+(':'+str(line) if line else '')+': '+rule+': '+why)
+    return found
+
+
+def team_problems(root, manifest):
+    """A Team repository: no commands, policies, hooks or profiles; its skills and agents describe themselves; check_skills."""
+    from .sync import TEAM_FORBIDDEN
+    found = [f+': a Team repository may not hold it (only the Core does).' for f in TEAM_FORBIDDEN if (root/f).exists()]
+    try:
+        skill_catalog(root)
+        agent_catalog(root)
+    except KitError as exc:
+        return found + [str(exc)]
+    for path in sorted((root/'skills').rglob('SKILL.md')) if (root/'skills').is_dir() else []:
+        if 'version' not in aikit_metadata(parse(path.read_text(encoding='utf-8'))[0]):
+            found.append(path.relative_to(root).as_posix()+': no aikit-version in metadata.')
+    module = check_skills_module()
+    for path, line, rule, why in module.scan([root/p for p in ('skills', 'agents', 'context') if (root/p).exists()], set()):
         found.append(path.relative_to(root).as_posix()+(':'+str(line) if line else '')+': '+rule+': '+why)
     return found
 
