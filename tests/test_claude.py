@@ -140,7 +140,8 @@ class SettingsTests(Base):
         self.assertEqual(data['hooks']['Stop'], [PERSONAL_HOOK])
         groups = data['hooks']['PreToolUse']
         self.assertEqual(groups[0], PERSONAL_HOOK)
-        self.assertEqual({g['matcher'] for g in groups[1:]}, {'Bash|PowerShell', 'Bash|PowerShell|Write|Edit|MultiEdit|NotebookEdit'})
+        # 0.51.1 (V1-SEC-04): the write guardrail also sees MCP tools (mcp__server__write_file…); before, they went around it.
+        self.assertEqual({g['matcher'] for g in groups[1:]}, {'Bash|PowerShell', 'Bash|PowerShell|Write|Edit|MultiEdit|NotebookEdit|mcp__.*'})
         before = settings.read_bytes()
         self.run_kit()
         self.assertEqual(settings.read_bytes(), before)

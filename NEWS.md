@@ -7,6 +7,11 @@ then the text. Without `profiles` or `teams`, an entry goes to everyone. An orga
 copy of this repository; the public repository keeps only generic ones. `python3 scripts/check_news.py` checks the file
 (the CI runs it). How it reaches people: [docs/hooks.md](docs/hooks.md#whats-new).
 
+## 2026-11-08 security-0-51-1 : Security fixes in 0.51.1
+
+Version 0.51.1 closes ways an agent could change what the kit installs next or run a program at session start. Update
+when the agent proposes it (`ai-kit update`); nothing else changes.
+
 ## 2026-11-02 session-news : The kit now tells you what is new at session start
 
 Once per version and per announcement, the agent says in its first reply what changed and whether a newer kit version

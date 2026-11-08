@@ -23,7 +23,9 @@ CONFIG_PATHS = ('.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/sta
                 '.ai-kit/runtime/', '.ai-kit/schemas/', '.ai-kit/context/00_', '.ai-kit/context/10_', '.ai-kit/context/20_',
                 '.gemini/00_', '.gemini/10_', '.gemini/20_', '.gemini/settings.json', '.gemini/.env', '.gemini/config/plugins/ai-kit/',
                 '.codex/config.toml', '.codex/AGENTS.md', '.codex/ai-kit/', '.claude/settings.json', '.claude/CLAUDE.md', '.claude/agents/ai-kit-',
-                '.claude.json')
+                '.claude.json',
+                # git's own configuration can redirect the kit's next fetch (url.insteadOf) or run a program (core.fsmonitor) (0.51.1).
+                '.gitconfig', '.config/git/config')
 # The folders that hold that configuration: a `cd` into one of them, or a wildcard inside one, is treated as touching it.
 CONFIG_FOLDERS = ('.ai-kit', '.gemini', '.codex', '.claude')
 # Configuration of a repo, protected in every repo: a project setting can turn hooks off or change the environment the
@@ -267,13 +269,145 @@ def touches_config_folder(program, words):
             return True
     return any(re.search(r'[*?\[]', w) and any('/' + f + '/' in '/' + w for f in CONFIG_FOLDERS) for w in words)
 
-def shell_config_write(command):
+# --- The kit folder and git's configuration (0.51.1) -------------------------------------------------------------------
+# The kit folder an installation came from (state.json kit_dir) is the source of the next update and of the session hook's
+# remote read. Its .git/config and .git/hooks are always protected; the rest of it when the session starts outside it: a
+# maintainer works on the kit with an agent inside the clone.
+
+KIT_GIT = ('.git/config', '.git/hooks')
+GIT_CONFIG_SENSITIVE = re.compile(r'(url|credential|core|include|includeif)\.')  # keys that redirect a fetch or run a program
+GIT_CONFIG_WRITES = {'--add', '--replace-all', '--unset', '--unset-all', '--rename-section', '--remove-section', '-e', '--edit'}
+GIT_CONFIG_VERBS = {'set', 'unset', 'edit', 'rename-section', 'remove-section'}
+GIT_CONFIG_READS = {'get', 'list'}
+GIT_REMOTE_WRITES = {'add', 'set-url', 'rename', 'remove', 'rm', 'set-head', 'set-branches'}
+KIT_BLOCKED = ('Blocked by the kit: this touches the kit folder "{}", the source of the next update, from another repo; '
+               'reading it is fine. Change it yourself, or work on the kit from a session started in its folder.')
+KIT_GIT_BLOCKED = ('Blocked by the kit: this changes the git configuration of the kit folder ("{}"), which the kit runs git in; '
+                   'make the change yourself in a terminal.')
+GITCONFIG_BLOCKED = ('Blocked by the kit: this git setting ("{}") can redirect where the kit fetches from or run a program; '
+                     'make the change yourself in a terminal.')
+
+def kit_dir():
+    """(real path, the forms a command may write it in) of the kit folder of state.json, or (None, ())."""
+    try:
+        with open(os.path.join(os.path.expanduser('~'), '.ai-kit', 'state.json'), encoding='utf-8') as handle:
+            raw = json.load(handle).get('kit_dir')
+    except (OSError, ValueError, AttributeError):
+        return None, ()
+    if not isinstance(raw, str) or not raw or not os.path.isdir(raw):
+        return None, ()
+    folder, home = real(raw), real(os.path.expanduser('~'))
+    forms = {normalised(raw).rstrip('/'), normalised(folder).rstrip('/')}
+    if inside(folder, home):
+        forms.add('~/' + normalised(os.path.relpath(folder, home)).rstrip('/'))
+    return folder, tuple(forms)
+
+def inside(path, folder):
+    """True when path is folder or under it (a folder boundary: ai-toolkit-fix is not under ai-toolkit)."""
+    try:
+        relative = os.path.relpath(path, folder)
+    except ValueError:
+        return False
+    return relative == '.' or not (relative == '..' or relative.startswith('..' + os.sep))
+
+def in_kit(path, folder):
+    """inside(), also without case: a path taken from a normalised command is lower case, the file system may not be."""
+    return inside(path, folder) or inside(path.lower(), folder.lower())
+
+def names_folder(text, forms):
+    """The first form of the folder a normalised text names, whole (followed by /, a space, an operator or the end)."""
+    return next((f for f in forms if re.search(re.escape(f) + r'(?=$|[/\s;|&()<>])', text)), None)
+
+def names_kit_git(text, forms, here):
+    """True when a normalised text names the kit's .git/config or .git/hooks (relatively too, when the shell is in the kit)."""
+    targets = [f + '/' + g for f in forms for g in KIT_GIT]
+    if any(re.search(re.escape(t) + r'(?=$|[/\s;|&()<>])', text) for t in targets):
+        return True
+    return here and any(re.search(r'(^|[\s=<>|;&(])(\./)?' + re.escape(g) + r'(?=$|[/\s;|&()<>])', text) for g in KIT_GIT)
+
+def git_call(words):
+    """(directory given by -C or None, subcommand, the words after it) of a git call; lower case: -C and -c look alike,
+    told apart by their argument (-c takes key=value)."""
+    directory, index = None, 0
+    while index < len(words) and words[index].startswith('-'):
+        if words[index] == '-c' and index + 1 < len(words):
+            if '=' not in words[index + 1]:
+                directory = words[index + 1]
+            index += 2
+            continue
+        index += 1
+    if index >= len(words):
+        return directory, '', []
+    return directory, words[index], words[index + 1:]
+
+def git_config_reason(rest, target_in_kit):
+    """Reason to refuse a `git config` call: a write of a key that redirects or runs (any scope), or any write of the kit's config."""
+    flags = [w for w in rest if w.startswith('-')]
+    positional = [w for w in rest if not w.startswith('-')]
+    verb = positional[0] if positional and positional[0] in GIT_CONFIG_VERBS | GIT_CONFIG_READS else ''
+    keys = positional[1:] if verb else positional
+    if verb in GIT_CONFIG_READS or any(f.startswith('--get') or f in ('--list', '-l') for f in flags):
+        return None
+    writes = verb in GIT_CONFIG_VERBS or any(f in GIT_CONFIG_WRITES for f in flags) or len(keys) >= 2
+    if not writes:
+        return None
+    scoped = any(f in ('--global', '--system', '--file', '-f') or f.startswith('--file=') for f in flags)
+    if scoped and (any(f in ('-e', '--edit') for f in flags) or verb == 'edit' or (keys and GIT_CONFIG_SENSITIVE.match(keys[0]))):
+        return GITCONFIG_BLOCKED.format(keys[0] if keys else 'git config --edit')
+    if not scoped and target_in_kit:
+        return KIT_GIT_BLOCKED.format('git config')
+    return None
+
+def where(word, current):
+    """The folder a cd or -C word leads to, from the current one (~ expanded)."""
+    word = word.strip('"\'')
+    if word.startswith('~'):
+        word = os.path.expanduser('~') + word[1:]
+    return real(word if os.path.isabs(word) else os.path.join(current, word))
+
+def kit_shell_reason(command, cwd):
+    """Reason to refuse a shell command for the kit folder or git's configuration, or None."""
+    folder, forms = kit_dir()
+    current = real(cwd)
+    session_in_kit = bool(folder) and inside(current, folder)
+    for pipeline in shell_segments(command):
+        text = normalised(pipeline)
+        programs = command_words(text)
+        for program, words in programs:
+            if program in CHANGES_DIRECTORY and words:
+                current = where(words[-1], current)
+            if program != 'git':
+                continue
+            directory, subcommand, rest = git_call(words)
+            target_in_kit = bool(folder) and in_kit(where(directory, current) if directory else current, folder)
+            if subcommand == 'config':
+                reason = git_config_reason(rest, target_in_kit)
+                if reason:
+                    return reason
+            if subcommand == 'remote' and target_in_kit and rest and rest[0] in GIT_REMOTE_WRITES:
+                return KIT_GIT_BLOCKED.format('git remote ' + rest[0])
+        if not folder:
+            continue
+        here = in_kit(current, folder)
+        if names_kit_git(text, forms, here):
+            if re.search(r'>+\|?\s*\S*\.git/(config|hooks)', text) or not all(only_reads(p, w, lambda t: names_kit_git(t, forms, here)) for p, w in programs):
+                return KIT_GIT_BLOCKED.format('.git/config')
+        name = None if session_in_kit else names_folder(text, forms)
+        if name:
+            if re.search(r'>+\|?\s*' + re.escape(name) + r'(?=$|/)', text) or not all(only_reads(p, w, lambda t: names_folder(t, forms)) for p, w in programs):
+                return KIT_BLOCKED.format(name)
+    return None
+
+def shell_config_write(command, cwd=None):
     """Reason for refusal when a shell command may change the configuration of the kit or of a CLI, or a repo's."""
     names = protected_names()
     if len(command) > MAX_COMMAND:
         whole = normalised(command)
         name = mention(whole, names) or next((f for f in CONFIG_FOLDERS if f in whole), None)
         return BLOCKED.format(name) if name else None
+    reason = kit_shell_reason(command, cwd or os.getcwd())
+    if reason:
+        return reason
     for pipeline in shell_segments(command):
         text = normalised(pipeline)
         programs = command_words(text)
@@ -331,6 +465,11 @@ def check(file_path, cwd, content=''):
     reason = config_reason(absolute, directories, content)
     if reason:
         return reason
+    folder, _ = kit_dir()
+    if folder and any(inside(absolute, os.path.join(folder, *g.split('/'))) for g in KIT_GIT):
+        return KIT_GIT_BLOCKED.format(os.path.relpath(absolute, folder).replace(os.sep, '/'))
+    if folder and inside(absolute, folder) and not inside(real(cwd), folder):
+        return KIT_BLOCKED.format(folder)
     for directory in directories:
         try:
             relative = os.path.relpath(absolute, real(directory)).replace(os.sep, '/')
@@ -367,15 +506,16 @@ def decide(payload):
     call = payload.get('toolCall') or {}
     tool = str(payload.get('tool_name') or call.get('name') or '')
     args = payload.get('tool_input') or call.get('args') or {}
+    workspace = (payload.get('workspacePaths') or [None])[0]
+    cwd = payload.get('cwd') or workspace or os.getcwd()
     if tool in SHELL_TOOLS:
         if not isinstance(args, dict):
             args = {'command': args}
-        return shell_config_write(as_text(args.get('command') or args.get('cmd') or args.get('CommandLine')))
+        command = as_text(args.get('command') or args.get('cmd') or args.get('CommandLine'))
+        return shell_config_write(command, (args.get('workdir') or args.get('cwd') or cwd) if isinstance(args, dict) else cwd)
     if not re.search(r'write|replace|edit|patch', tool, re.I):
         return None
     paths = target_paths(tool, args)
-    workspace = (payload.get('workspacePaths') or [None])[0]
-    cwd = payload.get('cwd') or workspace or os.getcwd()
     content = ' '.join(str(v) for k, v in (args.items() if isinstance(args, dict) else []) if k in ('content', 'new_string', 'CodeContent', 'ReplacementContent', 'edits'))
     for file_path in paths:
         decision = check(file_path, cwd, content)

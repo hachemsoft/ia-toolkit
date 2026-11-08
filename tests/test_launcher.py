@@ -243,6 +243,25 @@ class GitUpdateTests(unittest.TestCase):
         self.assertIn('Update incomplete', out)
         self.assertEqual(mine.read_text(encoding='utf-8'), 'my local change\n')
 
+    @unittest.skipIf(WINDOWS, 'shell scripts stand in for the trapped commands')
+    def test_a_trapped_clone_config_runs_nothing(self):
+        """0.51.1 (V1-SEC-01): update runs git in the clone; its .git/config must not run a program (core.fsmonitor, core.hooksPath)."""
+        self.setup_kit()
+        hooks = self.base/'trap-hooks'
+        hooks.mkdir()
+        for script, target in ((self.base/'fsmonitor.sh', self.base/'fsmonitor-ran'), (hooks/'post-merge', self.base/'hook-ran'),
+                               (hooks/'reference-transaction', self.base/'hook-ran')):
+            script.write_text('#!/bin/sh\ntouch '+str(target)+'\n', encoding='utf-8')
+            script.chmod(0o755)
+        self.git(self.clone, 'config', 'core.fsmonitor', str(self.base/'fsmonitor.sh'))
+        self.git(self.clone, 'config', 'core.hooksPath', str(hooks))
+        (self.origin/'README.md').write_text('upstream change\n', encoding='utf-8')
+        self.git(self.origin, 'commit', '--quiet', '-am', 'v2')
+        code, out = self.update()
+        self.assertEqual(code, 0, out)
+        self.assertFalse((self.base/'fsmonitor-ran').exists(), 'core.fsmonitor ran')
+        self.assertFalse((self.base/'hook-ran').exists(), 'a hook of core.hooksPath ran')
+
     def test_fetch_failure_is_not_a_success(self):
         self.setup_kit()
         self.git(self.clone, 'remote', 'set-url', 'origin', str(self.base/'gone'))  # the remote is unreachable: like no network

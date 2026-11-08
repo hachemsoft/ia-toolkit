@@ -154,8 +154,9 @@ def kit_hook_groups(hooks, events):
 
 
 def hook_matcher(manifest_matcher):
+    # A write guardrail also sees MCP tools (Claude Code matchers are patterns): a server's write_file went around it before 0.51.1.
     parts = manifest_matcher.split('|')
-    tools = (['Bash', 'PowerShell'] if 'run_shell_command' in parts else []) + (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'] if any(x != 'run_shell_command' for x in parts) else [])
+    tools = (['Bash', 'PowerShell'] if 'run_shell_command' in parts else []) + (['Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'mcp__.*'] if any(x != 'run_shell_command' for x in parts) else [])
     return '|'.join(tools)
 
 

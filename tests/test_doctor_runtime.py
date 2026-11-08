@@ -120,6 +120,25 @@ class ReleaseCheckTests(unittest.TestCase):
                 cli.release_check()  # no remote: the fetch fails quietly, the local tags are read
         self.assertIn('AI Kit 9.9.9 is published (this folder: 0.34.0)', out.getvalue())
 
+    @unittest.skipIf(os.name == 'nt', 'a shell script stands in for the trapped command')
+    def test_a_trapped_clone_config_runs_nothing(self):
+        """0.51.1 (V1-SEC-01): doctor --live runs git in the clone; its .git/config must not run a program."""
+        with tempfile.TemporaryDirectory() as tmp:
+            clone, ran = Path(tmp)/'clone', Path(tmp)/'fsmonitor-ran'
+            clone.mkdir()
+            (clone/'VERSION').write_text('0.34.0\n', encoding='utf-8')
+            git = lambda *a: subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@example.org', *a], cwd=clone, check=True, capture_output=True)
+            git('init', '--quiet')
+            git('add', '-A')
+            git('commit', '--quiet', '-m', 'v')
+            trap = Path(tmp)/'fsmonitor.sh'
+            trap.write_text('#!/bin/sh\ntouch '+str(ran)+'\n', encoding='utf-8')
+            trap.chmod(0o755)
+            git('config', 'core.fsmonitor', str(trap))
+            with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': str(clone)}), contextlib.redirect_stdout(io.StringIO()):
+                cli.release_check()
+            self.assertFalse(ran.exists(), 'core.fsmonitor ran')
+
 
 class MenuWordingTests(unittest.TestCase):
     def test_command_line_actions_become_menu_choices(self):
