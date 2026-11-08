@@ -184,7 +184,7 @@ def migrate_kit_dir(home, dry_run=False):
     return False
 
 
-def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None, command=None, managed_file=None):
+def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None, command=None, managed_file=None, extra_writes=None):
     """Full prevalidation, neutral plan, adapters, backup, then atomic write file by file.
     target: a --target value or a list of CLI names; None keeps the CLIs recorded by the previous installation.
     choices: new values for keys of the person's overrides.toml (CHOICE_KEYS), written with the rest of the installation,
@@ -307,6 +307,12 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'news':news,**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
                  'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}
+    # V2 slice 2: lock.toml (written by sync and rollback) goes in the same transaction as the files it describes; its digest
+    # in state.json lets doctor see a hand edit.
+    lock_bytes = (extra_writes or {}).get(kit/'lock.toml')
+    if lock_bytes is not None or state.get('lock'):
+        new_state['lock'] = digest(lock_bytes) if lock_bytes is not None else state['lock']
+    writes.update(extra_writes or {})
     writes[kit/'state.json'] = json_bytes(new_state)
     writes = {path:b for path,b in writes.items() if not path.exists() or path.read_bytes()!=b}
     refuse_links(home, list(writes)+deletes)  # before any write
@@ -582,8 +588,8 @@ def main(argv=None):
             except SystemExit as exc:  # the script's own argparse: usage already printed
                 return exc.code if isinstance(exc.code, int) else 2
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
-    parser.add_argument('action',nargs='?',choices=['setup','update','doctor','usage','uninstall','managed-settings','friction','news','new'],
-                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now; new: create a skill, an agent, a command or a profile in a clone of the kit')
+    parser.add_argument('action',nargs='?',choices=['setup','update','sync','rollback','doctor','usage','uninstall','managed-settings','friction','news','new'],
+                        help='none in a terminal: the guided installer (or its menu once installed); setup without --profile: the guided choices; sync: install the highest stable tag of your Core source (--dry-run to preview); rollback: back to the previous Core; friction: log a friction (--category, --text), --list the last ones, --mode [propose|auto|off]; news: what the kit announced at session start (--list), --later to refuse a proposed update, --check to read the kit remote now; new: create a skill, an agent, a command or a profile in a clone of the kit')
     parser.add_argument('--since',type=int,default=42,help='usage: window in days (default 42)')
     parser.add_argument('--json',type=Path,help='usage: write the report to this file')
     parser.add_argument('--min-sessions',type=int,default=10,help='usage: minimum sessions before recommending (default 10)')
@@ -664,9 +670,18 @@ def main(argv=None):
                 identity = state['user']
             role = args.profile or state.get('profile')
             if not role:
-                raise KitError('Kit not installed: run setup.' if args.action == 'update' else 'Specify --profile among: '+', '.join(profile_ids())+'.')
+                raise KitError('Kit not installed: run setup.' if args.action in ('update', 'sync', 'rollback') else 'Specify --profile among: '+', '.join(profile_ids())+'.')
             team = args.team or state.get('team')
-            apply(role,home,args.dry_run,identity,target,team,command={'yes': True, 'no': False}.get(args.command_on_path))
+            # V2 slice 2: the content is the locked Core when one is synced; sync and rollback change it (lock.toml in the same transaction).
+            from .sync import activation
+            hook_specs = read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})
+            def confirm(question):
+                if not interactive():
+                    return False
+                from .ui import make_ui
+                return make_ui(args.plain).confirm(question, default=False)
+            with activation(home, args.action, args.dry_run, confirm, guardrail_names=[n for n, s in hook_specs.items() if is_guardrail(s)]) as extra:
+                apply(role,home,args.dry_run,identity,target,team,command={'yes': True, 'no': False}.get(args.command_on_path), extra_writes=extra)
             # setup and update never call the model: the summary says "connection not verified"; doctor --live is the only real call.
             live = None
             if args.action == 'setup' and not args.dry_run and interactive():

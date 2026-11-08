@@ -33,6 +33,16 @@ dbt-prod-guard = true            # a guardrail switched on (or off) for everyone
 allow_stdio = false              # no local (stdio) MCP server is installed
 denied = ["legacy-db"]           # these servers are not installed
 
+[enterprise]
+core = "https://gitlab.example.org/ai-toolkit/ai-core.git"   # the Core every workstation syncs (docs/core-source.md)
+
+[git]
+allowed_hosts = ["gitlab.example.org"]
+allowed_groups = ["ai-toolkit/"]
+allowed_schemes = ["https"]     # https | ssh
+allow_prerelease = false
+revoked = []                    # commit SHAs never activated
+
 [frictions]
 capture = "propose"              # propose | auto | off: what the agent does on a friction
 publication = "approval"         # approval (default) | auto | disabled
@@ -42,4 +52,4 @@ publication = "approval"         # approval (default) | auto | disabled
 
 ## What it does not do
 
-`managed.toml` configures AI Kit. It does not lock the workstation, the CLIs' own settings, or another program a person runs: for rules that must hold, deploy the CLIs' native managed settings as well (`ai-kit managed-settings`, see [hooks](hooks.md#rules-it-can-enforce)). Further keys (Git sources, allowed Teams, MCP identities) arrive with the next 2.x releases; a file using them is refused by an older 2.x until the kit is updated.
+`managed.toml` configures AI Kit. It does not lock the workstation, the CLIs' own settings, or another program a person runs: for rules that must hold, deploy the CLIs' native managed settings as well (`ai-kit managed-settings`, see [hooks](hooks.md#rules-it-can-enforce)). Further keys (allowed Teams, MCP identities) arrive with the next 2.x releases; a file using them is refused by an older 2.x until the kit is updated.

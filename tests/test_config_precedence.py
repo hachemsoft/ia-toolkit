@@ -53,7 +53,9 @@ class SchemaTests(Base):
     def test_closed_schema_refuses_unknown_keys_types_and_schemas(self):
         for data in ({'hooks': {}},  # managed_schema missing
                      {'managed_schema': 2}, {'managed_schema': True},
-                     {'managed_schema': 1, 'git': {'allowed_hosts': ['h']}},  # not applied by this version: refused, never ignored
+                     {'managed_schema': 1, 'teams': {'allowed': ['h']}},  # not applied by this version: refused, never ignored
+                     {'managed_schema': 1, 'git': {'allowed_schemes': ['file']}}, {'managed_schema': 1, 'git': {'revoked': ['abc']}},
+                     {'managed_schema': 1, 'git': {'mirror': 'x'}}, {'managed_schema': 1, 'enterprise': {'core': ''}},
                      {'managed_schema': 1, 'hooks': {'unknown-guard': True}},
                      {'managed_schema': 1, 'hooks': {'protected-paths': 'yes'}},
                      {'managed_schema': 1, 'hooks': {'locked': ['nope']}},

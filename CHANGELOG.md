@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Core source from Git (V2 slice 2): `ai-kit sync` installs the highest stable `vX.Y.Z` tag of the Core repository set by IT (`managed.toml` `enterprise.core`) or by the person (`aikit.toml` `[core] repo`), never a branch; `ai-kit rollback` goes back to the previous Core, without network, and a second rollback comes back. `~/.ai-kit/lock.toml` records the URL, tag, tag object, commit and tree digest, written in the same transaction as the files; `update` keeps the locked Core. Without a Core source, nothing changes.
+- Git runs from one module with an allowlisted environment, no global or system config, explicit `-c` overrides and a credential helper from a closed list; URLs are canonicalised (https and ssh only, no credentials, no `..`), checked against `git.allowed_hosts` and `git.allowed_groups`, and must not be rewritten. A tag seen once that moves blocks (`tag-moved`); `git.revoked` commits are never activated. Trees are read with `ls-tree`/`cat-file`: symbolic links, submodules, `.git`, Windows reserved names and case collisions are refused. The first use of an origin outside managed mode asks for confirmation in a terminal.
+- An activation cut by a power loss is put back at the next start (backup manifest `pending`/`done`); one command changes files at a time (`~/.ai-kit/engine.lock`).
+- `doctor` shows the active Core and whether `lock.toml` was edited. The agent may not run `sync` or `rollback`, nor write `lock.toml` or the source cache.
+
 ## 2.0.0
 
 The first release of the V2 structure. **Breaking: Python 3.11 or newer** (the kit needed 3.9): a workstation on Python 3.9 or 3.10 stays on AI Kit 0.52, which keeps receiving security fixes; the launchers say what to ask IT.

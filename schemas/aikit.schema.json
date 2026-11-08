@@ -114,6 +114,23 @@
           "description": "disabled: your frictions stay local."
         }
       }
+    },
+    "core": {
+      "type": "object",
+      "properties": {
+        "repo": {
+          "type": "string",
+          "description": "URL of your Core repository (IT's enterprise.core wins)."
+        }
+      }
+    },
+    "git": {
+      "type": "object",
+      "properties": {
+        "allow_prerelease": {
+          "type": "boolean"
+        }
+      }
     }
   }
 }

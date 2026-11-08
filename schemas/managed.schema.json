@@ -67,6 +67,58 @@
           "description": "approval (default): the person sends from a terminal."
         }
       }
+    },
+    "enterprise": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "core": {
+          "type": "string",
+          "description": "URL of the Core repository every workstation uses."
+        }
+      }
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed_hosts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Git hosts accepted, exactly."
+        },
+        "allowed_groups": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Path prefixes accepted (a full group: ai-toolkit/)."
+        },
+        "allowed_schemes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "https",
+              "ssh"
+            ]
+          }
+        },
+        "allow_prerelease": {
+          "type": "boolean"
+        },
+        "revoked": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "description": "Commits never activated, even by rollback."
+        }
+      }
     }
   }
 }
