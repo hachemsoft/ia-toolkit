@@ -44,6 +44,20 @@
             "minLength": 1
           },
           "description": "MCP servers never installed (adds to the organization's)."
+        },
+        "allowed_executables": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Programs a local MCP server may run (name or full path)."
+        },
+        "allowed_http": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "host/prefix a remote MCP server URL must start with."
         }
       }
     },

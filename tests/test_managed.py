@@ -36,6 +36,19 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertFalse(any('30_USER' in d or 'learning' in d for d in deny), '/me and /learn must keep writing')
         self.assertNotIn('allowManagedHooksOnly', settings)
 
+    def test_managed_toml_feeds_the_native_files(self):
+        # V2 slice 6: IT's managed.toml locks a guardrail and refuses an MCP server in the files it deploys, too.
+        imposed = Path(self.tmp.name)/'managed.toml'
+        imposed.write_text('managed_schema = 1\n[hooks]\nlocked = ["dbt-prod-guard"]\n[mcp]\ndenied = ["db"]\n', encoding='utf-8')
+        org = {'defaults': {'mcp': {'db': {'server': {'command': 'uvx', 'args': ['db']}}, 'docs': {'server': {'httpUrl': 'https://docs.example.org/mcp'}}}}}
+        with mock.patch.object(managed, 'organization', return_value=org), mock.patch('installer.config.ownership_problem', return_value=None), \
+                contextlib.redirect_stdout(io.StringIO()):
+            managed_settings(self.out, False, True, managed_file=imposed)
+        settings = json.loads((self.out/'claude-code/managed-settings.json').read_text(encoding='utf-8'))
+        commands = ' '.join(h['command'] for g in settings['hooks']['PreToolUse'] for h in g['hooks'])
+        self.assertIn('dbt-prod-guard', commands)
+        self.assertEqual(settings['allowedMcpServers'], [{'serverUrl': 'https://docs.example.org/mcp'}])  # db refused by IT
+
     def test_locked_guardrails_and_hooks_only(self):
         self.run_it({'locked_hooks': ['protected-paths', 'dbt-prod-guard']}, hooks_only=True)
         claude = json.loads((self.out/'claude-code/managed-settings.json').read_text(encoding='utf-8'))

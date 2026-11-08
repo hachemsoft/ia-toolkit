@@ -82,13 +82,14 @@ def load_managed(path=None, guardrail_names=()):
     contradiction = [n for n in hooks.get('locked', []) if hooks.get(n) is False]
     if contradiction:
         refuse('hooks.locked contains '+', '.join(contradiction)+' while hooks.'+contradiction[0]+' = false')
-    unknown = sorted(set(mcp) - {'allow_stdio', 'denied'})
+    unknown = sorted(set(mcp) - {'allow_stdio', 'denied', 'allowed_executables', 'allowed_http'})
     if unknown:
         refuse('unknown key mcp.'+', mcp.'.join(unknown))
     if 'allow_stdio' in mcp and not isinstance(mcp['allow_stdio'], bool):
         refuse('mcp.allow_stdio must be true or false')
-    if 'denied' in mcp and (not isinstance(mcp['denied'], list) or not all(isinstance(n, str) and n for n in mcp['denied'])):
-        refuse('mcp.denied must be a list of server names')
+    for key in ('denied', 'allowed_executables', 'allowed_http'):
+        if key in mcp and (not isinstance(mcp[key], list) or not all(isinstance(n, str) and n for n in mcp[key])):
+            refuse('mcp.'+key+' must be a list of texts')
     unknown = sorted(set(frictions) - {'capture', 'publication'})
     if unknown:
         refuse('unknown key frictions.'+', frictions.'.join(unknown))
@@ -150,22 +151,48 @@ def locked_guardrails(managed):
     return list((managed or {}).get('hooks', {}).get('locked', []))
 
 
+MCP_KEYS = ('command', 'args', 'env', 'cwd', 'httpUrl', 'url', 'headers', 'required')
+SHELLS = ('sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'cmd', 'cmd.exe', 'powershell', 'powershell.exe', 'pwsh', 'pwsh.exe')
+
+
+def server_warnings(short, server):
+    """What AI Kit 2.x reports but still installs (a V1 server must be told one version before it is refused): a key outside the
+    closed schema, a shell as the command or a -c script (anything can then run, unseen by the CLI's approval)."""
+    found = ['[Check] MCP server '+short+': unknown key '+k+' (AI Kit knows '+', '.join(MCP_KEYS)+'); it will be refused in a later release.'
+             for k in sorted(set(server) - set(MCP_KEYS))]
+    command = str(server.get('command') or '')
+    if command and (Path(command.replace('\\', '/')).name.lower() in SHELLS or re.search(r'[;&|`$<>]', command)
+                    or any(a in ('-c', '/c', '-Command', '-EncodedCommand') for a in server.get('args') or [])):
+        found.append('[Check] MCP server '+short+': runs a shell or a shell script ('+command+'); name the program itself. '
+                     'It will be refused in a later release.')
+    return found
+
+
 def filter_mcp(enabled_mcp, managed):
-    """The MCP servers to install without those IT refuses (mcp.denied by name, every stdio server when mcp.allow_stdio = false);
-    one notice per server removed. Names in enabled_mcp carry the ai-kit- prefix."""
-    if not managed:
-        return enabled_mcp, []
-    mcp = managed.get('mcp', {})
+    """The MCP servers to install without those IT refuses (mcp.denied by name, every stdio server when mcp.allow_stdio = false,
+    a program outside mcp.allowed_executables, a URL outside mcp.allowed_http), and the notices. A refused server marked
+    required = true stops the installation; required itself is AI Kit's, never written into a CLI. Names carry ai-kit-."""
+    mcp = (managed or {}).get('mcp', {})
     denied, stdio = set(mcp.get('denied', [])), mcp.get('allow_stdio', True)
+    executables, http = mcp.get('allowed_executables') or [], mcp.get('allowed_http') or []
     kept, notices = {}, []
     for name, server in enabled_mcp.items():
         short = name[len('ai-kit-'):] if name.startswith('ai-kit-') else name
-        if short in denied:
-            notices.append('[Info] MCP server '+short+' not installed: refused by IT (managed.toml mcp.denied).')
-        elif not stdio and 'command' in server:
-            notices.append('[Info] MCP server '+short+' not installed: local (stdio) servers are refused by IT (managed.toml mcp.allow_stdio = false).')
+        notices += server_warnings(short, server)
+        command, address = server.get('command'), server.get('httpUrl') or server.get('url')
+        why = ('refused by IT (managed.toml mcp.denied)' if short in denied
+               else 'local (stdio) servers are refused by IT (managed.toml mcp.allow_stdio = false)' if not stdio and command
+               else 'its program is not in managed.toml mcp.allowed_executables' if command and executables and not (
+                   command in executables or Path(command.replace('\\', '/')).name in executables)
+               else 'its URL is not in managed.toml mcp.allowed_http' if address and http and not any(
+                   address.split('://', 1)[-1].startswith(prefix) for prefix in http)
+               else None)
+        if why and server.get('required') is True:
+            raise KitError('MCP server '+short+' is required but '+why+': nothing was changed. Ask IT or the owner of the source.')
+        if why:
+            notices.append('[Info] MCP server '+short+' not installed: '+why+'.')
         else:
-            kept[name] = server
+            kept[name] = {k: v for k, v in server.items() if k != 'required'}
     return kept, notices
 
 
