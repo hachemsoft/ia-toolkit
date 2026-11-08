@@ -106,7 +106,7 @@ def main(argv=None):
         venv.EnvBuilder(with_pip=True).create(str(check))
         run([str(environment_python(check)), '-I', '-m', 'pip', 'install', '--quiet', '--no-index', '--find-links', str(wheels), 'ai-kit=='+version],
             env={**os.environ, 'PIP_USER': '0'})
-        run([str(environment_python(check)), '-I', '-c', 'import ai_kit.cli, rich, questionary; from ai_kit.core import ROOT; assert (ROOT/"skills"/"catalog.json").is_file()'])
+        run([str(environment_python(check)), '-I', '-c', 'import ai_kit.cli, rich, questionary; from ai_kit.core import ROOT; assert (ROOT/"aikit.toml").is_file()'])
         for rel in SHIPPED:
             src = source/rel
             if src.is_dir():

@@ -8,7 +8,7 @@ skills = [
   "routing", "grilling", "grill-with-docs", "domain-modeling", "to-spec", "implement", "tdd",
   "code-review", "mr", "diagnosing-bugs", "retrospective", "wait-what", "zoom-out", "teach",
   "writing-for-agents", "setup-workflow", "init-project-context", "to-tickets", "prototype",
-  "codebase-design", "ticket-sorting", "wayfinder", "java-change",
+  "codebase-design", "ticket-sorting", "wayfinder", "java-change", "analysis",
 ]
 mcp = []
 agents = ["repo-investigator", "verifier", "doubter", "code-reviewer", "security-reviewer"]

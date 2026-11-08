@@ -9,6 +9,8 @@
 - Frictions (V2 slice 7, ADR 0023): local entries older than 30 days are purged (`managed.toml` `frictions.retention_days`), at session start and by `status`; the same friction told several times is one issue with its count; emails, home paths and internal host names are redacted before a friction is stored; with approval, the agent says at session start how many frictions wait, and never sends them.
 - `ai-kit user edit` opens your personal context in your editor (its path when there is no terminal).
 - `/me` reads only a bounded list of local facts; `/retro` proposes changes to the current repository only, and turns what concerns the kit, a Core or a Team into a friction.
+- `skills/catalog.json` and `agents/catalog.json` are gone (V2 slice 8): each skill and agent describes itself in its front matter (`aikit-*` metadata), which `ai-kit new` now writes.
+- Analysis (ADR 0026): `/explain` also answers a question about the project with evidence, through the new `analysis` skill (frame, explore, verify each claim, report verdict, evidence and unknowns); `/research` and its `investigation` skill join the general selection.
 
 ## 2.1.1
 

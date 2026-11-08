@@ -1,6 +1,7 @@
 import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply, doctor, selected_commands
+from installer.resolve import skill_catalog
 from installer.core import load_commands, KitError, read_json, ROOT
 from installer.toml_files import dump_toml, read_toml
 class CommandTests(unittest.TestCase):
@@ -12,7 +13,7 @@ class CommandTests(unittest.TestCase):
   p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def cmd(self,name):return self.home/'.gemini/commands'/(name+'.toml')
  def test_manifest_consistent(self):
-  catalog=read_json(ROOT/'skills/catalog.json');names=set()
+  catalog=skill_catalog(ROOT);names=set()
   for c in load_commands():
    self.assertIn(c['category'],('workflow','tool'));self.assertNotIn(c['name'],names);names.add(c['name'])
    for s in c['skills']:self.assertIn(s,catalog,c['name']);self.assertNotIn('replaced_by',catalog[s])
@@ -23,7 +24,7 @@ class CommandTests(unittest.TestCase):
   builtin={'plan','init','help','memory','skills','commands','agents','mcp','clear','compress','chat','tools','settings','stats','quit','auth','about','bug','copy','directory','docs','editor','extensions','hooks','ide','model','permissions','policies','privacy','restore','resume','rewind','setup-github','shells','terminal-setup','theme','upgrade','vim'}
   self.assertFalse(names&builtin,names&builtin)
  def test_catalog_categories_and_tiers(self):
-  catalog=read_json(ROOT/'skills/catalog.json')
+  catalog=skill_catalog(ROOT)
   core=set()
   for k,v in catalog.items():
    if 'replaced_by' in v:continue

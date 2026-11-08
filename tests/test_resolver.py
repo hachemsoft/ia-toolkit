@@ -1,8 +1,6 @@
-"""V2 slice 3 (docs/v2/resources.md): resources describe themselves. The catalogs rebuilt from the aikit-* metadata equal
-skills/catalog.json and agents/catalog.json (kept until slice 8, no longer read by the engine), so every profile installs the
-same selection (the golden snapshot checks the files); a missing requirement or a cycle is refused; ai-kit validate reports
+"""V2 slices 3 and 8 (docs/v2/resources.md): resources describe themselves; the catalogs are rebuilt from the aikit-* metadata
+(the catalog files are gone); a missing requirement or a cycle is refused; ai-kit validate reports
 what a content tree must fix before it is tagged."""
-import json
 from pathlib import Path
 import re
 import shutil
@@ -15,24 +13,18 @@ from installer.resolve import agent_catalog, check_graph, skill_catalog
 from installer.validate import problems
 
 
-class EquivalenceTests(unittest.TestCase):
-    def test_rebuilt_catalogs_equal_the_v1_catalogs(self):
-        self.assertEqual(skill_catalog(ROOT), json.loads((ROOT/'skills/catalog.json').read_text(encoding='utf-8')))
-        self.assertEqual(agent_catalog(ROOT), json.loads((ROOT/'agents/catalog.json').read_text(encoding='utf-8')))
+class NoCatalogTests(unittest.TestCase):
+    """2.1 slice 8: skills/catalog.json and agents/catalog.json are gone; every resource describes itself."""
 
-    def test_the_engine_no_longer_reads_the_catalogs(self):
-        # ai-kit new still writes an entry for a contributed resource until slice 8 removes the catalogs.
-        for path in (ROOT/'installer').rglob('*.py'):
-            if path.name in ('new.py', 'validate.py'):
-                continue
-            with self.subTest(path=path.name):
-                self.assertNotRegex(path.read_text(encoding='utf-8'), r"read_json\([^)]*catalog\.json")
-
-    def test_the_migration_tool_has_nothing_left_to_do(self):
-        import subprocess
-        import sys
-        proc = subprocess.run([sys.executable, str(ROOT/'scripts/catalog_to_metadata.py'), '--check'], capture_output=True, text=True)
-        self.assertEqual(proc.returncode, 0, proc.stdout)
+    def test_no_catalog_file_and_every_resource_has_its_metadata(self):
+        self.assertFalse((ROOT/'skills/catalog.json').exists())
+        self.assertFalse((ROOT/'agents/catalog.json').exists())
+        for kind, catalog in (('skills', skill_catalog(ROOT)), ('agents', agent_catalog(ROOT))):
+            for name, entry in catalog.items():
+                if 'path' in entry:
+                    with self.subTest(kind=kind, name=name):
+                        self.assertRegex(entry.get('version', ''), r'^\d+\.\d+\.\d+$')
+                        self.assertIn('origin', entry)
 
 
 class FrontMatterTests(unittest.TestCase):

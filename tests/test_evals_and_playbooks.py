@@ -1,14 +1,15 @@
 import contextlib, io, sys, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply
-from installer.core import read_json, load_commands, ROOT
+from installer.resolve import skill_catalog
+from installer.core import load_commands, ROOT
 from installer.toml_files import read_toml
 sys.path.insert(0,str(ROOT/'evals'))
 import run as evals_run
 
 class PlaybookTests(unittest.TestCase):
  def test_domain_skills_have_excuse_tables(self):
-  catalog=read_json(ROOT/'skills/catalog.json')
+  catalog=skill_catalog(ROOT)
   for k,v in catalog.items():
    if v.get('category')=='domain':
     text=(ROOT/v['path']/'SKILL.md').read_text(encoding='utf-8');self.assertIn('## Rationalizations and rebuttals',text,k);self.assertGreaterEqual(text.count('\n| "'),3,k)
@@ -30,7 +31,7 @@ class PlaybookTests(unittest.TestCase):
   for name in ('build','diagnose','intent','review','learn'):self.assertIn('"In the kit commands" section',cmds[name],name)
   domain=re.compile(r'(?i)\b(bigquery|kpi|incremental|terraform|kubernetes|helm|java)\b|dbt test|dbt build|kpi-definition|sql-review|dbt-model-change')
   for name,prompt in cmds.items():self.assertIsNone(domain.search(prompt),name)
-  catalog=read_json(ROOT/'skills/catalog.json')
+  catalog=skill_catalog(ROOT)
   for skill in ('sql-review','dbt-model-change','bigquery-query-review','bigquery-cost-review','kpi-definition','incremental-replay','perimeter-brief','infra-change','java-change','python-js-change'):
    self.assertIn('## In the kit commands',(ROOT/catalog[skill]['path']/'SKILL.md').read_text(encoding='utf-8'),skill)
   self.assertIn('ai-kit-doubter',cmds['review']);self.assertIn('ai-kit-verifier',cmds['build'])

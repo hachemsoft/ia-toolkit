@@ -1,7 +1,8 @@
 import re, unittest
 from pathlib import Path
 from installer.cli import allowed_commands
-from installer.core import ROOT, read_json, load_commands, parse_frontmatter
+from installer.resolve import agent_catalog, skill_catalog
+from installer.core import ROOT, load_commands, parse_frontmatter
 from installer.adapters.gemini import gemini_command_toml, parse_env_file
 from installer.toml_files import read_toml
 import tempfile
@@ -9,7 +10,7 @@ import tempfile
 class ConsistencyTests(unittest.TestCase):
  """Product consistency checked continuously: profiles, tiers, commands, forbidden terms, Python dependencies."""
  def setUp(self):
-  self.cat=read_json(ROOT/'skills/catalog.json');self.cmds=load_commands()
+  self.cat=skill_catalog(ROOT);self.cmds=load_commands()
   self.profiles={p.stem:read_toml(p) for p in (ROOT/'profiles').glob('*.toml')}
  def test_core_tier_installed_in_every_profile(self):
   for n,e in self.cat.items():
@@ -33,7 +34,7 @@ class ConsistencyTests(unittest.TestCase):
   self.assertTrue((ROOT/'skills/contrib/README.md').is_file())
  def test_contrib_agents_rules(self):
   # 0.40: the same rules as for skills; a contributed agent is in no profile, enabled with extra_agents.
-  agents=read_json(ROOT/'agents/catalog.json');in_profiles={a for p in self.profiles.values() for a in p.get('agents',[])}
+  agents=agent_catalog(ROOT);in_profiles={a for p in self.profiles.values() for a in p.get('agents',[])}
   for n,e in agents.items():
    if e.get('origin')=='contrib':
     self.assertTrue(e['path'].startswith('agents/contrib/'),n);self.assertTrue(e.get('owner'),n+': owner required');self.assertNotIn(n,in_profiles,n+': a contributed agent is in no profile')

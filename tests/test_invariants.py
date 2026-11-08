@@ -12,6 +12,7 @@ import unittest
 from pathlib import Path
 
 from installer.adapters import ADAPTERS, agy, codex, gemini
+from installer.resolve import skill_catalog
 from installer.cli import apply, prune_empty_dirs
 from installer.interface import Adapter, ContextHost, LiveCheck
 from installer.adapters.codex import CODEX_TOML
@@ -231,7 +232,7 @@ class InvariantTests(unittest.TestCase):
     def test_no_skill_shares_a_command_name(self):
         """Gemini CLI turns every skill into a /command: a skill with a command's name makes both get renamed (/guide1, /user.guide)."""
         from installer.core import load_commands
-        catalog = json.loads((ROOT/'skills/catalog.json').read_text(encoding='utf-8'))
+        catalog = skill_catalog(ROOT)
         self.assertEqual(sorted(set(catalog) & {c['name'] for c in load_commands()}), [])
 
 if __name__ == '__main__':
