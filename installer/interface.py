@@ -21,8 +21,6 @@ class Plan:
     state: Dict[str, Any]
     old_files: Dict[str, str]
     overrides: Dict[str, Any]
-    profile_id: str
-    profile: Dict[str, Any]
     catalog: Dict[str, Any]
     selected: List[str]  # selected skills
     skill_sources: List[Tuple[str, Path]]  # (skill name, source folder)
@@ -65,9 +63,8 @@ class Plan:
 
 @dataclass
 class DoctorContext:
-    profile: Dict[str, Any]
+    context_names: List[str]  # managed context layers expected, in order (V2: computed by the engine, no profile)
     load_commands: Callable[[], List[Dict[str, Any]]]
-    managed_context_names: Callable[[Dict[str, Any]], List[str]]
     allowed_domains: Callable[[], List[str]]
     domain_allowed: Callable[[str, List[str]], bool]
 

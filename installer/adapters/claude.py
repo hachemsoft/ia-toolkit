@@ -27,6 +27,16 @@ KIT_HOOK = re.compile(r'[\\/]\.ai-kit[\\/]hooks[\\/]')
 
 # --- Adapter interface ---------------------------------------------------------------------------------------------
 NAME = 'claude'
+
+# V2 slice 4: what this CLI does with each kit capability (docs/v2/resources.md, measured); doctor shows it.
+CAPABILITIES = {
+    'context': ('OK', 'imported by path'),
+    'skills': ('OK', 'always prefixed ai-kit-'),
+    'user-only skills': ('OK', 'native'),
+    'commands': ('OK', '/name'),
+    'sub-agents': ('OK', 'tool list applied'),
+    'guardrails': ('OK', 'native hooks'),
+}
 LABEL = 'Claude Code'
 COMMAND = 'claude'
 VERIFIED = '2.1.316'  # the CLI version the kit was last checked on (docs/cli/matrice.md); doctor says when a newer one runs

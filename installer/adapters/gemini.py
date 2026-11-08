@@ -177,6 +177,16 @@ def print_live(home, timeout=90):
 
 # --- Adapter interface ---------------------------------------------------------------------------------------------
 NAME = 'gemini'
+
+# V2 slice 4: what this CLI does with each kit capability (docs/v2/resources.md, measured); doctor shows it.
+CAPABILITIES = {
+    'context': ('DEGRADED', 'a copy: run update after a change'),
+    'skills': ('OK', 'each skill is also a command'),
+    'user-only skills': ('BLOCKED', 'ignored: the model may activate any skill'),
+    'commands': ('OK', '/name'),
+    'sub-agents': ('OK', 'tool list applied; can be turned off'),
+    'guardrails': ('OK', 'native hooks'),
+}
 LABEL = 'Gemini CLI'
 COMMAND = 'gemini'
 VERIFIED = '0.65.0'  # the CLI version the kit was last checked on (docs/cli/matrice.md); doctor says when a newer one runs
@@ -449,7 +459,7 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     settings = read_json(home/'.gemini/settings.json')
     names = settings.get('context',{}).get('fileName',[])
     names = [names] if isinstance(names,str) else names
-    expected_names = ctx.managed_context_names(ctx.profile)+[USER_CONTEXT]+list(PROJECT_CONTEXT)
+    expected_names = list(ctx.context_names)+[USER_CONTEXT]+list(PROJECT_CONTEXT)
     status(isinstance(names,list) and all(n in names for n in expected_names),'context.fileName contains the kit layers, GEMINI.md and AGENTS.md')
     status(settings.get('skills',{}).get('enabled',True) is not False,'Skills not disabled in the user settings')
     agents_enabled = settings.get('experimental',{}).get('enableAgents',True) is not False

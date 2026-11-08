@@ -25,6 +25,16 @@ def agy_rules_text(context_names, context_dir='.gemini'):
 
 # --- Adapter interface ---------------------------------------------------------------------------------------------
 NAME = 'agy'
+
+# V2 slice 4: what this CLI does with each kit capability (docs/v2/resources.md, measured); doctor shows it.
+CAPABILITIES = {
+    'context': ('OK', 'included'),
+    'skills': ('OK', ''),
+    'user-only skills': ('BLOCKED', 'ignored: the model may activate any skill'),
+    'commands': ('DEGRADED', 'a skill per command'),
+    'sub-agents': ('OK', 'tool list applied'),
+    'guardrails': ('DEGRADED', 'plugin hooks'),
+}
 LABEL = 'Antigravity CLI'
 COMMAND = 'agy'
 VERIFIED = '1.4.12'  # the CLI version the kit was last checked on (docs/cli/matrice.md); doctor says when a newer one runs
