@@ -40,8 +40,8 @@ Update: download and extract the new ZIP, then run the installer the same way. C
 
 The `Portability` workflow runs on every push and on each version tag.
 
-- **Native tests**: the whole suite on Ubuntu, macOS and Windows, with Python 3.9, 3.11 and 3.14, through `scripts/offline_tests.py` (no model CLI reachable, `AI_KIT_NO_LIVE=1`). A local folder of wheels stands for a company package index. On Windows, `Installer.cmd` really runs under `cmd.exe`, and on macOS and Linux `bootstrap.sh` really runs under `sh`. Both start from folders with spaces, accents and parentheses, with parasite modules in the current folder and `PYTHONPATH`.
-- **Release ZIP**: `scripts/build_release.py` builds the ZIP people download. On each of the three systems, with Python 3.9 and 3.14 and no package index reachable, the tests extract it and install from it with its own launcher. They also run the launcher without Python, then install a new version from another folder after deleting the first.
+- **Native tests**: the whole suite on Ubuntu, macOS and Windows, with Python 3.11, 3.12, 3.13 and 3.14, through `scripts/offline_tests.py` (no model CLI reachable, `AI_KIT_NO_LIVE=1`). A local folder of wheels stands for a company package index. On Windows, `Installer.cmd` really runs under `cmd.exe`, and on macOS and Linux `bootstrap.sh` really runs under `sh`. Both start from folders with spaces, accents and parentheses, with parasite modules in the current folder and `PYTHONPATH`.
+- **Release ZIP**: `scripts/build_release.py` builds the ZIP people download. On each of the three systems, with Python 3.11 and 3.14 and no package index reachable, the tests extract it and install from it with its own launcher. They also run the launcher without Python, then install a new version from another folder after deleting the first.
 - **Publication**: on a `v<version>` tag, once everything above has passed, the ZIP is attached to the GitHub release with the CHANGELOG section.
 
 What CI does not prove: the runners are administrator accounts, without a proxy, AppLocker, Gatekeeper prompts, Mark of the Web or a company policy. No real CLI is signed in.
@@ -71,7 +71,7 @@ To do on a Windows and a macOS workstation, with a **standard account**, for eac
 
 ## What IT may have to provide or allow
 
-- Python 3.9 or newer (3.11 recommended) with its standard `venv` and `pip` modules, usable by a standard account from a command prompt or the Terminal.
+- Python 3.11 or newer with its standard `venv` and `pip` modules, usable by a standard account from a command prompt or the Terminal.
 - The CLI (Gemini CLI, Antigravity CLI, Codex CLI or Claude Code) and its authentication, following the company procedure.
 - Network access to the model through the company proxy. With HTTPS inspection, the company root certificate, declared for command-line tools as IT says (`NODE_EXTRA_CA_CERTS` for Node.js CLIs, `SSL_CERT_FILE` for others).
 - Windows: running `Installer.cmd` from the folder where the person extracted the ZIP. The launcher only finds Python, then runs `scripts\launcher.py`, which installs the kit in `%USERPROFILE%\.ai-kit\runtime` from the ZIP's own wheels.

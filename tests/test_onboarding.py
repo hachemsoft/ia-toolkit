@@ -125,8 +125,8 @@ class SetupAndDoctorOutputTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertLess(out.index('Summary'), out.index('Next step:'))
         self.assertLess(out.index('Next step:'), out.index('Details'))
-        self.assertLess(out.index('Details'), out.index('[OK] Python 3.9 minimum'))
-        self.assertEqual(out.count('[OK] Python 3.9 minimum'), 1)  # each check runs once
+        self.assertLess(out.index('Details'), out.index('[OK] Python 3.11 minimum'))
+        self.assertEqual(out.count('[OK] Python 3.11 minimum'), 1)  # each check runs once
 
     def test_doctor_reports_a_problem_in_the_summary_and_exit_code(self):
         self.run_main('setup', '--profile', 'general', '--no-live', '--user', 'a@example.org', '--target', 'gemini')

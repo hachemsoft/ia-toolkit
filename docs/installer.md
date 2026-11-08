@@ -4,12 +4,12 @@ Reference page for people who deploy or maintain the kit. To install: [getting s
 
 ## How it runs
 
-One launcher, two distributions. `Installer.cmd` (Windows) and `scripts/bootstrap.sh` (Mac, Linux) only find Python 3.9 or newer, then hand over to `scripts/launcher.py`, run with `python -I` (no module of the current folder or of `PYTHONPATH` can replace the kit's). The launcher:
+One launcher, two distributions. `Installer.cmd` (Windows) and `scripts/bootstrap.sh` (Mac, Linux) only find Python 3.11 or newer, then hand over to `scripts/launcher.py`, run with `python -I` (no module of the current folder or of `PYTHONPATH` can replace the kit's). The launcher:
 
 1. checks that this Python has its standard `venv` and `pip` modules; otherwise it says what to ask IT, and downloads no bootstrap script;
 2. creates or reuses the kit's private environment, `~/.ai-kit/runtime/venv` (with `--home`, under that folder), at its final place: no environment is shipped prebuilt;
 3. installs the kit package and its libraries there with pip:
-   - **release ZIP**: from its `wheels/` folder only, `pip install --no-index --find-links wheels`: no package index, no download, no build. All the wheels are pure Python (`py3-none-any`), so one ZIP serves Mac, Windows and Linux, Python 3.9 to 3.14;
+   - **release ZIP**: from its `wheels/` folder only, `pip install --no-index --find-links wheels`: no package index, no download, no build. All the wheels are pure Python (`py3-none-any`), so one ZIP serves Mac, Windows and Linux, Python 3.11 to 3.14;
    - **git clone**: pip builds the package from the clone (not editable) with the exact versions of `packaging/runtime.txt`; the build tool and the libraries come from the package index pip is already configured for on the workstation (company repository, proxy, certificates: the kit adds no `--index-url` or `--trusted-host`);
 4. runs the kit with that environment's Python, from your current folder (a relative `--home` or `--json` keeps its meaning);
 5. for `update` in a git clone, first fetches the new version (below).
@@ -55,7 +55,7 @@ The context layers and `30_USER.md` are in `~/.ai-kit/context/`, whatever the CL
 | For contributors, from a git clone of the kit: create a skill, an agent, a command or a profile ([create a component](extending.md#create-a-component-with-ai-kit-new)) | `sh scripts/bootstrap.sh new skill` | `Installer.cmd new skill` |
 | For IT: the managed settings, and what they really enforce ([guardrails](hooks.md#rules-it-can-enforce)) | `sh scripts/bootstrap.sh managed-settings --out <empty folder>` | `Installer.cmd managed-settings --out <empty folder>` |
 
-Windows: to get a Command Prompt in the kit folder, type `cmd` in the Explorer address bar and press Enter. The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) look for Python 3.9 or newer, then hand over to `scripts/launcher.py` (above); without a usable Python they say what to ask IT. They need neither PowerShell nor administrator rights.
+Windows: to get a Command Prompt in the kit folder, type `cmd` in the Explorer address bar and press Enter. The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) look for Python 3.11 or newer, then hand over to `scripts/launcher.py` (above); without a usable Python they say what to ask IT. They need neither PowerShell nor administrator rights.
 
 To run `doctor` for a repo (it then also lists the repo skills named like kit skills), start it from the repo folder with the launcher's full path: Windows, `"<kit folder>\Installer.cmd" doctor`; Mac, `sh <kit folder>/scripts/bootstrap.sh doctor`.
 

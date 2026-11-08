@@ -395,7 +395,16 @@ def doctor_checks(home, cwd=None, problems=None):
             issues += 1
             if problems is not None:
                 problems.append(message)
-    status(sys.version_info >= (3,9),'Python 3.9 minimum')
+    status(sys.version_info >= (3,11),'Python 3.11 minimum')
+    # managed.toml (2.0.0): say which settings IT imposes, or why the file is refused (every change then exits 3).
+    from .config import ManagedConfigError, load_managed, summary
+    from .core import is_guardrail
+    try:
+        managed = load_managed(None, [n for n, s in read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {}).items() if is_guardrail(s)])
+        if managed is not None:
+            print('[Info] '+summary(managed))
+    except ManagedConfigError as exc:
+        status(False, str(exc))
     runtime_checks(home, status)
     if (home/LEGACY_KIT_DIR).exists():
         status(False,'Old ~/'+LEGACY_KIT_DIR+' folder present: run update, which renames it to ~/.ai-kit')

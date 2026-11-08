@@ -57,10 +57,10 @@ class PortabilityTests(unittest.TestCase):
         self.run_cli('setup','--profile','data-analyst',code=2)
         self.assertEqual(cfg.read_text(encoding='utf-8'),'{invalid')
 
-    def test_python_sources_support_39_syntax(self):
+    def test_python_sources_support_311_syntax(self):
         import ast
         for source in (ROOT/'installer').rglob('*.py'):
-            ast.parse(source.read_text(encoding='utf-8'),feature_version=(3,9))
+            ast.parse(source.read_text(encoding='utf-8'),feature_version=(3,11))
 
     @unittest.skipIf(os.name == 'nt', 'Shell launcher on Unix only')
     def test_native_shell_launcher_from_outside_repo(self):

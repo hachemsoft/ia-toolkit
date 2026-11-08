@@ -19,11 +19,10 @@ tests:
   image: python:${PYTHON}
   parallel:
     matrix:
-      - PYTHON: ["3.9", "3.11", "3.14"]
+      - PYTHON: ["3.11", "3.12", "3.13", "3.14"]
   script:
     # The launcher tests install the kit with pip from a local folder of wheels, standing for a company's package index.
-    - python -m pip download --quiet --only-binary=:all: --no-deps -d build/wheelhouse -r packaging/runtime.txt hatchling==1.27.0 packaging pathspec pluggy trove-classifiers tomli
-    - python -m pip download --quiet --only-binary=:all: --no-deps --python-version 3.9 -d build/wheelhouse tomli==2.2.1
+    - python -m pip download --quiet --only-binary=:all: --no-deps -d build/wheelhouse -r packaging/runtime.txt hatchling==1.27.0 packaging pathspec pluggy trove-classifiers
     - python -m pip install --quiet --no-index --find-links build/wheelhouse -r packaging/runtime.txt
     - python scripts/offline_tests.py discover -s tests -v
 

@@ -7,7 +7,7 @@
 
 [![Tests](https://github.com/hachemsoft/ia-toolkit/actions/workflows/portability.yml/badge.svg)](https://github.com/hachemsoft/ia-toolkit/actions/workflows/portability.yml)
 [![Version](https://img.shields.io/github/v/tag/hachemsoft/ia-toolkit?label=version)](CHANGELOG.md)
-[![Python](https://img.shields.io/badge/python-3.9%20%E2%80%93%203.14-blue)](docs/installer.md)
+[![Python](https://img.shields.io/badge/python-3.11%20%E2%80%93%203.14-blue)](docs/installer.md)
 [![Platforms](https://img.shields.io/badge/platforms-Mac%20%7C%20Windows%20%7C%20Linux-informational)](docs/getting-started.md)
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -34,7 +34,7 @@ One set of rules, methods and anti-error guardrails for the agent CLIs you choos
    `/guide I need to …` tells you which command fits (`$` instead of `/` in Codex).
 3. **When something goes wrong**: run the installer again and choose **Check the installation**, then [Troubleshooting](docs/troubleshooting.md).
 
-You need Python 3.9 or later and your CLI, provided by your company; signing in and choosing the model are done in the CLI. With conda, run the installer and `ai-kit` from a conda prompt, on `base` rather than a project environment. Step by step: [getting started](docs/getting-started.md). For IT: [validation on enterprise workstations](docs/validation.md) and [compliance](docs/compliance.md). Windows is covered by CI on administrator runners and by a trial on one virtual machine, not yet on a locked-down company workstation: a policy that blocks programs under the user profile also blocks the kit ([what to ask IT](docs/validation.md#what-it-may-have-to-provide-or-allow)).
+You need Python 3.11 or later (AI Kit 2.0; on Python 3.9 or 3.10, stay on AI Kit 0.52) and your CLI, provided by your company; signing in and choosing the model are done in the CLI. With conda, run the installer and `ai-kit` from a conda prompt, on `base` rather than a project environment. Step by step: [getting started](docs/getting-started.md). For IT: [validation on enterprise workstations](docs/validation.md) and [compliance](docs/compliance.md). Windows is covered by CI on administrator runners and by a trial on one virtual machine, not yet on a locked-down company workstation: a policy that blocks programs under the user profile also blocks the kit ([what to ask IT](docs/validation.md#what-it-may-have-to-provide-or-allow)).
 
 **Update**: `ai-kit update` in a terminal (the installer adds the `ai-kit` command to your own PATH, unless you said no: then `Installer.cmd update`, Mac `sh scripts/bootstrap.sh update`, from the cloned folder) fetches the new version, reinstalls and reapplies; your choices and files are kept. Never `pip install` the kit next to it: that makes a second copy `update` does not touch. From a ZIP: extract the new ZIP and run its installer. **Uninstall**: run the installer and choose **Uninstall**; only what the kit installed goes.
 

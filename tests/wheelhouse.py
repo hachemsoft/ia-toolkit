@@ -1,9 +1,7 @@
 """A local folder of wheels standing for the package index pip is configured for: the launcher tests install the kit
 without the network. AI_KIT_TEST_WHEELHOUSE, or build/wheelhouse, filled by:
 python3 -m pip download --only-binary=:all: --no-deps -d build/wheelhouse -r packaging/runtime.txt hatchling==1.27.0 \
-    packaging pathspec pluggy trove-classifiers tomli
-python3 -m pip download --only-binary=:all: --no-deps --python-version 3.9 -d build/wheelhouse tomli==2.2.1
-(the second line: the pure-Python tomli the release ZIP ships, which pip skips on Python 3.11 to 3.13.)
+    packaging pathspec pluggy trove-classifiers
 """
 import os
 from pathlib import Path

@@ -7,6 +7,11 @@ then the text. Without `profiles` or `teams`, an entry goes to everyone. An orga
 copy of this repository; the public repository keeps only generic ones. `python3 scripts/check_news.py` checks the file
 (the CI runs it). How it reaches people: [docs/hooks.md](docs/hooks.md#whats-new).
 
+## 2026-11-08 ai-kit-2-0 : AI Kit 2.0 needs Python 3.11
+
+AI Kit 2.0 starts the V2 structure: settings IT can impose (`managed.toml`), frictions sent only with your approval.
+It needs Python 3.11 or newer; on an older Python, keep AI Kit 0.52 and ask IT for Python 3.11.
+
 ## 2026-11-08 security-0-51-1 : Security fixes in 0.51.1
 
 Version 0.51.1 closes ways an agent could change what the kit installs next or run a program at session start. Update

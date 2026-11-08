@@ -1,5 +1,5 @@
 #!/bin/sh
-# AI Kit launcher for macOS and Linux: finds Python 3.9 or newer, then hands over to scripts/launcher.py, which installs the
+# AI Kit launcher for macOS and Linux: finds Python 3.11 or newer, then hands over to scripts/launcher.py, which installs the
 # kit in its private environment (~/.ai-kit/runtime) and opens the installer (the menu when no argument is given).
 # No sudo, no change to the system. The only change outside ~/.ai-kit: one marked block in your shell startup file for the
 # ai-kit command, if you chose it (removed by uninstall).
@@ -14,7 +14,7 @@ for candidate in python3 python; do
     continue
   fi
   status=0
-  "$path" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 3)' >/dev/null 2>&1 || status=$?
+  "$path" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 3)' >/dev/null 2>&1 || status=$?
   case "$status" in
     0) KIT_PYTHON=$path; break ;;
     3) KIT_FOUND=old ;;
@@ -23,11 +23,11 @@ for candidate in python3 python; do
 done
 if [ -z "$KIT_PYTHON" ]; then
   case "$KIT_FOUND" in
-    old) echo 'The Python found is older than 3.9: the AI Kit needs Python 3.9 or newer (3.11 recommended).' >&2 ;;
+    old) echo 'The Python found is older than 3.11: the AI Kit needs Python 3.11 or newer.' >&2 ;;
     blocked) echo 'Python is present but could not be started: a security policy or an incomplete installation may prevent it.' >&2 ;;
-    *) echo 'Python 3.9 or newer was not found (commands python3, python).' >&2 ;;
+    *) echo 'Python 3.11 or newer was not found (commands python3, python).' >&2 ;;
   esac
-  echo 'What to ask IT support: Python 3.9 or newer (3.11 recommended) with its standard venv and pip modules, usable by your standard account from the Terminal,' >&2
+  echo 'What to ask IT support: Python 3.11 or newer with its standard venv and pip modules, usable by your standard account from the Terminal,' >&2
   echo 'as provided or approved by the company (software centre). Then run this command again.' >&2
   exit 2
 fi

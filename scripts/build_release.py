@@ -6,7 +6,7 @@ Usage: python3 scripts/build_release.py [--worktree] [--out DIR]
   --worktree  the files as they are now, tracked or new but not ignored: to test a change before committing it; never publish it
 
 Steps: a staging copy, the kit's wheel (pip wheel: the build backend comes from the package index pip is configured for),
-the dependency wheels pinned in packaging/runtime.txt (pure Python only, so one ZIP serves Mac, Windows and Linux, Python 3.9
+the dependency wheels pinned in packaging/runtime.txt (pure Python only, so one ZIP serves Mac, Windows and Linux, Python 3.11
 to 3.14), a check that everything installs offline into a temporary environment, then the ZIP. No top folder inside:
 extracting it gives a single folder with Installer.cmd at its root.
 """
@@ -33,7 +33,7 @@ Install or update
   Mac and Linux: in Terminal, from this folder: sh scripts/bootstrap.sh
 
 What happens
-  The installer needs Python 3.9 or newer with its standard venv and pip modules. It creates the kit's private Python
+  The installer needs Python 3.11 or newer with its standard venv and pip modules. It creates the kit's private Python
   environment in your home folder (.ai-kit/runtime), installs the kit from the wheels/ folder of this ZIP (no download,
   no administrator rights, no change to your Python), then asks your choices and configures your CLI. Unless you say no
   (--command-on-path no), it adds the ai-kit command to your own PATH: a registry key of your user on Windows, one marked
@@ -95,7 +95,7 @@ def main(argv=None):
         version = (source/'VERSION').read_text(encoding='utf-8').strip()
         print('Kit '+version+(' (current files, test build)' if args.worktree else ' (committed files)'))
         run([sys.executable, '-m', 'pip', 'wheel', '--no-deps', '--quiet', '--wheel-dir', str(wheels), str(source)])
-        run([sys.executable, '-m', 'pip', 'download', '--quiet', '--no-deps', '--only-binary=:all:', '--python-version', '3.9',
+        run([sys.executable, '-m', 'pip', 'download', '--quiet', '--no-deps', '--only-binary=:all:', '--python-version', '3.11',
              '--dest', str(wheels), '--requirement', str(source/'packaging'/'runtime.txt')])
         names = sorted(p.name for p in wheels.glob('*.whl'))
         not_universal = [n for n in names if not n.endswith(('-py3-none-any.whl', '-py2.py3-none-any.whl'))]

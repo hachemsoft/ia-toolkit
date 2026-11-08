@@ -249,13 +249,15 @@ def kit_command_reason(command):
     """Reason to refuse a kit subcommand the agent must not run, or None."""
     for pipeline in shell_segments(command):
         for program, words in command_words(normalised(pipeline)):
+            if PYTHONS.fullmatch(program) and '--sync' in words and any(w.endswith('/.ai-kit/bin/friction.py') for w in words):
+                return KIT_COMMAND_BLOCKED.format('friction --sync')  # publication is the person's approval (2.0.0)
             arguments = kit_arguments(program, words)
             if arguments is None:
                 continue
             sub = next((w for w in arguments if not w.startswith('-')), '')
             rest = arguments[arguments.index(sub) + 1:] if sub else []
             mode = rest.index('--mode') if '--mode' in rest else None
-            if (sub in KIT_REFUSED or (sub == 'doctor' and '--live' in rest)
+            if (sub in KIT_REFUSED or (sub == 'doctor' and '--live' in rest) or (sub == 'friction' and '--sync' in rest)
                     or (sub == 'friction' and mode is not None and mode + 1 < len(rest) and not rest[mode + 1].startswith('-'))):
                 return KIT_COMMAND_BLOCKED.format(' '.join([sub] + rest[:2]).strip())
     return None

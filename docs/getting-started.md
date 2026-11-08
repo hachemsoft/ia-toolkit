@@ -4,7 +4,7 @@ Fifteen minutes, in order. What you need on day one is on this page; everything 
 
 ## 1. Install (once)
 
-You need Python 3.9 or later (3.11 recommended), git, and your coding-agent CLI, as provided by your company. The kit installs into your home folder only: no administrator rights, your Python left as it is; its few libraries come from the Python package index your workstation is already configured for. If something is missing, the installer says exactly what to ask IT.
+You need Python 3.11 or later (on Python 3.9 or 3.10, stay on AI Kit 0.52), git, and your coding-agent CLI, as provided by your company. The kit installs into your home folder only: no administrator rights, your Python left as it is; its few libraries come from the Python package index your workstation is already configured for. If something is missing, the installer says exactly what to ask IT.
 
 1. Clone the kit repository (your organization's copy if it has one) into a folder you keep, for example `Documents`: this is your **kit folder**. Never edit its files: `update` refuses to fetch over local changes; your own settings live in your home folder (below).
 2. Run the installer:
