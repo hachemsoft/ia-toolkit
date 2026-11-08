@@ -2,6 +2,8 @@
 a closed schema; every key present wins, whatever its value (false, 0 and [] included); a key absent locks nothing. Values resolve
 by precedence; restrictions (hooks.locked, mcp.denied) add to the other layers' restrictions and no other layer lifts them.
 Applies to AI Kit only: it does not lock the workstation, the CLIs' own files or another program."""
+import hashlib
+import json
 import os
 import re
 from pathlib import Path
@@ -82,14 +84,17 @@ def load_managed(path=None, guardrail_names=()):
     contradiction = [n for n in hooks.get('locked', []) if hooks.get(n) is False]
     if contradiction:
         refuse('hooks.locked contains '+', '.join(contradiction)+' while hooks.'+contradiction[0]+' = false')
-    unknown = sorted(set(mcp) - {'allow_stdio', 'denied', 'allowed_executables', 'allowed_http'})
+    unknown = sorted(set(mcp) - {'allow_stdio', 'denied', 'allowed_stdio', 'allowed_http'})
     if unknown:
         refuse('unknown key mcp.'+', mcp.'.join(unknown))
     if 'allow_stdio' in mcp and not isinstance(mcp['allow_stdio'], bool):
         refuse('mcp.allow_stdio must be true or false')
-    for key in ('denied', 'allowed_executables', 'allowed_http'):
+    for key in ('denied', 'allowed_stdio', 'allowed_http'):
         if key in mcp and (not isinstance(mcp[key], list) or not all(isinstance(n, str) and n for n in mcp[key])):
             refuse('mcp.'+key+' must be a list of texts')
+    for key in ('allowed_stdio', 'allowed_http'):
+        if any(not re.fullmatch(r'sha256:[0-9a-f]{64}', v) for v in mcp.get(key, [])):
+            refuse('mcp.'+key+' lists server identities (sha256:<64 hex>, shown by ai-kit status --verbose)')
     unknown = sorted(set(frictions) - {'capture', 'publication'})
     if unknown:
         refuse('unknown key frictions.'+', frictions.'.join(unknown))
@@ -168,24 +173,45 @@ def server_warnings(short, server):
     return found
 
 
+def server_identity(server):
+    """The exact identity of an MCP server (ADR 0022): sha256 of its command, args, env templates and cwd (stdio), or of its URL
+    and header templates (http). A name is not an identity: a rename does not change it, a changed argument does."""
+    if server.get('command'):
+        material = {'command': server['command'], 'args': list(server.get('args') or []), 'env': dict(sorted((server.get('env') or {}).items())),
+                    'cwd': server.get('cwd') or ''}
+    else:
+        material = {'url': server.get('httpUrl') or server.get('url'), 'headers': dict(sorted((server.get('headers') or {}).items()))}
+    return 'sha256:'+hashlib.sha256(json.dumps(material, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest()
+
+
+def denied_match(short, server, denied):
+    """mcp.denied matches a server by name, by URL prefix (https://host/path) or by executable (name or full path)."""
+    address = server.get('httpUrl') or server.get('url') or ''
+    command = str(server.get('command') or '')
+    for entry in denied:
+        if entry == short or (address and '://' in entry and address.startswith(entry)) or (
+                command and (entry == command or entry == Path(command.replace('\\', '/')).name)):
+            return True
+    return False
+
+
 def filter_mcp(enabled_mcp, managed):
-    """The MCP servers to install without those IT refuses (mcp.denied by name, every stdio server when mcp.allow_stdio = false,
-    a program outside mcp.allowed_executables, a URL outside mcp.allowed_http), and the notices. A refused server marked
-    required = true stops the installation; required itself is AI Kit's, never written into a CLI. Names carry ai-kit-."""
+    """The MCP servers to install without those IT refuses (mcp.denied by name, URL prefix or executable; every stdio server when
+    mcp.allow_stdio = false; when IT lists identities in mcp.allowed_stdio or mcp.allowed_http, any server of that transport
+    whose exact identity is not listed), and the notices. A refused server marked required = true stops the installation;
+    required itself is AI Kit's, never written into a CLI. Names carry the ai-kit- prefix."""
     mcp = (managed or {}).get('mcp', {})
-    denied, stdio = set(mcp.get('denied', [])), mcp.get('allow_stdio', True)
-    executables, http = mcp.get('allowed_executables') or [], mcp.get('allowed_http') or []
+    denied, stdio = mcp.get('denied', []), mcp.get('allow_stdio', True)
+    allowed_stdio, allowed_http = mcp.get('allowed_stdio'), mcp.get('allowed_http')
     kept, notices = {}, []
     for name, server in enabled_mcp.items():
         short = name[len('ai-kit-'):] if name.startswith('ai-kit-') else name
         notices += server_warnings(short, server)
-        command, address = server.get('command'), server.get('httpUrl') or server.get('url')
-        why = ('refused by IT (managed.toml mcp.denied)' if short in denied
-               else 'local (stdio) servers are refused by IT (managed.toml mcp.allow_stdio = false)' if not stdio and command
-               else 'its program is not in managed.toml mcp.allowed_executables' if command and executables and not (
-                   command in executables or Path(command.replace('\\', '/')).name in executables)
-               else 'its URL is not in managed.toml mcp.allowed_http' if address and http and not any(
-                   address.split('://', 1)[-1].startswith(prefix) for prefix in http)
+        local, identity = bool(server.get('command')), server_identity(server)
+        why = ('refused by IT (managed.toml mcp.denied)' if denied_match(short, server, denied)
+               else 'local (stdio) servers are refused by IT (managed.toml mcp.allow_stdio = false)' if not stdio and local
+               else 'its identity '+identity+' is not in managed.toml mcp.allowed_stdio' if local and allowed_stdio is not None and identity not in allowed_stdio
+               else 'its identity '+identity+' is not in managed.toml mcp.allowed_http' if not local and allowed_http is not None and identity not in allowed_http
                else None)
         if why and server.get('required') is True:
             raise KitError('MCP server '+short+' is required but '+why+': nothing was changed. Ask IT or the owner of the source.')

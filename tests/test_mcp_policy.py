@@ -3,7 +3,7 @@ allowlists (mcp.allowed_executables, mcp.allowed_http); a refused server marked 
 one is removed with a notice; required is AI Kit's and never reaches a CLI."""
 import unittest
 
-from installer.config import filter_mcp, server_warnings
+from installer.config import filter_mcp, server_identity, server_warnings
 from installer.core import KitError
 from installer.settings import validate_server
 
@@ -18,17 +18,25 @@ class McpPolicyTests(unittest.TestCase):
         self.assertEqual(server_warnings('x', {'command': 'npx', 'args': ['-y', '@scope/server']}), [])
         self.assertIn('unknown key timeout', server_warnings('x', {'httpUrl': 'https://h/mcp', 'timeout': 5})[0])
 
-    def test_it_allowlists_and_required(self):
-        managed = {'mcp': {'allowed_executables': ['uvx'], 'allowed_http': ['mcp.example.org/']}}
-        servers = {'ai-kit-ok': {'command': '/usr/local/bin/uvx', 'args': ['tool']}, 'ai-kit-npx': {'command': 'npx'},
-                   'ai-kit-web': {'httpUrl': 'https://mcp.example.org/data'}, 'ai-kit-evil': {'url': 'https://evil.example.org/mcp'}}
-        kept, notices = filter_mcp(servers, managed)
+    def test_it_lists_exact_identities_and_required(self):
+        ok, npx = {'command': '/usr/local/bin/uvx', 'args': ['tool==1.2.0']}, {'command': 'npx', 'args': ['-y', 'pkg']}
+        web, evil = {'httpUrl': 'https://mcp.example.org/data'}, {'url': 'https://evil.example.org/mcp'}
+        managed = {'mcp': {'allowed_stdio': [server_identity(ok)], 'allowed_http': [server_identity(web)]}}
+        kept, notices = filter_mcp({'ai-kit-ok': ok, 'ai-kit-npx': npx, 'ai-kit-web': web, 'ai-kit-evil': evil}, managed)
         self.assertEqual(sorted(kept), ['ai-kit-ok', 'ai-kit-web'])
-        self.assertTrue(any('npx not installed: its program is not in managed.toml mcp.allowed_executables' in n for n in notices))
-        self.assertTrue(any('evil not installed: its URL is not in managed.toml mcp.allowed_http' in n for n in notices))
+        self.assertTrue(any('npx not installed: its identity sha256:' in n and 'mcp.allowed_stdio' in n for n in notices))
+        # A changed argument is another identity; a rename is the same one.
+        self.assertNotEqual(server_identity(ok), server_identity({**ok, 'args': ['tool==1.3.0']}))
+        self.assertIn('ai-kit-renamed', filter_mcp({'ai-kit-renamed': dict(ok)}, managed)[0])
         with self.assertRaises(KitError) as caught:
-            filter_mcp({'ai-kit-npx': {'command': 'npx', 'required': True}}, managed)
+            filter_mcp({'ai-kit-npx': {**npx, 'required': True}}, managed)
         self.assertIn('is required but', str(caught.exception))
+
+    def test_denied_by_name_url_prefix_or_executable(self):
+        servers = {'ai-kit-a': {'command': 'uvx', 'args': ['a']}, 'ai-kit-b': {'httpUrl': 'https://legacy.example.org/mcp/b'},
+                   'ai-kit-c': {'command': '/opt/tools/dbtool'}, 'ai-kit-d': {'httpUrl': 'https://ok.example.org/mcp'}}
+        kept, _ = filter_mcp(servers, {'mcp': {'denied': ['a', 'https://legacy.example.org/', 'dbtool']}})
+        self.assertEqual(list(kept), ['ai-kit-d'])
 
     def test_required_never_reaches_a_cli(self):
         kept, _ = filter_mcp({'ai-kit-a': {'httpUrl': 'https://h/mcp', 'required': False}}, None)

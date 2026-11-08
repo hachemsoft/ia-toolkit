@@ -29,6 +29,9 @@ def status(home, verbose=False):
     installed = state.get('installed') or {}
     for kind in ('skills', 'commands', 'agents'):
         print(kind.capitalize()+' ('+str(len(installed.get(kind, [])))+'): '+', '.join(installed.get(kind, [])))
+    from .config import server_identity
+    for name, server in sorted((state.get('mcp') or {}).items()):
+        print('MCP '+name+': '+server_identity(server)+' (the identity IT lists in managed.toml mcp.allowed_stdio or allowed_http)')
     for adapter in ADAPTERS:
         if adapter.NAME in (state.get('targets') or []):
             caps = getattr(adapter, 'CAPABILITIES', {})
