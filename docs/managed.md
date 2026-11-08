@@ -20,6 +20,8 @@ The path is fixed: no environment variable moves it. The workstation is administ
 
 ## Keys (managed_schema = 1)
 
+Editors complete and check the file with `schemas/managed.schema.json` (add `#:schema <path to it>` as its first line).
+
 ```toml
 managed_schema = 1
 

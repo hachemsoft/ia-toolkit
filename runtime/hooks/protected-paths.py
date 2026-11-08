@@ -19,7 +19,7 @@ PATTERN_FILES = (os.path.join('.ai-kit', 'protected-paths'), os.path.join('.gemi
 # Configuration of the kit and of the CLIs, always protected: an agent must not be able to switch off its own guardrails.
 # Relative to the home folder; a trailing / protects a whole folder. ~/.ai-kit/learning/ (personal /learn progress) and
 # ~/.ai-kit/context/30_USER.md (the person's own file) stay writable. Every file the kit installed (state.json) is protected too.
-CONFIG_PATHS = ('.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/state.json', '.ai-kit/hooks/', '.ai-kit/bin/', '.ai-kit/backups/',
+CONFIG_PATHS = ('.ai-kit/aikit.toml', '.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/state.json', '.ai-kit/hooks/', '.ai-kit/bin/', '.ai-kit/backups/',
                 '.ai-kit/runtime/', '.ai-kit/schemas/', '.ai-kit/context/00_', '.ai-kit/context/10_', '.ai-kit/context/20_',
                 '.gemini/00_', '.gemini/10_', '.gemini/20_', '.gemini/settings.json', '.gemini/.env', '.gemini/config/plugins/ai-kit/',
                 '.codex/config.toml', '.codex/AGENTS.md', '.codex/ai-kit/', '.claude/settings.json', '.claude/CLAUDE.md', '.claude/agents/ai-kit-',

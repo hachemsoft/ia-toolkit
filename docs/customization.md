@@ -155,6 +155,33 @@ whats-new = false
 
 `frictions` sets what the agent does on the six friction signals: `propose` (default), it suggests `/friction` and you confirm; `auto`, it logs the friction itself without asking and says so in one line; `off`, it says nothing. The line stays on your workstation, unless your organization defines a friction tracker: the frictions of the chosen sources are then sent as issues through your own `glab` or `gh` (`share_frictions = false` keeps yours local). Then `update`. Every key is optional; a missing key changes nothing. A command added through `extra_commands` comes with its skills and their dependencies; a skill required by another one cannot be disabled on its own, and `update` says so. In a terminal, `ai-kit friction --mode` shows the current mode and where it comes from, `ai-kit friction --mode auto` (or `propose`, `off`) writes it in your `overrides.toml` and reapplies the agents' context; `ai-kit friction --list` shows your last frictions.
 
+## `aikit.toml` (AI Kit 2)
+
+AI Kit 2 reads your settings from `~/.ai-kit/aikit.toml` when it exists. `ai-kit update --migrate-config` writes it from your `overrides.toml` and prints where each setting went (`--dry-run` first to preview). `overrides.toml` stays as it is, so a return to AI Kit 0.52 finds your settings, and is no longer read. The kit then writes your choices (from the guided installer or `ai-kit friction --mode`) into `aikit.toml`, keeping your comments.
+
+```toml
+#:schema ./schemas/aikit.schema.json
+schema = 1
+
+[user]
+extra_skills = ["prototype"]        # added to your profile
+disabled_commands = ["learn"]       # removed
+skill_prefix = "ai-kit-"
+
+[hooks]
+dbt-prod-guard = true
+
+[mcp]
+enabled = ["docs"]                  # servers of the organization turned on
+denied = ["legacy-db"]              # turned off
+
+[frictions]
+capture = "propose"                 # propose | auto | off
+publication = "disabled"            # approval (default) | disabled: your frictions stay local
+```
+
+Not carried over, and said by the migration: your own MCP server definitions (add them in your CLI), and `news` (AI Kit 2 no longer reads the kit remote at session start). An unknown key is reported by `doctor` and ignored; a wrong type stops the command. The kit's own content declares the oldest AI Kit that can apply it (`aikit.toml` at the root of the kit, `min_engine`): an older engine refuses it and changes nothing.
+
 ## Authentication and model
 
 The kit configures neither: signing in to the model provider and choosing a model belong to each CLI and to the company's IT procedure (personal account, licence, cloud project, API key…). Configure them in the CLI as usual; `doctor --live` still recognizes the usual failures and says what to set, in the CLI or in its own files, never in `overrides.toml`. The agents inherit the model of the session.

@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 
 from .core import KitError, digest
-from .toml_files import read_toml
+from .toml_files import dump_toml, parse_toml, read_toml
 
 MANAGED_SCHEMAS = {1}
 FRICTION_CAPTURE = ('propose', 'auto', 'off')
@@ -193,3 +193,137 @@ def summary(managed, path=None):
         return None
     keys = sorted(k for k in managed if k != 'managed_schema')
     return 'Managed by IT: '+str(path or managed_path())+' (sets '+(', '.join(keys) if keys else 'nothing')+').'
+
+
+# --- ~/.ai-kit/aikit.toml: the person's V2 settings (docs/managed.md, docs/v2/config.md) ---------------------------------
+# overrides.toml keeps working through an adapter: personal_settings() reads aikit.toml when it exists (overrides.toml is
+# then no longer read, and stays untouched for a return to 0.52), otherwise overrides.toml as before.
+
+AIKIT_FILE = 'aikit.toml'
+AIKIT_SCHEMAS = {1}
+USER_LISTS = ('extra_skills', 'disabled_skills', 'extra_commands', 'disabled_commands', 'extra_agents', 'disabled_agents')
+AIKIT_SECTIONS = {'user': USER_LISTS + ('skill_prefix',), 'hooks': None, 'mcp': ('denied', 'enabled'), 'frictions': ('capture', 'publication')}
+PERSONAL_PUBLICATION = ('approval', 'disabled')  # the person can only restrict (auto is set by IT or the organization)
+
+
+def load_aikit(path):
+    """The validated person's aikit.toml and its warnings. A wrong type or schema stops the command (KitError); an unknown key
+    is a warning, shown by doctor and update, so that a newer file still works with this engine."""
+    path = Path(path)
+    data = read_toml(path)
+    where = '~/.ai-kit/'+AIKIT_FILE
+    if data.get('schema') not in AIKIT_SCHEMAS or isinstance(data.get('schema'), bool):
+        raise KitError(where+': schema must be one of '+', '.join(str(s) for s in sorted(AIKIT_SCHEMAS))+'.')
+    warnings = ['[Check] '+where+': unknown key '+k+', ignored.' for k in sorted(set(data) - set(AIKIT_SECTIONS) - {'schema'})]
+    for section, keys in AIKIT_SECTIONS.items():
+        table = data.get(section, {})
+        if not isinstance(table, dict):
+            raise KitError(where+': ['+section+'] must be a table.')
+        if keys is not None:
+            warnings += ['[Check] '+where+': unknown key '+section+'.'+k+', ignored.' for k in sorted(set(table) - set(keys))]
+        for key, value in table.items():
+            name = section+'.'+key
+            if section == 'hooks' and not isinstance(value, bool):
+                raise KitError(where+': '+name+' must be true or false.')
+            if (key in USER_LISTS or section == 'mcp') and not (isinstance(value, list) and all(isinstance(v, str) and v for v in value)):
+                raise KitError(where+': '+name+' must be a list of names.')
+            if key == 'skill_prefix' and not isinstance(value, str):
+                raise KitError(where+': '+name+' must be a text.')
+            if key == 'capture' and value not in FRICTION_CAPTURE:
+                raise KitError(where+': '+name+' must be '+', '.join(FRICTION_CAPTURE)+'.')
+            if key == 'publication' and value not in PERSONAL_PUBLICATION:
+                raise KitError(where+': '+name+' must be '+' or '.join(PERSONAL_PUBLICATION)+' (auto is set by IT or the organization).')
+    return data, warnings
+
+
+def to_overrides(data):
+    """aikit.toml in the engine's settings vocabulary (the keys of overrides.toml), so that one resolver serves both files."""
+    user, mcp, frictions = data.get('user', {}), data.get('mcp', {}), data.get('frictions', {})
+    out = {k: list(user[k]) for k in USER_LISTS if k in user}
+    if 'skill_prefix' in user:
+        out['skill_prefix'] = user['skill_prefix']
+    if data.get('hooks'):
+        out['hooks'] = dict(data['hooks'])
+    servers = {**{n: True for n in mcp.get('enabled', [])}, **{n: False for n in mcp.get('denied', [])}}  # a refusal wins
+    if servers:
+        out['mcp'] = servers
+    if 'capture' in frictions:
+        out['frictions'] = frictions['capture']
+    if frictions.get('publication') == 'disabled':
+        out['share_frictions'] = False
+    return out
+
+
+def aikit_from_overrides(overrides, schema_uri=None):
+    """The aikit.toml text for a person's overrides.toml, and the migration report: one line per V1 key, where it goes, or why
+    it is not carried over. Checked by reading it back and translating it again."""
+    data, report = {'schema': 1}, []
+    def put(section, key, value, origin):
+        data.setdefault(section, {})[key] = value
+        report.append(origin+' -> '+section+'.'+key)
+    for key in USER_LISTS:
+        if overrides.get(key):
+            put('user', key, list(overrides[key]), key)
+    if 'skill_prefix' in overrides:
+        put('user', 'skill_prefix', overrides['skill_prefix'], 'skill_prefix')
+    for name, value in (overrides.get('hooks') or {}).items():
+        put('hooks', name, value, 'hooks.'+name)
+    for name, value in (overrides.get('mcp') or {}).items():
+        if value is True:
+            data.setdefault('mcp', {}).setdefault('enabled', []).append(name)
+            report.append('mcp.'+name+' = true -> mcp.enabled')
+        elif value is False:
+            data.setdefault('mcp', {}).setdefault('denied', []).append(name)
+            report.append('mcp.'+name+' = false -> mcp.denied')
+        else:
+            report.append('mcp.'+name+' (your own server) not carried over: add it in your CLI; overrides.toml keeps it for AI Kit 0.52')
+    if 'frictions' in overrides:
+        put('frictions', 'capture', overrides['frictions'], 'frictions')
+    if overrides.get('share_frictions') is False:
+        put('frictions', 'publication', 'disabled', 'share_frictions = false')
+    if 'news' in overrides:
+        report.append('news not carried over: AI Kit 2 no longer reads the kit remote at session start')
+    for key in sorted(set(overrides) - set(USER_LISTS) - {'skill_prefix', 'hooks', 'mcp', 'frictions', 'share_frictions', 'news', '$schema'}):
+        report.append(key+' not carried over: not a setting of AI Kit 2')
+    text = dump_toml(data, schema_uri)
+    expected = {k: v for k, v in to_overrides(data).items()}
+    if to_overrides(parse_toml(text)) != expected:
+        raise KitError('The migration to aikit.toml would change a value: nothing was written. Please report it.')
+    return text, report
+
+
+# --- The content's manifest: aikit.toml at the root of a content tree (a Core source later) ------------------------------
+
+SOURCE_SCHEMAS = {1}
+
+
+def version_tuple(text):
+    parts = str(text).split('.')
+    if len(parts) != 3 or not all(p.isdigit() for p in parts):
+        raise ValueError(text)
+    return tuple(int(p) for p in parts)
+
+
+def check_source(root, engine_version):
+    """The content tree's manifest (name, min_engine), or None when it has none (the V1 layout). Refuses a content that needs a
+    newer engine: installing it with an older one would install resources it cannot apply."""
+    path = Path(root)/AIKIT_FILE
+    if not path.is_file():
+        return None
+    data = read_toml(path)
+    where = str(path)
+    if data.get('schema') not in SOURCE_SCHEMAS or isinstance(data.get('schema'), bool):
+        raise KitError(where+': schema must be one of '+', '.join(str(s) for s in sorted(SOURCE_SCHEMAS))+'.')
+    unknown = sorted(set(data) - {'schema', 'name', 'min_engine'})
+    if unknown:
+        raise KitError(where+': unknown key '+', '.join(unknown)+'.')
+    if not isinstance(data.get('name'), str) or not data['name']:
+        raise KitError(where+': name must be a text.')
+    try:
+        needed = version_tuple(data.get('min_engine', '0.0.0'))
+    except ValueError:
+        raise KitError(where+': min_engine must be a version X.Y.Z.') from None
+    if needed > version_tuple(engine_version):
+        raise KitError('The content '+data['name']+' needs AI Kit '+data['min_engine']+' or newer; this one is '+engine_version
+                       +'. Update AI Kit first; nothing was changed.')
+    return data

@@ -364,7 +364,11 @@ LEGACY_PERSONAL_FILE = 'overrides.json'  # before 0.37: becomes overrides.toml a
 
 
 def personal_settings(kit):
-    """The person's settings: ~/.ai-kit/overrides.toml, or the overrides.json of a version before 0.37 not converted yet."""
+    """The person's settings: ~/.ai-kit/aikit.toml (2.0) when it exists, translated to the engine's keys; otherwise
+    ~/.ai-kit/overrides.toml, or the overrides.json of a version before 0.37 not converted yet."""
+    from .config import AIKIT_FILE, load_aikit, to_overrides
+    if (kit/AIKIT_FILE).exists():
+        return to_overrides(load_aikit(kit/AIKIT_FILE)[0])
     if (kit/PERSONAL_FILE).exists() or not (kit/LEGACY_PERSONAL_FILE).exists():
         return read_toml(kit/PERSONAL_FILE, {})
     return read_json(kit/LEGACY_PERSONAL_FILE, {})

@@ -10,7 +10,7 @@ from .commit import commit_changes, KIT_MANAGED
 from .doctor import source_folder
 
 
-PERSONAL_KEPT = ('.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learning/', '.ai-kit/runtime/')
+PERSONAL_KEPT = ('.ai-kit/aikit.toml', '.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learning/', '.ai-kit/runtime/')
 
 
 def _nothing():

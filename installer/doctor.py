@@ -444,7 +444,19 @@ def doctor_checks(home, cwd=None, problems=None):
             status(not problem, problem or USER_CONTEXT+' is plain UTF-8 text')
             if not problem and SECRET.search(user_file.read_text(encoding='utf-8')):
                 status(False, USER_CONTEXT+' seems to contain a secret (key, token or password): remove it, the agent reads this file')
-        for personal_file in (home/'.ai-kit'/PERSONAL_FILE, home/'.ai-kit'/LEGACY_PERSONAL_FILE):
+        # 2.0: aikit.toml, when present, is the person's file; overrides.toml is kept for a return to 0.52 but no longer read.
+        from .config import AIKIT_FILE, load_aikit
+        if (home/'.ai-kit'/AIKIT_FILE).is_file():
+            try:
+                for warning in load_aikit(home/'.ai-kit'/AIKIT_FILE)[1]:
+                    status(False, warning.replace('[Check] ', ''))
+            except KitError as exc:
+                status(False, str(exc))
+            if (home/'.ai-kit'/PERSONAL_FILE).is_file():
+                print('[Info] ~/.ai-kit/'+PERSONAL_FILE+' is kept for AI Kit 0.52 and no longer read: your settings are in ~/.ai-kit/'+AIKIT_FILE+'.')
+        else:
+            print('[Info] Your settings are in ~/.ai-kit/'+PERSONAL_FILE+'; ai-kit update --migrate-config moves them to aikit.toml (AI Kit 2).')
+        for personal_file in (home/'.ai-kit'/AIKIT_FILE, home/'.ai-kit'/PERSONAL_FILE, home/'.ai-kit'/LEGACY_PERSONAL_FILE):
             if personal_file.is_file() and SECRET.search(personal_file.read_text(encoding='utf-8', errors='replace')):
                 status(False, '~/.ai-kit/'+personal_file.name+' seems to contain a secret: write ${VARIABLE} instead and define it in your environment (docs/mcp.md)')
         for rel,expected in state.get('files',{}).items():

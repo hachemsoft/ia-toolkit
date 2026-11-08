@@ -1,0 +1,5 @@
+#:schema ./schemas/source.schema.json
+# The manifest of the kit's content: its name and the oldest AI Kit that can apply it (AI Kit 2.0).
+schema = 1
+name = "core"
+min_engine = "2.0.0"

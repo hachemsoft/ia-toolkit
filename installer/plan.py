@@ -3,7 +3,8 @@ practices, skills, agents and guardrails, and the old files to remove. apply (in
 import re
 
 from .core import content_root, is_guardrail, ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, adopt_user_copy
-from .toml_files import dump_toml, set_list, set_key, set_schema
+from .toml_files import dump_toml, set_list, set_key, set_schema, set_section_key
+from .config import AIKIT_FILE
 from .adapters import ADAPTERS
 from .settings import (organization, team_settings, personal_settings, merge_settings, allowed_commands, resolve_skills,
                        practice_file, RENAMED_SKILLS, PERSONAL_FILE, LEGACY_PERSONAL_FILE, CHOICE_KEYS, SCALAR_CHOICES)
@@ -54,6 +55,12 @@ def personal_file(kit, choices, deletes):
     # The schema is copied into ~/.ai-kit: the personal file never points to the extracted kit folder, which may be deleted.
     schema_uri = (kit/'schemas'/'overrides.schema.json').as_uri()
     personal_path, legacy_path, notices = kit/PERSONAL_FILE, kit/LEGACY_PERSONAL_FILE, []
+    if (kit/AIKIT_FILE).exists():
+        # 2.0: the person moved to aikit.toml; the choices go to its [user] section (frictions to [frictions] capture).
+        path, text = kit/AIKIT_FILE, (kit/AIKIT_FILE).read_text(encoding='utf-8-sig')
+        for key, values in choices.items():
+            text = set_section_key(text, 'frictions', 'capture', values, '~/.ai-kit/aikit.toml') if key == 'frictions' else set_section_key(text, 'user', key, list(values), '~/.ai-kit/aikit.toml')
+        return path, text.encode('utf-8'), notices
     if personal_path.exists():
         text = personal_path.read_text(encoding='utf-8-sig')
         if re.search(r'(?m)^#:schema .*schemas/overrides\.schema\.json\s*$', text):
