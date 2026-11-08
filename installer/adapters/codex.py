@@ -106,6 +106,16 @@ def codex_config_block(agent_entries, hook_commands, mcp_servers):
 
 # --- Adapter interface ---------------------------------------------------------------------------------------------
 NAME = 'codex'
+
+# V2 slice 4: what this CLI does with each kit capability (docs/v2/resources.md, measured); doctor shows it.
+CAPABILITIES = {
+    'context': ('DEGRADED', 'a copy: run update after a change'),
+    'skills': ('OK', ''),
+    'user-only skills': ('OK', 'allow_implicit_invocation = false'),
+    'commands': ('DEGRADED', '$name, not /name'),
+    'sub-agents': ('DEGRADED', 'instructions only: the sandbox and approvals apply'),
+    'guardrails': ('DEGRADED', 'Codex asks to trust the hooks once'),
+}
 LABEL = 'Codex CLI'
 COMMAND = 'codex'
 VERIFIED = '0.164.0'  # the CLI version the kit was last checked on (docs/cli/matrice.md); doctor says when a newer one runs

@@ -262,7 +262,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     notices += [retired_key_notice(key) for key in RETIRED_KEYS if key in overrides]
     p = Plan(active=[a.NAME for a in active], notices=notices,
         skill_notes={skill: skill_note(skill, selected, catalog) for skill in selected},
-        home=home, kit=kit, state=state, old_files=old_files, overrides=overrides, profile_id=profile_id, profile=profile,
+        home=home, kit=kit, state=state, old_files=old_files, overrides=overrides,
         catalog=catalog, selected=selected, skill_sources=sources, commands=commands, context_names=context_names,
         kit_text=kit_text, practice_names=practice_names, practice_texts=practice_texts, user_file=context_dir/USER_CONTEXT, context_dir=context_dir,
         user_context_text=user_context_text(identity), agents=agents, hooks_dir=hooks_dir,

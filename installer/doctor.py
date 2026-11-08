@@ -437,13 +437,21 @@ def doctor_checks(home, cwd=None, problems=None):
                 print('Settings and where they come from: '+', '.join(k+' ('+v+')' for k, v in origin.items()))
         except KitError as exc:
             status(False, str(exc))
+        # V2 slice 4: per CLI, what works natively, what is degraded and what is blocked, said rather than hidden.
+        from .adapters import ADAPTERS
+        for adapter in ADAPTERS:
+            if adapter.NAME in (state.get('targets') or []):
+                caps = getattr(adapter, 'CAPABILITIES', {})
+                parts = [level+': '+', '.join(k+(' ('+w+')' if w and level != 'OK' else '') for k, (s, w) in caps.items() if s == level)
+                         for level in ('OK', 'DEGRADED', 'BLOCKED') if any(s == level for s, _ in caps.values())]
+                print('[Info] '+adapter.LABEL+' capabilities: '+' | '.join(parts))
         tracker_checks(home, state, status)
         news_checks(home, state, status)
         identity = state.get('user', {})
         print('Recorded identity: '+(identity.get('email') or identity.get('name') or 'none')+(' (source '+identity['source']+')' if identity.get('source') else ''))
         profile = load_profile(state['profile'])
         profile = {**profile, 'practices': state.get('practices') or profile['practices']}  # with the person's team
-        ctx = DoctorContext(profile=profile, load_commands=load_commands, managed_context_names=managed_context_names,
+        ctx = DoctorContext(context_names=managed_context_names(profile), load_commands=load_commands,
                                     allowed_domains=allowed_domains, domain_allowed=domain_allowed)
         context = state.get('context_dir', '.gemini')
         user_file = home/context/USER_CONTEXT
