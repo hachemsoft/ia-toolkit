@@ -1,6 +1,14 @@
 ---
 name: improve-codebase-architecture
 description: "Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick. Use when the user types /audit or explicitly asks for this step; do not activate on your own for unrelated requests."
+metadata:
+  aikit-version: "1.1.0"
+  aikit-origin: "upstream"
+  aikit-license: "skills/LICENSE-UPSTREAM-MIT"
+  aikit-summary: "Find the modules to deepen, HTML report, then an interview on the ones selected."
+  aikit-category: "tool"
+  aikit-tier: "optional"
+  aikit-requires: "grilling,codebase-design"
 ---
 
 # Improve Codebase Architecture

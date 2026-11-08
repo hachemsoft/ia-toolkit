@@ -119,7 +119,9 @@ def next_case_file(repo, name):
 
 def skill_changes(repo, name, owner, description, category):
     """{path: full new text}: nothing is written here."""
-    body = ['---', 'name: '+name, 'description: '+json.dumps(description, ensure_ascii=False), '---', '', '# '+name, '',
+    meta = ['metadata:', '  aikit-version: "1.0.0"', '  aikit-origin: "contrib"', '  aikit-owner: '+json.dumps(owner, ensure_ascii=False),
+            '  aikit-summary: '+json.dumps(description, ensure_ascii=False), '  aikit-category: '+json.dumps(category), '  aikit-tier: "optional"']
+    body = ['---', 'name: '+name, 'description: '+json.dumps(description, ensure_ascii=False)] + meta + ['---', '', '# '+name, '',
             '<… the steps, in the imperative: what the agent does, in order …>', '', '## Forbidden',
             '<… what the agent must never do with this skill …>']
     if category == 'domain':
@@ -161,7 +163,8 @@ def skill_answers(args, ui, repo):
 
 def agent_changes(repo, name, owner, description):
     body = ['---', 'name: '+name, 'description: '+json.dumps(description, ensure_ascii=False), 'tools: [read_file, grep_search]',
-            'max_turns: 12', 'timeout_mins: 5', '---', '',
+            'max_turns: 12', 'timeout_mins: 5', 'metadata:', '  aikit-version: "1.0.0"', '  aikit-origin: "contrib"',
+            '  aikit-owner: '+json.dumps(owner, ensure_ascii=False), '---', '',
             '<… its mission: what the parent gives it, what it looks for, what it never does, what it delivers …>']
     entry = {'path': 'agents/contrib/'+name+'.md', 'version': '1.0.0', 'origin': 'contrib', 'owner': owner}
     return {'agents/contrib/'+name+'.md': '\n'.join(body)+'\n',

@@ -1,6 +1,14 @@
 ---
 name: write-a-skill
 description: Create new agent skills with proper structure, progressive disclosure, and bundled resources. Use when user wants to create, write, or build a new skill.
+metadata:
+  aikit-version: "1.0.0"
+  aikit-origin: "upstream"
+  aikit-license: "skills/LICENSE-UPSTREAM-MIT"
+  aikit-summary: "Create a skill: structure, progressive disclosure, resources."
+  aikit-category: "tool"
+  aikit-tier: "optional"
+  aikit-requires: "writing-great-skills"
 ---
 
 # Writing Skills

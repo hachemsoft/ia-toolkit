@@ -2,6 +2,18 @@
 name: implement-spec
 description: "Implement the result of /to-spec and /to-tickets in code."
 disable-model-invocation: true
+metadata:
+  aikit-version: "1.0.0"
+  aikit-origin: "upstream"
+  aikit-license: "skills/LICENSE-UPSTREAM-MIT"
+  aikit-summary: "Implement a whole spec: tickets read as a graph, sub-agents in parallel, integration branch."
+  aikit-category: "workflow"
+  aikit-tier: "optional"
+  aikit-requires: "implement,tdd,code-review"
+  aikit-needs-agents: "true"
+  aikit-optional-setup-workflow: "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue"
+  aikit-optional-to-spec: "start from the spec or tickets the person provides"
+  aikit-optional-to-tickets: "start from the spec or tickets the person provides"
 ---
 
 You have been provided a spec. This spec should have tickets associated with it, describing how to implement the spec.

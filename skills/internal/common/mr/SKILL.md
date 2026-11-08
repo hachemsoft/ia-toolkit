@@ -2,11 +2,13 @@
 name: mr
 description: "Use when writing a merge request (MR) body."
 metadata:
-  credits:
-    skill: show-me
-    author: Dex Horthy
-    organisation: Humanlayer
-    url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
+  credits: "show-me by Dex Horthy (Humanlayer), https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
+  aikit-version: "1.0.1"
+  aikit-origin: "upstream"
+  aikit-license: "skills/LICENSE-UPSTREAM-MIT"
+  aikit-summary: "Write a merge request description: visual summary, evidence, merge risk."
+  aikit-category: "workflow"
+  aikit-tier: "core"
 ---
 
 Use this template for writing the MR body:

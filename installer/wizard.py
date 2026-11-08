@@ -12,6 +12,7 @@ import sys
 
 from . import cli
 from .adapters import ADAPTERS
+from . import resolve
 from .core import content_root, ROOT, EMAIL, KitError, read_json, load_commands
 from .ui import Cancelled
 
@@ -123,8 +124,8 @@ def customize(ui, home, profile_id):
     if keep == 'keep':
         return None
     profile = cli.load_profile(profile_id)
-    catalog = read_json(content_root()/'skills/catalog.json')
-    agent_catalog = read_json(content_root()/'agents/catalog.json')
+    catalog = resolve.skill_catalog(content_root())
+    agent_catalog = resolve.agent_catalog(content_root())
     manifest = load_commands()
     personal = cli.personal_settings(home/'.ai-kit')
     extra = [cli.RENAMED_SKILLS.get(s, s) for s in personal.get('extra_skills', [])]

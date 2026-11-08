@@ -77,7 +77,7 @@
   },
   "mr": {
     "path": "skills/internal/common/mr",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "origin": "upstream",
     "license": "skills/LICENSE-UPSTREAM-MIT",
     "description": "Write a merge request description: visual summary, evidence, merge risk.",

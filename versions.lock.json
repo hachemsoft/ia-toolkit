@@ -1,44 +1,52 @@
 {
   "skills": {
-    "grilling": {
+    "bigquery-cost-review": {
       "version": "1.0.0",
-      "digest": "0791aa05d9cfc96e"
+      "digest": "6c93d61c6f558674"
+    },
+    "bigquery-query-review": {
+      "version": "1.0.0",
+      "digest": "aee9bd7e09991590"
+    },
+    "dbt-model-change": {
+      "version": "1.0.0",
+      "digest": "954a5d46790dd368"
+    },
+    "incremental-replay": {
+      "version": "1.0.0",
+      "digest": "823bbc423001e34c"
+    },
+    "kpi-definition": {
+      "version": "1.0.0",
+      "digest": "88c3ed28d0ce95d8"
+    },
+    "perimeter-brief": {
+      "version": "1.0.0",
+      "digest": "79d19dcb9c6ea0b7"
+    },
+    "sql-review": {
+      "version": "1.0.0",
+      "digest": "e9e80167beb72b49"
+    },
+    "architecture-decision": {
+      "version": "1.0.0",
+      "digest": "8d9375455a24b232"
+    },
+    "code-review": {
+      "version": "1.0.0",
+      "digest": "64934eff55634298"
     },
     "codebase-design": {
       "version": "1.0.0",
       "digest": "35556307e5767556"
     },
-    "prototype": {
-      "version": "1.0.0",
-      "digest": "678876c92e1d487e"
-    },
-    "domain-modeling": {
-      "version": "1.0.0",
-      "digest": "38de8019112f21fd"
-    },
-    "tdd": {
-      "version": "1.0.0",
-      "digest": "f7f68257a969b36d"
-    },
     "diagnosing-bugs": {
       "version": "1.0.0",
       "digest": "09d97ae135e0145f"
     },
-    "writing-for-agents": {
+    "domain-modeling": {
       "version": "1.0.0",
-      "digest": "764d178582565c68"
-    },
-    "investigation": {
-      "version": "1.0.0",
-      "digest": "4b27d457ae5a8aab"
-    },
-    "mr": {
-      "version": "1.0.0",
-      "digest": "4cec0cb05343554e"
-    },
-    "routing": {
-      "version": "1.0.0",
-      "digest": "dec56f6757ff9848"
+      "digest": "38de8019112f21fd"
     },
     "grill-me": {
       "version": "1.0.0",
@@ -47,6 +55,70 @@
     "grill-with-docs": {
       "version": "1.0.0",
       "digest": "461f5e19db887ddd"
+    },
+    "grilling": {
+      "version": "1.0.0",
+      "digest": "0791aa05d9cfc96e"
+    },
+    "handover": {
+      "version": "1.1.0",
+      "digest": "0f113b64a386c9da"
+    },
+    "implement-spec": {
+      "version": "1.0.0",
+      "digest": "ea3592a7e7e179ae"
+    },
+    "implement": {
+      "version": "1.0.0",
+      "digest": "ce8df445771332e4"
+    },
+    "improve-codebase-architecture": {
+      "version": "1.1.0",
+      "digest": "520ef079ce23173b"
+    },
+    "init-project-context": {
+      "version": "1.1.0",
+      "digest": "6036d9813bf4762a"
+    },
+    "investigation": {
+      "version": "1.0.0",
+      "digest": "4b27d457ae5a8aab"
+    },
+    "manual-steps": {
+      "version": "1.0.0",
+      "digest": "3771d3fc9c70433a"
+    },
+    "mr": {
+      "version": "1.0.1",
+      "digest": "85301eef6423f09f"
+    },
+    "prototype": {
+      "version": "1.0.0",
+      "digest": "678876c92e1d487e"
+    },
+    "retrospective": {
+      "version": "1.1.0",
+      "digest": "15ebacab6d1e8ab1"
+    },
+    "routing": {
+      "version": "1.0.0",
+      "digest": "dec56f6757ff9848"
+    },
+    "setup-workflow": {
+      "version": "1.0.0",
+      "digest": "f9ce06861b513d88"
+    },
+    "tdd": {
+      "version": "1.0.0",
+      "digest": "f7f68257a969b36d"
+    },
+    "teach": {
+      "version": "1.1.0",
+      "digest": "ddbe33f046572ad8"
+    },
+    "ticket-sorting": {
+      "version": "1.1.0",
+      "digest": "c12c268f261b837e"
     },
     "to-questionnaire": {
       "version": "1.1.0",
@@ -60,155 +132,83 @@
       "version": "1.0.0",
       "digest": "6e0c2ecfc298d9b7"
     },
-    "wayfinder": {
-      "version": "1.1.0",
-      "digest": "d98d20f0f8508813"
-    },
-    "implement": {
-      "version": "1.0.0",
-      "digest": "ce8df445771332e4"
-    },
-    "implement-spec": {
-      "version": "1.0.0",
-      "digest": "ea3592a7e7e179ae"
-    },
-    "code-review": {
-      "version": "1.0.0",
-      "digest": "64934eff55634298"
-    },
-    "ticket-sorting": {
-      "version": "1.1.0",
-      "digest": "c12c268f261b837e"
-    },
-    "retrospective": {
-      "version": "1.1.0",
-      "digest": "15ebacab6d1e8ab1"
-    },
-    "handover": {
-      "version": "1.1.0",
-      "digest": "0f113b64a386c9da"
-    },
     "wait-what": {
       "version": "1.1.0",
       "digest": "84343325c82b2d7c"
     },
-    "zoom-out": {
+    "wayfinder": {
       "version": "1.1.0",
-      "digest": "fbb060a6a07e5a9c"
-    },
-    "teach": {
-      "version": "1.1.0",
-      "digest": "ddbe33f046572ad8"
-    },
-    "improve-codebase-architecture": {
-      "version": "1.1.0",
-      "digest": "520ef079ce23173b"
-    },
-    "manual-steps": {
-      "version": "1.0.0",
-      "digest": "3771d3fc9c70433a"
-    },
-    "write-a-skill": {
-      "version": "1.0.0",
-      "digest": "03840258378476cb"
-    },
-    "writing-great-skills": {
-      "version": "1.0.0",
-      "digest": "dbfb5fc35653f4dc"
-    },
-    "setup-workflow": {
-      "version": "1.0.0",
-      "digest": "f9ce06861b513d88"
+      "digest": "d98d20f0f8508813"
     },
     "workflow-guide": {
       "version": "1.0.0",
       "digest": "0d27925817e21cef"
     },
-    "init-project-context": {
+    "write-a-skill": {
+      "version": "1.0.0",
+      "digest": "03840258378476cb"
+    },
+    "writing-for-agents": {
+      "version": "1.0.0",
+      "digest": "764d178582565c68"
+    },
+    "writing-great-skills": {
+      "version": "1.0.0",
+      "digest": "dbfb5fc35653f4dc"
+    },
+    "zoom-out": {
       "version": "1.1.0",
-      "digest": "6036d9813bf4762a"
-    },
-    "python-js-change": {
-      "version": "1.0.0",
-      "digest": "321ad16186f64ca3"
-    },
-    "sql-review": {
-      "version": "1.0.0",
-      "digest": "e9e80167beb72b49"
-    },
-    "dbt-model-change": {
-      "version": "1.0.0",
-      "digest": "954a5d46790dd368"
-    },
-    "bigquery-query-review": {
-      "version": "1.0.0",
-      "digest": "aee9bd7e09991590"
-    },
-    "kpi-definition": {
-      "version": "1.0.0",
-      "digest": "88c3ed28d0ce95d8"
-    },
-    "incremental-replay": {
-      "version": "1.0.0",
-      "digest": "823bbc423001e34c"
-    },
-    "bigquery-cost-review": {
-      "version": "1.0.0",
-      "digest": "6c93d61c6f558674"
-    },
-    "perimeter-brief": {
-      "version": "1.0.0",
-      "digest": "79d19dcb9c6ea0b7"
+      "digest": "fbb060a6a07e5a9c"
     },
     "java-change": {
       "version": "1.0.0",
       "digest": "03eca5f654fe0dbb"
     },
+    "python-js-change": {
+      "version": "1.0.0",
+      "digest": "321ad16186f64ca3"
+    },
     "infra-change": {
       "version": "1.0.0",
       "digest": "0af3858178215e18"
-    },
-    "architecture-decision": {
-      "version": "1.0.0",
-      "digest": "8d9375455a24b232"
     }
   },
   "agents": {
-    "repo-investigator": {
+    "dbt-reviewer": {
       "version": "1.0.0",
-      "digest": "c8f8ae9bfe1193a7"
-    },
-    "code-reviewer": {
-      "version": "1.0.0",
-      "digest": "310c26c9069f2c52"
+      "digest": "db789bec43cb6d8a"
     },
     "sql-reviewer": {
       "version": "1.0.0",
       "digest": "10ac6c5bad9654f6"
     },
-    "dbt-reviewer": {
+    "architecture-reviewer": {
       "version": "1.0.0",
-      "digest": "db789bec43cb6d8a"
-    },
-    "verifier": {
-      "version": "1.0.0",
-      "digest": "85cd452a22c69db5"
+      "digest": "7afbe84844834e8a"
     },
     "doubter": {
       "version": "1.0.0",
       "digest": "7f150b1cdea33c15"
     },
+    "repo-investigator": {
+      "version": "1.0.0",
+      "digest": "c8f8ae9bfe1193a7"
+    },
     "security-reviewer": {
       "version": "1.0.0",
       "digest": "8a72ef6c4c004a94"
     },
+    "verifier": {
+      "version": "1.0.0",
+      "digest": "85cd452a22c69db5"
+    },
+    "code-reviewer": {
+      "version": "1.0.0",
+      "digest": "310c26c9069f2c52"
+    },
     "infra-reviewer": {
       "version": "1.0.0",
       "digest": "1d1a632b46e06bd7"
-    },
-    "architecture-reviewer": {
-      "version": "1.0.0",
-      "digest": "7afbe84844834e8a"
     }
   }
 }

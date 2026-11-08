@@ -1,6 +1,12 @@
 ---
 name: incremental-replay
 description: "Design or fix an incremental model and its replay: unique key, late-arriving data, reprocessing window, idempotence, full refresh. Triggers: incremental, replay, backfill, late-arriving data, the model duplicates rows, full-refresh."
+metadata:
+  aikit-version: "1.0.0"
+  aikit-origin: "internal"
+  aikit-summary: "Incremental model and its replay: unique key, late-arriving data, reprocessing window, idempotence, full refresh."
+  aikit-category: "domain"
+  aikit-tier: "profile"
 ---
 
 # incremental-replay

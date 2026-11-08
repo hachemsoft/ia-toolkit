@@ -162,7 +162,9 @@ class WizardFlowTests(unittest.TestCase):
         self.assertEqual(out.count('Before installing'), 2)
 
     def test_customized_choices_are_written_only_on_install(self):
-        catalog = read_json(cli.ROOT/'skills/catalog.json')
+        # 2.0 slice 3: the menu lists the skills in the order of their folders, no longer in the catalog's order.
+        from installer.resolve import skill_catalog
+        catalog = skill_catalog(cli.ROOT)
         playbooks = [s for s, e in catalog.items() if e.get('category') == 'domain' and not e.get('replaced_by')]
         pick = str(playbooks.index('python-js-change')+1)
         overrides = self.home/'.ai-kit/overrides.toml'

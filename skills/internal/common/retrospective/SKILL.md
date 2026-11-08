@@ -1,6 +1,14 @@
 ---
 name: retrospective
 description: "Conduct a retrospective on a coding session. Use when the user types /retro or explicitly asks for this step; do not activate on your own for unrelated requests."
+metadata:
+  aikit-version: "1.1.0"
+  aikit-origin: "upstream"
+  aikit-license: "skills/LICENSE-UPSTREAM-MIT"
+  aikit-summary: "Retrospective of a work session: improve the agent's environment, not the code."
+  aikit-category: "tool"
+  aikit-tier: "profile"
+  aikit-requires: "writing-for-agents"
 ---
 
 The user has asked for a **retrospective**. You are suggesting improvements to the coding agent's **environment** to improve future runs.

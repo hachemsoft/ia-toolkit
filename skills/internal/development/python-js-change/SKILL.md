@@ -1,6 +1,15 @@
 ---
 name: python-js-change
 description: "Develop or review a Python or JavaScript feature in an existing repo. Triggers: add a feature in Python or JavaScript or TypeScript, fix this function, an API endpoint, review this Python or JS code. Not for: SQL in a dbt project, or infrastructure files."
+metadata:
+  aikit-version: "1.0.0"
+  aikit-origin: "internal"
+  aikit-summary: "Develop or review a Python or JavaScript feature in an existing repo."
+  aikit-category: "domain"
+  aikit-tier: "profile"
+  aikit-requires: "tdd"
+  aikit-optional-codebase-design: "before adding an interface, keep it small with a deep implementation, and add a seam only where a test needs one"
+  aikit-optional-mr: "describe the delivery in the merge request (MR) or pull request (PR) format the repo uses: what changed, why, how it was verified"
 ---
 
 # python-js-change

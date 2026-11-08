@@ -4,6 +4,7 @@ import re
 from types import SimpleNamespace
 from datetime import datetime, timezone
 
+from . import resolve
 from .core import (content_root, ROOT, KitError, read_json, json_bytes, load_commands, _ts, friction_id, fixed_frictions)
 from .adapters import ADAPTERS
 from .interface import ContextHost
@@ -18,7 +19,7 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
         raise KitError('Old ~/'+LEGACY_KIT_DIR+' folder: run update, which renames it to ~/.ai-kit, then usage.')
     if not state:
         raise KitError('Kit not installed: run setup.')
-    catalog = read_json(content_root()/'skills/catalog.json')
+    catalog = resolve.skill_catalog(content_root())
     installed = state.get('installed') or next(a for a in ADAPTERS if isinstance(a, ContextHost)).installed_from_files(state)
     installed_skills, installed_commands, installed_agents = (sorted(installed.get(k, [])) for k in ('skills', 'commands', 'agents'))
     cutoff = datetime.now(timezone.utc).timestamp() - since_days*86400

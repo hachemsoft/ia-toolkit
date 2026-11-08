@@ -1,6 +1,13 @@
 ---
 name: bigquery-query-review
 description: "Optimize a slow or expensive BigQuery query and check scans, partitions, joins and plan. Triggers: slow query, too expensive, bytes read, partition filter, execution plan, slots, this query scans everything. Not for: a wrong result, which is a correctness review."
+metadata:
+  aikit-version: "1.0.0"
+  aikit-origin: "internal"
+  aikit-summary: "Optimize a slow or expensive BigQuery query and check scans, partitions, joins and plan."
+  aikit-category: "domain"
+  aikit-tier: "profile"
+  aikit-requires: "diagnosing-bugs"
 ---
 
 # bigquery-query-review

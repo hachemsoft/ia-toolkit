@@ -54,6 +54,10 @@ class Plan:
     def skill_file(self, skill: str, source: Path, src: Path) -> bytes:
         """Bytes of a skill file as installed: the source, plus for SKILL.md what to do without its optional skills."""
         data = src.read_bytes()
+        if src == source/'SKILL.md':
+            # V2: the kit's aikit-* metadata is read by AI Kit only, never installed for the agent.
+            from .frontmatter import strip_aikit
+            data = strip_aikit(data.decode('utf-8')).encode('utf-8')
         if src == source/'SKILL.md' and self.skill_notes.get(skill):
             data = data.rstrip(b'\n') + b'\n\n' + self.skill_notes[skill].encode('utf-8')
         return data

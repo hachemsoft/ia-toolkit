@@ -1,6 +1,16 @@
 ---
 name: wayfinder
 description: "Plan a huge chunk of work (more than one agent session can hold) as a shared map of decision tickets on your issue tracker, and resolve them one at a time until the way to the destination is clear. Use when the user types /map or explicitly asks for this step; do not activate on your own for unrelated requests."
+metadata:
+  aikit-version: "1.1.0"
+  aikit-origin: "upstream"
+  aikit-license: "skills/LICENSE-UPSTREAM-MIT"
+  aikit-summary: "Map a piece of work too large for one session into decision tickets, resolved one by one."
+  aikit-category: "workflow"
+  aikit-tier: "optional"
+  aikit-requires: "grilling"
+  aikit-optional-setup-workflow: "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue"
+  aikit-optional-prototype: "a prototype ticket is a throwaway spike, deleted afterwards"
 ---
 
 A loose idea has arrived, too big for one agent session, and wrapped in fog: the way from here to the **destination** isn't visible yet. Wayfinding is about finding that way, not charging at the destination. This skill charts the way as a **shared map** on the repo's issue tracker, then works its **decision tickets** (questions whose resolution is a decision, not slices of a build to execute) one at a time until the route is clear.
