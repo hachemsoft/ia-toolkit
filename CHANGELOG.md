@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `setup`, `update` and `uninstall` refuse a `~/.ai-kit/state.json` written by a newer kit (its `schema_version` is higher than this kit understands, or malformed) and change nothing; until now the field was written and never read. A state without the field is migrated as before.
+- `installer/cli.py` is split: the `ai-kit` command on the PATH and `uninstall` move to `installer/lifecycle.py`, unchanged (797 lines → 653, under the 800-line rule).
+- `scripts/baseline_v1.py` freezes a model-free baseline of a release (tests, golden, inventory, selection of every profile, eval preconditions per CLI), the reference the V2 migration is compared with.
+
 ## 0.52.0
 
 - Commands chain only skills the model can invoke. Claude Code (2.1.316 to 2.1.319) hides a skill marked `disable-model-invocation` from the model and refuses it in its Skill tool ("do not replicate this skill's workflow"); Codex (0.167.0) leaves it out of the model's skill list. So `/build` never reached `implement`, and through it `tdd` and `code-review` (in recorded eval sessions: `tdd` once in 22 `/build` runs, `code-review` never). `/build` now activates `tdd` for each slice and `code-review` on the whole change; `/intent` activates `grilling` and `domain-modeling`; `implement` and `grill-with-docs` stay on command only, for the person. The skills a command carries (`to-spec`, `teach`, `retrospective`, `wayfinder`, `ticket-sorting`, `to-questionnaire`, `improve-codebase-architecture`, `zoom-out`, `wait-what`, `handover`) become model-invocable, with a description that says to use them only on their command (the guard already used for Codex command skills); their version is raised to 1.1.0. The commands' fallback now reads "if this skill is not installed here": the old "if the skill tool is unavailable" was wrong on Claude Code, where the tool exists. A test fails when a command chains a skill the model cannot invoke.
