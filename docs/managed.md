@@ -8,7 +8,7 @@ Since 2.0.0, IT can impose some AI Kit settings with one file, deployed by the u
 | Windows | `C:\ProgramData\ai-kit\managed.toml` |
 | Linux | `/etc/ai-kit/managed.toml` |
 
-The path is fixed: no environment variable moves it. The workstation is administered when the file exists. AI Kit refuses the file, and changes nothing (exit code 3), when the person could change it (POSIX: not owned by root, or the file or its folder writable by the user; Windows: the user can open it for writing), when it cannot be read, or when it holds a key this version does not apply. `ai-kit doctor` shows which keys it sets, or why it is refused.
+The path is fixed: no environment variable moves it. The workstation is administered when the file exists. AI Kit refuses the file, and changes nothing (exit code 3), when the person could change it (POSIX: not owned by root, or the file or its folder writable by the user; Windows: the user can open it for writing), when it cannot be read, or when it holds a key this version does not apply. `ai-kit doctor` shows which keys it sets, or why it is refused, where each setting comes from, and whether IT changed the file since the last update (then run `ai-kit update`).
 
 ## Rules
 

@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import sys
 
-from .core import (_PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitError, read_json, digest,
+from .core import (content_root, _PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitError, read_json, digest,
                    inside, load_commands, run_timed)
 from . import versions
 from .adapters import ADAPTERS
@@ -397,8 +397,9 @@ def doctor_checks(home, cwd=None, problems=None):
                 problems.append(message)
     status(sys.version_info >= (3,11),'Python 3.11 minimum')
     # managed.toml (2.0.0): say which settings IT imposes, or why the file is refused (every change then exits 3).
-    from .config import ManagedConfigError, load_managed, summary
+    from .config import ManagedConfigError, drift, load_managed, summary
     from .core import is_guardrail
+    managed = None
     try:
         managed = load_managed(None, [n for n, s in read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {}).items() if is_guardrail(s)])
         if managed is not None:
@@ -414,6 +415,19 @@ def doctor_checks(home, cwd=None, problems=None):
     if state:
         print('Profile: '+state['profile']+' | version '+state['version'])
         command_checks(home, state, status)
+        managed_change = drift(state.get('managed', {}).get('digest'))
+        if managed_change:
+            status(False, managed_change)
+        # Provenance (V2 slice 1): which layer each setting comes from, IT's managed.toml winning over everything.
+        from .config import provenance
+        from .plan import effective_settings
+        try:
+            org_defaults, team_layer, personal, _, _ = effective_settings(home/'.ai-kit', state.get('team'), None)
+            origin = provenance(org_defaults, team_layer, personal, managed)
+            if origin:
+                print('Settings and where they come from: '+', '.join(k+' ('+v+')' for k, v in origin.items()))
+        except KitError as exc:
+            status(False, str(exc))
         tracker_checks(home, state, status)
         news_checks(home, state, status)
         identity = state.get('user', {})
@@ -461,7 +475,7 @@ def doctor_checks(home, cwd=None, problems=None):
         if changed:
             print('[Info] Your overrides.toml changes organization or team defaults: '+', '.join(changed))
         if state.get('team'):
-            sources = [s for s, present in (('practices/20-'+state['team']+'.md', (ROOT/'practices'/('20-'+state['team']+'.md')).is_file()),
+            sources = [s for s, present in (('practices/20-'+state['team']+'.md', (content_root()/'practices'/('20-'+state['team']+'.md')).is_file()),
                                             ('organization.toml teams.'+state['team'], bool(team_layer))) if present]
             print('[Info] Team: '+state['team']+' ('+(', '.join(sources) or 'nothing of its own yet')+')')
         root, overrides = repo_skill_overrides(state, cwd or os.getcwd())

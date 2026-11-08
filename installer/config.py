@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import sys
 
-from .core import KitError
+from .core import KitError, digest
 from .toml_files import read_toml
 
 MANAGED_SCHEMAS = {1}
@@ -147,6 +147,44 @@ def publication(managed):
     """How frictions reach the tracker: approval (default: the person sends them from a terminal), auto (as soon as logged) or
     disabled. A person who wrote share_frictions = false keeps them local in every case (a restriction of their own)."""
     return (managed or {}).get('frictions', {}).get('publication', 'approval')
+
+
+def managed_digest(path=None):
+    """The SHA-256 of the managed file as applied, recorded in state.json: doctor sees when IT changed it since the last update."""
+    path = Path(path) if path is not None else managed_path()
+    return digest(path.read_bytes()) if path.is_file() else None
+
+
+def drift(recorded, path=None):
+    """Why the applied managed settings are out of date, or None: IT added, changed or removed the file since the last update."""
+    current = managed_digest(path)
+    if current == recorded:
+        return None
+    if recorded is None:
+        return 'IT added managed.toml since the last update: run ai-kit update to apply it'
+    if current is None:
+        return 'IT removed managed.toml since the last update: run ai-kit update'
+    return 'IT changed managed.toml since the last update: run ai-kit update to apply it'
+
+
+def provenance(org_defaults, team_layer, personal, managed=None):
+    """Where each effective setting comes from: {key: 'organization' | 'team' | 'you' | 'IT'}, the highest layer that sets it.
+    Guardrail switches are listed one by one (hooks.<name>); IT's frictions.capture sets the person's frictions key."""
+    def flat(layer):
+        out = {}
+        for key, value in (layer or {}).items():
+            if key == 'hooks' and isinstance(value, dict):
+                out.update({'hooks.'+n: v for n, v in value.items()})
+            else:
+                out[key] = value
+        return out
+    it = {'hooks.'+n: v for n, v in (managed or {}).get('hooks', {}).items() if n != 'locked'}
+    if 'capture' in (managed or {}).get('frictions', {}):
+        it['frictions'] = managed['frictions']['capture']
+    origin = {}
+    for label, layer in (('organization', flat(org_defaults)), ('team', flat(team_layer)), ('you', flat(personal)), ('IT', it)):
+        origin.update({key: label for key in layer})
+    return dict(sorted(origin.items()))
 
 
 def summary(managed, path=None):

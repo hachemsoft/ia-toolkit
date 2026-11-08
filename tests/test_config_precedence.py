@@ -154,5 +154,34 @@ class FrictionPublicationTests(Base):
         self.assertIsNone(self.tracker_state({'publication': 'auto'}, {'share_frictions': False}))
 
 
+class DriftTests(Base):
+    """The managed file as applied is recorded (its digest): doctor tells the person when IT changed it since the last update."""
+
+    def test_digest_recorded_and_changes_detected(self):
+        self.assertIsNone(config.drift(None, self.managed))  # not administered, nothing recorded
+        self.write_managed({'managed_schema': 1, 'mcp': {'allow_stdio': False}})
+        self.assertIn('added', config.drift(None, self.managed))
+        self.apply()
+        recorded = self.state()['managed']['digest']
+        self.assertIsNone(config.drift(recorded, self.managed))
+        self.write_managed({'managed_schema': 1, 'mcp': {'allow_stdio': True}})
+        self.assertIn('changed', config.drift(recorded, self.managed))
+        self.managed.unlink()
+        self.assertIn('removed', config.drift(recorded, self.managed))
+
+    def test_no_managed_key_in_state_when_not_administered(self):
+        self.apply()
+        self.assertNotIn('managed', self.state())
+
+
+class ProvenanceTests(unittest.TestCase):
+    def test_the_highest_layer_names_the_origin_and_it_wins(self):
+        origin = config.provenance({'frictions': 'auto', 'hooks': {'dbt-prod-guard': True}}, {'extra_skills': ['x']},
+                                   {'frictions': 'off', 'hooks': {'dbt-prod-guard': False}, 'disabled_skills': ['y']},
+                                   {'managed_schema': 1, 'hooks': {'locked': ['protected-paths'], 'dbt-prod-guard': True}})
+        self.assertEqual(origin, {'disabled_skills': 'you', 'extra_skills': 'team', 'frictions': 'you', 'hooks.dbt-prod-guard': 'IT'})
+        self.assertEqual(config.provenance({}, {}, {'frictions': 'off'}, {'managed_schema': 1, 'frictions': {'capture': 'auto'}})['frictions'], 'IT')
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -1,4 +1,5 @@
 """Shared building blocks of the kit, with nothing specific to a CLI: kit paths, errors, JSON, digests, managed blocks, commands."""
+import contextlib
 import hashlib
 import json
 import os
@@ -12,6 +13,23 @@ from datetime import datetime
 # Kit content: next to the code in the repo or archive, under ai_kit/kit/ when the kit is installed as a package (pipx).
 _PACKAGE_DIR = Path(__file__).resolve().parent
 ROOT = _PACKAGE_DIR/'kit' if (_PACKAGE_DIR/'kit'/'VERSION').is_file() else _PACKAGE_DIR.parent
+# Two roots (V2, ADR 0013). ROOT is the engine's: its code, runtime/ (hooks, friction, news), schemas/, its own templates,
+# VERSION. The content (skills, agents, commands, practices, profiles, organization.toml, the kit context template) is read from
+# content_root(): the package or the clone for now, a Core source extracted at a locked tag later.
+_CONTENT = [ROOT]
+
+def content_root():
+    """Where the kit's content is read from."""
+    return _CONTENT[0]
+
+@contextlib.contextmanager
+def content_from(path):
+    """Read the content from another tree for the duration of the block (a source extracted at a tag; tests)."""
+    previous, _CONTENT[0] = _CONTENT[0], Path(path)
+    try:
+        yield _CONTENT[0]
+    finally:
+        _CONTENT[0] = previous
 START = '<!-- ai-toolkit:start -->'
 END = '<!-- ai-toolkit:end -->'
 KIT_CONTEXT = '00_KIT.md'
@@ -345,7 +363,7 @@ COMMANDS_DIR = 'commands'
 def load_commands():
     """Kit commands, from the pivot source commands/<name>.md: front matter (name, description, category, stage, skills, artifact, order) and prompt; each adapter derives its own form."""
     commands = []
-    for path in sorted((ROOT/COMMANDS_DIR).glob('*.md')):
+    for path in sorted((content_root()/COMMANDS_DIR).glob('*.md')):
         if path.name.upper() == 'README.MD':
             continue
         meta, body = parse_frontmatter(path.read_text(encoding='utf-8'))

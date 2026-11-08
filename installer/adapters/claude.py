@@ -13,7 +13,7 @@ import shutil
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (ROOT, USER_CONTEXT, KitError, digest, hook_command, cli_event, split_block, place_block, json_bytes, read_json, _ts, live_call, LIVE_PROMPT, DEFAULT_PREFIX, skill_prefix, rename_references, renamed_skill_file)
+from ..core import (content_root, ROOT, USER_CONTEXT, KitError, digest, hook_command, cli_event, split_block, place_block, json_bytes, read_json, _ts, live_call, LIVE_PROMPT, DEFAULT_PREFIX, skill_prefix, rename_references, renamed_skill_file)
 
 CLAUDE_DIR = '.claude'
 # The marker text is an identifier, kept as written in 0.35 ("overrides.json" is now overrides.toml).
@@ -123,7 +123,7 @@ def install(p: Plan) -> None:
                 raise KitError('The kit command /'+name+' has the name of one of your own skills or commands in ~/.claude, and skill_prefix is empty: set a prefix.')
             renamed[name] = prefix+name
         p.managed_write(claude/'commands'/((prefix+name if personal else name)+'.md'), command_text(command, rewrite(command['prompt'])).encode('utf-8'), 'Claude Code command')
-    defaults = read_json(ROOT/'agents/defaults.json')
+    defaults = read_json(content_root()/'agents/defaults.json')
     for agent, definition in p.agents:
         name = 'ai-kit-'+agent
         p.managed_write(claude/'agents'/(name+'.md'), agent_text(name, definition, defaults, rewrite(p.agent_body(definition))).encode('utf-8'), 'Claude Code agent')
