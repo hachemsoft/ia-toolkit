@@ -2,7 +2,7 @@
 practices, skills, agents and guardrails, and the old files to remove. apply (installer/cli.py) runs them in order."""
 import re
 
-from .core import is_guardrail, ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, adopt_user_copy
+from .core import content_root, is_guardrail, ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, adopt_user_copy
 from .toml_files import dump_toml, set_list, set_key, set_schema
 from .adapters import ADAPTERS
 from .settings import (organization, team_settings, personal_settings, merge_settings, allowed_commands, resolve_skills,
@@ -90,7 +90,7 @@ def skill_sources(selected, catalog):
     """(skill, source folder) for each selected skill; a missing SKILL.md or a symbolic link stops the installation."""
     sources = []
     for skill in selected:
-        source = inside(ROOT,catalog[skill]['path'])
+        source = inside(content_root(),catalog[skill]['path'])
         if not (source/'SKILL.md').is_file():
             raise KitError('SKILL.md missing: '+skill)
         for src in source.rglob('*'):
@@ -109,7 +109,7 @@ def select_agents(profile, overrides, agent_catalog, load_agent):
         safe_id(agent)
         if agent not in agent_catalog:
             raise KitError('Unknown agent: '+agent)
-        agents.append((agent, load_agent(inside(ROOT,agent_catalog[agent]['path']))))
+        agents.append((agent, load_agent(inside(content_root(),agent_catalog[agent]['path']))))
     return agents
 
 

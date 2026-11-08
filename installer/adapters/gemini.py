@@ -10,7 +10,7 @@ import tempfile
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (user_context_refusal, adopt_user_copy, LIVE_PROMPT, network_problem, ROOT, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
+from ..core import (content_root, user_context_refusal, adopt_user_copy, LIVE_PROMPT, network_problem, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
                     rename_references, renamed_skill_file, renamed_notice, kit_name,
                     digest, merge_defaults, run_timed,
                     record_auto_friction, _ts)
@@ -283,7 +283,7 @@ def write_skills(p: Plan) -> None:
 def agent_markdown(p: Plan, agent: str, definition: dict, tool_names=None) -> bytes:
     """Agent in Markdown with front matter, the format of Gemini and agy; tool_names translates the kit's tool names
     (Gemini's) into the CLI's own, one kit tool giving one or more."""
-    agent_defaults = read_json(ROOT/'agents/defaults.json')
+    agent_defaults = read_json(content_root()/'agents/defaults.json')
     tools = definition.get('tools', agent_defaults['tools'])
     if tool_names:
         tools = list(dict.fromkeys(t for tool in tools for t in tool_names.get(tool, [tool])))
@@ -454,7 +454,7 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     agents_enabled = settings.get('experimental',{}).get('enableAgents',True) is not False
     status(agents_enabled,'Agents not disabled in the user settings')
     if not agents_enabled:
-        catalog = read_json(ROOT/'skills/catalog.json')
+        catalog = read_json(content_root()/'skills/catalog.json')
         needing = sorted(s for s in skills if catalog.get(s,{}).get('needs_agents'))
         if needing:
             print('[Info] Skills that delegate to subagents, degraded without them: '+', '.join(needing))

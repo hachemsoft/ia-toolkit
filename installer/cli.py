@@ -11,7 +11,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-from .core import (STATE_SCHEMA, check_state_schema, _PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, news_module, is_guardrail, read_json, json_bytes, digest,
+from .core import (content_root, STATE_SCHEMA, check_state_schema, _PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, news_module, is_guardrail, read_json, json_bytes, digest,
                    safe_id, load_commands, load_agent, redact, user_context_refusal)
 from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
@@ -22,7 +22,7 @@ from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKI
 from .plan import (RENAMED_HOOKS, effective_settings, resolve_selection, personal_file, practice_layers, skill_sources, select_agents,
                    guardrails, remove_stale_files, refuse_links)
 from .usage import (usage)  # noqa: F401 (re-exported)
-from .config import (ManagedConfigError, load_managed, apply_values, locked_guardrails, filter_mcp, publication)  # noqa: F401 (re-exported)
+from .config import (ManagedConfigError, load_managed, apply_values, locked_guardrails, filter_mcp, publication, managed_digest)  # noqa: F401 (re-exported)
 from .lifecycle import (PERSONAL_KEPT, plan_command, remove_command, uninstall)  # noqa: F401 (re-exported)
 
 
@@ -110,7 +110,7 @@ def write_quick_context(home, answers, role=None):
 def agent_instruction(definition):
     """Shared opening of every agent prompt. Reviewers only read; an agent whose tools include the shell (the verifier)
     runs the checks its own instructions allow, and modifies nothing."""
-    tools = definition.get('tools') or read_json(ROOT/'agents/defaults.json').get('tools', [])
+    tools = definition.get('tools') or read_json(content_root()/'agents/defaults.json').get('tools', [])
     scope = ('Modify no file; run only the commands your instructions below allow.' if 'run_shell_command' in tools
              else 'Read and search only: modify no file and run no command.')
     return ('Read the instructions and context of the current repo. Do not assume that the skills, '
@@ -211,7 +211,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     hook_specs = read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})
     managed = load_managed(managed_file, [n for n, s in hook_specs.items() if is_guardrail(s)])
     overrides, managed_notices = apply_values(overrides, managed)
-    catalog = read_json(ROOT/'skills/catalog.json')
+    catalog = read_json(content_root()/'skills/catalog.json')
     manifest = load_commands()
     selected, allowed = resolve_selection(profile, overrides, catalog, manifest)
     writes, deletes = {}, []
@@ -240,11 +240,11 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     # --- Neutral plan: what to install, with nothing specific to a CLI. ---
     context_names = managed_context_names(profile)
     commands = selected_commands(selected, manifest, allowed)
-    kit_text = (ROOT/'templates/kit-context.md').read_text(encoding='utf-8').format(profile=profile_id, commands=command_lines(commands), playbooks=playbook_lines(selected, catalog), frictions=friction_rule(overrides.get('frictions', 'propose')))
+    kit_text = (content_root()/'templates/kit-context.md').read_text(encoding='utf-8').format(profile=profile_id, commands=command_lines(commands), playbooks=playbook_lines(selected, catalog), frictions=friction_rule(overrides.get('frictions', 'propose')))
     practice_names, practice_texts = practice_layers(profile)
     practices = '\n'.join(practice_texts)
     sources = skill_sources(selected, catalog)
-    agent_catalog = read_json(ROOT/'agents/catalog.json')
+    agent_catalog = read_json(content_root()/'agents/catalog.json')
     agents = select_agents(profile, overrides, agent_catalog, load_agent)
     hooks_dir = kit/'hooks'  # scripts shared by all CLIs, like kit/bin/friction.py
     hook_manifest, enabled_hooks, turned_off = guardrails(overrides, hooks_dir, locked_guardrails(managed), [n for n, v in (managed or {}).get('hooks', {}).items() if v is False])
@@ -300,7 +300,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         tracker = None if publication(managed) == 'disabled' else {**tracker, 'publication': publication(managed)}
     if org_defaults_root().get('friction_tracker') and tracker is None:
         p.notices.append('[Info] Frictions stay local: share_frictions = false in your overrides.toml (your organization set a friction tracker).')
-    new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'news':news,**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
+    new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'news':news,**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
                  'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}
     writes[kit/'state.json'] = json_bytes(new_state)

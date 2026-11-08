@@ -5,7 +5,7 @@ import re
 import shutil
 import subprocess
 
-from .core import (ROOT, KIT_CONTEXT, EMAIL, SECRET, KitError, read_json, safe_id)
+from .core import (content_root, ROOT, KIT_CONTEXT, EMAIL, SECRET, KitError, read_json, safe_id)
 from .toml_files import read_toml
 from .adapters import ADAPTERS
 
@@ -13,7 +13,7 @@ from .adapters import ADAPTERS
 def practice_file(practice_id):
     """Source file of a practice and name of the context file it produces."""
     safe_id(practice_id)
-    matches = sorted((ROOT/'practices').glob('[0-9][0-9]-'+practice_id+'.md'))
+    matches = sorted((content_root()/'practices').glob('[0-9][0-9]-'+practice_id+'.md'))
     if len(matches) != 1:
         raise KitError('Practice not found or ambiguous: ' + practice_id)
     source = matches[0]
@@ -22,17 +22,17 @@ def practice_file(practice_id):
 
 def profile_menu():
     """(id, label) of every profile in profiles/, sorted by its "order": adding a profile is adding one file."""
-    profiles = [read_toml(p) for p in sorted((ROOT/'profiles').glob('*.toml'))]
+    profiles = [read_toml(p) for p in sorted((content_root()/'profiles').glob('*.toml'))]
     return [(p['id'], p.get('label') or p['id']) for p in sorted(profiles, key=lambda p: (p.get('order', 1000), p['id']))]
 
 
 def profile_ids():
-    return sorted(p.stem for p in (ROOT/'profiles').glob('*.toml'))
+    return sorted(p.stem for p in (content_root()/'profiles').glob('*.toml'))
 
 
 def load_profile(profile_id):
     """profiles/<id>.toml: the skills, commands, agents and MCP servers of a job."""
-    path = ROOT/'profiles'/(safe_id(profile_id)+'.toml')
+    path = content_root()/'profiles'/(safe_id(profile_id)+'.toml')
     if not path.exists():
         raise KitError('Unknown profile: '+profile_id+'. Profiles: '+', '.join(profile_ids()))
     return read_toml(path)
@@ -120,7 +120,7 @@ def detect_identity(home):
 
 def organization():
     """organization.toml at the root of the kit: what the organization decides (expected email domains, defaults, teams)."""
-    org = read_toml(ROOT/'organization.toml', {})
+    org = read_toml(content_root()/'organization.toml', {})
     if not isinstance(org.get('defaults', {}), dict):
         raise KitError('organization.toml: defaults must be a table ([defaults]).')
     teams = org.get('teams', {})
@@ -254,7 +254,7 @@ def domain_allowed(email, domains):
 def team_ids():
     """Teams: those with their own practices (practices/20-<team>.md, besides the shared 20-team.md) or their own settings
     (teams in organization.toml): context, tools, or both."""
-    files = {p.stem[3:] for p in (ROOT/'practices').glob('20-*.md') if p.stem != '20-team'}
+    files = {p.stem[3:] for p in (content_root()/'practices').glob('20-*.md') if p.stem != '20-team'}
     return sorted(files | set(organization().get('teams', {})))
 
 
@@ -262,7 +262,7 @@ def profile_practices(profile, team):
     """The profile's practices, with the shared team practice replaced by the person's team when it has its own file."""
     if team and team not in team_ids():
         raise KitError('Unknown team: '+team+'. Teams: '+(', '.join(team_ids()) or 'none (practices/20-<team>.md or teams in organization.toml)'))
-    own = team and (ROOT/'practices'/('20-'+team+'.md')).is_file()
+    own = team and (content_root()/'practices'/('20-'+team+'.md')).is_file()
     return [team if p == 'team' and own else p for p in profile['practices']]
 
 
