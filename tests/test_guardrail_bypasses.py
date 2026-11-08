@@ -180,6 +180,86 @@ class RepoTests(Base):
         self.assertEqual(self.decide({'tool_name': 'Write', 'tool_input': {'file_path': str(repo/'models/legacy/a.sql')}}, str(repo)), 'deny')
 
 
+class McpToolTests(Base):
+    def test_an_mcp_write_tool_is_judged_like_a_write(self):
+        # 0.51.1 (V1-SEC-04): Claude Code now sends MCP tools to the guardrail; the script must refuse their protected writes.
+        target = str(self.home/'.ai-kit'/'overrides.toml')
+        self.assertEqual(self.decide({'tool_name': 'mcp__files__write_file', 'tool_input': {'path': target, 'content': 'x'}}), 'deny')
+        self.assertEqual(self.decide({'tool_name': 'mcp__files__edit_file', 'tool_input': {'path': target, 'edits': []}}), 'deny')
+        self.assertIsNone(self.decide({'tool_name': 'mcp__files__read_file', 'tool_input': {'path': target}}))
+        self.assertIsNone(self.decide({'tool_name': 'mcp__files__write_file', 'tool_input': {'path': str(self.home/'notes.md'), 'content': 'x'}}))
+
+
+class KitCloneTests(Base):
+    """0.51.1 (V1-SEC-02): the kit folder an installation came from (state.json kit_dir) is the source of the next update and
+    of the session hook's remote read; ~/.gitconfig can redirect or run what git does there. Rule X6: the clone's .git/config
+    and .git/hooks are always protected; the rest of the clone when the session starts outside it (a maintainer works on the
+    kit with an agent inside the clone)."""
+    def setUp(self):
+        super().setUp()
+        self.kit = self.home/'apps'/'ai-toolkit'
+        (self.kit/'.git'/'hooks').mkdir(parents=True)
+        (self.home/'.ai-kit').mkdir()
+        (self.home/'.ai-kit'/'state.json').write_text(json.dumps({'kit_dir': str(self.kit), 'files': {}}), encoding='utf-8')
+        self.other = self.home/'work'/'repo'
+        (self.other/'.git').mkdir(parents=True)
+
+    def write(self, path, cwd):
+        return self.decide({'tool_name': 'Write', 'tool_input': {'file_path': str(path), 'content': 'x'}, 'cwd': str(cwd)}, str(cwd))
+
+    def run_in(self, command, cwd):
+        return self.decide({'tool_name': 'Bash', 'tool_input': {'command': command}, 'cwd': str(cwd)}, str(cwd))
+
+    def test_from_another_repo_the_clone_is_protected(self):
+        for rel in ('organization.toml', 'runtime/hooks/protected-paths.py', 'practices/10-company.md', '.git/config'):
+            with self.subTest(rel):
+                self.assertEqual(self.write(self.kit/rel, self.other), 'deny')
+        for command in (f'git -C {self.kit} remote set-url origin https://evil.example/x.git',
+                        f'echo locked_hooks=[] > {self.kit}/organization.toml',
+                        f'cd {self.kit} && git config core.fsmonitor /tmp/x',
+                        f'sed -i s/a/b/ {self.kit}/runtime/hooks/protected-paths.py'):
+            with self.subTest(command):
+                self.assertEqual(self.run_in(command, self.other), 'deny')
+
+    def test_inside_the_clone_its_git_config_stays_protected(self):
+        self.assertEqual(self.write(self.kit/'.git'/'config', self.kit), 'deny')
+        self.assertEqual(self.write(self.kit/'.git'/'hooks'/'pre-commit', self.kit), 'deny')
+        for command in ('git remote set-url origin https://evil.example/x.git', 'git remote add evil https://evil.example/x.git',
+                        'git config core.fsmonitor /tmp/x', 'git config --local core.hooksPath /tmp/h', 'echo x >> .git/config'):
+            with self.subTest(command):
+                self.assertEqual(self.run_in(command, self.kit), 'deny')
+
+    def test_a_maintainer_still_works_on_the_kit_inside_its_clone(self):
+        self.assertIsNone(self.write(self.kit/'skills'/'internal'/'common'/'demo'/'SKILL.md', self.kit))
+        self.assertIsNone(self.write(self.kit/'organization.toml', self.kit))
+        for command in ('git status', 'git log --oneline -3', 'git diff', 'cat .git/config', 'git config --get remote.origin.url'):
+            with self.subTest(command):
+                self.assertIsNone(self.run_in(command, self.kit))
+
+    def test_reads_of_the_clone_and_other_repos_stay_allowed(self):
+        for command in (f'cat {self.kit}/.git/config', f'cat {self.kit}/organization.toml', f'grep -r tdd {self.kit}/skills',
+                        f'git -C {self.other} remote set-url origin https://gitlab.example.org/x.git'):
+            with self.subTest(command):
+                self.assertIsNone(self.run_in(command, self.other))
+        sibling = self.home/'apps'/'ai-toolkit-fix'  # starts with the clone's path, but is another folder
+        self.assertIsNone(self.write(sibling/'organization.toml', self.other))
+        self.assertIsNone(self.run_in(f'echo x > {sibling}/notes.md', self.other))
+
+    def test_gitconfig_keys_that_redirect_or_run_are_protected(self):
+        self.assertEqual(self.write(self.home/'.gitconfig', self.other), 'deny')
+        self.assertEqual(self.write(self.home/'.config'/'git'/'config', self.other), 'deny')
+        for command in ('git config --global url.https://evil.example/.insteadOf https://gitlab.example.org/',
+                        'git config --global core.fsmonitor /tmp/x', 'git config --global credential.helper "!sh /tmp/x"',
+                        'git config --global --add include.path /tmp/x', 'git config --system core.hooksPath /tmp/h',
+                        'git config --global -e', 'echo "[core]" >> ~/.gitconfig'):
+            with self.subTest(command):
+                self.assertEqual(self.run_in(command, self.other), 'deny')
+        for command in ('git config --global user.email a@example.org', 'git config --global --get url.x.insteadof',
+                        'git config --global --list', 'cat ~/.gitconfig'):
+            with self.subTest(command):
+                self.assertIsNone(self.run_in(command, self.other))
+
+
 DBT = Path(__file__).resolve().parents[1]/'runtime'/'hooks'/'dbt-prod-guard.py'
 
 

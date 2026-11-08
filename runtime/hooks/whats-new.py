@@ -135,7 +135,8 @@ def git(kit_dir, *args, timeout=FETCH_TIMEOUT):
     killed on POSIX, the process tree on Windows."""
     env = {**os.environ, 'GIT_TERMINAL_PROMPT': '0', 'GIT_ASKPASS': 'echo', 'SSH_ASKPASS': 'echo', 'GCM_INTERACTIVE': 'never'}
     env.setdefault('GIT_SSH_COMMAND', 'ssh -oBatchMode=yes')
-    command = ['git', '-c', 'credential.interactive=false', '-C', kit_dir, *args]
+    # The clone's own config is not trusted (0.51.1): core.fsmonitor and core.hooksPath would run a program at every session start.
+    command = ['git', '-c', 'credential.interactive=false', '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath='+os.devnull, '-C', kit_dir, *args]
     with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
         process = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=out, stderr=err, env=env,
                                    **({'start_new_session': True} if os.name != 'nt' else {}))
@@ -206,6 +207,9 @@ def remote_read(kit_dir):
         return 'failed', 'git failed', '', ''
     if version.returncode != 0:
         return 'failed', 'no ref', '', ''
+    if not re.fullmatch(r'\d+\.\d+\.\d+', version.stdout.strip()):
+        # The remote VERSION goes into the agent's context: anything but X.Y.Z is refused, with the news of that remote (0.51.1).
+        return 'failed', 'invalid version', '', ''
     return 'ok', '', version.stdout.strip(), news.stdout if news.returncode == 0 else ''
 
 

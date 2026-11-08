@@ -52,7 +52,7 @@ A CLI without an adapter can already read the kit's repository files (`AGENTS.md
 What remains different comes from the CLIs themselves, not from a part of the kit left undone:
 
 - **Codex**: commands are skills, typed `$intent` (Codex has no custom `/` commands); `30_USER.md` is copied into the block (Codex does not import files), so a change needs an `update`; the guardrails must be approved once in Codex ("Trust"); an agent role has no tool list.
-- **Gemini and agy**: "on command only" is an instruction in the skill's description; these CLIs have no field for it.
+- **Gemini and agy**: these CLIs have no field for "on command only", and the kit does not translate it: these skills can activate on their own there.
 - **Claude Code**: it rewrites `~/.claude.json` while running, so close it before an `update` that changes MCP; in a repo that has a `CLAUDE.md`, it reads that instead of `AGENTS.md` (the block asks it to read `AGENTS.md` too, and a one-line `@AGENTS.md` makes it automatic).
 - **agy**: `usage` sees no error events; its conversation files are an undocumented format, read read-only and skipped if they change.
 

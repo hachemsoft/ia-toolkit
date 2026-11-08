@@ -251,8 +251,9 @@ def ensure_runtime(runtime, kind):
 
 
 def git(*args):
-    return subprocess.run(['git', '-C', str(KIT_DIR), *args], capture_output=True, text=True, encoding='utf-8', errors='replace',
-                          stdin=subprocess.DEVNULL, timeout=300)
+    # The clone's own config is not trusted (0.51.1): core.fsmonitor and core.hooksPath would run a program during update.
+    return subprocess.run(['git', '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath='+os.devnull, '-C', str(KIT_DIR), *args],
+                          capture_output=True, text=True, encoding='utf-8', errors='replace', stdin=subprocess.DEVNULL, timeout=300)
 
 
 def fetch_new_version():

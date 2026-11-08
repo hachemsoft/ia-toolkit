@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.51.1
+
+Security fixes, no change of behaviour otherwise; update from a clone of the kit soon.
+
+- The session hook (`whats-new`), `update` and `doctor --live` ran git in the kit folder with that clone's own configuration: a `core.fsmonitor` or `core.hooksPath` written in its `.git/config` ran a program at every session start, outside the CLI's sandbox. git now runs there with `core.fsmonitor` off and no hooks.
+- `protected-paths` now protects the kit folder the installation came from (`state.json` `kit_dir`): its `.git/config` and `.git/hooks` always, the rest of it when the session starts outside that folder, so an agent working in another repo can no longer change what the next `update` installs; a maintainer still works on the kit with an agent started inside its folder. It also protects `~/.gitconfig` and `~/.config/git/config`, and refuses `git config --global|--system|--file` for the keys that redirect a fetch or run a program (`url.*`, `credential.*`, `core.*`, `include*`).
+- The newer version announced at session start is accepted only as `X.Y.Z`: any other text in the remote `VERSION` went into the agent's context as it was.
+- Claude Code: the write guardrail now also sees MCP tools (`mcp__.*`), which went around it.
+- An MCP server's `trust` is refused in every form (the string `"true"` went through to Gemini and agy). `frictions.jsonl` and `frictions-sent.json` are made readable by the person only even when an older version left them with another mode.
+- Docs say what was overstated: what the guardrail protects (`docs/hooks.md`), what `managed-settings` writes for Codex, "on command only" on Gemini and agy (`docs/cli/matrice.md`), frictions sent when a tracker is defined (ADR 0007, `docs/customization.md`), the release ZIP's SHA-256 checked by hand and no integrity check for a clone (`docs/compliance.md`).
+
 ## 0.51.0
 
 - `ai-kit new <profile|skill|agent|command>`: from a git clone of the kit, a component with its catalog entry, its version and its eval case, then the kit's own checks, then a branch `new-<type>-<name>`, a commit and a merge request. Skills and agents always go under `contrib/` with an owner; moving one to `internal/` stays a maintainer's act; profiles go in `profiles/`. The commit and the push are two questions always asked: `--yes` answers only the questions about the content, `--no-mr` stops after the checks. The merge request goes through the person's own `glab` or `gh`, otherwise the command gives the page. Refused before writing from a ZIP installation, without a terminal (unless `--no-mr`: a pipe never answers for the commit), on a name taken, on a detached HEAD, and on uncommitted changes in what it rewrites or what the version lock and the snapshot read. Every stop says how to undo. `evals/run.py` never sends a skeleton case to a model. No model call. Tested at a real pseudo-terminal, up to a real push to a local repository. Spec: `docs/sdlc/2026-11-05-new-component-command/spec.md`.

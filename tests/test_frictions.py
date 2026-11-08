@@ -23,6 +23,13 @@ class FrictionTests(unittest.TestCase):
   out=io.StringIO()
   with contextlib.redirect_stdout(out):usage(self.home,42,self.home/'r.json')
   self.assertIn('Frictions logged: 1 (docs ×1)',out.getvalue());rep=read_json(self.home/'r.json');self.assertEqual(rep['frictions_by_category'],{'docs':1});self.assertEqual(rep['frictions'][0]['text'],'The page says X but the command does Y')
+ @unittest.skipIf(os.name=='nt','POSIX file modes')
+ def test_an_existing_friction_file_is_made_private(self):
+  # 0.51.1 (V1-SEC-06): the file was created 0600, but a file left by an older version kept its mode (0644 seen on a workstation).
+  self.run_kit();script=self.home/'.ai-kit/bin/friction.py';env={**os.environ,'HOME':str(self.home),'USERPROFILE':str(self.home)}
+  log=self.home/'.ai-kit/frictions.jsonl';log.write_text('',encoding='utf-8');log.chmod(0o644)
+  p=subprocess.run([sys.executable,'-I',str(script),'--category','docs','--text','x'],capture_output=True,text=True,env=env);self.assertEqual(p.returncode,0,p.stderr)
+  self.assertEqual(log.stat().st_mode&0o777,0o600)
  def test_aggregate_script(self):
   a={'sessions':3,'prompts':10,'errors':0,'commands':{'intent':2},'skills':{'tdd':1},'agents':{},'unused_skills':['grilling','retro'],'frictions':[{'ts':'2026-10-25T00:00:00Z','category':'docs','command':'intent','text':'x'}],'frictions_by_category':{'docs':1}}
   b={'sessions':2,'prompts':5,'errors':1,'commands':{'intent':1,'test':1},'skills':{},'agents':{'ai-kit-verifier':1},'unused_skills':['grilling'],'frictions':[],'frictions_by_category':{}}

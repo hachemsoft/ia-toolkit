@@ -46,6 +46,14 @@ def redact(text):
 def kit_dir(home=None):
     return os.path.join(home or os.path.expanduser('~'), '.ai-kit')
 
+def private(descriptor):
+    """Readable by the person only, also when the file was left by an older version with another mode (0.51.1). POSIX only."""
+    if hasattr(os, 'fchmod'):
+        try:
+            os.fchmod(descriptor, 0o600)
+        except OSError:
+            pass
+
 def context(home=None):
     """Kit version and profile read from the installation state, machine operating system."""
     info = {'os': {'Darwin': 'mac', 'Windows': 'windows'}.get(platform.system(), platform.system().lower())}
@@ -91,6 +99,7 @@ def record(category, text, command='none', cli='unknown', source='person', home=
     path = os.path.join(kit_dir(home), 'frictions.jsonl')
     # Readable by the person only: the lines say what they worked on.
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    private(descriptor)
     with os.fdopen(descriptor, 'a', encoding='utf-8') as handle:
         handle.write(json.dumps(entry, ensure_ascii=False) + '\n')
     return path, entry
@@ -161,6 +170,7 @@ def send(entry, home=None, config=None):
     sent = read_sent(home)
     sent[entry['id']] = {'url': url, 'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}
     descriptor = os.open(sent_file(home), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    private(descriptor)
     with os.fdopen(descriptor, 'w', encoding='utf-8') as handle:
         json.dump(sent, handle, ensure_ascii=False, indent=1)
     return 'sent', url

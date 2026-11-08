@@ -30,6 +30,14 @@ class McpSecretTests(unittest.TestCase):
         with self.assertRaises(KitError):
             cli.validate_server({'httpUrl': 'https://x.example.org/mcp', 'headers': {'Authorization': 'Bearer abcdefghijklmnopqrst'}})
 
+    def test_trust_is_refused_in_every_form(self):
+        # 0.51.1 (V1-SEC-05): only the boolean true was refused; "true" as a string went through to Gemini and agy.
+        from installer import cli
+        from installer.core import KitError
+        for value in (True, 'true', 'True', 1, 'yes'):
+            with self.subTest(value), self.assertRaises(KitError):
+                cli.validate_server({'command': 'my-mcp', 'trust': value})
+
 
 class BackupTests(unittest.TestCase):
     def test_only_the_most_recent_backups_stay(self):

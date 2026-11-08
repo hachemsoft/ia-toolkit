@@ -496,8 +496,9 @@ def release_check():
     if not (folder/'.git').exists() or not shutil.which('git'):
         return
     try:
-        subprocess.run(['git', '-C', str(folder), 'fetch', '--tags', '--quiet'], capture_output=True, timeout=20)
-        tags = subprocess.run(['git', '-C', str(folder), 'tag', '--list', 'v*', '--sort=-v:refname'], capture_output=True, text=True, timeout=10).stdout.split()
+        safe = ['git', '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath='+os.devnull, '-C', str(folder)]  # the clone's config is not trusted (0.51.1)
+        subprocess.run(safe+['fetch', '--tags', '--quiet'], capture_output=True, timeout=20)
+        tags = subprocess.run(safe+['tag', '--list', 'v*', '--sort=-v:refname'], capture_output=True, text=True, timeout=10).stdout.split()
     except (OSError, subprocess.SubprocessError):
         return
     current = (folder/'VERSION').read_text(encoding='utf-8').strip()
