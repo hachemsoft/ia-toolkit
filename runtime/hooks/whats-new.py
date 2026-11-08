@@ -277,6 +277,22 @@ def write_marker(path, text):
     os.replace(temp, path)
 
 
+def friction_upkeep(kit, state):
+    """ADR 0023: the local friction upkeep (purge after the retention, waiting count) at session start, from the friction script
+    the kit installed; any failure is silent and never delays the session beyond the script's own work."""
+    script = os.path.join(kit, 'bin', 'friction.py')
+    if not os.path.isfile(script):
+        return 0
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('ai_kit_friction_upkeep', script)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.housekeep(os.path.dirname(kit), state.get('frictions_retention'))['waiting']
+    except Exception:
+        return 0
+
+
 def main():
     use_utf8()
     try:
@@ -297,6 +313,10 @@ def main():
                 after = json.dumps(marker, ensure_ascii=False, indent=1)
                 if after != before and (items or marker.get('last_check')):
                     write_marker(marker_path, after)
+                waiting = friction_upkeep(kit, state)
+                if waiting:
+                    items.append(str(waiting)+' friction(s) logged here wait for the person\'s approval before they reach the team\'s tracker: '
+                                 'they send them from a terminal with ai-kit friction --sync. Never run it yourself.')
                 if items:
                     output = answer(payload, context_text(items))
     except Exception:

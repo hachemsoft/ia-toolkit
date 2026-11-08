@@ -95,13 +95,15 @@ def load_managed(path=None, guardrail_names=()):
     for key in ('allowed_stdio', 'allowed_http'):
         if any(not re.fullmatch(r'sha256:[0-9a-f]{64}', v) for v in mcp.get(key, [])):
             refuse('mcp.'+key+' lists server identities (sha256:<64 hex>, shown by ai-kit status --verbose)')
-    unknown = sorted(set(frictions) - {'capture', 'publication'})
+    unknown = sorted(set(frictions) - {'capture', 'publication', 'retention_days'})
     if unknown:
         refuse('unknown key frictions.'+', frictions.'.join(unknown))
     if 'capture' in frictions and frictions['capture'] not in FRICTION_CAPTURE:
         refuse('frictions.capture must be '+', '.join(FRICTION_CAPTURE))
     if 'publication' in frictions and frictions['publication'] not in FRICTION_PUBLICATION:
         refuse('frictions.publication must be '+', '.join(FRICTION_PUBLICATION))
+    if 'retention_days' in frictions and (not isinstance(frictions['retention_days'], int) or isinstance(frictions['retention_days'], bool) or frictions['retention_days'] < 1):
+        refuse('frictions.retention_days must be a whole number of days, 1 or more')
     # Git sources (2.0, slice 2): the Core IT imposes, and the origins allowed.
     enterprise, git = data.get('enterprise', {}), data.get('git', {})
     unknown = sorted(set(enterprise) - {'core'}) + sorted('git.'+k for k in set(git) - set(MANAGED_GIT))
