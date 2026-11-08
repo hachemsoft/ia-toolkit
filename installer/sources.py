@@ -242,7 +242,7 @@ def fetch(kit, url, tag, expected_commit, schemes=('https', 'ssh'), home=None):
     if not (cache/'HEAD').exists():
         cache.mkdir(parents=True, exist_ok=True)
         git(['init', '--bare', '--quiet', str(cache)], kit, schemes=schemes, home=home)
-    git(['fetch', '--quiet', '--no-tags', url, 'refs/tags/'+tag+':refs/tags/'+tag], kit, git_dir=cache, schemes=schemes, home=home)
+    git(['fetch', '--quiet', '--no-tags', '--no-write-fetch-head', url, 'refs/tags/'+tag+':refs/tags/'+tag], kit, git_dir=cache, schemes=schemes, home=home)
     commit = git(['rev-parse', 'refs/tags/'+tag+'^{commit}'], kit, git_dir=cache, home=home).decode().strip()
     if commit != expected_commit:
         raise SourceError('tag-moved', 'Tag '+tag+' fetched at '+commit+' while the remote announced '+expected_commit+'. Nothing was changed.')
@@ -254,7 +254,7 @@ def bundle_tags(kit, bundle):
     bundle = Path(bundle).resolve()
     if not bundle.is_file():
         raise SourceError('not-found', 'Bundle not found: '+str(bundle))
-    git(['bundle', 'verify', '--quiet', str(bundle)], kit, local_bundle=True)
+    # No 'git bundle verify' here (it needs a repository): the fetch from the bundle checks it.
     tags = {}
     for line in git(['bundle', 'list-heads', str(bundle)], kit, local_bundle=True).decode('utf-8').splitlines():
         sha, _, ref = line.partition(' ')
@@ -275,7 +275,7 @@ def fetch_bundle(kit, url, bundle, tag):
     if not (cache/'HEAD').exists():
         cache.mkdir(parents=True, exist_ok=True)
         git(['init', '--bare', '--quiet', str(cache)], kit)
-    git(['fetch', '--quiet', '--no-tags', str(Path(bundle).resolve()), 'refs/tags/'+tag+':refs/tags/'+tag], kit, git_dir=cache, local_bundle=True)
+    git(['fetch', '--quiet', '--no-tags', '--no-write-fetch-head', str(Path(bundle).resolve()), 'refs/tags/'+tag+':refs/tags/'+tag], kit, git_dir=cache, local_bundle=True)
     commit = git(['rev-parse', 'refs/tags/'+tag+'^{commit}'], kit, git_dir=cache).decode().strip()
     return cache, commit
 

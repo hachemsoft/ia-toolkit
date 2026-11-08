@@ -29,23 +29,16 @@ classifiers = [
 ai-kit = "ai_kit.cli:main"
 
 # The code lives in installer/ (python3 -m installer from the kit folder); the installed package calls it ai_kit
-# to avoid clashing with the PyPI package "installer". The kit content travels under ai_kit/kit/, so the installed
-# package never reads the clone or the extracted ZIP.
+# to avoid clashing with the PyPI package "installer". Since 2.2 the package holds only the engine (code, runtime/, schemas/,
+# templates/, VERSION); the content is a Core: the release ZIP ships it as core/ai-kit-core.bundle (installer/bootstrap.py).
 [tool.hatch.build.targets.wheel]
 only-include = ["installer"]
 sources = { "installer" = "ai_kit" }
 
 [tool.hatch.build.targets.wheel.force-include]
 "VERSION" = "ai_kit/kit/VERSION"
-"organization.toml" = "ai_kit/kit/organization.toml"
-"aikit.toml" = "ai_kit/kit/aikit.toml"
 "CHANGELOG.md" = "ai_kit/kit/CHANGELOG.md"
 "runtime" = "ai_kit/kit/runtime"
-"agents" = "ai_kit/kit/agents"
-"commands" = "ai_kit/kit/commands"
-"practices" = "ai_kit/kit/practices"
-"profiles" = "ai_kit/kit/profiles"
-"skills" = "ai_kit/kit/skills"
 "templates" = "ai_kit/kit/templates"
 "schemas" = "ai_kit/kit/schemas"
 

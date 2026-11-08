@@ -13,6 +13,7 @@
 - Analysis (ADR 0026): `/explain` also answers a question about the project with evidence, through the new `analysis` skill (frame, explore, verify each claim, report verdict, evidence and unknowns); `/research` and its `investigation` skill join the general selection.
 - `scripts/export_core.py` writes the kit's content as a Core repository in its V2 layout (skills and agents flattened, manifest `kind = "core"`, a Git repository tagged `v<version>` with `--git`; nothing pushed); `examples/team-repo/` is a Team repository to copy; `ai-kit validate --path` checks both (a Team may not hold commands, policies, hooks or profiles).
 - `ai-kit sync --from-bundle <file>` installs the Core from a `git bundle` without network, with the same tag checks, recorded under the configured Core URL.
+- **The package holds only the engine** (code, runtime scripts, schemas, templates); the release ZIP ships the content as a Core, `core/ai-kit-core.bundle`, a git bundle of this repository at the version's tag (this repository is the Core). The first installation activates it offline, without a question (the package is the trust anchor), under IT's `enterprise.core`, the person's `[core] repo`, or this repository's URL; `lock.toml` and the source cache keep it, so the extracted folder can still be deleted. Run from a clone, the kit reads the clone's content as before. Git 2.29 or newer is needed (fetches no longer record their origin).
 
 ## 2.1.1
 

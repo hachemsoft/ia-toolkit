@@ -41,6 +41,8 @@ lint:
 release-zip:
   stage: release
   image: python:3.12
+  variables:
+    GIT_DEPTH: 0  # 2.2: the ZIP ships the Core as a git bundle of this repository at its tag: the whole history
   script:
     - python scripts/build_release.py
   artifacts:

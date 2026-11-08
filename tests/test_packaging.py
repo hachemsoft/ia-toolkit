@@ -16,10 +16,12 @@ class PackagingTests(unittest.TestCase):
   self.assertEqual(int(pins['rich'].split('.')[0]) in range(13,16),True);self.assertTrue(pins['questionary'].startswith('2.'))
  def test_console_command(self):
   self.assertIn('ai-kit = "ai_kit.cli:main"',self.text)
- def test_every_content_dir_read_by_installer_is_packaged(self):
-  code=(ROOT/'installer/cli.py').read_text(encoding='utf-8')
-  read=set(re.findall(r"ROOT/'([A-Za-z][\w.-]*)",code))|{'commands'}
+ def test_the_package_holds_the_engine_and_never_the_content(self):
+  # 2.2: what the engine reads from ROOT is packaged; the content (read from content_root()) travels as the Core bundle.
+  code=''.join(f.read_text(encoding='utf-8') for f in (ROOT/'installer').rglob('*.py'))
+  read=set(re.findall(r"ROOT ?/ ?'([A-Za-z][\w.-]*)",code))-{'.git','versions.lock.json','tests','docs'}
   packaged=set(re.findall(r'^"([\w.-]+)" = "ai_kit/kit/',self.text,re.M))
   self.assertTrue(read<=packaged,read-packaged);self.assertIn('VERSION',packaged)
+  self.assertFalse(packaged&{'skills','agents','commands','practices','profiles','organization.toml','aikit.toml'})
   for d in packaged:self.assertTrue((ROOT/d).exists(),d)
 if __name__=='__main__':unittest.main()

@@ -77,6 +77,24 @@ def stage(dest, worktree):
         archive.extractall(dest)
 
 
+def core_bundle(version, worktree, dest, clone):
+    """A git bundle holding the tag v<version>: the tag itself when it is HEAD (a release build); otherwise HEAD tagged on
+    the fly in a clone (uncommitted changes of a --worktree build are not in it). Needs the full history (no shallow clone)."""
+    tag = 'v'+version
+    env = {**os.environ, 'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_CONFIG_NOSYSTEM': '1'}
+    def commit_of(ref):
+        proc = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', '-q', '--verify', ref+'^{commit}'], capture_output=True, text=True)
+        return proc.stdout.strip() if proc.returncode == 0 else None
+    repo = ROOT
+    if commit_of('refs/tags/'+tag) != commit_of('HEAD'):
+        # Not a release build (main, a branch, --worktree): HEAD tagged v<version> in a clone, never in this repository.
+        run(['git', 'clone', '--quiet', '--no-local', str(ROOT), str(clone)], env=env)
+        run(['git', '-C', str(clone), '-c', 'user.name=AI Kit build', '-c', 'user.email=build@localhost', 'tag', '-f', '-a', tag, '-m', 'test build'], env=env)
+        repo = clone
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    run(['git', '-C', str(repo), 'bundle', 'create', '--quiet', str(dest), 'refs/tags/'+tag], env=env)
+
+
 def environment_python(folder):
     return folder/('Scripts' if os.name == 'nt' else 'bin')/('python.exe' if os.name == 'nt' else 'python')
 
@@ -106,7 +124,7 @@ def main(argv=None):
         venv.EnvBuilder(with_pip=True).create(str(check))
         run([str(environment_python(check)), '-I', '-m', 'pip', 'install', '--quiet', '--no-index', '--find-links', str(wheels), 'ai-kit=='+version],
             env={**os.environ, 'PIP_USER': '0'})
-        run([str(environment_python(check)), '-I', '-c', 'import ai_kit.cli, rich, questionary; from ai_kit.core import ROOT; assert (ROOT/"aikit.toml").is_file()'])
+        run([str(environment_python(check)), '-I', '-c', 'import ai_kit.cli, rich, questionary; from ai_kit.core import ROOT; assert (ROOT/"VERSION").is_file() and not (ROOT/"skills").exists()'])
         for rel in SHIPPED:
             src = source/rel
             if src.is_dir():
@@ -116,6 +134,9 @@ def main(argv=None):
                 shutil.copy2(src, payload/rel)
             else:
                 raise SystemExit('Missing from the repository: '+rel)
+        # 2.2: the package holds only the engine; the content travels as a git bundle of this repository at v<version>
+        # (this repository is the Core), activated offline by the first installation.
+        core_bundle(version, args.worktree, payload/'core'/'ai-kit-core.bundle', tmp/'core-clone')
         (payload/'INSTALL.txt').write_text(INSTALL_TXT.format(version=version), encoding='utf-8')
         args.out.mkdir(parents=True, exist_ok=True)
         out = args.out/('ai-kit-'+version+('-worktree' if args.worktree else '')+'.zip')

@@ -182,11 +182,16 @@ def aikit_text(home, updates):
 
 
 @contextlib.contextmanager
-def activation(home, action, dry_run=False, confirm=None, managed_file=None, guardrail_names=(), team_name=None, team_url=None, ask_url=None, bundle=None):
+def activation(home, action, dry_run=False, confirm=None, managed_file=None, guardrail_names=(), team_name=None, team_url=None, ask_url=None, bundle=None,
+               shipped=False):
     """Yields an Activation for apply(), with the content root set to the active Core and Team."""
     kit = home/'.ai-kit'
     managed = load_managed(managed_file, guardrail_names)
     settings, core_url, anchored = git_settings(home, managed)
+    if bundle and shipped:
+        # The Core the release ZIP ships, at the engine's own version: the package is the trust anchor (2.2).
+        from .bootstrap import DEFAULT_CORE_URL
+        core_url, anchored = core_url or DEFAULT_CORE_URL, True
     lock = read_lock(kit)
     locker = contextlib.nullcontext() if dry_run else EngineLock(kit)
     with locker:
@@ -288,6 +293,27 @@ def activation(home, action, dry_run=False, confirm=None, managed_file=None, gua
         finally:
             for folder in folders.values():
                 remove_temp(folder)
+
+
+@contextlib.contextmanager
+def shipped_core(home, bundle):
+    """The highest tag of the shipped bundle, extracted into a temporary folder for this run (menus, checks); nothing is
+    recorded: the installation that follows activates it and writes lock.toml (activation with shipped=True)."""
+    kit = home/'.ai-kit'
+    kit.mkdir(parents=True, exist_ok=True)
+    from .bootstrap import DEFAULT_CORE_URL
+    settings, core_url, _ = git_settings(home, load_managed(None))  # IT's enterprise.core wins
+    url = check_origin(core_url or DEFAULT_CORE_URL, settings)
+    tag = choose_tag(bundle_tags(kit, bundle), None, settings['allow_prerelease'])
+    cache, commit = fetch_bundle(kit, url, bundle, tag)
+    folder = new_temp()
+    try:
+        extract(kit, cache, commit, folder)
+        if check_source(folder, engine_version()) is None:
+            raise SourceError('invalid', 'The shipped Core '+tag+' has no aikit.toml manifest.')
+        yield folder
+    finally:
+        remove_temp(folder)
 
 
 def prune_all(kit):
