@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 2.1.0
+
+Core and Team content from Git, at stable tags, with rollback. Without a Core or Team source configured, nothing changes.
 
 - Core source from Git (V2 slice 2): `ai-kit sync` installs the highest stable `vX.Y.Z` tag of the Core repository set by IT (`managed.toml` `enterprise.core`) or by the person (`aikit.toml` `[core] repo`), never a branch; `ai-kit rollback` goes back to the previous Core, without network, and a second rollback comes back. `~/.ai-kit/lock.toml` records the URL, tag, tag object, commit and tree digest, written in the same transaction as the files; `update` keeps the locked Core. Without a Core source, nothing changes.
 - Git runs from one module with an allowlisted environment, no global or system config, explicit `-c` overrides and a credential helper from a closed list; URLs are canonicalised (https and ssh only, no credentials, no `..`), checked against `git.allowed_hosts` and `git.allowed_groups`, and must not be rewritten. A tag seen once that moves blocks (`tag-moved`); `git.revoked` commits are never activated. Trees are read with `ls-tree`/`cat-file`: symbolic links, submodules, `.git`, Windows reserved names and case collisions are refused. The first use of an origin outside managed mode asks for confirmation in a terminal.

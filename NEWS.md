@@ -7,6 +7,10 @@ then the text. Without `profiles` or `teams`, an entry goes to everyone. An orga
 copy of this repository; the public repository keeps only generic ones. `python3 scripts/check_news.py` checks the file
 (the CI runs it). How it reaches people: [docs/hooks.md](docs/hooks.md#whats-new).
 
+## 2026-11-08 ai-kit-2-1 : AI Kit 2.1: Core and Teams from Git
+
+Your organization can now publish the kit content as a Core Git repository and Team repositories: `ai-kit sync`, `ai-kit team use <name>`, `ai-kit rollback`, `ai-kit status`. Without them, nothing changes.
+
 ## 2026-11-08 ai-kit-2-0 : AI Kit 2.0 needs Python 3.11
 
 AI Kit 2.0 starts the V2 structure: settings IT can impose (`managed.toml`), frictions sent only with your approval.
