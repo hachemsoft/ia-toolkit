@@ -76,6 +76,19 @@ def read_json(path, default=None):
         raise KitError(str(path) + ': a JSON object { … } is expected at the top level.')
     return value
 
+# Version of the layout of ~/.ai-kit/state.json this kit writes and understands. A state without the field predates it and is
+# migrated; a higher or malformed one was written by another kit and is never rewritten (V2 slice 0).
+STATE_SCHEMA = 2
+
+def check_state_schema(state, path):
+    """KitError when state.json comes from a kit this one cannot safely rewrite."""
+    if 'schema_version' not in state:
+        return
+    version = state['schema_version']
+    if isinstance(version, bool) or not isinstance(version, int) or version > STATE_SCHEMA:
+        raise KitError(str(path) + ' has schema ' + repr(version) + ', written by a newer AI Kit; this version understands up to '
+                       + str(STATE_SCHEMA) + '. Update the kit, or use the one that wrote it. Nothing was changed.')
+
 # json's messages, said plainly, with the usual cause.
 JSON_HINTS = (
     ("Expecting ',' delimiter", 'a comma is missing between two entries'),

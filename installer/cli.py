@@ -9,21 +9,20 @@ import re
 import shutil
 import subprocess
 import sys
-from types import SimpleNamespace
 from datetime import datetime, timezone
 
-from .core import (_PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, news_module, is_guardrail, read_json, json_bytes, digest,
-                   safe_id, inside, load_commands, load_agent, redact, user_context_refusal)
+from .core import (STATE_SCHEMA, check_state_schema, _PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, news_module, is_guardrail, read_json, json_bytes, digest,
+                   safe_id, load_commands, load_agent, redact, user_context_refusal)
 from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
 from .settings import (practice_file, profile_menu, profile_ids, load_profile, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, organization, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, allowed_domains, domain_allowed, team_ids, profile_practices, RENAMED_SKILLS, resolve_skills, skill_note, RETIRED_KEYS, retired_key_notice, unknown_names, allowed_commands, selected_commands, LEGACY_KIT_DIR, recorded_targets, version_changes, PERSONAL_FILE, LEGACY_PERSONAL_FILE, personal_settings, CHOICE_KEYS, friction_tracker)  # noqa: F401 (re-exported)
-from . import command as kit_command
 from .console import styled_output
 from .commit import (BACKUPS_KEPT, prune_backups, commit_changes, atomic_write, KIT_MANAGED, managed_roots, prune_empty_dirs)  # noqa: F401 (re-exported)
 from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKILL_DIRS, repo_root, repo_skill_overrides, mcp_report, print_summary, doctor, kit_version, source_folder, version_line, SCRIPT_INTERPRETER, kit_commands_on_path, runtime_checks, doctor_checks, release_check, live_checks, plain_text_problem)  # noqa: F401 (re-exported)
 from .plan import (RENAMED_HOOKS, effective_settings, resolve_selection, personal_file, practice_layers, skill_sources, select_agents,
                    guardrails, remove_stale_files, refuse_links)
 from .usage import (usage)  # noqa: F401 (re-exported)
+from .lifecycle import (PERSONAL_KEPT, plan_command, remove_command, uninstall)  # noqa: F401 (re-exported)
 
 
 def command_lines(commands):
@@ -197,6 +196,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         return []  # --dry-run: the old folder is not renamed yet, the plan would be wrong
     kit = home / '.ai-kit'
     state = read_json(kit/'state.json')
+    check_state_schema(state, kit/'state.json')
     active = selected_adapters(target, home, recorded_targets(state))
     context_dir = context_location(home, active)
     profile_id = safe_id(profile_id)
@@ -291,7 +291,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     tracker = friction_tracker(org_defaults_root(), personal)
     if org_defaults_root().get('friction_tracker') and tracker is None:
         p.notices.append('[Info] Frictions stay local: share_frictions = false in your overrides.toml (your organization set a friction tracker).')
-    new_state = {'schema_version':2,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'news':news,**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
+    new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'news':news,**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
                  'installed':{'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}
     writes[kit/'state.json'] = json_bytes(new_state)
@@ -370,153 +370,9 @@ def relocate_user_context(p, home, state, user_file, kit):
         p.writes[user_file] = data
 
 
-PERSONAL_KEPT = ('.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learning/', '.ai-kit/runtime/')
-
-
-def _nothing():
-    pass
-
-
-def _registry_add():
-    if kit_command.registry_entry(True):
-        kit_command.announce_environment_change()
-
-
-def _registry_remove():
-    kit_command.registry_entry(False)
-    kit_command.announce_environment_change()
-
-
 def org_defaults_root():
     """The whole organization.toml (friction_tracker is a top-level table, not a default)."""
     return organization()
-
-
-def plan_command(p, managed_write, choice):
-    """The `ai-kit` command of installer/command.py in the plan: the shim as a managed file, the startup block as an
-    untracked write. Returns (state entry, function to call once the files are written: registry, execute bit)."""
-    kit, home, state = p.kit, p.home, p.state
-    previous = state.get('command') or {}
-    chosen = choice if choice is not None else previous.get('chosen', True)
-    folder = source_folder()
-    shim = kit/'bin'/kit_command.SHIM_NAME
-    rel = shim.relative_to(home).as_posix()
-    entry = {'chosen': chosen, 'folder': None, 'startup_file': None, 'registry': False}
-    after = _nothing
-    if not chosen:
-        if previous.get('startup_file') and (home/previous['startup_file']).is_file():
-            text = (home/previous['startup_file']).read_text(encoding='utf-8')
-            if kit_command.BLOCK_START in text:
-                p.writes[home/previous['startup_file']] = kit_command.without_block(text).encode('utf-8')
-        if previous.get('registry') and os.name == 'nt' and kit_command.real_home(home):
-            after = _registry_remove
-        return entry, after
-    if folder is None:
-        # Run without the launcher (a developer's pip install .): nothing to point to; an existing command stays as it is.
-        if rel in p.old_files and shim.is_file():
-            managed_write(shim, shim.read_bytes(), 'Kit command')
-            entry.update({'folder': previous.get('folder') or kit_command.shim_folder(shim.read_bytes()), 'startup_file': previous.get('startup_file'), 'registry': previous.get('registry', False)})
-        else:
-            p.notices.append('[Info] The `ai-kit` command is not installed: run the installer from the kit folder (Installer.cmd, or sh scripts/bootstrap.sh) to add it.')
-        return entry, after
-    data = kit_command.shim_bytes(folder)
-    new = not shim.is_file() or shim.read_bytes() != data
-    managed_write(shim, data, 'Kit command')
-    entry['folder'] = str(folder)
-    if os.name == 'nt':
-        entry['registry'] = kit_command.real_home(home)
-        if entry['registry']:
-            after = _registry_add
-        else:
-            p.notices.append('[Info] `ai-kit` command written for this trial home folder only: the user PATH is not changed.')
-    else:
-        def after(shim=shim):
-            if shim.is_file():
-                shim.chmod(0o755)  # the execute bit, once the file is written
-        name = kit_command.startup_file()
-        line = kit_command.path_line(home)
-        if name:
-            path = home/name
-            text = path.read_text(encoding='utf-8') if path.is_file() else ''
-            wanted = kit_command.with_block(text, line)
-            if wanted != text:
-                p.writes[path] = wanted.encode('utf-8')
-                new = True
-            entry['startup_file'] = name
-        else:
-            p.notices.append('[Info] Shell not recognised: add this line to your shell startup file to use the `ai-kit` command: '+line)
-    if new:
-        p.notices.append('[Info] `ai-kit` command installed: open a new terminal to use it (ai-kit doctor, ai-kit update).')
-    return entry, after
-
-
-def remove_command(home, state, writes):
-    """uninstall: the startup block goes (the shim is a managed file, removed with the others)."""
-    previous = state.get('command') or {}
-    if previous.get('startup_file') and (home/previous['startup_file']).is_file():
-        text = (home/previous['startup_file']).read_text(encoding='utf-8')
-        if kit_command.BLOCK_START in text:
-            writes[home/previous['startup_file']] = kit_command.without_block(text).encode('utf-8')
-
-
-def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
-    """Removes what the kit installed and nothing else: the managed files it can recognise as unchanged, its blocks and
-    entries in the CLIs' settings, and its state. Kept: the personal context (30_USER.md), overrides.toml, the backups,
-    frictions, the CLIs' folders and the person's own settings; a managed file modified by hand is kept and named.
-    No network, no model. confirm(report) -> bool is asked before any change (interactive); returns an exit code."""
-    home = home.resolve()
-    kit = home/'.ai-kit'
-    state = read_json(kit/'state.json')
-    if not state:
-        raise KitError('The kit configuration is not installed in '+str(home)+': nothing to remove.')
-    old_files = state.get('files', {})
-    writes, deletes, kept = {}, [], []
-    for rel, expected in sorted(old_files.items()):
-        if not (rel.startswith(KIT_MANAGED) or any(a.is_managed(rel) for a in ADAPTERS)):
-            raise KitError('Invalid state: deletion outside the managed scope ('+rel+').')
-        path = inside(home, rel)
-        if not path.is_file():
-            continue
-        if digest(path.read_bytes()) != expected:
-            kept.append(rel+': modified since the kit installed it, kept; remove it yourself if you no longer need it')
-            continue
-        deletes.append(path)
-    cleanup = SimpleNamespace(home=home, state=state, old_files=old_files, writes=writes, deletes=deletes, blocks={}, notices=[], active=[])
-    for adapter in ADAPTERS:
-        try:
-            adapter.finalize(cleanup, active=False)
-        except KitError as exc:
-            kept.append(adapter.LABEL+': '+str(exc))
-    deletes.append(kit/'state.json')
-    remove_command(home, state, writes)
-    writes = {path: data for path, data in writes.items() if not path.exists() or path.read_bytes() != data}
-    personal = [str(home/state.get('context_dir', '.gemini')/USER_CONTEXT)] + [str(home/rel) for rel in PERSONAL_KEPT if (home/rel).exists()]
-    def rel(path):
-        return path.relative_to(home).as_posix()
-    summary = {'removed': [rel(d) for d in deletes], 'rewritten': sorted(rel(w) for w in writes), 'kept_modified': kept,
-               'personal': personal, 'home': str(home)}
-    if report is not None:
-        report.update(summary)
-    print('Uninstall from '+str(home)+': '+str(len(deletes))+' kit files to remove, '+str(len(writes))+' settings files to clean.')
-    for line in summary['rewritten']:
-        print('  Clean the kit entries in: '+line)
-    for line in kept:
-        print('[Check] '+line)
-    print('Kept: your personal context, overrides.toml, backups and frictions, the CLIs and their own settings.')
-    if dry_run:
-        print('Dry run: nothing changed.')
-        return 0
-    if confirm is not None and not confirm(summary):
-        print('Uninstall cancelled: nothing changed.')
-        return 1
-    changed, backup = commit_changes(home, kit, writes, deletes, progress)
-    if (state.get('command') or {}).get('registry') and os.name == 'nt' and kit_command.real_home(home):
-        kit_command.registry_entry(False)
-        kit_command.announce_environment_change()
-    print('Kit configuration removed. Backup of every removed or cleaned file: '+str(backup))
-    print('Your files kept: '+', '.join(personal))
-    print('The kit\'s private Python environment ('+str(kit/'runtime')+') stays; the launcher removes it with uninstall --remove-runtime.')
-    return 0
 
 
 FRICTION_MODES = ('propose', 'auto', 'off')
