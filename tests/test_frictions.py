@@ -1,4 +1,4 @@
-import contextlib, io, json, os, re, subprocess, sys, tempfile, unittest
+import contextlib, importlib.util, io, json, os, re, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply, usage
 from installer.core import read_json, ROOT
@@ -83,7 +83,9 @@ class FrictionStdinTests(unittest.TestCase):
    proc=subprocess.run([sys.executable,'-I',str(ROOT/'runtime/friction.py'),'--category','command','--command','test','--cli','codex'],input=text.encode('utf-8'),capture_output=True,env={**os.environ,'HOME':tmp,'USERPROFILE':tmp})
    self.assertEqual(proc.returncode,0,proc.stderr)
    entry=json.loads((Path(tmp)/'.ai-kit/frictions.jsonl').read_text(encoding='utf-8').splitlines()[0])
-   self.assertEqual(entry['text'],text);self.assertEqual(entry['cli'],'codex');self.assertFalse(marker.exists())
+   # 2.1: a home path in the sentence is redacted to ~ (C:\\Users\\<name> on Windows runners); the shell syntax stays text.
+   spec=importlib.util.spec_from_file_location('friction_redact',ROOT/'runtime/friction.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);expected=module.redact(text)
+   self.assertEqual(entry['text'],expected);self.assertEqual(entry['cli'],'codex');self.assertFalse(marker.exists())
  def test_command_prompt_uses_stdin(self):
   prompt=(ROOT/'commands/friction.md').read_text(encoding='utf-8')
   self.assertIn("<<'AI_KIT_FRICTION_END'",prompt);self.assertNotIn('--text "',prompt)
