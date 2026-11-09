@@ -1,16 +1,18 @@
 import contextlib, io, json, tempfile, unittest
 from pathlib import Path
-from installer.cli import apply, doctor, resolve_skills, command_lines, playbook_lines
+from installer.cli import doctor, resolve_skills, command_lines, playbook_lines
 from installer.resolve import skill_catalog
 from installer.core import KitError, read_json, ROOT
-from installer.toml_files import dump_toml, read_toml
+from installer.toml_files import dump_toml
+from v1_profiles import apply_as  # noqa: E402
+from v1_profiles import PROFILES  # noqa: E402
 FAKE={'a':{'path':'x','requires':['b']},'b':{'path':'x'},'c':{'path':'x','stage':'ship'},'old':{'replaced_by':['a','c']}}
 class SkillCatalogTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def run_kit(self,role='data-analyst'):
   out=io.StringIO()
-  with contextlib.redirect_stdout(out):apply(role,self.home)
+  with contextlib.redirect_stdout(out):apply_as(role,self.home)
   return out.getvalue()
  def overrides(self,v):
   p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
@@ -38,7 +40,7 @@ class SkillCatalogTests(unittest.TestCase):
    for r in e.get('requires',[]):self.assertIn(r,catalog)
    if e.get('origin')=='upstream':self.assertTrue((ROOT/e['license']).is_file(),name)
   for pid in ('data-analyst','data-developer'):
-   for s in read_toml(ROOT/'profiles'/(pid+'.toml'))['skills']:self.assertIn(s,catalog);self.assertNotIn('replaced_by',catalog[s],s)
+   for s in PROFILES[pid]['skills']:self.assertIn(s,catalog);self.assertNotIn('replaced_by',catalog[s],s)
  def test_legacy_override_still_installs(self):
   self.overrides({'extra_skills':['clarify-request'],'disabled_skills':['debug-systematically']});out=self.run_kit()
   self.assertIn('Skill replaced: clarify-request → grilling',out);self.assertTrue((self.home/'.gemini/skills/grilling/SKILL.md').exists());self.assertFalse((self.home/'.gemini/skills/clarify-request').exists())

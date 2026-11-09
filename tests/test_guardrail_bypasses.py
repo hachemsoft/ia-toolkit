@@ -236,7 +236,7 @@ class KitCloneTests(Base):
         return self.decide({'tool_name': 'Bash', 'tool_input': {'command': command}, 'cwd': str(cwd)}, str(cwd))
 
     def test_from_another_repo_the_clone_is_protected(self):
-        for rel in ('organization.toml', 'runtime/hooks/protected-paths.py', 'practices/10-company.md', '.git/config'):
+        for rel in ('organization.toml', 'runtime/hooks/protected-paths.py', 'context/10-company.md', '.git/config'):
             with self.subTest(rel):
                 self.assertEqual(self.write(self.kit/rel, self.other), 'deny')
         for command in (f'git -C {self.kit} remote set-url origin https://evil.example/x.git',

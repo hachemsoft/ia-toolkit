@@ -3,6 +3,7 @@ name: grill-me
 description: A relentless interview to sharpen a plan or design.
 disable-model-invocation: true
 metadata:
+  aikit-default: "false"
   aikit-version: "1.0.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"

@@ -362,7 +362,8 @@ def load_commands():
             raise KitError('Command ' + name + ': skills must be a list.')
         if '"""' in body:
             raise KitError('Command ' + name + ': the prompt cannot contain three double quotes.')
-        command = {'name': name, 'description': meta['description'], 'category': meta['category'], 'skills': skills, 'prompt': body.strip() + '\n', 'order': int(meta.get('order', 1000))}
+        command = {'name': name, 'description': meta['description'], 'category': meta['category'], 'skills': skills, 'prompt': body.strip() + '\n', 'order': int(meta.get('order', 1000)),
+                   'default': str(meta.get('default', 'true')).lower() != 'false'}  # 2.2: in the Core default selection unless default: false
         for key in ('stage', 'artifact'):
             if meta.get(key):
                 command[key] = meta[key]

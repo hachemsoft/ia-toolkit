@@ -1,6 +1,7 @@
 ---
 name: design
 description: "Build: shape a module interface or answer a design question with a throwaway prototype"
+default: false
 category: workflow
 stage: Build
 skills: [codebase-design, prototype]

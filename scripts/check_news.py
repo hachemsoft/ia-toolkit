@@ -1,8 +1,8 @@
 """Is NEWS.md well formed? The whats-new hook skips a section it cannot read; this check refuses it before the merge.
 
 Usage: python3 scripts/check_news.py [path to NEWS.md]
-Each entry: `## <YYYY-MM-DD> <id> : <title>` (id: 3 to 32 of a-z, 0-9, -; unique), then optional lines `profiles: a, b`
-(ids of profiles/*.toml), `teams: x` (teams of organization.toml or practices/20-<team>.md), `until: YYYY-MM-DD`, then
+Each entry: `## <YYYY-MM-DD> <id> : <title>` (id: 3 to 32 of a-z, 0-9, -; unique), then optional lines `teams: x`
+(AI Kit 2 has no profiles: a profiles: line is refused), `teams: x` (teams of organization.toml or context/20-<team>.md), `until: YYYY-MM-DD`, then
 the text. Exit code 1 with one line per problem, 0 otherwise. No network, no model call.
 """
 import importlib.util

@@ -114,11 +114,11 @@ class WizardFlowTests(unittest.TestCase):
         return read_json(self.home/'.ai-kit/state.json')
 
     # First run: CLIs (Enter: proposed), profile (Enter: General), email, keep the profile, review → Install, context later.
-    FIRST = ('', '', 'a@example.org', '', '', 'n')
+    FIRST = ('', 'a@example.org', '', '', 'n')  # 2.2: no profile question
 
     def test_first_run_quick_questions_fill_the_personal_context(self):
         # Yes to the quick questions: French (2), detailed (3), ask first (3), then the role; /me is pointed to.
-        code, out, _ = self.run_wizard('', '', 'a@example.org', '', '', 'y', '2', '3', '3', 'Data engineer')
+        code, out, _ = self.run_wizard('', 'a@example.org', '', '', 'y', '2', '3', '3', 'Data engineer')
         self.assertEqual(code, 0, out)
         text = (self.home/'.ai-kit/context/30_USER.md').read_text(encoding='utf-8')
         self.assertIn('Reply in French', text)
@@ -136,12 +136,12 @@ class WizardFlowTests(unittest.TestCase):
         self.assertIn('Before installing', out)
         self.assertIn('No call to the model', out)
         self.assertIn('Result', out)
-        self.assertEqual(self.state()['profile'], 'general')
+        self.assertEqual(self.state()['profile'], 'core')  # 2.2: no profiles
         self.assertEqual(self.state()['user']['email'], 'a@example.org')
         self.assertEqual(self.state()['targets'], ['gemini'])
 
     def test_cancel_at_review_writes_nothing(self):
-        code, out, _ = self.run_wizard('', '', 'a@example.org', '', '3')
+        code, out, _ = self.run_wizard('', 'a@example.org', '', '3')
         self.assertEqual(code, 1)
         self.assertIn('was not changed', out)
         self.assertFalse((self.home/'.ai-kit/state.json').exists())
@@ -153,12 +153,11 @@ class WizardFlowTests(unittest.TestCase):
         self.assertFalse((self.home/'.ai-kit/state.json').exists())
         self.assertFalse((self.home/'.gemini').exists())
 
-    def test_back_keeps_the_answers_and_changes_the_profile(self):
-        profiles = [p for p, _, _ in wizard.profiles()]
-        devops = str(profiles.index('devops')+1)
-        code, out, _ = self.run_wizard('', '', 'a@example.org', '', '2', '', devops, '', '', '', 'n')
+    def test_back_keeps_the_answers(self):
+        # Back at the review returns to the choices with the answers kept (2.2: no profile question).
+        code, out, _ = self.run_wizard('', 'a@example.org', '', '2', '', '', '', '', 'n')
         self.assertEqual(code, 0, out)
-        self.assertEqual(self.state()['profile'], 'devops')
+        self.assertEqual(self.state()['user']['email'], 'a@example.org')
         self.assertEqual(out.count('Before installing'), 2)
 
     def test_customized_choices_are_written_only_on_install(self):
@@ -172,9 +171,9 @@ class WizardFlowTests(unittest.TestCase):
         mine = '# mine: kept\nfrictions = "off"  # quiet\n'
         overrides.write_text(mine, encoding='utf-8')
         # Adjust: tick python-js-change (its number, then Enter), keep tools, commands and agents, then cancel: nothing written.
-        self.run_wizard('', '', 'a@example.org', '2', pick, '', '', '', '', '3')
+        self.run_wizard('', 'a@example.org', '2', pick, '', '', '', '', '3')
         self.assertEqual(overrides.read_text(encoding='utf-8'), mine)
-        code, out, _ = self.run_wizard('', '', 'a@example.org', '2', pick, '', '', '', '', '1', 'n')
+        code, out, _ = self.run_wizard('', 'a@example.org', '2', pick, '', '', '', '', '1', 'n')
         self.assertEqual(code, 0, out)
         text = overrides.read_text(encoding='utf-8')
         self.assertIn('# mine: kept', text)  # the person's comments stay
@@ -209,7 +208,7 @@ class WizardFlowTests(unittest.TestCase):
     def test_menu_change_choices_proposes_the_recorded_clis(self):
         with contextlib.redirect_stdout(io.StringIO()):
             cli.apply('general', self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'codex')
-        code, out, _ = self.run_wizard('2', '', '', '', '', '1')
+        code, out, _ = self.run_wizard('2', '', '', '', '1')
         self.assertEqual(code, 0, out)
         self.assertRegex(out, r'\[x\] Codex CLI')
         self.assertRegex(out, r'\[ \] Gemini CLI')

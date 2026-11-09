@@ -1,9 +1,10 @@
 import contextlib, io, json, subprocess, sys, tempfile, unittest
 from pathlib import Path
-from installer.cli import apply, doctor
+from installer.cli import doctor
 from installer.core import KitError, read_json, ROOT
 from installer.adapters.codex import CODEX_MD, CODEX_TOML
 from installer.toml_files import dump_toml
+from v1_profiles import apply_as  # noqa: E402
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload):
  p=subprocess.run([sys.executable,'-I',str(H/script)],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8');return json.loads(p.stdout or '{}')
@@ -17,7 +18,7 @@ class CodexAdapterTests(unittest.TestCase):
   if overrides is not None:
    (self.home/'.ai-kit').mkdir(exist_ok=True);(self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides),encoding='utf-8')
   out=io.StringIO()
-  with contextlib.redirect_stdout(out):apply(role,self.home,False,{'email':'t@example.org'},target)
+  with contextlib.redirect_stdout(out):apply_as(role,self.home,False,{'email':'t@example.org'},target)
   return out.getvalue()
  def test_codex_only_keeps_gemini_untouched(self):
   self.run_kit(target='codex')

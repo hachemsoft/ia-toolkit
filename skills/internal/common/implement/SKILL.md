@@ -3,6 +3,7 @@ name: implement
 description: "Implement a piece of work based on a spec or set of tickets."
 disable-model-invocation: true
 metadata:
+  aikit-default: "true"
   aikit-version: "1.0.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"

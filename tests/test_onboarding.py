@@ -11,6 +11,7 @@ from unittest import mock
 from installer import cli, doctor as doctor_module
 from installer.core import read_json
 from installer.toml_files import dump_toml
+from v1_profiles import apply_as  # noqa: E402
 
 FALSE_SUCCESS = re.compile(r'(?i)\b(connected|authenticated|signed in|ready to use)\b')
 
@@ -32,7 +33,7 @@ class SummaryTests(unittest.TestCase):
             (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
         self.org = org or {}
         with mock.patch.object(doctor_module, 'organization', return_value=self.org), contextlib.redirect_stdout(io.StringIO()):
-            cli.apply(profile, self.home, False, {'email': 'a@example.org', 'source': 'test'}, target)
+            apply_as(profile, self.home, False, {'email': 'a@example.org', 'source': 'test'}, target)
         return read_json(self.home/'.ai-kit/state.json')
 
     def summary(self, which, live=None, problems=()):
@@ -75,7 +76,8 @@ class SummaryTests(unittest.TestCase):
         self.assertIn('Next step: apply the fix shown above, then run doctor --live.', failed)
 
     def test_mcp_chosen_but_not_defined(self):
-        self.install()
+        # 2.2: no profile chooses servers; the person (or the migration of a V1 profile) turns them on.
+        self.install(overrides={'mcp': {'bigquery': True, 'dbt': True}})
         out = self.summary(found('gemini'))
         self.assertIn('bigquery not provided by your organization yet; dbt not provided by your organization yet', out)
         self.assertIn('You can work on the SQL and dbt files of your repo with its usual tools', out)
@@ -85,7 +87,7 @@ class SummaryTests(unittest.TestCase):
     def test_mcp_turned_off_and_configured(self):
         org = {'defaults': {'mcp': {'bigquery': {'server': {'httpUrl': 'https://bq.example.org/mcp'}},
                                     'dbt': {'server': {'command': 'dbt-mcp'}}}}}
-        self.install(overrides={'mcp': {'dbt': False}}, org=org)
+        self.install(overrides={'mcp': {'bigquery': True, 'dbt': False}}, org=org)
         out = self.summary(found('gemini'))
         self.assertIn('bigquery configured; connection not verified', out)
         self.assertIn('dbt turned off (in your overrides.toml or by your team)', out)
@@ -111,7 +113,7 @@ class SetupAndDoctorOutputTests(unittest.TestCase):
         return code, out.getvalue()
 
     def test_setup_ends_with_the_summary_and_keeps_its_exit_code(self):
-        code, out = self.run_main('setup', '--profile', 'data-analyst', '--no-live', '--user', 'a@example.org', '--target', 'gemini')
+        code, out = self.run_main('setup', '--profile', 'general', '--no-live', '--user', 'a@example.org', '--target', 'gemini')
         self.assertEqual(code, 0)
         self.assertLess(out.index('Kit configuration installed.'), out.index('Summary'))
         self.assertIn('Gemini CLI: not found on this workstation', out)
@@ -120,7 +122,7 @@ class SetupAndDoctorOutputTests(unittest.TestCase):
         self.assertNotRegex(out, FALSE_SUCCESS)
 
     def test_doctor_summary_before_details(self):
-        self.run_main('setup', '--profile', 'data-analyst', '--no-live', '--user', 'a@example.org', '--target', 'gemini')
+        self.run_main('setup', '--profile', 'general', '--no-live', '--user', 'a@example.org', '--target', 'gemini')
         code, out = self.run_main('doctor', which=found('gemini'))
         self.assertEqual(code, 0)
         self.assertLess(out.index('Summary'), out.index('Next step:'))
@@ -160,7 +162,7 @@ class AnalystReviewTests(unittest.TestCase):
             (self.home/'.ai-kit').mkdir(parents=True, exist_ok=True)
             (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
         with contextlib.redirect_stdout(io.StringIO()):
-            cli.apply('data-analyst', self.home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
+            apply_as('data-analyst', self.home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
         return read_json(self.home/'.ai-kit/state.json')['installed']['commands']
 
     def test_review_in_the_data_analyst_profile_with_sql_and_dbt(self):

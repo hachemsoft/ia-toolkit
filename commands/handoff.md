@@ -1,6 +1,7 @@
 ---
 name: handoff
 description: "Compact this session into a handoff document for another session or colleague"
+default: false
 category: tool
 skills: [handover]
 order: 160

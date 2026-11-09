@@ -9,8 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from installer.cli import apply, profile_ids  # noqa: E402
 from installer.toml_files import dump_toml  # noqa: E402
+from v1_profiles import PROFILES, apply_as  # noqa: E402
 
 GOLDEN = ROOT / 'tests' / 'golden' / 'install-snapshot.json'
 IDENTITY = {'email': 'test@example.org', 'name': 'Test', 'source': 'option'}
@@ -19,7 +19,7 @@ FULL_OVERRIDES = {
     'extra_agents': [], 'disabled_agents': [], 'mcp': {}, 'hooks': {'dbt-prod-guard': True, 'protected-paths': True},
     'frictions': 'auto', 'skill_prefix': 'kit-',
 }
-SCENARIOS = [(p, t, None) for p in ('data-analyst', 'data-developer', 'general') for t in ('gemini', 'both', 'all')] + [('data-developer', 'both', FULL_OVERRIDES), ('data-developer', 'all', FULL_OVERRIDES)] + [('data-developer', 'codex', None), ('data-analyst', 'agy', None)] + [(p, 'all', None) for p in profile_ids() if p not in ('data-analyst', 'data-developer', 'general')]
+SCENARIOS = [(p, t, None) for p in ('data-analyst', 'data-developer', 'general') for t in ('gemini', 'both', 'all')] + [('data-developer', 'both', FULL_OVERRIDES), ('data-developer', 'all', FULL_OVERRIDES)] + [('data-developer', 'codex', None), ('data-analyst', 'agy', None)] + [(p, 'all', None) for p in sorted(PROFILES) if p not in ('data-analyst', 'data-developer', 'general')]
 
 def scenario_name(profile, target, overrides):
     return profile + '/' + target + ('/overrides' if overrides else '')
@@ -31,7 +31,7 @@ def capture(profile, target, overrides=None):
             (home / '.ai-kit').mkdir()
             (home / '.ai-kit' / 'overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
         with contextlib.redirect_stdout(io.StringIO()):
-            apply(profile, home, False, IDENTITY, target)
+            apply_as(profile, home, False, IDENTITY, target)
         out = {}
         for path in sorted(home.rglob('*')):
             rel = path.relative_to(home).as_posix()

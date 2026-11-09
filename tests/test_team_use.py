@@ -115,7 +115,7 @@ class TeamTests(unittest.TestCase):
 
     def test_a_protected_core_skill_cannot_be_replaced(self):
         core = self.base/'core'
-        for name in ('skills', 'agents', 'commands', 'practices', 'profiles', 'templates', 'organization.toml', 'aikit.toml'):
+        for name in ('skills', 'agents', 'commands', 'context', 'templates', 'aikit.toml'):
             (shutil.copytree if (ROOT/name).is_dir() else shutil.copy2)(ROOT/name, core/name)
         tdd = core/'skills/internal/common/tdd/SKILL.md'
         tdd.write_text(tdd.read_text(encoding='utf-8').replace('metadata:\n', 'metadata:\n  aikit-protected: "true"\n', 1), encoding='utf-8')

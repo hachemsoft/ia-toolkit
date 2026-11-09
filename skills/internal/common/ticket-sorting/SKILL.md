@@ -2,6 +2,7 @@
 name: ticket-sorting
 description: "Move issues and external PRs through a state machine of triage roles, categorise, verify, grill if needed, and write agent-ready briefs. Use when the user types /triage or explicitly asks for this step; do not activate on your own for unrelated requests."
 metadata:
+  aikit-default: "false"
   aikit-version: "1.1.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"

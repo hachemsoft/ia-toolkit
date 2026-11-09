@@ -2,6 +2,7 @@
 name: python-js-change
 description: "Develop or review a Python or JavaScript feature in an existing repo. Triggers: add a feature in Python or JavaScript or TypeScript, fix this function, an API endpoint, review this Python or JS code. Not for: SQL in a dbt project, or infrastructure files."
 metadata:
+  aikit-default: "false"
   aikit-version: "1.0.0"
   aikit-origin: "internal"
   aikit-summary: "Develop or review a Python or JavaScript feature in an existing repo."

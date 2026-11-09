@@ -2,6 +2,7 @@
 name: wait-what
 description: "Stop. That last message did not land: re-pitch it. Use when the user types /explain or explicitly asks for this step; do not activate on your own for unrelated requests."
 metadata:
+  aikit-default: "true"
   aikit-version: "1.1.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"

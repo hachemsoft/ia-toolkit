@@ -11,12 +11,12 @@ import shutil
 import subprocess
 import sys
 
-from .core import (content_root, _PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitError, read_json, digest,
+from .core import (_PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitError, read_json, digest,
                    inside, load_commands, run_timed)
 from . import versions
 from .adapters import ADAPTERS
 from .interface import DoctorContext, LiveCheck
-from .settings import LEGACY_KIT_DIR, LEGACY_PERSONAL_FILE, PERSONAL_FILE, RETIRED_KEYS, allowed_domains, domain_allowed, load_profile, managed_context_names, merge_settings, organization, personal_settings, recorded_targets, resolve_mcp, retired_key_notice, setting_differences, team_settings, unknown_keys, version_changes
+from .settings import context_folder, LEGACY_KIT_DIR, LEGACY_PERSONAL_FILE, PERSONAL_FILE, RETIRED_KEYS, allowed_domains, domain_allowed, load_profile, managed_context_names, merge_settings, organization, personal_settings, recorded_targets, resolve_mcp, retired_key_notice, setting_differences, team_settings, unknown_keys, version_changes
 
 
 # A known case each guardrail must block; doctor runs it to prove the guardrail works, not just that its file exists.
@@ -147,9 +147,10 @@ def mcp_report(home, state):
     """MCP lines of the summaries, from the installer's own resolution: configured, chosen but not provided by the
     organization, or turned off. Never claims a connection: the kit does not call MCP servers."""
     profile = load_profile(state['profile'])
-    servers, undefined = resolve_mcp(organization().get('defaults', {}).get('mcp', {}), profile.get('mcp', []),
-                                     personal_settings(home/'.ai-kit').get('mcp', {}), team_settings(state.get('team')).get('mcp', {}))
-    off = [n for n in profile.get('mcp', []) if n not in servers and n not in undefined]
+    mine, team = personal_settings(home/'.ai-kit').get('mcp', {}), team_settings(state.get('team')).get('mcp', {})
+    servers, undefined = resolve_mcp(organization().get('defaults', {}).get('mcp', {}), profile.get('mcp', []), mine, team)
+    # 2.2: no profile chooses servers; a server the person or the team turned off is said so.
+    off = sorted({n for layer in (mine, team) for n, v in (layer or {}).items() if v is False} - set(servers) - set(undefined))
     lines = []
     if servers:
         lines.append('Data connections (MCP): '+', '.join(servers)+' configured; connection not verified (check it with your CLI\'s MCP command).')
@@ -170,7 +171,7 @@ def print_summary(home, state, live=None, problems=()):
         print('Next step: run setup from the kit folder (docs/getting-started.md#run-the-kit).')
         return
     commands = state.get('installed', {}).get('commands', [])
-    print('  Kit configuration: installed (profile '+state['profile']+', version '+str(state.get('version'))+', '+str(len(commands))+' commands).')
+    print('  Kit configuration: installed (version '+str(state.get('version'))+', '+str(len(commands))+' commands'+(', team '+state['team'] if state.get('team') else '')+').')
     targeted = [a for a in ADAPTERS if a.NAME in (state.get('installed', {}).get('clis') or [])]
     found = []
     for adapter in targeted:
@@ -413,7 +414,7 @@ def doctor_checks(home, cwd=None, problems=None):
     status(bool(state),'Kit installation; run setup if missing.')
     hints = []
     if state:
-        print('Profile: '+state['profile']+' | version '+state['version'])
+        print('Version '+state['version']+(' | team '+state['team'] if state.get('team') else ''))
         command_checks(home, state, status)
         # Git sources (2.0, slice 2): the active Core, and lock.toml as written by sync or rollback.
         from .sync import lock_summary, LOCK_FILE
@@ -504,7 +505,7 @@ def doctor_checks(home, cwd=None, problems=None):
         if changed:
             print('[Info] Your overrides.toml changes organization or team defaults: '+', '.join(changed))
         if state.get('team'):
-            sources = [s for s, present in (('practices/20-'+state['team']+'.md', (content_root()/'practices'/('20-'+state['team']+'.md')).is_file()),
+            sources = [s for s, present in (('context/20-'+state['team']+'.md', (context_folder()/('20-'+state['team']+'.md')).is_file()),
                                             ('organization.toml teams.'+state['team'], bool(team_layer))) if present]
             print('[Info] Team: '+state['team']+' ('+(', '.join(sources) or 'nothing of its own yet')+')')
         root, overrides = repo_skill_overrides(state, cwd or os.getcwd())

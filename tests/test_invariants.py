@@ -18,6 +18,8 @@ from installer.interface import Adapter, ContextHost, LiveCheck
 from installer.adapters.codex import CODEX_TOML
 from installer.core import KitError, ROOT, digest, split_block
 from installer.toml_files import dump_toml, read_toml
+from v1_profiles import apply_as  # noqa: E402
+from installer.settings import core_selection  # noqa: E402
 
 IDENTITY = {'email': 'test@example.org', 'source': 'test'}
 CONFIG_FILES = ('settings.json', 'config.toml', 'hooks.json', 'plugin.json', 'mcp_config.json', '.env')
@@ -28,7 +30,7 @@ def install(home, target='all', overrides=None):
         (home/'.ai-kit').mkdir(parents=True, exist_ok=True)
         (home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
     with contextlib.redirect_stdout(io.StringIO()):
-        apply('data-developer', home, False, IDENTITY, target)
+        apply_as('data-developer', home, False, IDENTITY, target)
 
 
 def config_texts(home):
@@ -100,7 +102,7 @@ class InvariantTests(unittest.TestCase):
     def test_merge_request_wording(self):
         """The agent follows the repo's convention, merge request or pull request: what it reads (commands, practices,
         templates) never names one without the other. 0.34: before, pull requests could not be named at all (an MR-only team)."""
-        files = [p for d in ('commands', 'practices', 'templates') for p in (ROOT/d).rglob('*.md')]
+        files = [p for d in ('commands', 'context', 'templates') for p in (ROOT/d).rglob('*.md')]
         for path in files:
             for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
                 if 'merge request' in line:
@@ -119,7 +121,7 @@ class InvariantTests(unittest.TestCase):
 
     def test_each_cli_alone_gets_the_whole_profile(self):
         """Installed alone, each CLI gets all the skills and all the agents of the profile."""
-        profile = read_toml(ROOT/'profiles/general.toml')
+        profile = core_selection()
         places = {'gemini': ('.gemini/skills', '.gemini/agents'),
                   'agy': ('.gemini/skills', '.gemini/config/plugins/ai-kit/agents'),
                   'codex': ('.codex/skills', '.codex/ai-kit/agents')}
@@ -178,11 +180,11 @@ class InvariantTests(unittest.TestCase):
         (kit/'state.json').write_text(json.dumps(state).replace('.ai-kit', '.ai-toolkit'), encoding='utf-8')
         os.replace(kit, self.home/'.ai-toolkit')
         with contextlib.redirect_stdout(io.StringIO()):
-            apply('data-developer', self.home, True, IDENTITY, 'all')  # --dry-run: renames nothing
+            apply_as('data-developer', self.home, True, IDENTITY, 'all')  # --dry-run: renames nothing
         self.assertTrue((self.home/'.ai-toolkit').is_dir())
         install(self.home, overrides=None)
         self.assertFalse((self.home/'.ai-toolkit').exists())
-        self.assertEqual(read_toml(kit/'overrides.toml'), {'hooks': {'dbt-prod-guard': True}})
+        self.assertEqual(read_toml(kit/'overrides.toml')['hooks'], {'dbt-prod-guard': True})  # kept (2.2: plus the role's lines)
         state = json.loads((kit/'state.json').read_text(encoding='utf-8'))
         self.assertFalse([rel for rel in state['files'] if rel.startswith('.ai-toolkit/')])
         for rel in ('.gemini/settings.json', '.codex/config.toml', '.gemini/config/plugins/ai-kit/hooks.json'):

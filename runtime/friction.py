@@ -70,13 +70,14 @@ def private(descriptor):
             pass
 
 def context(home=None):
-    """Kit version and profile read from the installation state, machine operating system."""
+    """Kit version and team read from the installation state, machine operating system."""
     info = {'os': {'Darwin': 'mac', 'Windows': 'windows'}.get(platform.system(), platform.system().lower())}
     try:
         with open(os.path.join(kit_dir(home), 'state.json'), encoding='utf-8') as handle:
             state = json.load(handle)
         info['kit'] = str(state.get('version', ''))
-        info['profile'] = str(state.get('profile', ''))
+        if state.get('team'):
+            info['team'] = str(state['team'])  # 2.2: the team, not a profile (ADR 0018)
     except (OSError, ValueError):
         pass
     return info
@@ -146,7 +147,7 @@ def issue_command(config, entry, exe):
     repo = ((config.get('host') + '/') if config.get('host') and config['kind'] == 'github' else '') + config['project']
     if config.get('host') and config['kind'] == 'gitlab':
         repo = 'https://' + config['host'] + '/' + config['project']
-    context = ', '.join(k + ' ' + str(entry[k]) for k in ('cli', 'os', 'kit', 'profile', 'source', 'occurrences', 'fingerprint') if entry.get(k))
+    context = ', '.join(k + ' ' + str(entry[k]) for k in ('cli', 'os', 'kit', 'team', 'source', 'occurrences', 'fingerprint') if entry.get(k))
     body = (entry.get('text', '') + '\n\nContext: ' + context + '\nFriction id: ' + entry['id']
             + '. When fixed, cite it in the CHANGELOG line of the fix: (frictions: ' + entry['id'] + ').\n'
             + 'Logged by the AI Kit /friction command on the workstation: one sentence, nothing else is read or sent.')

@@ -1,4 +1,4 @@
-"""ai-kit new: creates a skill, an agent, a command or a profile in a clone of the kit, with its metadata (aikit-*), its version,
+"""ai-kit new: creates a skill, an agent or a command in a clone of the kit (AI Kit 2 has no profiles), with its metadata (aikit-*), its version,
 its checks, then a branch and a merge request after two answers. No model call; the only network is the push and the merge
 request the person accepts. Skills and agents always go under contrib/: moving one to internal/ is a maintainer's act."""
 import argparse
@@ -13,10 +13,10 @@ from pathlib import Path
 from .adapters import ADAPTERS
 from .core import KitError, redact
 from .resolve import agent_catalog, skill_catalog
-from .toml_files import read_toml, toml_value
+from .toml_files import toml_value
 from .ui import Cancelled, make_ui
 
-KINDS = ('profile', 'skill', 'agent', 'command')
+KINDS = ('skill', 'agent', 'command')
 NAME = re.compile(r'[a-z0-9][a-z0-9-]*')
 PLACEHOLDER = '<…'
 SKILL_CATEGORIES = ('tool', 'domain', 'reference', 'workflow')
@@ -24,10 +24,10 @@ CATEGORY_LABELS = {'tool': 'tool: a utility, usually behind a command', 'domain'
                    'reference': 'reference: vocabulary other skills read', 'workflow': 'workflow: a step of the cycle'}
 LOCK, SNAPSHOT = 'versions.lock.json', 'tests/golden/install-snapshot.json'
 # The tests that hold what a new component must respect; the whole suite stays with the CI.
-TARGET_TESTS = ('test_skills_catalog', 'test_skill_dependencies', 'test_commands', 'test_consistency', 'test_evals_runner', 'test_profiles_general', 'test_versions',
+TARGET_TESTS = ('test_skills_catalog', 'test_skill_dependencies', 'test_commands', 'test_consistency', 'test_evals_runner', 'test_versions',
                 'test_evals_and_playbooks', 'test_invariants', 'test_snapshot')
 # What the version lock and the snapshot read: an uncommitted change here would be recorded by them and left out of the commit.
-DIGESTS_READ = ('skills', 'agents', 'commands', 'practices', 'profiles', 'templates', 'runtime', 'installer', 'schemas', 'organization.toml', 'VERSION')
+DIGESTS_READ = ('skills', 'agents', 'commands', 'context', 'templates', 'runtime', 'installer', 'schemas', 'VERSION')
 # The snapshot reference holds POSIX paths (tests/test_snapshot.py skips on Windows): rewritten there, it breaks every other system.
 WINDOWS = os.name == 'nt'
 
@@ -64,18 +64,18 @@ def kit_repo(repo, run):
     repo = Path(repo).resolve()
     code, top = run(['git', 'rev-parse', '--show-toplevel'])
     # samefile: on Windows a temporary folder can be written in two forms, its short name and its long one.
-    if code != 0 or not os.path.isdir(top.strip()) or not os.path.samefile(top.strip(), repo) or not (repo/'aikit.toml').is_file() or not (repo/'skills').is_dir() or not (repo/'profiles').is_dir():
+    if code != 0 or not os.path.isdir(top.strip()) or not os.path.samefile(top.strip(), repo) or not (repo/'aikit.toml').is_file() or not (repo/'skills').is_dir() or not (repo/'commands').is_dir():
         raise KitError(problem)
     return repo
 
 
 def component_path(kind, name):
-    return {'skill': 'skills/contrib/'+name+'/SKILL.md', 'agent': 'agents/contrib/'+name+'.md', 'command': 'commands/'+name+'.md', 'profile': 'profiles/'+name+'.toml'}[kind]
+    return {'skill': 'skills/contrib/'+name+'/SKILL.md', 'agent': 'agents/contrib/'+name+'.md', 'command': 'commands/'+name+'.md'}[kind]
 
 
 def name_problem(repo, name, kind, run):
     """Why this name cannot be used, or None, before any other question: the format, a built-in command, a path git ignores,
-    the skills and agents found in the clone, commands, profiles and the disk."""
+    the skills and agents found in the clone, commands and the disk."""
     if not name or not NAME.fullmatch(name):
         return 'Invalid name "'+str(name)+'": lowercase letters, digits and dashes, starting with a letter or a digit.'
     if name.startswith('ai-kit-'):
@@ -88,7 +88,6 @@ def name_problem(repo, name, kind, run):
     taken = {'a skill': name in skill_catalog(repo),
              'an agent': name in agent_catalog(repo),
              'a command': (repo/'commands'/(name+'.md')).exists(),
-             'a profile': (repo/'profiles'/(name+'.toml')).exists(),
              'a folder of skills/contrib': (repo/'skills/contrib'/name).exists(),
              'a file of agents/contrib': (repo/'agents/contrib'/(name+'.md')).exists()}
     for label, found in taken.items():
@@ -167,8 +166,8 @@ def agent_answers(args, ui, repo):
 
 
 def command_changes(name, description, skill):
-    body = ['---', 'name: '+name, 'description: '+json.dumps(description, ensure_ascii=False), 'category: tool',
-            'skills: ['+skill+']', 'order: 1000', '---', '',
+    body = ['---', 'name: '+name, 'description: '+json.dumps(description, ensure_ascii=False),
+            'default: false', 'category: tool', 'skills: ['+skill+']', 'order: 1000', '---', '',
             'Activate the '+skill+' skill (if this skill is not installed here, follow the instructions below directly).',
             '', 'Input: {{args}}', '', "Answer in the user's language. State in one line the level of ceremony (quick, standard or full) and why.",
             '<… what the command does and how it ends …>']
@@ -190,37 +189,12 @@ def toml_list(key, values):
     return key+' = ['+', '.join(toml_value(v) for v in values)+']'
 
 
-def profile_changes(repo, name, label, playbooks, agents):
-    general = read_toml(repo/'profiles/general.toml')
-    highest = max(read_toml(p).get('order', 0) for p in (repo/'profiles').glob('*.toml'))
-    skills = general['skills']+[s for s in playbooks if s not in general['skills']]
-    lines = ['# A profile: what one job installs. See profiles/general.toml; a domain playbook is never added to general.',
-             'id = '+toml_value(name), 'label = '+toml_value(label), 'order = '+str(highest-highest % 10+10),
-             toml_list('practices', general['practices']), toml_list('skills', skills), toml_list('mcp', []),
-             toml_list('agents', agents), toml_list('commands', general['commands'])]
-    return {'profiles/'+name+'.toml': '\n'.join(lines)+'\n'}
-
-
-def profile_answers(args, ui, repo):
-    label = ask_text(ui, args.label, 'Label in the setup menu (Job: what it is for)', '--label', args.yes)
-    if '|' in label:
-        raise KitError('The label cannot hold a | : it goes into the profile table of the docs.')
-    general = read_toml(repo/'profiles/general.toml')
-    playbooks, agents = [], general['agents']
-    if not args.yes:
-        catalog = skill_catalog(repo)
-        playbooks = ui.checkbox('Domain playbooks to add', [(n, n, False) for n, e in catalog.items() if e.get('category') == 'domain' and e.get('origin') != 'contrib'])
-        known = agent_catalog(repo)
-        agents = ui.checkbox('Agents', [(n, n, n in agents) for n, e in known.items() if e.get('origin') != 'contrib'])
-    return profile_changes(repo, args.name, label, playbooks, agents), 'Add profile '+args.name
-
-
-ANSWERS = {'skill': skill_answers, 'agent': agent_answers, 'command': command_answers, 'profile': profile_answers}
+ANSWERS = {'skill': skill_answers, 'agent': agent_answers, 'command': command_answers}
 
 
 def shared_files(kind):
     """What the checks rewrite, on top of the component's own files."""
-    return [LOCK] + ([] if WINDOWS else [SNAPSHOT]) + (['docs/getting-started.md'] if kind in ('profile', 'command') else [])
+    return [LOCK] + ([] if WINDOWS else [SNAPSHOT]) + ['docs/getting-started.md']  # 2.2: its selection table lists skills, agents and commands
 
 
 def refuse_changed(paths, run):
@@ -256,8 +230,6 @@ def finish(kind, changes):
     if kind in ('skill', 'agent'):
         print('After writing the content: raise its aikit-version to 1.0.1 in its front matter, then python3 scripts/versions.py --update (the tests refuse a change under the same version).')
         print('To write the content, ask your agent in your CLI to use the write-a-skill skill (extra_skills if it is not installed).')
-    if kind == 'profile':
-        print('Left to you: the profile table of README.md.')
     if kind == 'command':
         print('Left to you: its entry in docs/tools.md.')
 
@@ -269,7 +241,7 @@ def verify(kind, changes, run, undo):
     steps = [[python, 'runtime/check_skills.py', *own]] if own else []
     steps += [[python, 'scripts/versions.py', '--update']]
     steps += [] if WINDOWS else [[python, 'tests/snapshot.py', '--update']]
-    steps += [[python, 'scripts/profile_table.py', '--write']] if kind in ('profile', 'command') else []
+    steps += [[python, 'scripts/profile_table.py', '--write']]
     steps += [[python, '-m', 'unittest', 'discover', '-s', 'tests', '-p', module+'.py'] for module in TARGET_TESTS]
     for command in steps:
         shown = ' '.join(c if c != python else 'python' for c in command)
@@ -280,7 +252,7 @@ def verify(kind, changes, run, undo):
             print('No commit. The files stay here for review; git status lists them.')
             print('\n'.join(undo))
             return False
-    if WINDOWS and kind in ('profile', 'command'):
+    if WINDOWS:
         print('[Check] tests/golden/install-snapshot.json holds POSIX paths: not rewritten here. On Mac or Linux, python3 tests/snapshot.py --update on this branch, or the CI fails.')
     return True
 
@@ -400,7 +372,6 @@ def parser():
     p.add_argument('--description')
     p.add_argument('--category', help='skill: '+', '.join(SKILL_CATEGORIES))
     p.add_argument('--skill', help='command: the skill it activates')
-    p.add_argument('--label', help='profile: its label in the setup menu')
     p.add_argument('--yes', action='store_true', help='no question about the content; the commit and the push are always asked')
     p.add_argument('--no-mr', action='store_true', help='stop after the checks: no branch, no commit')
     p.add_argument('--plain', action='store_true')

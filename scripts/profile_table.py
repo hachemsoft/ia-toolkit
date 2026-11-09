@@ -1,4 +1,5 @@
-"""Profile table (installed commands and agents), inserted in docs/getting-started.md between two markers.
+"""Selection table (2.2: no profiles): what the Core installs by default and what a Team or a person can turn on, inserted in
+docs/getting-started.md between two markers.
 
 Usage: python3 scripts/profile_table.py           prints the table
        python3 scripts/profile_table.py --write   rewrites it in the page
@@ -10,9 +11,8 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from installer.cli import allowed_commands, load_profile, profile_menu, resolve_skills, selected_commands  # noqa: E402
-from installer.resolve import skill_catalog  # noqa: E402
 from installer.core import load_commands  # noqa: E402
+from installer.resolve import agent_catalog, skill_catalog  # noqa: E402
 
 PAGE = ROOT/'docs/getting-started.md'
 START, END = '<!-- profile-table:start -->', '<!-- profile-table:end -->'
@@ -20,19 +20,14 @@ WORKFLOW = ('intent', 'spec', 'build', 'test', 'review', 'ship', 'diagnose')
 
 
 def table():
-    commands = load_commands()
-    catalog = skill_catalog(ROOT)
-    rows = ['| Profile | Workflow steps | Other commands | Agents |', '| --- | --- | --- | --- |']
-    for pid, label in profile_menu():
-        profile = load_profile(pid)
-        resolved = resolve_skills(profile, {}, catalog, log=lambda *a: None)
-        skills = resolved[0] if isinstance(resolved, tuple) else resolved
-        allowed = allowed_commands(profile.get('commands'), {}, [c['name'] for c in commands])
-        names = [c['name'] for c in selected_commands(skills, commands, allowed)]
-        steps = ' '.join('`/'+n+'`' for n in WORKFLOW if n in names)
-        others = ' '.join('`/'+n+'`' for n in names if n not in WORKFLOW)
-        agents = ', '.join(profile['agents'])
-        rows.append('| **'+label.split(': ')[0]+'** (`'+pid+'`) | '+steps+' | '+others+' | '+agents+' |')
+    commands, skills, agents = load_commands(), skill_catalog(ROOT), agent_catalog(ROOT)
+    def names(items, default, fmt, want):
+        return ' '.join(fmt(n) for n in items if bool(default(n)) == want)
+    rows = ['| | Commands | Skills | Agents |', '| --- | --- | --- | --- |']
+    for label, want in (('**Core default** (installed for everyone)', True), ('**Optional** (a Team\'s `[defaults]`, or `extra_*`)', False)):
+        rows.append('| '+label+' | '+names([c['name'] for c in commands], lambda n: next(c for c in commands if c['name'] == n).get('default', True), lambda n: '`/'+n+'`', want)
+                    + ' | '+names([n for n, e in skills.items() if 'path' in e], lambda n: skills[n].get('default'), lambda n: n, want)
+                    + ' | '+names(list(agents), lambda n: agents[n].get('default'), lambda n: n, want)+' |')
     return '\n'.join(rows)
 
 

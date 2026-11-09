@@ -99,7 +99,7 @@ class UninstallTests(unittest.TestCase):
             self.assertEqual(cli.main(['update', '--home', str(self.home)]), 0)
         self.assertIn('choices of your last installation', out.getvalue())
         state = read_json(self.home/'.ai-kit/state.json')
-        self.assertEqual(state['profile'], 'general')
+        self.assertEqual(state['profile'], 'core')  # 2.2: no profiles
         self.assertEqual(state['targets'], ['gemini', 'agy', 'codex', 'claude'])
         self.assertEqual(state['user']['email'], 'a@example.org')
 

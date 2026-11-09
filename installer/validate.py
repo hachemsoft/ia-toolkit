@@ -34,6 +34,9 @@ def problems(root, engine_version):
         found.append(str(exc))
     if manifest and manifest.get('kind') == 'team':
         return found + team_problems(root, manifest)
+    if (root/'organization.toml').is_file():
+        found.append('organization.toml: read for compatibility only (AI Kit 2.2); move locked_hooks to managed.toml hooks.locked, '
+                     'friction_tracker to managed.toml [frictions.tracker], the MCP servers to mcp/servers.toml, and each team to a Team repository.')
     try:
         skills = skill_catalog(root)
     except KitError as exc:

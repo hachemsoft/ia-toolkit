@@ -2,6 +2,7 @@
 name: mr
 description: "Use when writing a merge request (MR) body."
 metadata:
+  aikit-default: "true"
   credits: "show-me by Dex Horthy (Humanlayer), https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
   aikit-version: "1.0.1"
   aikit-origin: "upstream"

@@ -1,6 +1,7 @@
 ---
 name: wizard
 description: "Generate an interactive bash wizard for steps only a human can do"
+default: false
 category: tool
 skills: [manual-steps]
 order: 180

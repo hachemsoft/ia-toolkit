@@ -48,7 +48,7 @@ def workstation(ui, home, state):
     for adapter in ADAPTERS:
         found = shutil.which(adapter.COMMAND)
         rows.append((adapter.LABEL, 'found' if found else 'not found on this workstation', 'ok' if found else 'missing'))
-    rows.append(('AI Kit', 'installed: version '+str(state.get('version'))+', profile '+str(state.get('profile')) if state else 'not installed yet',
+    rows.append(('AI Kit', 'installed: version '+str(state.get('version')) if state else 'not installed yet',
                  'ok' if state else 'info'))
     rows.append(('Connection to the model', 'not checked: the installer never calls the model', 'info'))
     ui.table('This workstation', rows)
@@ -63,21 +63,6 @@ def choose_targets(ui, home, state):
         note = ' (found)' if found else ' (not found: configuration prepared for when IT installs it)'
         choices.append((adapter.NAME, adapter.LABEL+note, adapter.NAME in default))
     return ui.checkbox('Which CLIs do you use?', choices, minimum=1)
-
-
-def profiles():
-    """(id, name, short description), in the profiles' order."""
-    out = []
-    for profile_id, label in cli.profile_menu():
-        name, _, description = label.partition(':')
-        out.append((profile_id, name.strip(), description.strip()))
-    return out
-
-
-def choose_profile(ui, state):
-    choices = [(pid, name+(' — '+description if description else '')) for pid, name, description in profiles()]
-    default = state.get('profile') if state.get('profile') in dict(choices) else 'general'
-    return ui.select('Your profile (a starting point: playbooks can be added or removed next)', choices, default)
 
 
 def choose_team(ui, state):
@@ -117,9 +102,9 @@ def choose_command(ui, state, previous=None):
 
 
 def customize(ui, home, profile_id):
-    """None to keep the profile as proposed; otherwise the new lists for overrides.toml. A choice the person turned off
+    """None to keep the Core selection as proposed; otherwise the new lists for overrides.toml. A choice the person turned off
     stays off: nothing is ticked again behind their back, and a conflict is explained, not resolved silently."""
-    keep = ui.select('Skills, commands and agents', [('keep', 'Keep what the profile proposes (recommended)'),
+    keep = ui.select('Skills, commands and agents', [('keep', 'Keep the Core selection (recommended)'),
                                                       ('adjust', 'Adjust playbooks, tools, commands and agents')], 'keep')
     if keep == 'keep':
         return None
@@ -179,7 +164,7 @@ def review(ui, home, plan):
     report = {}
     quietly(cli.apply, plan['profile'], home, True, plan['identity'], plan['targets'], plan['team'], choices=plan['choices'], report=report, command=plan['command'])
     labels = {a.NAME: a.LABEL for a in ADAPTERS}
-    lines = ['Profile: '+report['profile']+' ('+str(len(report['skills']))+' skills, '+str(len(report['commands']))+' commands, '
+    lines = ['Core selection ('+str(len(report['skills']))+' skills, '+str(len(report['commands']))+' commands, '
              + str(len(report['agents']))+' agents, '+str(len(report['hooks']))+' guardrails)',
              'CLIs: '+', '.join(labels[n] for n in report['targets'])]
     if report.get('team'):
@@ -268,7 +253,7 @@ def choose_and_install(ui, home, state):
     current = dict(state)
     while True:
         plan['targets'] = choose_targets(ui, home, {**current, 'targets': plan['targets'] or cli.recorded_targets(current)})
-        plan['profile'] = choose_profile(ui, {**current, 'profile': plan['profile'] or current.get('profile')})
+        plan['profile'] = cli.CORE_SELECTION  # 2.2: no profile question; the Core selection, then the person's choices
         plan['team'] = choose_team(ui, current)
         plan['identity'] = choose_identity(ui, home, {**current, 'user': plan['identity'] or current.get('user')})
         plan['command'] = choose_command(ui, current, plan['command'])
@@ -319,7 +304,7 @@ def live_check(ui, home):
 def menu(ui, home, state):
     action = ui.select('What do you want to do?', [
         ('update', 'Update: reapply the kit with my current choices'),
-        ('modify', 'Change my choices (CLIs, profile, playbooks, commands, agents)'),
+        ('modify', 'Change my choices (CLIs, playbooks, commands, agents)'),
         ('check', 'Check the installation (local, no call to the model)'),
         ('context', 'Open my personal context'),
         ('uninstall', 'Uninstall the kit configuration'),

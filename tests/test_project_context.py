@@ -1,13 +1,13 @@
 import contextlib, io, tempfile, unittest
 from pathlib import Path
-from installer.cli import apply
 from installer.resolve import skill_catalog
 from installer.core import ROOT
+from v1_profiles import apply_as  # noqa: E402
 class ProjectContextTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def run_kit(self,role):
-  with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home)
+  with contextlib.redirect_stdout(io.StringIO()):apply_as(role,self.home)
  def test_installed_for_both_profiles_with_dependencies(self):
   for role in ('data-analyst','data-developer'):
    self.run_kit(role);base=self.home/'.gemini/skills'

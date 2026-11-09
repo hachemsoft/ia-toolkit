@@ -1,9 +1,9 @@
 # News
 
 Announcements the kit shows once, at session start, to the people they are aimed at: a new skill, a training, a tip.
-One section per entry, `## <YYYY-MM-DD> <id> : <title>`, then optional lines `profiles: data-analyst, data-developer`
-(ids of `profiles/`), `teams: data` (teams of `organization.toml`) and `until: YYYY-MM-DD` (not shown after that day),
-then the text. Without `profiles` or `teams`, an entry goes to everyone. An organization writes its own entries in its
+One section per entry, `## <YYYY-MM-DD> <id> : <title>`, then optional lines `teams: data`
+(the active Team, AI Kit 2 has no profiles) and `until: YYYY-MM-DD` (not shown after that day),
+then the text. Without `teams`, an entry goes to everyone. An organization writes its own entries in its
 copy of this repository; the public repository keeps only generic ones. `python3 scripts/check_news.py` checks the file
 (the CI runs it). How it reaches people: [docs/hooks.md](docs/hooks.md#whats-new).
 

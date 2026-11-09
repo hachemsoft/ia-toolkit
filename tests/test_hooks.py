@@ -1,8 +1,9 @@
 import contextlib, io, json, os, subprocess, sys, tempfile, unittest
 from pathlib import Path
-from installer.cli import apply, doctor
+from installer.cli import doctor
 from installer.core import KitError, read_json, ROOT
 from installer.toml_files import dump_toml
+from v1_profiles import apply_as  # noqa: E402
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload,env=None):
  proc=subprocess.run([sys.executable,'-I',str(H/script)],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8',env={**os.environ,**(env or {})});return json.loads(proc.stdout or '{}')
@@ -115,12 +116,12 @@ class HookScriptTests(unittest.TestCase):
   import hashlib
   with tempfile.TemporaryDirectory() as tmp:
    home=Path(tmp);(home/'.ai-kit').mkdir();(home/'.ai-kit/overrides.toml').write_text(dump_toml({'hooks':{'dbt-prod-guard':True}}),encoding='utf-8')
-   with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',home,False,None,'gemini')
+   with contextlib.redirect_stdout(io.StringIO()):apply_as('data-analyst',home,False,None,'gemini')
    # Simulate a 0.16 installation: script at the old location, tracked by the state.
    old=home/'.gemini/hooks/ai-kit/dbt-prod-guard.py';old.parent.mkdir(parents=True);old.write_bytes((H/'dbt-prod-guard.py').read_bytes())
    state=read_json(home/'.ai-kit/state.json');state['files']['.gemini/hooks/ai-kit/dbt-prod-guard.py']=hashlib.sha256(old.read_bytes()).hexdigest()
    (home/'.ai-kit/state.json').write_text(json.dumps(state),encoding='utf-8')
-   with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',home,False,None,'gemini')
+   with contextlib.redirect_stdout(io.StringIO()):apply_as('data-analyst',home,False,None,'gemini')
    self.assertFalse(old.exists());self.assertFalse((home/'.gemini/hooks/ai-kit').exists());self.assertTrue((home/'.ai-kit/hooks/dbt-prod-guard.py').is_file())
    command=read_json(home/'.gemini/settings.json')['hooks']['BeforeTool'][0]['hooks'][0]['command'];self.assertIn('.ai-kit',command)
  def test_malformed_input_never_breaks(self):
@@ -131,7 +132,7 @@ class HookInstallTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def run_kit(self,role='data-analyst'):
-  with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home)
+  with contextlib.redirect_stdout(io.StringIO()):apply_as(role,self.home)
  def overrides(self,v):
   p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def settings(self):return read_json(self.home/'.gemini/settings.json')
@@ -140,7 +141,7 @@ class HookInstallTests(unittest.TestCase):
   with contextlib.redirect_stdout(out):doctor(self.home)
   return out.getvalue()
  def test_whats_new_declared_on_every_cli_and_off_by_setting(self):
-  with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'all')
+  with contextlib.redirect_stdout(io.StringIO()):apply_as('data-analyst',self.home,False,None,'all')
   st=read_json(self.home/'.ai-kit/state.json');self.assertIn('whats-new',st['hooks']);self.assertEqual(st['hooks']['whats-new']['event'],'SessionStart');self.assertNotIn('matcher',st['hooks']['whats-new']['group'])
   self.assertTrue((self.home/'.ai-kit/hooks/whats-new.py').is_file())
   g=self.settings()['hooks']['SessionStart'];self.assertEqual(len(g),1);self.assertNotIn('matcher',g[0]);self.assertEqual(g[0]['hooks'][0]['name'],'ai-kit-whats-new');self.assertIn('whats-new.py',g[0]['hooks'][0]['command'])
@@ -148,7 +149,7 @@ class HookInstallTests(unittest.TestCase):
   cfg=(self.home/'.codex/config.toml').read_text(encoding='utf-8');self.assertIn('[[hooks.SessionStart]]\n\n[[hooks.SessionStart.hooks]]',cfg);self.assertIn('whats-new.py',cfg);self.assertNotIn('[[hooks.SessionStart]]\nmatcher',cfg)
   a=read_json(self.home/'.gemini/config/plugins/ai-kit/hooks.json')['ai-kit-whats-new'];self.assertTrue(a['enabled']);self.assertEqual(sorted(a['SessionStart'][0]),['command','timeout','type']);self.assertIn('whats-new.py',a['SessionStart'][0]['command'])  # agy: a flat list for a lifecycle event (plugin validate)
   self.overrides({'hooks':{'whats-new':False}})
-  with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'all')
+  with contextlib.redirect_stdout(io.StringIO()):apply_as('data-analyst',self.home,False,None,'all')
   st=read_json(self.home/'.ai-kit/state.json');self.assertNotIn('whats-new',st['hooks']);self.assertFalse((self.home/'.ai-kit/hooks/whats-new.py').exists())
   self.assertNotIn('SessionStart',self.settings().get('hooks',{}));self.assertNotIn('SessionStart',read_json(self.home/'.claude/settings.json').get('hooks',{}))
   self.assertNotIn('[[hooks.SessionStart]]',(self.home/'.codex/config.toml').read_text(encoding='utf-8'));self.assertFalse(read_json(self.home/'.gemini/config/plugins/ai-kit/hooks.json')['ai-kit-whats-new']['enabled'])
@@ -156,7 +157,7 @@ class HookInstallTests(unittest.TestCase):
   # 0.51: session-news renamed whats-new; a setting written with the old name keeps its effect, and update says so.
   self.overrides({'hooks':{'session-news':False}})
   out=io.StringIO()
-  with contextlib.redirect_stdout(out):apply('data-analyst',self.home,False,None,'all')
+  with contextlib.redirect_stdout(out):apply_as('data-analyst',self.home,False,None,'all')
   self.assertNotIn('whats-new',read_json(self.home/'.ai-kit/state.json')['hooks'])
   self.assertIn('hooks.session-news is now hooks.whats-new',out.getvalue())
  def test_doctor_proves_whats_new_answers_without_writing(self):
@@ -176,7 +177,7 @@ class HookInstallTests(unittest.TestCase):
   self.assertIn('[Check] Guardrail dbt-prod-guard: Python not found',self.doctor_text())
  def test_doctor_flags_unapproved_codex_guardrails(self):
   self.overrides({'hooks':{'dbt-prod-guard':True}})
-  with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home,False,None,'all')
+  with contextlib.redirect_stdout(io.StringIO()):apply_as('data-analyst',self.home,False,None,'all')
   self.assertIn('[Check] Codex: kit guardrails approved in Codex (not yet',self.doctor_text())
   cfg=self.home/'.codex/config.toml'
   for i in range(2):cfg.write_text(cfg.read_text(encoding='utf-8')+'\n[hooks.state."'+str(cfg).replace('\\','/')+':pre_tool_use:'+str(i)+':0"]\ntrusted_hash = "sha256:00"\n',encoding='utf-8')  # dbt-prod-guard + protected-paths (on by default)

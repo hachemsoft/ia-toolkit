@@ -1,4 +1,4 @@
-"""Settings: the organization, team and personal layers, profiles, and what they resolve to (skills, commands, MCP servers)."""
+"""Settings: the organization, team and personal layers, the Core default selection, and what they resolve to (skills, commands, MCP servers)."""
 import getpass
 import os
 import re
@@ -10,10 +10,16 @@ from .toml_files import read_toml
 from .adapters import ADAPTERS
 
 
+def context_folder(root=None):
+    """The content's context layers: context/ (2.2), or practices/ in a Core from before (read the same way)."""
+    root = root or content_root()
+    return root/'context' if (root/'context').is_dir() or not (root/'practices').is_dir() else root/'practices'
+
+
 def practice_file(practice_id):
     """Source file of a practice and name of the context file it produces."""
     safe_id(practice_id)
-    matches = sorted((content_root()/'practices').glob('[0-9][0-9]-'+practice_id+'.md'))
+    matches = sorted(context_folder().glob('[0-9][0-9]-'+practice_id+'.md'))
     if len(matches) != 1:
         raise KitError('Practice not found or ambiguous: ' + practice_id)
     source = matches[0]
@@ -21,21 +27,47 @@ def practice_file(practice_id):
 
 
 def profile_menu():
-    """(id, label) of every profile in profiles/, sorted by its "order": adding a profile is adding one file."""
-    profiles = [read_toml(p) for p in sorted((content_root()/'profiles').glob('*.toml'))]
-    return [(p['id'], p.get('label') or p['id']) for p in sorted(profiles, key=lambda p: (p.get('order', 1000), p['id']))]
+    """2.2: no profiles (ADR 0018); kept empty for the callers of the V1 API."""
+    return []
 
 
 def profile_ids():
-    return sorted(p.stem for p in (content_root()/'profiles').glob('*.toml'))
+    return []
+
+
+CORE_SELECTION = 'core'  # 2.2: no profiles; state.json records this instead of a profile name
+
+
+def core_selection():
+    """The Core default selection (ADR 0018), in the shape the plan reads: every skill, agent and command marked default in its
+    metadata; the context layers company and team. A Team then turns on more ([defaults]), the person adds or removes."""
+    from .core import load_commands
+    from .resolve import agent_catalog, skill_catalog
+    return {'id': CORE_SELECTION, 'label': 'Core default', 'practices': ['company', 'team'], 'mcp': [],
+            'skills': [n for n, e in skill_catalog(content_root()).items() if e.get('default')],
+            'agents': [n for n, e in agent_catalog(content_root()).items() if e.get('default')],
+            'commands': [c['name'] for c in load_commands() if c.get('default', True)]}
+
+
+def carried_over(state, selection, overrides, catalog, agent_names, command_names):
+    """ADR 0018: what a V1 (or 2.0/2.1) installation had and the Core default no longer gives, kept as plain personal lines:
+    {extra_skills: [...], extra_agents: [...], extra_commands: [...]}; nothing when the state already uses the Core selection."""
+    if not state.get('profile') or state.get('profile') == CORE_SELECTION:
+        return {}
+    installed = state.get('installed') or {}
+    def kept(names, default, extra, disabled, known):
+        return [n for n in names if n in known and n not in default and n not in overrides.get(extra, []) and n not in overrides.get(disabled, [])]
+    found = {'extra_skills': kept(installed.get('skills', []), selection['skills'], 'extra_skills', 'disabled_skills',
+                                  {n for n, e in catalog.items() if 'path' in e}),
+             'extra_agents': kept([a[len('ai-kit-'):] if a.startswith('ai-kit-') else a for a in installed.get('agents', [])], selection['agents'],
+                                  'extra_agents', 'disabled_agents', set(agent_names)),
+             'extra_commands': kept(installed.get('commands', []), selection['commands'], 'extra_commands', 'disabled_commands', set(command_names))}
+    return {k: v for k, v in found.items() if v}
 
 
 def load_profile(profile_id):
-    """profiles/<id>.toml: the skills, commands, agents and MCP servers of a job."""
-    path = content_root()/'profiles'/(safe_id(profile_id)+'.toml')
-    if not path.exists():
-        raise KitError('Unknown profile: '+profile_id+'. Profiles: '+', '.join(profile_ids()))
-    return read_toml(path)
+    """2.2: no profiles; every id gives the Core default selection (kept for the callers of the V1 API)."""
+    return core_selection()
 
 
 def managed_context_names(profile):
@@ -121,8 +153,18 @@ def detect_identity(home):
 
 
 def organization():
-    """organization.toml at the root of the kit: what the organization decides (expected email domains, defaults, teams)."""
+    """What the organization decides. 2.2: the Core holds no organization.toml; its MCP servers are in mcp/servers.toml
+    ([servers.<name>], read as the defaults' mcp). An organization.toml still present in a Core (an organization's own copy) is
+    read the same way as before, and ai-kit validate says where its keys go (managed.toml, mcp/servers.toml, Team repos)."""
     org = read_toml(content_root()/'organization.toml', {})
+    servers = read_toml(content_root()/'mcp'/'servers.toml', {}).get('servers', {})
+    if servers:
+        if not isinstance(servers, dict) or not all(isinstance(v, dict) for v in servers.values()):
+            raise KitError('mcp/servers.toml: one table per server ([servers.<name>]).')
+        defaults = dict(org.get('defaults') or {})
+        defaults['mcp'] = {**{n: {k: v for k, v in {'server': {x: y for x, y in s.items() if x != 'enabled'}, 'enabled': s.get('enabled')}.items() if v is not None}
+                              for n, s in servers.items()}, **(defaults.get('mcp') or {})}
+        org = {**org, 'defaults': defaults}
     if not isinstance(org.get('defaults', {}), dict):
         raise KitError('organization.toml: defaults must be a table ([defaults]).')
     teams = org.get('teams', {})
@@ -137,10 +179,11 @@ TRACKER_KINDS = ('gitlab', 'github')
 TRACKER_SOURCES = ('agent', 'person', 'doctor')
 
 
-def friction_tracker(org, personal):
+def friction_tracker(org, personal, managed=None):
     """[friction_tracker] of organization.toml, validated, with its defaults, or None: no tracker, or the person wrote
     share_frictions = false. What the /friction script reads from state.json (runtime/friction.py)."""
-    config = org.get('friction_tracker')
+    # 2.2: IT sets the tracker in managed.toml [frictions.tracker]; organization.toml [friction_tracker] is read as before.
+    config = ((managed or {}).get('frictions') or {}).get('tracker', org.get('friction_tracker'))
     if config is None:
         return None
     if not isinstance(config, dict):
@@ -259,9 +302,9 @@ def domain_allowed(email, domains):
 
 
 def team_ids():
-    """Teams: those with their own practices (practices/20-<team>.md, besides the shared 20-team.md) or their own settings
+    """Teams: those with their own practices (context/20-<team>.md, besides the shared 20-team.md) or their own settings
     (teams in organization.toml): context, tools, or both."""
-    files = {p.stem[3:] for p in (content_root()/'practices').glob('20-*.md') if p.stem != '20-team'}
+    files = {p.stem[3:] for p in context_folder().glob('20-*.md') if p.stem != '20-team'}
     v2 = {p.stem for p in (content_root()/'teams').glob('*.toml')} if (content_root()/'teams').is_dir() else set()
     return sorted(files | set(organization().get('teams', {})) | v2)
 
@@ -269,8 +312,8 @@ def team_ids():
 def profile_practices(profile, team):
     """The profile's practices, with the shared team practice replaced by the person's team when it has its own file."""
     if team and team not in team_ids():
-        raise KitError('Unknown team: '+team+'. Teams: '+(', '.join(team_ids()) or 'none (practices/20-<team>.md or teams in organization.toml)'))
-    own = team and (content_root()/'practices'/('20-'+team+'.md')).is_file()
+        raise KitError('Unknown team: '+team+'. Teams: '+(', '.join(team_ids()) or 'none (context/20-<team>.md or teams in organization.toml)'))
+    own = team and (context_folder()/('20-'+team+'.md')).is_file()
     return [team if p == 'team' and own else p for p in profile['practices']]
 
 

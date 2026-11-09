@@ -2,6 +2,7 @@
 name: zoom-out
 description: "Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture. Use when the user types /explain or explicitly asks for this step; do not activate on your own for unrelated requests."
 metadata:
+  aikit-default: "true"
   aikit-version: "1.1.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"

@@ -15,8 +15,10 @@ SKILL_ALIASES = {
 }
 SKILL_KEYS = (('version', 'version', str), ('origin', 'origin', str), ('license', 'license', str), ('summary', 'description', str),
               ('category', 'category', str), ('tier', 'tier', str), ('requires', 'requires', csv),
-              ('needs-agents', 'needs_agents', lambda v: v == 'true'), ('protected', 'protected', lambda v: v == 'true'), ('owner', 'owner', str))
-AGENT_KEYS = (('version', 'version', str), ('origin', 'origin', str), ('protected', 'protected', lambda v: v == 'true'), ('owner', 'owner', str))
+              ('needs-agents', 'needs_agents', lambda v: v == 'true'), ('protected', 'protected', lambda v: v == 'true'), ('owner', 'owner', str),
+              ('default', 'default', lambda v: v == 'true'))
+AGENT_KEYS = (('version', 'version', str), ('origin', 'origin', str), ('protected', 'protected', lambda v: v == 'true'), ('owner', 'owner', str),
+              ('default', 'default', lambda v: v == 'true'))
 
 
 def entry_from(meta, keys, rel):

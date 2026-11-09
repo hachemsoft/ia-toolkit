@@ -47,6 +47,13 @@ revoked = []                    # commit SHAs never activated
 allowed = ["https://gitlab.example.org/ai-toolkit/"]   # Team repositories accepted (URL prefixes)
 allow_unknown = true            # false: only the Teams already known
 
+[frictions.tracker]              # where frictions go (before 2.2: organization.toml [friction_tracker])
+kind = "gitlab"                   # gitlab | github
+project = "tools/ai-kit"          # group/project on the host
+host = "gitlab.example.org"
+labels = ["friction"]
+sources = ["agent"]               # person | agent
+
 [frictions]
 capture = "propose"              # propose | auto | off: what the agent does on a friction
 publication = "approval"         # approval (default) | auto | disabled

@@ -1,6 +1,6 @@
 # Evolving the kit
 
-1. Edit the general practices in practices/. The numeric prefix of the file (`10-company.md`) sets its position in the agent context. Keep business facts in the projects.
+1. Edit the general practices in context/. The numeric prefix of the file (`10-company.md`) sets its position in the agent context. Keep business facts in the projects.
 2. Add a skill with a unique name, a short SKILL.md with its `aikit-*` metadata ([extending](extending.md)): under `skills/contrib/` with a named owner when it is a team proposal, under `skills/internal/` when the kit maintainers take it on. The full procedure (catalog, profiles, command, eval case) is in [add or replace a skill](extending.md).
 3. Select the skills in the profiles. Do not install the whole catalog by default.
 4. For skills taken from an upstream repository, copy the folders as is into skills/internal/common/, remove files specific to other tools, keep the licence text (skills/LICENSE-UPSTREAM-MIT) and run the tests again; no automatic download.
@@ -27,7 +27,7 @@ What an agent reads is reviewed like code, at three levels. None of them blocks 
 
 | Check | Where it runs | What it does |
 | --- | --- | --- |
-| `CODEOWNERS` at the root | on the merge request, GitHub or GitLab | names who approves a change to `skills/`, `agents/`, `commands/`, `templates/`, `runtime/`, `organization.toml` and `practices/`; the public file names nobody, an organization's copy uncomments its lines and requires the code owners' review on the default branch |
+| `CODEOWNERS` at the root | on the merge request, GitHub or GitLab | names who approves a change to `skills/`, `agents/`, `commands/`, `templates/`, `runtime/`, `organization.toml` and `context/`; the public file names nobody, an organization's copy uncomments its lines and requires the code owners' review on the default branch |
 | `python3 runtime/check_skills.py` | in CI (`portability.yml`, `.gitlab-ci.yml`), in `tests/test_check_skills.py`, and locally | refuses a download piped into a shell, an instruction to drop previous instructions, a permission bypass, an instruction to turn a guardrail off or to change the kit's or a CLI's configuration, a secret, and a script or binary not declared in its `KIT_ALLOWED` list |
 | `doctor` | on the workstation, when the person runs it | lists the skills in the home folder that the kit did not install and shows what the same check finds in them, as `[Info] To review`, never as a failure |
 
@@ -37,7 +37,7 @@ A new script in a skill is reviewed, then added to `KIT_ALLOWED` in `runtime/che
 
 ## Add a team
 
-1. `practices/20-<team>.md`: the team's practices, short and checkable.
+1. `context/20-<team>.md`: the team's practices, short and checkable.
 2. Give the team its setup command (`setup --profile <profile> --team <team>`), or let `setup` ask.
 3. Nothing to change in the profiles: a team adds its layer to any profile.
 

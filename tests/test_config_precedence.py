@@ -186,5 +186,18 @@ class ProvenanceTests(unittest.TestCase):
         self.assertEqual(config.provenance({}, {}, {'frictions': 'off'}, {'managed_schema': 1, 'frictions': {'capture': 'auto'}})['frictions'], 'IT')
 
 
+
+class ManagedTrackerTests(Base):
+    def test_it_sets_the_tracker_in_managed_toml(self):
+        # 2.2: the Core has no organization.toml; the tracker comes from managed.toml [frictions.tracker].
+        self.write_managed({'managed_schema': 1, 'frictions': {'tracker': {'kind': 'gitlab', 'project': 'tools/ai-kit'}, 'publication': 'approval'}})
+        self.apply()
+        tracker = self.state()['friction_tracker']
+        self.assertEqual((tracker['kind'], tracker['project'], tracker['publication']), ('gitlab', 'tools/ai-kit', 'approval'))
+        self.write_managed({'managed_schema': 1, 'frictions': {'tracker': 'gitlab'}})
+        with self.assertRaises(config.ManagedConfigError):
+            self.apply()
+
+
 if __name__ == '__main__':
     unittest.main()

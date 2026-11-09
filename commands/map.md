@@ -1,6 +1,7 @@
 ---
 name: map
 description: "Plan: chart a chunk of work too big for one session as decision tickets"
+default: false
 category: workflow
 stage: Plan
 skills: [wayfinder]

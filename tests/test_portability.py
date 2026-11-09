@@ -24,9 +24,9 @@ class PortabilityTests(unittest.TestCase):
         return proc
 
     def test_native_cli_lifecycle_in_unicode_path(self):
-        self.run_cli('setup', '--profile', 'data-analyst')
+        self.run_cli('setup', '--profile', 'general')
         state = self.home / '.ai-kit/state.json'
-        self.assertEqual(json.loads(state.read_text(encoding='utf-8'))['profile'], 'data-analyst')
+        self.assertEqual(json.loads(state.read_text(encoding='utf-8'))['profile'], 'core')  # 2.2: no profiles, the Core default
         prefs = self.home / '.gemini/30_USER.md'
         self.assertTrue(prefs.exists())
         prefs.write_text('Answer concisely. Personal preference.', encoding='utf-8')
@@ -35,11 +35,9 @@ class PortabilityTests(unittest.TestCase):
         self.assertTrue((self.home / '.gemini/00_KIT.md').exists())
         names = json.loads((self.home / '.gemini/settings.json').read_text(encoding='utf-8'))['context']['fileName']
         self.assertEqual(names[:6], ['00_KIT.md','10_COMPANY.md','20_TEAM.md','30_USER.md','GEMINI.md','AGENTS.md'])
-        self.run_cli('setup', '--profile', 'data-developer')
-        self.assertTrue((self.home / '.gemini/skills/sql-review/SKILL.md').exists())
-        self.assertTrue((self.home / '.gemini/skills/python-js-change/SKILL.md').exists())
-        self.run_cli('setup', '--profile', 'data-analyst')
-        self.assertFalse((self.home / '.gemini/skills/python-js-change/SKILL.md').exists())
+        # 2.2: another profile is refused with the way to get its resources; a resource is added one by one.
+        refused = self.run_cli('setup', '--profile', 'data-developer', code=2)
+        self.assertIn('AI Kit 2 has no profiles', refused.stderr)
         p = subprocess.run([sys.executable,'-m','installer','doctor','--home',str(self.home)],
                            cwd=ROOT,capture_output=True,text=True,encoding='utf-8',
                            env={**os.environ,'PYTHONIOENCODING':'utf-8'})
@@ -47,14 +45,14 @@ class PortabilityTests(unittest.TestCase):
         self.assertIn('Local diagnosis only',p.stdout)
 
     def test_native_cli_dry_run(self):
-        self.run_cli('setup','--profile','data-developer','--dry-run')
+        self.run_cli('setup','--profile','general','--dry-run')
         self.assertFalse(self.home.exists())
 
     def test_native_error_code_and_no_overwrite(self):
         cfg = self.home / '.gemini/settings.json'
         cfg.parent.mkdir(parents=True)
         cfg.write_text('{invalid',encoding='utf-8')
-        self.run_cli('setup','--profile','data-analyst',code=2)
+        self.run_cli('setup','--profile','general',code=2)
         self.assertEqual(cfg.read_text(encoding='utf-8'),'{invalid')
 
     def test_python_sources_support_311_syntax(self):
@@ -65,7 +63,7 @@ class PortabilityTests(unittest.TestCase):
     @unittest.skipIf(os.name == 'nt', 'Shell launcher on Unix only')
     def test_native_shell_launcher_from_outside_repo(self):
         proc = subprocess.run(['sh', str(ROOT/'scripts/bootstrap.sh'), 'setup',
-                               '--profile','data-analyst','--home',str(self.home),'--no-live'],
+                               '--profile','general','--home',str(self.home),'--no-live'],
                               cwd=self.base,capture_output=True,text=True,encoding='utf-8')
         self.assertEqual(proc.returncode,0,proc.stdout+proc.stderr)
         self.assertTrue((self.home/'.ai-kit/state.json').exists())

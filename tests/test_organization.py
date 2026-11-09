@@ -15,6 +15,7 @@ from installer.cli import apply, doctor, merge_settings, setting_differences
 import wheelhouse
 from installer.core import KitError, ROOT, read_json
 from installer.toml_files import dump_toml, parse_toml, read_toml
+from v1_profiles import apply_as  # noqa: E402
 
 IDENTITY = {'email': 'first.last@example.com', 'source': 'test'}
 
@@ -34,7 +35,7 @@ class OrganizationTests(unittest.TestCase):
 
     def install(self, profile='general', team=None):
         with contextlib.redirect_stdout(io.StringIO()):
-            apply(profile, self.home, False, IDENTITY, 'gemini', team)
+            apply_as(profile, self.home, False, IDENTITY, 'gemini', team)
         return read_json(self.home/'.ai-kit/state.json')
 
     def personal(self, overrides):
@@ -67,7 +68,7 @@ class OrganizationTests(unittest.TestCase):
         self.assertIn('Your overrides.toml changes organization or team defaults: hooks.dbt-prod-guard', out.getvalue())
 
     def test_team_selects_its_practices_whatever_the_profile(self):
-        team_file = ROOT/'practices/20-kit-test-team.md'
+        team_file = ROOT/'context/20-kit-test-team.md'
         team_file.write_text('# Test team practices\n- Rule of the test team.\n', encoding='utf-8')
         self.addCleanup(team_file.unlink)
         state = self.install('java-developer', team='kit-test-team')
@@ -78,7 +79,7 @@ class OrganizationTests(unittest.TestCase):
         self.assertEqual(self.install('java-developer')['team'], 'kit-test-team')
 
     def test_team_none_leaves_the_team(self):
-        team_file = ROOT/'practices/20-kit-test-team.md'
+        team_file = ROOT/'context/20-kit-test-team.md'
         team_file.write_text('# Test team practices\n', encoding='utf-8')
         self.addCleanup(team_file.unlink)
         self.install('general', team='kit-test-team')
@@ -127,13 +128,7 @@ class OrganizationTests(unittest.TestCase):
         self.assertEqual(set(schema['properties']['hooks']['properties']), set(read_json(ROOT/'runtime/hooks/hooks.json')['hooks']) | set(RENAMED_HOOKS))
 
     def test_shipped_files_follow_the_schemas(self):
-        text = (ROOT/'organization.toml').read_text(encoding='utf-8')
-        schema_line = re.search(r'(?m)^#:schema (.+)$', text)
-        self.assertTrue((ROOT/schema_line.group(1).strip()).is_file())
-        org = read_toml(ROOT/'organization.toml')
-        known = set(read_json(ROOT/'schemas/organization.schema.json')['properties'])
-        self.assertEqual([k for k in org if k not in known], [])
-        self.assertEqual(cli.unknown_keys(org.get('defaults', {})), [])
+        self.assertFalse((ROOT/'organization.toml').exists())  # 2.2: not in the Core (managed.toml, mcp/servers.toml, Team repos)
         template = (ROOT/'templates/user-overrides.toml').read_text(encoding='utf-8')
         self.assertTrue((ROOT/'templates'/re.search(r'(?m)^#:schema (.+)$', template).group(1).strip()).is_file())
         self.assertEqual(read_toml(ROOT/'templates/user-overrides.toml'), {})  # comments only: nothing set for the person
@@ -173,7 +168,7 @@ class TeamToolsTests(unittest.TestCase):
         real = settings.read_toml
         with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.toml' else real(p, d)), \
              contextlib.redirect_stdout(io.StringIO()):
-            apply(profile, self.home, False, IDENTITY, 'gemini', team)
+            apply_as(profile, self.home, False, IDENTITY, 'gemini', team)
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
                 doctor(self.home)
@@ -187,7 +182,7 @@ class TeamToolsTests(unittest.TestCase):
         self.assertTrue((self.home/'.gemini/commands/ask.toml').is_file())
         self.assertIn('dbt-prod-guard', state['hooks'])
         self.assertEqual(list(state['mcp']), ['ai-kit-dbt'])
-        # No practices/20-data-platform.md: the shared team practices stay, the team is kept for update.
+        # No context/20-data-platform.md: the shared team practices stay, the team is kept for update.
         self.assertEqual(state['team'], 'data-platform')
         self.assertIn('team', state['practices'])
         self.assertIn('[Info] Team: data-platform (organization.toml teams.data-platform)', out)
@@ -255,12 +250,13 @@ class McpTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home/'.ai-kit').mkdir()
-            (home/'.ai-kit/overrides.toml').write_text(dump_toml({'mcp': {'dbt': False, 'github': True}}), encoding='utf-8')
+            # 2.2: no profile turns bigquery on; the person does (what the migration writes for a V1 data profile).
+            (home/'.ai-kit/overrides.toml').write_text(dump_toml({'mcp': {'bigquery': True, 'dbt': False, 'github': True}}), encoding='utf-8')
             real = settings.read_toml
             org = {'defaults': {'mcp': self.ORG}}
             with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: org if Path(p).name == 'organization.toml' else real(p, d)), \
                  contextlib.redirect_stdout(io.StringIO()):
-                apply('data-analyst', home, False, IDENTITY, 'gemini')
+                apply_as('data-analyst', home, False, IDENTITY, 'gemini')
                 out = io.StringIO()
                 with contextlib.redirect_stdout(out):
                     doctor(home)

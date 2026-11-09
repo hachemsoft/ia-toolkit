@@ -6,10 +6,12 @@ import re
 import tempfile
 import unittest
 
-from installer.cli import apply, resolve_skills, ROOT
+from installer.cli import resolve_skills, ROOT
 from installer.resolve import skill_catalog
 from installer.core import KitError, read_json
-from installer.toml_files import dump_toml, read_toml
+from installer.toml_files import dump_toml
+from v1_profiles import apply_as  # noqa: E402
+from installer.settings import core_selection  # noqa: E402
 
 CATALOG = skill_catalog(ROOT)
 
@@ -97,7 +99,7 @@ class InstallTests(unittest.TestCase):
         (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            notices = apply(profile, self.home, False, None, 'gemini')
+            notices = apply_as(profile, self.home, False, None, 'gemini')
         return read_json(self.home/'.ai-kit/state.json')['installed']['skills'], notices
 
     def test_playbook_added_alone_brings_what_it_requires_and_says_what_is_missing(self):
@@ -111,7 +113,7 @@ class InstallTests(unittest.TestCase):
         self.assertNotIn('`codebase-design`:', (self.home/'.gemini/skills/python-js-change/SKILL.md').read_text(encoding='utf-8'))
 
     def test_each_playbook_installs_alone_on_general_without_duplicates(self):
-        general = read_toml(ROOT/'profiles/general.toml')
+        general = core_selection()
         for skill, entry in CATALOG.items():
             if entry.get('category') != 'domain':
                 continue

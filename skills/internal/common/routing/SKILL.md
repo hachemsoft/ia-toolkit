@@ -2,6 +2,7 @@
 name: routing
 description: "Kit router: which command, which tool and what level of ceremony for the situation described. Triggers: which skill for, where do I start, how do we do this here, guide, help with the workflow."
 metadata:
+  aikit-default: "true"
   aikit-version: "1.0.0"
   aikit-origin: "internal"
   aikit-summary: "Which command, which tool and what level of ceremony for the situation: kit router."
