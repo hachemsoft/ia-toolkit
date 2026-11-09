@@ -1,6 +1,7 @@
 ---
 name: audit
 description: "HTML report of deepening opportunities in the codebase, then an interview"
+default: false
 category: tool
 skills: [improve-codebase-architecture]
 order: 190

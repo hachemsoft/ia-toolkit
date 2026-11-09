@@ -1,9 +1,9 @@
 import contextlib, io, json, os, subprocess, sys, tempfile, unittest
 from pathlib import Path
-from installer.cli import apply
 from installer.core import KitError, read_json, load_commands, command_skill_text, ROOT
 from installer.adapters.agy import AGY_PLUGIN
 from installer.toml_files import dump_toml
+from v1_profiles import apply_as  # noqa: E402
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload,env=None):
  proc=subprocess.run([sys.executable,'-I',str(H/script)],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8',env={**os.environ,**(env or {})});return json.loads(proc.stdout or '{}')
@@ -12,7 +12,7 @@ class AgyAdapterTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def run_kit(self,role='data-analyst',target='both'):
-  with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home,False,None,target)
+  with contextlib.redirect_stdout(io.StringIO()):apply_as(role,self.home,False,None,target)
  def overrides(self,v):
   p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def plugin(self):return self.home/AGY_PLUGIN
@@ -37,7 +37,7 @@ class AgyAdapterTests(unittest.TestCase):
   # Gemini reads the shared folder: no command skill there, or it would show every command twice.
   self.assertFalse((shared/'intent').exists());self.assertFalse((shared/'retro').exists())
  def test_analyst_gets_only_its_commands_as_skills(self):
-  self.run_kit();base=self.plugin()/'skills';self.assertTrue((base/'intent/SKILL.md').is_file());self.assertTrue((base/'review/SKILL.md').is_file());self.assertFalse((base/'spec').exists())
+  self.run_kit();base=self.plugin()/'skills';self.assertTrue((base/'intent/SKILL.md').is_file());self.assertTrue((base/'review/SKILL.md').is_file());self.assertFalse((base/'design').exists())  # 2.2: spec is a Core default; design stays optional
  def test_gemini_only_target(self):
   self.run_kit(target='gemini');self.assertFalse(self.plugin().exists());self.assertFalse((self.home/'.gemini/skills/intent').exists())
  def test_switch_target_removes_plugin(self):

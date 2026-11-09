@@ -4,6 +4,7 @@ description: "Review an architecture proposal or an ADR: compared options, crite
 max_turns: 12
 timeout_mins: 5
 metadata:
+  aikit-default: "false"
   aikit-version: "1.0.0"
   aikit-origin: "internal"
 ---

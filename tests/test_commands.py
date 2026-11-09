@@ -1,14 +1,16 @@
 import contextlib, io, json, tempfile, unittest
 from pathlib import Path
-from installer.cli import apply, doctor, selected_commands
+from installer.cli import doctor, selected_commands
 from installer.resolve import skill_catalog
 from installer.core import load_commands, KitError, read_json, ROOT
-from installer.toml_files import dump_toml, read_toml
+from installer.toml_files import dump_toml
+from v1_profiles import apply_as  # noqa: E402
+from v1_profiles import PROFILES  # noqa: E402
 class CommandTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def run_kit(self,role='data-analyst'):
-  with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home)
+  with contextlib.redirect_stdout(io.StringIO()):apply_as(role,self.home)
  def overrides(self,v):
   p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def cmd(self,name):return self.home/'.gemini/commands'/(name+'.toml')
@@ -31,10 +33,11 @@ class CommandTests(unittest.TestCase):
    self.assertIn(v['category'],('workflow','tool','domain','reference','setup'),k);self.assertIn(v['tier'],('core','optional','profile'),k)
    if v['tier']=='core':core.add(k)
   for pid in ('data-analyst','data-developer'):
-   skills=set(read_toml(ROOT/'profiles'/(pid+'.toml'))['skills']);(self.assertTrue(core<=skills,pid) if pid=='data-developer' else None);self.assertFalse({k for k in skills if catalog[k]['tier']=='optional' and catalog[k]['category']=='reference'}-{'codebase-design'})
+   skills=set(PROFILES[pid]['skills']);(self.assertTrue(core<=skills,pid) if pid=='data-developer' else None);self.assertFalse({k for k in skills if catalog[k]['tier']=='optional' and catalog[k]['category']=='reference'}-{'codebase-design'})
  def test_commands_installed_per_profile(self):
-  self.run_kit();self.assertTrue(self.cmd('intent').exists());self.assertTrue(self.cmd('learn').exists());self.assertFalse(self.cmd('ask').exists());self.assertTrue(self.cmd('review').exists());self.assertFalse(self.cmd('spec').exists());self.assertFalse(self.cmd('design').exists());self.assertFalse(self.cmd('triage').exists())
-  self.assertEqual(sorted(p.stem for p in (self.home/'.gemini/commands').glob('*.toml')),['build','diagnose','friction','guide','intent','learn','me','review','ship','test'])
+  self.run_kit();self.assertTrue(self.cmd('intent').exists());self.assertTrue(self.cmd('learn').exists());self.assertFalse(self.cmd('ask').exists());self.assertTrue(self.cmd('review').exists());self.assertTrue(self.cmd('spec').exists());self.assertFalse(self.cmd('design').exists());self.assertFalse(self.cmd('triage').exists())
+  # 2.2: the Core default commands for everyone (the analyst role adds none of its own).
+  self.assertEqual(sorted(p.stem for p in (self.home/'.gemini/commands').glob('*.toml')),['build','diagnose','explain','friction','guide','intent','learn','me','research','retro','review','ship','spec','test'])
   self.assertIn('.gemini/commands/intent.toml',read_json(self.home/'.ai-kit/state.json')['files'])
   self.run_kit('data-developer');self.assertTrue(self.cmd('design').exists());self.assertTrue(self.cmd('triage').exists());self.assertTrue(self.cmd('review').exists());self.assertFalse(self.cmd('ask').exists())
  def test_command_removed_when_skill_disabled(self):

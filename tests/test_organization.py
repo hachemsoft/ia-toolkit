@@ -15,6 +15,7 @@ from installer.cli import apply, doctor, merge_settings, setting_differences
 import wheelhouse
 from installer.core import KitError, ROOT, read_json
 from installer.toml_files import dump_toml, parse_toml, read_toml
+from v1_profiles import apply_as  # noqa: E402
 
 IDENTITY = {'email': 'first.last@example.com', 'source': 'test'}
 
@@ -34,7 +35,7 @@ class OrganizationTests(unittest.TestCase):
 
     def install(self, profile='general', team=None):
         with contextlib.redirect_stdout(io.StringIO()):
-            apply(profile, self.home, False, IDENTITY, 'gemini', team)
+            apply_as(profile, self.home, False, IDENTITY, 'gemini', team)
         return read_json(self.home/'.ai-kit/state.json')
 
     def personal(self, overrides):
@@ -173,7 +174,7 @@ class TeamToolsTests(unittest.TestCase):
         real = settings.read_toml
         with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.toml' else real(p, d)), \
              contextlib.redirect_stdout(io.StringIO()):
-            apply(profile, self.home, False, IDENTITY, 'gemini', team)
+            apply_as(profile, self.home, False, IDENTITY, 'gemini', team)
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
                 doctor(self.home)
@@ -255,12 +256,13 @@ class McpTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             (home/'.ai-kit').mkdir()
-            (home/'.ai-kit/overrides.toml').write_text(dump_toml({'mcp': {'dbt': False, 'github': True}}), encoding='utf-8')
+            # 2.2: no profile turns bigquery on; the person does (what the migration writes for a V1 data profile).
+            (home/'.ai-kit/overrides.toml').write_text(dump_toml({'mcp': {'bigquery': True, 'dbt': False, 'github': True}}), encoding='utf-8')
             real = settings.read_toml
             org = {'defaults': {'mcp': self.ORG}}
             with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: org if Path(p).name == 'organization.toml' else real(p, d)), \
                  contextlib.redirect_stdout(io.StringIO()):
-                apply('data-analyst', home, False, IDENTITY, 'gemini')
+                apply_as('data-analyst', home, False, IDENTITY, 'gemini')
                 out = io.StringIO()
                 with contextlib.redirect_stdout(out):
                     doctor(home)

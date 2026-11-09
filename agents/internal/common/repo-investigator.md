@@ -4,6 +4,7 @@ description: "Understand a codebase, its flows and its dependencies without modi
 max_turns: 12
 timeout_mins: 5
 metadata:
+  aikit-default: "true"
   aikit-version: "1.0.0"
   aikit-origin: "internal"
 ---

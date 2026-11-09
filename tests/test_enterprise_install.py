@@ -103,7 +103,7 @@ class LauncherTests(unittest.TestCase):
         shutil.rmtree(self.base/'Kit IA été')
         self.setup_kit(new_kit)
         state = read_json(self.home/'.ai-kit/state.json')
-        self.assertEqual(state['profile'], 'general')
+        self.assertEqual(state['profile'], 'core')  # 2.2: no profiles
         self.assertEqual(state['user']['email'], 'first.last@example.com')
         self.assertEqual(user_file.read_bytes(), user_before)
         self.assertIn('Mon rôle : ingénieure données', (self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))

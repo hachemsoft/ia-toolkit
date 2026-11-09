@@ -127,7 +127,7 @@ class SectionWriterTests(unittest.TestCase):
 class MinEngineTests(Base):
     def source(self, manifest):
         source = self.base/'core'
-        for name in ('skills', 'agents', 'commands', 'practices', 'profiles', 'organization.toml', 'templates'):
+        for name in ('skills', 'agents', 'commands', 'practices', 'organization.toml', 'templates'):
             (shutil.copytree if (ROOT/name).is_dir() else shutil.copy2)(ROOT/name, source/name)
         if manifest is not None:
             (source/'aikit.toml').write_text(manifest, encoding='utf-8')

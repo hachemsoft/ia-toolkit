@@ -5,6 +5,7 @@ tools: [read_file, grep_search, list_directory, run_shell_command]
 max_turns: 15
 timeout_mins: 10
 metadata:
+  aikit-default: "true"
   aikit-version: "1.0.0"
   aikit-origin: "internal"
 ---

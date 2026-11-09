@@ -71,20 +71,16 @@ Plain sentences are the normal way in: "explain how this area works", "the job f
 
 The agent matches the ceremony to the stakes and says so on its first line: `Level: quick` (a small change, done and checked), `standard` (a short alignment, then test-first) or `full` (intent, spec, plan, your acceptance before code).
 
-What each profile installs:
+What is installed (AI Kit 2 has no profiles: the Core installs its default selection; a Team turns on more for its members, and you add or remove a resource with `extra_*` or `disabled_*`):
 
 <!-- profile-table:start -->
-| Profile | Workflow steps | Other commands | Agents |
+| | Commands | Skills | Agents |
 | --- | --- | --- | --- |
-| **General** (`general`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/me` `/guide` `/friction` `/learn` `/explain` `/retro` `/research` | repo-investigator, code-reviewer, verifier, doubter |
-| **Java Developer** (`java-developer`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/triage` `/me` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, verifier, doubter, code-reviewer, security-reviewer |
-| **DevOps** (`devops`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/map` `/triage` `/me` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, verifier, doubter, infra-reviewer, security-reviewer |
-| **Architect** (`architect`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/me` `/guide` `/friction` `/learn` `/explain` `/retro` `/research` `/audit` | repo-investigator, verifier, doubter, architecture-reviewer, code-reviewer |
-| **Data Analyst** (`data-analyst`) | `/intent` `/build` `/test` `/review` `/ship` `/diagnose` | `/me` `/guide` `/friction` `/learn` | repo-investigator, sql-reviewer, dbt-reviewer, verifier |
-| **Data Developer** (`data-developer`) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` | `/design` `/map` `/triage` `/me` `/guide` `/friction` `/learn` `/explain` `/retro` | repo-investigator, code-reviewer, verifier, doubter, sql-reviewer, dbt-reviewer |
+| **Core default** (installed for everyone) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` `/me` `/guide` `/friction` `/learn` `/explain` `/retro` `/research` | analysis code-review diagnosing-bugs domain-modeling grill-with-docs grilling implement init-project-context investigation mr retrospective routing setup-workflow tdd teach to-spec wait-what writing-for-agents zoom-out | doubter repo-investigator verifier code-reviewer |
+| **Optional** (a Team's `[defaults]`, or `extra_*`) | `/design` `/map` `/triage` `/ask` `/handoff` `/wizard` `/audit` | bigquery-cost-review bigquery-query-review dbt-model-change incremental-replay kpi-definition perimeter-brief sql-review architecture-decision codebase-design grill-me handover implement-spec improve-codebase-architecture manual-steps prototype ticket-sorting to-questionnaire to-tickets wayfinder workflow-guide write-a-skill writing-great-skills java-change python-js-change infra-change | dbt-reviewer sql-reviewer architecture-reviewer security-reviewer infra-reviewer |
 <!-- profile-table:end -->
 
-Your profile's domain playbooks (SQL and dbt, Java, infrastructure…) activate on their own when the task calls for them. Every command and tool: [workflow](workflow.md) and [tools](tools.md).
+The domain playbooks your Team turns on (SQL and dbt, Java, infrastructure…) activate on their own when the task calls for them. Every command and tool: [workflow](workflow.md) and [tools](tools.md).
 
 ## 4. What is normal
 

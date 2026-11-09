@@ -147,9 +147,10 @@ def mcp_report(home, state):
     """MCP lines of the summaries, from the installer's own resolution: configured, chosen but not provided by the
     organization, or turned off. Never claims a connection: the kit does not call MCP servers."""
     profile = load_profile(state['profile'])
-    servers, undefined = resolve_mcp(organization().get('defaults', {}).get('mcp', {}), profile.get('mcp', []),
-                                     personal_settings(home/'.ai-kit').get('mcp', {}), team_settings(state.get('team')).get('mcp', {}))
-    off = [n for n in profile.get('mcp', []) if n not in servers and n not in undefined]
+    mine, team = personal_settings(home/'.ai-kit').get('mcp', {}), team_settings(state.get('team')).get('mcp', {})
+    servers, undefined = resolve_mcp(organization().get('defaults', {}).get('mcp', {}), profile.get('mcp', []), mine, team)
+    # 2.2: no profile chooses servers; a server the person or the team turned off is said so.
+    off = sorted({n for layer in (mine, team) for n, v in (layer or {}).items() if v is False} - set(servers) - set(undefined))
     lines = []
     if servers:
         lines.append('Data connections (MCP): '+', '.join(servers)+' configured; connection not verified (check it with your CLI\'s MCP command).')
@@ -170,7 +171,7 @@ def print_summary(home, state, live=None, problems=()):
         print('Next step: run setup from the kit folder (docs/getting-started.md#run-the-kit).')
         return
     commands = state.get('installed', {}).get('commands', [])
-    print('  Kit configuration: installed (profile '+state['profile']+', version '+str(state.get('version'))+', '+str(len(commands))+' commands).')
+    print('  Kit configuration: installed (version '+str(state.get('version'))+', '+str(len(commands))+' commands'+(', team '+state['team'] if state.get('team') else '')+').')
     targeted = [a for a in ADAPTERS if a.NAME in (state.get('installed', {}).get('clis') or [])]
     found = []
     for adapter in targeted:
@@ -413,7 +414,7 @@ def doctor_checks(home, cwd=None, problems=None):
     status(bool(state),'Kit installation; run setup if missing.')
     hints = []
     if state:
-        print('Profile: '+state['profile']+' | version '+state['version'])
+        print('Version '+state['version']+(' | team '+state['team'] if state.get('team') else ''))
         command_checks(home, state, status)
         # Git sources (2.0, slice 2): the active Core, and lock.toml as written by sync or rollback.
         from .sync import lock_summary, LOCK_FILE

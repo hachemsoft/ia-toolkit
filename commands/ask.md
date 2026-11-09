@@ -1,6 +1,7 @@
 ---
 name: ask
 description: "Write a questionnaire for the person who holds the missing information"
+default: false
 category: tool
 skills: [to-questionnaire]
 order: 150

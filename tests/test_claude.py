@@ -17,6 +17,7 @@ from installer import cli, core
 from installer.adapters import claude
 from installer.core import ROOT, KitError, read_json
 from installer.toml_files import dump_toml
+from v1_profiles import apply_as  # noqa: E402
 
 H = ROOT/'runtime/hooks'
 PERSONAL_HOOK = {'hooks': [{'type': 'command', 'command': '/usr/local/bin/my-status'}]}
@@ -39,7 +40,7 @@ class Base(unittest.TestCase):
     def run_kit(self, target='claude', profile='general'):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            notices = cli.apply(profile, self.home, False, {'email': 'a@example.org', 'source': 'option'}, target)
+            notices = apply_as(profile, self.home, False, {'email': 'a@example.org', 'source': 'option'}, target)
         self.out = out.getvalue()
         return notices
 

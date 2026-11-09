@@ -2,6 +2,7 @@
 name: analysis
 description: "Analyse a question about the project with evidence: frame it, explore the sources, verify each claim, report a verdict. Triggers: analyse, why does, how does, is it true that, what happens when."
 metadata:
+  aikit-default: "true"
   aikit-version: "1.0.0"
   aikit-origin: "internal"
   aikit-summary: "Analyse a question about the project: explore, verify each claim, report verdict, evidence and unknowns."

@@ -2,6 +2,7 @@
 name: bigquery-cost-review
 description: "Review the cost of a BigQuery query, model or job before and after a change: bytes read, partitions, clustering, slots, frequency. Triggers: BigQuery cost, bill, bytes scanned, expensive query, optimize cost, why does this cost so much. Not for: a slow query whose cost is not the question."
 metadata:
+  aikit-default: "false"
   aikit-version: "1.0.0"
   aikit-origin: "internal"
   aikit-summary: "BigQuery cost measured before and after: bytes, partitions, clustering, slots, frequency, budget."

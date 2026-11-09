@@ -1,4 +1,4 @@
-"""Settings: the organization, team and personal layers, profiles, and what they resolve to (skills, commands, MCP servers)."""
+"""Settings: the organization, team and personal layers, the Core default selection, and what they resolve to (skills, commands, MCP servers)."""
 import getpass
 import os
 import re
@@ -21,21 +21,47 @@ def practice_file(practice_id):
 
 
 def profile_menu():
-    """(id, label) of every profile in profiles/, sorted by its "order": adding a profile is adding one file."""
-    profiles = [read_toml(p) for p in sorted((content_root()/'profiles').glob('*.toml'))]
-    return [(p['id'], p.get('label') or p['id']) for p in sorted(profiles, key=lambda p: (p.get('order', 1000), p['id']))]
+    """2.2: no profiles (ADR 0018); kept empty for the callers of the V1 API."""
+    return []
 
 
 def profile_ids():
-    return sorted(p.stem for p in (content_root()/'profiles').glob('*.toml'))
+    return []
+
+
+CORE_SELECTION = 'core'  # 2.2: no profiles; state.json records this instead of a profile name
+
+
+def core_selection():
+    """The Core default selection (ADR 0018), in the shape the plan reads: every skill, agent and command marked default in its
+    metadata; the context layers company and team. A Team then turns on more ([defaults]), the person adds or removes."""
+    from .core import load_commands
+    from .resolve import agent_catalog, skill_catalog
+    return {'id': CORE_SELECTION, 'label': 'Core default', 'practices': ['company', 'team'], 'mcp': [],
+            'skills': [n for n, e in skill_catalog(content_root()).items() if e.get('default')],
+            'agents': [n for n, e in agent_catalog(content_root()).items() if e.get('default')],
+            'commands': [c['name'] for c in load_commands() if c.get('default', True)]}
+
+
+def carried_over(state, selection, overrides, catalog, agent_names, command_names):
+    """ADR 0018: what a V1 (or 2.0/2.1) installation had and the Core default no longer gives, kept as plain personal lines:
+    {extra_skills: [...], extra_agents: [...], extra_commands: [...]}; nothing when the state already uses the Core selection."""
+    if not state.get('profile') or state.get('profile') == CORE_SELECTION:
+        return {}
+    installed = state.get('installed') or {}
+    def kept(names, default, extra, disabled, known):
+        return [n for n in names if n in known and n not in default and n not in overrides.get(extra, []) and n not in overrides.get(disabled, [])]
+    found = {'extra_skills': kept(installed.get('skills', []), selection['skills'], 'extra_skills', 'disabled_skills',
+                                  {n for n, e in catalog.items() if 'path' in e}),
+             'extra_agents': kept([a[len('ai-kit-'):] if a.startswith('ai-kit-') else a for a in installed.get('agents', [])], selection['agents'],
+                                  'extra_agents', 'disabled_agents', set(agent_names)),
+             'extra_commands': kept(installed.get('commands', []), selection['commands'], 'extra_commands', 'disabled_commands', set(command_names))}
+    return {k: v for k, v in found.items() if v}
 
 
 def load_profile(profile_id):
-    """profiles/<id>.toml: the skills, commands, agents and MCP servers of a job."""
-    path = content_root()/'profiles'/(safe_id(profile_id)+'.toml')
-    if not path.exists():
-        raise KitError('Unknown profile: '+profile_id+'. Profiles: '+', '.join(profile_ids()))
-    return read_toml(path)
+    """2.2: no profiles; every id gives the Core default selection (kept for the callers of the V1 API)."""
+    return core_selection()
 
 
 def managed_context_names(profile):

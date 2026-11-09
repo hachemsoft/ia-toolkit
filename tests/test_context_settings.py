@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from installer.cli import apply
 from installer.core import KitError
 from installer.adapters.gemini import merge_context_filenames
+from v1_profiles import apply_as  # noqa: E402
 class ContextSettingsTests(unittest.TestCase):
  def test_absent(self):
   self.assertEqual(merge_context_filenames({}),{'context':{'fileName':['30_USER.md','GEMINI.md','AGENTS.md']}})
@@ -37,5 +37,5 @@ class ContextSettingsTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as tmp:
    home=Path(tmp);settings=home/'.gemini/settings.json';settings.parent.mkdir()
    original=b'{"context":{"fileName":42},"ui":{"theme":"mine"}}';settings.write_bytes(original)
-   with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(KitError):apply('data-developer',home)
+   with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(KitError):apply_as('data-developer',home)
    self.assertEqual(settings.read_bytes(),original);self.assertFalse((home/'.ai-kit').exists())

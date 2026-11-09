@@ -1,5 +1,5 @@
 # AI Kit
-Profile: {profile}, loaded in every project.
+Loaded in every project.
 
 ## Priority between layers
 1. Company and team practices (files 10 and 20) apply by default; only the person, in the conversation, can ask to depart from one (note it in the reply), never from a guardrail, a permission or an access control.

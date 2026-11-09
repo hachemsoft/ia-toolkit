@@ -1,11 +1,11 @@
 import contextlib, io, sys, tempfile, unittest
 from pathlib import Path
-from installer.cli import apply
 from installer.resolve import skill_catalog
 from installer.core import load_commands, ROOT
-from installer.toml_files import read_toml
 sys.path.insert(0,str(ROOT/'evals'))
 import run as evals_run
+from v1_profiles import apply_as  # noqa: E402
+from v1_profiles import PROFILES  # noqa: E402
 
 class PlaybookTests(unittest.TestCase):
  def test_domain_skills_have_excuse_tables(self):
@@ -14,14 +14,14 @@ class PlaybookTests(unittest.TestCase):
    if v.get('category')=='domain':
     text=(ROOT/v['path']/'SKILL.md').read_text(encoding='utf-8');self.assertIn('## Rationalizations and rebuttals',text,k);self.assertGreaterEqual(text.count('\n| "'),3,k)
  def test_new_playbooks_in_profiles(self):
-  a=read_toml(ROOT/'profiles/data-analyst.toml')['skills'];d=read_toml(ROOT/'profiles/data-developer.toml')['skills']
+  a=PROFILES['data-analyst']['skills'];d=PROFILES['data-developer']['skills']
   for s in ('kpi-definition','incremental-replay','bigquery-cost-review','perimeter-brief'):self.assertIn(s,a)
-  self.assertEqual(read_toml(ROOT/'profiles/data-analyst.toml')['commands'],['guide','intent','build','test','review','ship','diagnose','learn','friction','me'])
+  self.assertEqual(PROFILES['data-analyst']['commands'],['guide','intent','build','test','review','ship','diagnose','learn','friction','me'])
   for s in ('incremental-replay','bigquery-cost-review','perimeter-brief'):self.assertIn(s,d)
  def test_doubter_installed_read_only(self):
   with tempfile.TemporaryDirectory() as tmp:
    home=Path(tmp)
-   with contextlib.redirect_stdout(io.StringIO()):apply('data-developer',home)
+   with contextlib.redirect_stdout(io.StringIO()):apply_as('data-developer',home)
    text=(home/'.gemini/agents/ai-kit-doubter.md').read_text(encoding='utf-8');header=text.split('---')[1]
    self.assertIn('tools: ["read_file", "grep_search"]',header);self.assertIn('unproven',text)
  def test_commands_stay_neutral_and_playbooks_carry_their_steps(self):

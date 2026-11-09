@@ -2,6 +2,7 @@
 name: to-questionnaire
 description: "Turn a decision you can't fully answer into a questionnaire for someone else to fill in. Use when the user types /ask or explicitly asks for this step; do not activate on your own for unrelated requests."
 metadata:
+  aikit-default: "false"
   aikit-version: "1.1.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"

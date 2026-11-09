@@ -11,6 +11,7 @@ from unittest import mock
 from installer import cli
 from installer.adapters import codex
 from installer.core import read_json, json_error, KitError, load_agent
+from v1_profiles import apply_as  # noqa: E402
 
 SECRET = 'api_key = abcdefghijklmnop1234'  # fake, matches the detector
 
@@ -24,7 +25,7 @@ class Base(unittest.TestCase):
     def run_kit(self, target=None, profile='general'):
         out = io.StringIO()
         with contextlib.redirect_stdout(out), mock.patch('shutil.which', return_value=None):
-            notices = cli.apply(profile, self.home, False, {'email': 'a@example.org', 'source': 'option'}, target)
+            notices = apply_as(profile, self.home, False, {'email': 'a@example.org', 'source': 'option'}, target)
         self.out = out.getvalue()
         return notices
 

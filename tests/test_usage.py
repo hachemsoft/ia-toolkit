@@ -3,13 +3,14 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from installer.cli import apply, usage
 from installer.core import KitError
+from v1_profiles import apply_as  # noqa: E402
 def msg(kind, ts, **extra):
  return {'id':'x','timestamp':ts.strftime('%Y-%m-%dT%H:%M:%S.000Z'),'type':kind,**extra}
 
 class UsageTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
-  with contextlib.redirect_stdout(io.StringIO()):apply('data-analyst',self.home)
+  with contextlib.redirect_stdout(io.StringIO()):apply_as('data-analyst',self.home)
  def write_session(self,name,messages):
   p=self.home/'.gemini/tmp/proj/chats'/(name+'.json');p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps({'sessionId':name,'messages':messages}),encoding='utf-8')
  def run_usage(self,**kw):

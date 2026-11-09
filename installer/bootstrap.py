@@ -20,7 +20,7 @@ BUNDLE = 'core/ai-kit-core.bundle'
 
 def has_content(folder):
     folder = Path(folder)
-    return (folder/'skills').is_dir() and (folder/'commands').is_dir() and (folder/'profiles').is_dir()
+    return (folder/'skills').is_dir() and (folder/'commands').is_dir()
 
 
 def source_dir():

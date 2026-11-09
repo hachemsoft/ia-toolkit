@@ -1,6 +1,7 @@
 ---
 name: triage
 description: "Maintain: move incoming issues through triage until they are agent-ready"
+default: false
 category: workflow
 stage: Maintain
 skills: [ticket-sorting]

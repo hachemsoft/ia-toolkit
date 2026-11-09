@@ -1,15 +1,15 @@
 import contextlib, io, tempfile, unittest
 from pathlib import Path
-from installer.cli import apply
 from installer.core import KitError
 from installer.toml_files import dump_toml
+from v1_profiles import apply_as  # noqa: E402
 class ExtraCommandsTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def overrides(self,v):
   p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def run_kit(self,role='data-analyst',target='gemini'):
-  with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home,False,None,target)
+  with contextlib.redirect_stdout(io.StringIO()):apply_as(role,self.home,False,None,target)
  def test_extra_command_installs_command_and_its_skills(self):
   self.overrides({'extra_commands':['spec','explain']});self.run_kit()
   for c in ('spec','explain','intent'):self.assertTrue((self.home/'.gemini/commands'/(c+'.toml')).exists(),c)
@@ -22,8 +22,8 @@ class ExtraCommandsTests(unittest.TestCase):
   self.overrides({'extra_commands':['nope']})
   with self.assertRaises(KitError):self.run_kit()
  def test_removing_extra_command_cleans_up(self):
-  self.overrides({'extra_commands':['spec']});self.run_kit();self.overrides({});self.run_kit()
-  self.assertFalse((self.home/'.gemini/commands/spec.toml').exists());self.assertFalse((self.home/'.gemini/skills/to-spec').exists())
+  self.overrides({'extra_commands':['design']});self.run_kit();self.assertTrue((self.home/'.gemini/commands/design.toml').exists());self.overrides({});self.run_kit()
+  self.assertFalse((self.home/'.gemini/commands/design.toml').exists());self.assertFalse((self.home/'.gemini/skills/codebase-design').exists())
  def test_prune_keeps_structural_dirs(self):
   self.run_kit('data-analyst','both');self.run_kit('data-analyst','gemini')
   self.assertTrue((self.home/'.gemini/config').is_dir());self.assertFalse((self.home/'.gemini/config/plugins/ai-kit').exists())

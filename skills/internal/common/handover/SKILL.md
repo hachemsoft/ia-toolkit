@@ -3,6 +3,7 @@ name: handover
 description: "Compact the current conversation into a handoff document for another agent to pick up. Use when the user types /handoff or explicitly asks for this step; do not activate on your own for unrelated requests."
 argument-hint: "What will the next session be used for?"
 metadata:
+  aikit-default: "false"
   aikit-version: "1.1.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"

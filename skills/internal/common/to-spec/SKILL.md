@@ -2,6 +2,7 @@
 name: to-spec
 description: "Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just synthesis of what you've already discussed. Use when the user types /spec or explicitly asks for this step; do not activate on your own for unrelated requests."
 metadata:
+  aikit-default: "true"
   aikit-version: "1.1.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"

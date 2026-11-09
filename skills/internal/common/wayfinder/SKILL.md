@@ -2,6 +2,7 @@
 name: wayfinder
 description: "Plan a huge chunk of work (more than one agent session can hold) as a shared map of decision tickets on your issue tracker, and resolve them one at a time until the way to the destination is clear. Use when the user types /map or explicitly asks for this step; do not activate on your own for unrelated requests."
 metadata:
+  aikit-default: "false"
   aikit-version: "1.1.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"

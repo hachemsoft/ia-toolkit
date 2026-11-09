@@ -2,15 +2,16 @@ import contextlib, io, json, os, shutil, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from unittest import mock
 from installer import cli, settings, doctor as doctor_module
-from installer.cli import apply, doctor, detect_identity
+from installer.cli import doctor, detect_identity
 from installer.core import read_json, ROOT
+from v1_profiles import apply_as  # noqa: E402
 class IdentityTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def write(self,p,text):
   f=self.home/p;f.parent.mkdir(parents=True,exist_ok=True);f.write_text(text,encoding='utf-8');return f
  def run_kit(self,role='data-analyst',user=None):
-  with contextlib.redirect_stdout(io.StringIO()):apply(role,self.home,False,user)
+  with contextlib.redirect_stdout(io.StringIO()):apply_as(role,self.home,False,user)
  def test_gemini_active_account_first(self):
   self.write('.gemini/google_accounts.json',json.dumps({'active':'first.last@example.com','old':[]}))
   self.write('.gitconfig','[user]\n\temail = other@example.org\n\tname = Zoé Martin\n')
@@ -35,7 +36,7 @@ class IdentityTests(unittest.TestCase):
  def test_invalid_email_refused(self):
   with self.assertRaises(cli.KitError):self.run_kit(user={'email':'not-an-email','source':'option'})
  def test_cli_user_option_non_interactive(self):
-  proc=subprocess.run([sys.executable,'-m','installer','setup','--profile','data-analyst','--user','first.last@example.com','--home',str(self.home),'--no-live'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8',stdin=subprocess.DEVNULL,env={**os.environ,'PYTHONIOENCODING':'utf-8'})
+  proc=subprocess.run([sys.executable,'-m','installer','setup','--profile','general','--user','first.last@example.com','--home',str(self.home),'--no-live'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8',stdin=subprocess.DEVNULL,env={**os.environ,'PYTHONIOENCODING':'utf-8'})
   self.assertEqual(proc.returncode,0,proc.stdout+proc.stderr);self.assertIn('Identity: first.last@example.com (source option)',proc.stdout)
   self.assertEqual(read_json(self.home/'.ai-kit/state.json')['user']['source'],'option')
  def test_doctor_domain_and_mismatch_warnings(self):

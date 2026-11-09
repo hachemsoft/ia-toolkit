@@ -2,6 +2,7 @@
 name: sql-review
 description: "Review SQL, plain or in a dbt project, on any warehouse, and investigate suspicious aggregations, duplicates or business results. Triggers: the number is wrong, duplicates, total that doesn't add up, review this query, join that multiplies rows, unexpected NULLs. Not for: a query that is only slow or expensive, or a metric still to define."
 metadata:
+  aikit-default: "false"
   aikit-version: "1.0.0"
   aikit-origin: "internal"
   aikit-summary: "Review SQL, plain or in dbt, on any warehouse, and investigate suspicious aggregations, duplicates or business results."

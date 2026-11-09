@@ -3,6 +3,7 @@ name: workflow-guide
 description: Ask which skill or flow fits your situation. A router over the skills in this repo.
 disable-model-invocation: true
 metadata:
+  aikit-default: "false"
   aikit-version: "1.0.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"

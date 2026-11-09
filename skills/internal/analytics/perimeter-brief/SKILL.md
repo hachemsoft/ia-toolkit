@@ -2,6 +2,7 @@
 name: perimeter-brief
 description: "Produce the brief of a Data perimeter from a dbt repo and its documentation: sources, layers, key models and their grain, KPIs, rules, owners, open questions; plus a quiz and candidate glossary terms. Triggers: perimeter brief, onboarding on a domain, walk me through this perimeter, first lesson."
 metadata:
+  aikit-default: "false"
   aikit-version: "1.0.0"
   aikit-origin: "internal"
   aikit-summary: "HTML brief of a Data perimeter from a dbt repo, quiz and candidate glossary terms; first lesson of /learn."

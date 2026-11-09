@@ -2,6 +2,7 @@
 name: dbt-model-change
 description: "Create, modify, test or document a dbt model, on any adapter (BigQuery specifics when the project uses it). Triggers: new model, modify this model, add a column or a dbt test, materialization, incremental, ref and source, dbt run or dbt test. Not for: ad hoc SQL outside a dbt project."
 metadata:
+  aikit-default: "false"
   aikit-version: "1.0.0"
   aikit-origin: "internal"
   aikit-summary: "Create, modify, test or document a dbt model, on any adapter (BigQuery specifics when the project uses it)."

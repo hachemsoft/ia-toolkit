@@ -16,14 +16,14 @@ from .core import (content_root, STATE_SCHEMA, check_state_schema, _PACKAGE_DIR,
                    safe_id, load_commands, load_agent, redact, user_context_refusal)
 from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
-from .settings import (practice_file, profile_menu, profile_ids, load_profile, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, organization, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, allowed_domains, domain_allowed, team_ids, profile_practices, RENAMED_SKILLS, resolve_skills, skill_note, RETIRED_KEYS, retired_key_notice, unknown_names, allowed_commands, selected_commands, LEGACY_KIT_DIR, recorded_targets, version_changes, PERSONAL_FILE, LEGACY_PERSONAL_FILE, personal_settings, CHOICE_KEYS, friction_tracker)  # noqa: F401 (re-exported)
+from .settings import (CORE_SELECTION, core_selection, carried_over, practice_file, profile_menu, profile_ids, load_profile, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, organization, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, allowed_domains, domain_allowed, team_ids, profile_practices, RENAMED_SKILLS, resolve_skills, skill_note, RETIRED_KEYS, retired_key_notice, unknown_names, allowed_commands, selected_commands, LEGACY_KIT_DIR, recorded_targets, version_changes, PERSONAL_FILE, LEGACY_PERSONAL_FILE, personal_settings, CHOICE_KEYS, friction_tracker)  # noqa: F401 (re-exported)
 from .console import styled_output
 from .commit import (BACKUPS_KEPT, prune_backups, commit_changes, atomic_write, KIT_MANAGED, managed_roots, prune_empty_dirs)  # noqa: F401 (re-exported)
 from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKILL_DIRS, repo_root, repo_skill_overrides, mcp_report, print_summary, doctor, kit_version, source_folder, version_line, SCRIPT_INTERPRETER, kit_commands_on_path, runtime_checks, doctor_checks, release_check, live_checks, plain_text_problem)  # noqa: F401 (re-exported)
 from .plan import (RENAMED_HOOKS, effective_settings, resolve_selection, personal_file, practice_layers, skill_sources, select_agents,
                    guardrails, remove_stale_files, refuse_links)
 from .usage import (usage)  # noqa: F401 (re-exported)
-from .toml_files import parse_toml, read_toml  # noqa: F401 (also re-exported)
+from .toml_files import parse_toml, read_toml, set_section_key  # noqa: F401 (also re-exported)
 from .v2_commands import migrate_config, core_synced, resource_sources, user_edit, sync_configured  # noqa: F401 (re-exported)
 from .config import (ManagedConfigError, load_managed, apply_values, locked_guardrails, filter_mcp, publication, managed_digest, AIKIT_FILE, check_source, load_aikit, aikit_from_overrides)  # noqa: F401 (re-exported)
 from .lifecycle import (PERSONAL_KEPT, plan_command, remove_command, uninstall)  # noqa: F401 (re-exported)
@@ -214,8 +214,9 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     check_source(content_root(), (ROOT/'VERSION').read_text(encoding='utf-8').strip())  # min_engine of the content (2.0)
     active = selected_adapters(target, home, recorded_targets(state))
     context_dir = context_location(home, active)
-    profile_id = safe_id(profile_id)
-    profile = load_profile(profile_id)
+    # 2.2: no profiles (ADR 0018): the Core default selection; profile_id is kept for the callers of the V1 API, never read.
+    profile_id = CORE_SELECTION
+    profile = core_selection()
     # Team: chosen at setup (--team or the setup question), then kept for update.
     # 'none' (setup --team none) leaves the team; no value keeps the recorded one.
     team = None if team == 'none' else safe_id(team) if team else state.get('team')
@@ -226,9 +227,36 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     overrides, managed_notices = apply_values(overrides, managed)
     catalog = resolve.skill_catalog(content_root())
     manifest = load_commands()
+    # A V1 (or 2.0/2.1) installation keeps what it had: what the Core default no longer gives becomes plain personal lines.
+    carried = carried_over(state, profile, overrides, catalog, list(resolve.agent_catalog(content_root())), [c['name'] for c in manifest])
+    if carried:
+        choices = dict(choices or {})
+        for key, names in carried.items():
+            choices[key] = list(personal.get(key, [])) + [n for n in names if n not in personal.get(key, [])]
+            overrides[key] = list(overrides.get(key, [])) + [n for n in names if n not in overrides.get(key, [])]
+    # The MCP servers a profile turned on (V1) stay on, as the person's own lines ([mcp] name = true).
+    carried_mcp = []
+    if state.get('profile') and state.get('profile') != CORE_SELECTION:
+        active_now, _ = resolve_mcp(org_defaults.get('mcp', {}), [], personal.get('mcp', {}), team_layer.get('mcp', {}))
+        carried_mcp = sorted(n[len('ai-kit-'):] for n in state.get('mcp') or {} if n.startswith('ai-kit-') and n[len('ai-kit-'):] not in active_now)
+        if carried_mcp:
+            personal = {**personal, 'mcp': {**(personal.get('mcp') or {}), **{n: True for n in carried_mcp}}}
+            carried['mcp'] = carried_mcp
     selected, allowed = resolve_selection(profile, overrides, catalog, manifest)
     writes, deletes = {}, []
     personal_path, personal_bytes, personal_notices = personal_file(kit, choices, deletes)
+    if carried:
+        from datetime import date
+        origin = '# carried over from profile '+str(state.get('profile'))+' on '+date.today().isoformat()+' (AI Kit 2 has no profiles; remove a name to stop installing it)'
+        text = personal_bytes.decode('utf-8')
+        for name in carried.get('mcp', []):
+            text = (set_section_key(text, 'mcp', name, True, personal_path.name) if personal_path.name == PERSONAL_FILE
+                    else set_section_key(text, 'mcp', 'enabled', sorted(set(parse_toml(text).get('mcp', {}).get('enabled', [])) | {name}), personal_path.name))
+        for key in [k for k in carried if k != 'mcp']:
+            text = re.sub(r'(?m)^(?=[ \t]*'+key+r'[ \t]*=)', origin.replace('\\', r'\\')+'\n', text, count=1) if origin not in text else text
+        personal_bytes = text.encode('utf-8')
+        personal_notices.append('[Info] AI Kit 2 has no profiles: what your profile '+str(state.get('profile'))+' installed and the Core does not give by default is kept as personal lines in ~/.ai-kit/'
+                                + personal_path.name+': '+'; '.join(k.replace('extra_', '')+' '+', '.join(v) for k, v in carried.items())+'.')
     writes[personal_path] = personal_bytes
     identity = dict(user) if user else dict(state.get('user', {}))
     if identity.get('email') and not EMAIL.fullmatch(identity['email']):
@@ -336,7 +364,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
                        'created': sorted(rel(w) for w in writes if not w.exists()), 'modified': sorted(rel(w) for w in writes if w.exists()),
                        'removed': sorted(rel(d) for d in deletes), 'restored': [rel(r) for r in restored], 'notices': p.notices,
                        'context_file': str(p.user_file), 'home': str(home), 'identity': identity})
-    print('Profile: '+profile_id+(' | team '+team if team else '')+' | '+str(len(selected))+' skills | '+str(len(agents))+' agents | '+str(sum(1 for n in enabled_hooks if is_guardrail(hook_manifest[n])))+' guardrails')
+    print('Core selection'+(' | team '+team if team else '')+' | '+str(len(selected))+' skills | '+str(len(agents))+' agents | '+str(sum(1 for n in enabled_hooks if is_guardrail(hook_manifest[n])))+' guardrails')
     if identity.get('email'):
         print('Identity: '+identity['email']+' (source '+identity.get('source','?')+')')
     if dry_run:
@@ -614,7 +642,7 @@ def command_main(argv):
     parser.add_argument('--json',type=Path,help='usage: write the report to this file')
     parser.add_argument('--min-sessions',type=int,default=10,help='usage: minimum sessions before recommending (default 10)')
     parser.add_argument('--min-prompts',type=int,default=50,help='usage: minimum prompts before recommending (default 50)')
-    parser.add_argument('--profile',choices=profile_ids())
+    parser.add_argument('--profile',help='AI Kit 2 has no profiles: general is accepted (the Core default selection), any other is refused')
     parser.add_argument('--user',help='Work email to record, without interactive confirmation')
     parser.add_argument('--home',type=Path,default=Path.home(),help='Alternative home folder for an isolated trial')
     parser.add_argument('--dry-run',action='store_true',help='Show the plan without writing')
@@ -634,6 +662,9 @@ def command_main(argv):
     args = parser.parse_args(argv)
     if args.rest and args.action not in ('team', 'user'):
         parser.error('unexpected argument: '+' '.join(args.rest))
+    if args.profile and args.profile != 'general':
+        parser.error('AI Kit 2 has no profiles (ADR 0018): the Core installs its default selection, a Team turns on more '
+                     '(ai-kit team use <name>), and you add a resource with extra_skills, extra_agents or extra_commands.')
     if args.from_bundle and args.action != 'sync':
         parser.error('--from-bundle goes with sync: ai-kit sync --from-bundle <file>')
     if args.action == 'new':  # an option before it: the early branch of new did not see it; never fall through to apply
@@ -703,8 +734,8 @@ def command_main(argv):
                 state = last_installation(home)
                 if state:
                     target = target or state.get('targets') or None
-                    print('[Info] The kit was not installed: reinstalled with the choices of your last installation (profile '
-                          + state['profile']+', '+', '.join(state.get('targets') or [])+'). Change them with setup.')
+                    print('[Info] The kit was not installed: reinstalled with the choices of your last installation ('
+                          + ', '.join(state.get('targets') or [])+'). Change them with setup.')
             identity = resolve_identity(args, home, state)
             if identity is None and state.get('user') and not (home/'.ai-kit/state.json').exists():
                 identity = state['user']

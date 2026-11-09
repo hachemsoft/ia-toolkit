@@ -4,14 +4,14 @@ from installer.cli import allowed_commands
 from installer.resolve import agent_catalog, skill_catalog
 from installer.core import ROOT, load_commands, parse_frontmatter
 from installer.adapters.gemini import gemini_command_toml, parse_env_file
-from installer.toml_files import read_toml
 import tempfile
+from v1_profiles import PROFILES  # noqa: E402
 
 class ConsistencyTests(unittest.TestCase):
  """Product consistency checked continuously: profiles, tiers, commands, forbidden terms, Python dependencies."""
  def setUp(self):
   self.cat=skill_catalog(ROOT);self.cmds=load_commands()
-  self.profiles={p.stem:read_toml(p) for p in (ROOT/'profiles').glob('*.toml')}
+  self.profiles=dict(PROFILES)
  def test_core_tier_installed_in_every_profile(self):
   for n,e in self.cat.items():
    if e.get('tier')=='core' and not e.get('replaced_by'):

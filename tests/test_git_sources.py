@@ -17,7 +17,7 @@ from installer import cli, sources, sync
 from installer.core import ROOT, KitError
 from installer.toml_files import dump_toml, read_toml
 
-CONTENT = ('skills', 'agents', 'commands', 'practices', 'profiles', 'organization.toml', 'templates')
+CONTENT = ('skills', 'agents', 'commands', 'practices', 'organization.toml', 'templates')
 GIT_ENV = {**os.environ, 'GIT_CONFIG_NOSYSTEM': '1', 'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_AUTHOR_NAME': 't', 'GIT_AUTHOR_EMAIL': 't@example.org',
            'GIT_COMMITTER_NAME': 't', 'GIT_COMMITTER_EMAIL': 't@example.org'}
 HAS_GIT = shutil.which('git') is not None
@@ -114,7 +114,7 @@ class SyncTests(Base):
             code = cli.main(['init', '--home', str(home), '--target', 'claude', '--user', 'a@example.org'])
         self.assertEqual(code, 0, out.getvalue())
         self.assertIn('Marker v1.0.0.', (home/'.claude/skills/ai-kit-tdd/SKILL.md').read_text(encoding='utf-8'))
-        self.assertEqual(json.loads((home/'.ai-kit/state.json').read_text(encoding='utf-8'))['profile'], 'general')
+        self.assertEqual(json.loads((home/'.ai-kit/state.json').read_text(encoding='utf-8'))['profile'], 'core')  # 2.2: no profiles
 
     def test_a_branch_is_never_followed(self):
         self.run_action('sync')
