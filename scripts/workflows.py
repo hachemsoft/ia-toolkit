@@ -38,7 +38,7 @@ repo-investigator and verifier when installed.
 3. Verify each claim: observed (file, line, read-only command) or assumed.
 4. Report: verdict, evidence, unknowns.
 
-A Team extends it through the "In the kit commands" section of its skills (`### /explain`).
+A Team extends it with its own skills; /explain activates them when the task fits.
 """
 
 RESEARCH = """# Research workflow
@@ -51,7 +51,7 @@ installed.
 3. Challenge: counter-examples, assumptions that change the result.
 4. Recommend one option and one ruled-out alternative; record it in the repo.
 
-A Team extends it through the "In the kit commands" section of its skills (`### /research`).
+A Team extends it with its own skills; /research activates them when the task fits.
 """
 
 

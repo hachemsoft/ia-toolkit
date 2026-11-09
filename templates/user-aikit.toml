@@ -1,6 +1,6 @@
 #:schema ../schemas/aikit.schema.json
 # Your own AI Kit settings, on top of the Core and your Team; IT's managed.toml wins over everything. Run ai-kit sync (or
-# a re-install) after a change. See docs/customization.md.
+# a re-install) after a change. See docs/configuration.md.
 #
 # The installer's choices screen writes [user] for you; your comments stay. Examples:
 #

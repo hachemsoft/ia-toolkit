@@ -1,77 +1,47 @@
 # Getting started
 
-Fifteen minutes, in order. What you need on day one is on this page; everything else is in the reference pages it links.
+With this page you install AI Kit, start your first session, join a Team, stay up to date, go back to the previous configuration, and uninstall. Concepts: [architecture](architecture.md).
 
-## 1. Install (once)
+## 1. Install
 
-You need Python 3.11 or later (on Python 3.9 or 3.10, stay on AI Kit 0.52), git, and your coding-agent CLI, as provided by your company. The kit installs into your home folder only: no administrator rights, your Python left as it is; its few libraries come from the Python package index your workstation is already configured for. If something is missing, the installer says exactly what to ask IT.
+You need Python 3.11 or newer with its standard `venv` and `pip` modules, usable by your standard account. No administrator rights.
 
-1. Clone the kit repository (your organization's copy if it has one) into a folder you keep, for example `Documents`: this is your **kit folder**. Never edit its files: `update` refuses to fetch over local changes; your own settings live in your home folder (below).
-2. Run the installer:
-   - **Windows**: double-click `Installer.cmd` in the kit folder.
-   - **Mac**: open **Terminal**, type `sh ` (with a space), drag `scripts/bootstrap.sh` from the kit folder into the window, press Enter.
-3. Answer the guided screen (arrows move, Space ticks, Enter confirms, Ctrl+C leaves without changing anything): which CLIs you use, your choices (keep the Core default if in doubt; a domain playbook such as SQL and dbt, Java or infrastructure is optional), your work email. You can adjust later; if your team has a Team repository, `ai-kit team use <name> --url <URL>` turns on what it needs ([Teams](core-source.md#teams)). Review, then **Install**.
-4. Three quick questions fill your personal context: the language and length of the answers, how much the agent does on its own, your role in one line.
-
-The installer never calls the model, so the summary says "connection not verified". Signing in and choosing the model are done in your CLI, as your IT procedure says.
-
-**Without git, or without a reachable package index**: download `ai-kit-<version>.zip` from the Releases page, extract it into a folder you keep (that is your kit folder) and run the same installer. It installs everything from the ZIP's own files, with no download. Everything on this page then applies, except that a new version is a new ZIP.
-
-Do not `pip install` or `pipx install` the kit next to this: that makes a second `ai-kit` command that `update` never touches; `doctor` reports it. Remove such a copy with the pip that installed it.
-
-### Run the kit
-
-The installer asked whether to add the **`ai-kit` command** to your terminal (yes by default). Open a new terminal after the installation: from any folder, `ai-kit update`, `ai-kit doctor`, `ai-kit usage`, and `ai-kit` alone for the menu. It runs the launcher of your kit folder, so `ai-kit update` really fetches the new version. It is on your own PATH only (user PATH on Windows, one marked block in your shell startup file on Mac), and `uninstall` removes it. If you answered no, every page that says "run `update`" means this, **from the kit folder**:
-
-| Action | Windows | Mac |
+| From | Windows | macOS (and Linux) |
 | --- | --- | --- |
-| the installer, or its menu once installed (update, change my choices, check, uninstall) | double-click `Installer.cmd` | `sh scripts/bootstrap.sh` |
-| `update`: apply a change to your settings | `Installer.cmd update` | `sh scripts/bootstrap.sh update` |
-| `doctor`: check and say what to do (local, free) | `Installer.cmd doctor` | `sh scripts/bootstrap.sh doctor` |
+| the release ZIP | extract `ai-kit-<version>.zip`, double-click `Installer.cmd` | extract the ZIP, open Terminal, run `sh scripts/bootstrap.sh` from the extracted folder |
+| a Git clone | `Installer.cmd` in the clone | `sh scripts/bootstrap.sh` in the clone |
 
-Windows, a Command Prompt in the kit folder: click the Explorer address bar, type `cmd`, press Enter. Mac, a Terminal in the kit folder: type `cd ` then drag the folder into the window. Every other action and option: [installer](installer.md).
+The launcher (`scripts/launcher.py`):
 
-### Where your files are
+1. checks Python, then creates the kit's private environment, `~/.ai-kit/runtime/venv`;
+2. installs the kit there: from the ZIP's `wheels/` folder only (no download), or, from a clone, through the package index pip is already configured for;
+3. runs `ai-kit init` when you give no action.
 
-| File | Mac | Windows |
-| --- | --- | --- |
-| Your personal context, `30_USER.md` | `~/.ai-kit/context/30_USER.md` | `%USERPROFILE%\.ai-kit\context\30_USER.md` |
-| Your settings, `overrides.toml` | `~/.ai-kit/overrides.toml` | `%USERPROFILE%\.ai-kit\overrides.toml` |
+On macOS, `sh scripts/bootstrap.sh` reads the script instead of opening it as an application, so there is no security prompt to bypass.
 
-Folders starting with a dot are hidden: paste the path into the Explorer address bar, or in Finder press Cmd+Shift+G. `doctor` prints the exact paths.
+## What `init` asks and does
 
-### New version
+| Step | What happens |
+| --- | --- |
+| Identity | at a terminal: "Detected identity: … Press Enter to confirm, or type your email". Without a terminal, use `--user <email>`. The identity is declarative: it grants no rights. |
+| CLIs | the ones recorded by a previous run, else the ones present on the machine. Choose with `--target` (`auto`, `gemini`, `agy`, `codex`, `claude`, `both`, `all`). |
+| Content | a first install from the ZIP activates the Core it ships (`core/ai-kit-core.bundle`), offline. With a Core repository set (`[core] repo`, or IT's `enterprise.core`), `init` syncs it. From a clone without one, the clone's own content is installed. |
+| First use of a Core you set yourself | the URL, tag and commit are shown, and you confirm in a terminal. |
+| Files | skills, commands and agents for each CLI; the context layers and your `USER.md` in `~/.ai-kit/context`; guardrail scripts in `~/.ai-kit/hooks`; your `~/.ai-kit/aikit.toml`, created once. |
+| `ai-kit` command | added to your own PATH (default yes the first time; `--command-on-path no` to skip). Open a new terminal to use it. |
 
-Run `ai-kit update` (or `update` from the kit folder, table above): it fetches the new version (`git pull --ff-only`), reinstalls the kit in its private environment and reapplies your configuration, in three reported steps. Your CLIs, choices and files are kept; an installation made with a profile (before 3.0) keeps everything it had, written as personal lines in `overrides.toml`. No `git pull` or `pip install` by hand. From a ZIP: extract the new ZIP and run its installer, as the first time; the old folder can be deleted.
+`init` never calls a model. Every run that changes files keeps a backup in `~/.ai-kit/backups`. Run `init` again at any time: it checks and re-applies. `--dry-run` shows what would change.
 
-## 2. First session (five minutes)
+## 2. First session
 
-You install the kit once per workstation; you work in your own repos.
+1. Open a terminal in your repository and start your CLI.
+2. Type `/guide where do I start?` (`$guide` in the CLI that uses `$` for skills; see [CLI pages](cli/matrice.md)).
+3. Tell the agent about you: `ai-kit user edit` opens `~/.ai-kit/context/USER.md` in your text editor, or type `/me` in the CLI. Start a new session afterwards.
+4. Check the installation: `ai-kit doctor` (local checks, no model call). `ai-kit doctor --live` makes one real call to the model, which your provider may bill.
 
-1. Open a terminal in your repo and start your CLI there (`gemini`, `agy`, `codex` or `claude`). Commands are written `/guide`; in Codex, `$guide`. The first time, Codex asks you to review the kit's hooks: answer "Trust".
-2. Type **`/me`**: a short interview (your domains, the tone you want, what annoys you in an assistant) that fills your personal context, shown before and after, written only with your agreement.
-3. Type `/guide I need to …` with today's need: which command fits and what it produces.
+## 3. Work one command per step
 
-When the agent offers to prepare the repo's context (`AGENTS.md`, `GLOSSARY.md`), accept if the repo has none. What a repo adds to your layers: [project layer](project-context.md).
-
-## 3. Work: one command per step
-
-Plain sentences are the normal way in: "explain how this area works", "the job fails since Monday with this error", "review my changes". The commands are shortcuts to the same steps.
-
-| You want to | Type | You get |
-| --- | --- | --- |
-| frame an idea, a ticket, an incident | `/intent <what you want>` | an interview, then `intent.md` |
-| turn it into a contract | `/spec` | `spec.md`, reviewed with the change |
-| implement | `/build <task>` | code and tests, one slice at a time |
-| verify | `/test` | the real output of the repo's checks |
-| get a review before merging | `/review` | findings sorted by severity |
-| describe the merge or pull request | `/ship` | the description, evidence included; nothing is pushed |
-| understand a bug or a wrong number | `/diagnose <symptom>` | proven cause, fix, regression test |
-| record what got in the way | `/friction <one sentence>` | a local line for the team's usage review |
-
-The agent matches the ceremony to the stakes and says so on its first line: `Level: quick` (a small change, done and checked), `standard` (a short alignment, then test-first) or `full` (intent, spec, plan, your acceptance before code).
-
-What is installed (since AI Kit 3.0 there are no profiles: the Core installs its default selection; a Team turns on more for its members, and you add or remove a resource with `extra_*` or `disabled_*`):
+What is installed: the Core's default selection for everyone; a Team turns on more for its members; you add or remove with `extra_*` and `disabled_*` in your `aikit.toml` ([configuration](configuration.md)).
 
 <!-- selection-table:start -->
 | | Commands | Skills | Agents |
@@ -80,24 +50,64 @@ What is installed (since AI Kit 3.0 there are no profiles: the Core installs its
 | **Optional** (a Team's `[defaults]`, or `extra_*`) | `/design` `/map` `/triage` `/ask` `/handoff` `/wizard` `/audit` | bigquery-cost-review bigquery-query-review dbt-model-change incremental-replay kpi-definition perimeter-brief sql-review architecture-decision codebase-design grill-me handover implement-spec improve-codebase-architecture manual-steps prototype ticket-sorting to-questionnaire to-tickets wayfinder workflow-guide write-a-skill writing-great-skills java-change python-js-change infra-change | dbt-reviewer sql-reviewer architecture-reviewer security-reviewer infra-reviewer |
 <!-- selection-table:end -->
 
-The domain playbooks your Team turns on (SQL and dbt, Java, infrastructure…) activate on their own when the task calls for them. Every command and tool: [workflow](workflow.md) and [tools](tools.md).
+`00_KIT.md` in `~/.ai-kit/context` lists what your installation has. The flow: [workflow](commands.md); the tools: [tools](commands.md).
 
-## 4. What is normal
+## Run the kit
 
-- The agent answers in your language; commands and artifact headings stay in English.
-- `intent.md` and `plan.md` are local notes; `spec.md` is versioned. The agent never commits or pushes without your approval.
-- A test changed by the agent is said and explained, never weakened to hide a regression.
-- If one of your own skills or commands already has a kit name, the kit's takes a prefix (`/ai-kit-review`); the installer says which.
-- A permission request before a shell command is normal: answer it.
+| You are | Run |
+| --- | --- |
+| anywhere, after `init` | `ai-kit <action>` |
+| in the kit folder, Windows | `Installer.cmd <action>` |
+| in the kit folder, macOS | `sh scripts/bootstrap.sh <action>` |
 
-## 5. When something goes wrong
+`ai-kit --help` lists the actions; `ai-kit` alone shows the status.
 
-1. Run the installer and choose **Check the installation** (or `doctor`): it says what to do.
-2. [Troubleshooting](troubleshooting.md): one symptom, one cause, one fix.
-3. Otherwise a ticket ([template](pilot.md)), and on the spot `/friction <one sentence>`.
+## Join a Team
 
-## Later, when you need it
+A Team adds its skills, agents, context and MCP servers on top of the Core ([repositories](repositories.md#team-repository)).
 
-- Change your choices: run the installer, **Change my choices**. Your preferences: `/me` again.
-- Settings you write yourself (MCP servers, guardrails), and what your organization and team decide: [customization](customization.md).
-- Your own skills, or a repo's: [extending](extending.md).
+```sh
+ai-kit team use reporting --url https://git.example.org/teams/reporting.git   # first time
+ai-kit team use reporting                                                     # later, or a known Team
+ai-kit team list                                                              # known Teams, * marks the active one
+ai-kit team use none                                                          # leave the Team (its cache is kept)
+```
+
+## Stay up to date
+
+| Command | Does | Network |
+| --- | --- | --- |
+| `ai-kit sync` | installs the highest stable tag of your Core and your Team | yes |
+| `ai-kit sync --dry-run` | shows what would change, writes nothing | yes |
+| `ai-kit sync --offline` | re-applies the locked Core and Team from the cache | no |
+| `ai-kit sync --from-bundle <file>` | the Core from a Git bundle file, such as `core/ai-kit-core.bundle` of a newer ZIP | no |
+| `ai-kit status` | what is active, and whether a newer tag was seen at the last sync | no |
+
+`sync` needs a Core repository: `[core] repo` in your `aikit.toml`, or `enterprise.core` set by IT. A new engine version comes as a new ZIP (or `git pull` in a clone): run its installer the same way.
+
+## Go back
+
+`ai-kit rollback` returns to the previous configuration recorded in `~/.ai-kit/lock.toml` (Core and Team). A second `rollback` comes back. A commit IT revoked, or an origin it no longer allows, is never reactivated.
+
+## Uninstall
+
+```sh
+ai-kit uninstall --dry-run     # what would be removed
+ai-kit uninstall               # asks for confirmation (--yes without a terminal)
+sh scripts/bootstrap.sh uninstall --remove-runtime --yes   # also removes the private environment
+```
+
+Removed: the files the kit installed and did not see changed, its entries in the CLIs' settings, the `ai-kit` command. Kept: `USER.md`, `aikit.toml`, `lock.toml`, the source cache, backups, frictions, `~/.ai-kit/learning`. A file you edited is kept and named.
+
+## Workstation commitments
+
+| Commitment | How |
+| --- | --- |
+| No administrator rights | everything is written under your home folder: `~/.ai-kit` and the CLIs' folders |
+| No system change | only the `ai-kit` command touches your own PATH (a marked block in your shell startup file, or your user PATH on Windows), removed by uninstall |
+| Nothing downloaded from the ZIP | pip installs from `wheels/` with `--no-index` |
+| No model call | only `doctor --live`, on request; `AI_KIT_NO_LIVE=1` refuses it |
+| No false success | a failed or interrupted runtime install is detected and started again; one run at a time |
+| Python missing, too old or blocked | the launcher says which, and what to ask IT |
+
+What IT may provide: Python 3.11+ with `venv` and `pip`; the CLI and its sign-in; Git 2.29+ for `sync` and `team use`; network access to the model and to the Git host.

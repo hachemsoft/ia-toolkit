@@ -1,54 +1,146 @@
 # Architecture
 
-How the installer works, what it guarantees and where it depends on things it does not control. For a second maintainer: read this, then `installer/interface.py`.
+How AI Kit turns a few Git repositories and settings files into the configuration of four agent CLIs. Read this first; the code entry points are `installer/cli.py` (the command line) and `installer/interface.py` (the contracts).
 
-## The flow of an installation
+## The layers
 
+Five sources, one engine, four CLIs. Each source owns one kind of decision; the engine validates and merges them, then writes each CLI's files in its own format.
+
+```mermaid
+flowchart TB
+    IT["<b>managed.toml</b> · IT<br/>imposed settings, absolute priority<br/><i>fixed admin path</i>"]
+    subgraph SRC [" "]
+        direction LR
+        CORE["<b>Core</b> · Git<br/>governance, guardrails,<br/>shared skills, commands, MCP"]
+        TEAM["<b>Team</b> · Git<br/>its skills, agents, context,<br/>MCP servers, defaults"]
+        USER["<b>Person</b> · local<br/>~/.ai-kit/aikit.toml<br/>~/.ai-kit/context/USER.md"]
+        PROJ["<b>Project</b><br/>the repo's AGENTS.md,<br/>its own MCP config"]
+    end
+    ENGINE["<b>AI Kit engine</b> · Python<br/>Git tags · merge · validation · lock · adapters"]
+    subgraph CLIS [" "]
+        direction LR
+        G[Gemini CLI]
+        A[Antigravity CLI]
+        X[Codex CLI]
+        C[Claude Code]
+    end
+    IT --> SRC
+    CORE & TEAM & USER --> ENGINE
+    PROJ -. "read by the CLI itself,<br/>never written by the kit" .-> CLIS
+    ENGINE --> G & A & X & C
 ```
-launcher (scripts/launcher.py)          the private venv ~/.ai-kit/runtime, the kit package from the ZIP's wheels
-  └─ installer (installer/cli.py: main)
-       ├─ settings (installer/settings.py): Core defaults → Team → ~/.ai-kit/overrides.toml; managed.toml on top
-       ├─ resolution (installer/plan.py): Core default selection + settings → skills (with their dependencies), commands, agents, guardrails, MCP servers
-       ├─ plan: a Plan (installer/interface.py) holding every file to write, with nothing specific to a CLI
-       ├─ adapters (installer/adapters/*.py): each chosen CLI adds its own writes to the plan, in its format
-       ├─ checks: nothing written yet; a file edited by hand, a link, a refused value stops everything here
-       └─ commit (installer/commit.py): backup of every file that changes, atomic writes, state.json; any error puts everything back
+
+| Source | Who writes it | What it decides | Where |
+| --- | --- | --- | --- |
+| `managed.toml` | IT | the Core repository, allowed Git hosts, locked guardrails, MCP allow and deny lists, the friction tracker | a fixed admin path ([configuration](configuration.md)) |
+| Core | the organization | the kit context, company practices, the commands, the skills and agents (default and optional), guardrails, approved MCP servers | a Git repository, used at its highest stable tag: this repository by default |
+| Team | one team | its practices (`20_TEAM.md` replaced), its own skills and agents, optional Core resources turned on, its MCP servers | a Git repository with `kind = "team"` ([repositories](repositories.md)) |
+| Person | you | extra or disabled resources, guardrails, MCP servers on or off, frictions, your `USER.md` | `~/.ai-kit/aikit.toml`, `~/.ai-kit/context/USER.md` |
+| Project | the repo's maintainers | its rules and glossary, its own MCP servers | the repo (`AGENTS.md`, `GLOSSARY.md`, the CLI's project files): the kit never writes there |
+
+**Precedence.** A value: `managed.toml` > person > Team > Core. A restriction (a denied server, a locked guardrail, a refused host): every layer's applies, and none can lift IT's ([ADR 0015](adr/0015-managed-wins-values-resolve-restrictions-all-apply.md)). Lists add up; a person removes an item with `disabled_*`.
+
+**Context read by the agent**, in order: `00_KIT.md` (how the kit works), `10_COMPANY.md`, `20_TEAM.md` (or the Team's own), `USER.md`, then the repo's `AGENTS.md`. The repo wins over `USER.md`; nothing lifts a practice or a guardrail.
+
+## MCP servers
+
+```mermaid
+flowchart TB
+    CORE["<b>Core</b> · mcp/servers.toml<br/>shared servers + security rules"]
+    TEAM["<b>Team</b> · mcp/servers.toml<br/>its servers: warehouse, dbt, tracker…"]
+    USER["<b>Person</b> · aikit.toml [mcp]<br/>enabled / denied"]
+    IT["<b>managed.toml</b> [mcp]<br/>allowed_stdio · allowed_http · denied"]
+    PROJ["<b>Project</b><br/>servers already in the repo"]
+    MERGE["<b>AI Kit validates, assembles, adapts</b><br/>exact identity of each server ·<br/>a Team's local server needs approval ·<br/>unpinned npx / uvx refused"]
+    CLIS["Gemini · Antigravity · Codex · Claude Code<br/><i>each in its own settings format</i>"]
+    CORE & TEAM & USER --> MERGE
+    IT -->|filters| MERGE
+    MERGE --> CLIS
+    PROJ -. "left as is, read by the CLI" .-> CLIS
 ```
 
-`setup` and `update` run the same `apply` (`installer/cli.py`, with the commands and migrations), which runs the steps of `installer/plan.py` in order; `doctor` (`installer/doctor.py`), `usage` (`installer/usage.py`) and `uninstall` read `~/.ai-kit/state.json`, which records every file the kit wrote with its digest, the managed blocks inside files it shares (`~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`), the guardrails, MCP servers, versions and choices.
+A server's identity is a digest of what it runs (command, arguments, environment, folder) or where it connects (URL, headers). IT allows identities, not names; a local server a Team brings runs only once IT lists its identity or you approve it once in a terminal, recorded in `~/.ai-kit/state.json`. Details: [MCP](mcp.md), [ADR 0022](adr/0022-mcp-exact-identities-approved-upstream-or-locally.md).
 
-## Creating a component
+## Sources: tags, lock, rollback
 
-`ai-kit new` (`installer/new.py`) works on a git clone of the kit, not on the installed copy: it writes a component, runs the repo's own scripts, then commits and pushes after two answers from a person at a terminal. It installs nothing and calls no model. Its contract: [create a component](extending.md#create-a-component-with-ai-kit-new).
+The Core and the Team are Git repositories used only at signed-off versions: annotated tags `vX.Y.Z`, never a branch.
 
-## The adapter contract
+```mermaid
+sequenceDiagram
+    actor P as Person
+    participant K as ai-kit
+    participant R as Core / Team repository
+    participant L as ~/.ai-kit (lock.toml, sources/)
+    P->>K: ai-kit sync
+    K->>R: list tags (allowed host and scheme only)
+    K->>K: highest stable tag ≥ the locked one, not revoked
+    K->>R: fetch that commit into the cache
+    K->>K: optional: verify the tag's SSH signature (git.signers)
+    K->>K: overlay Team on Core, validate (manifest, min_engine, forbidden folders)
+    K->>L: install, then write lock.toml (previous kept for rollback)
+    P->>K: ai-kit rollback
+    K->>L: reinstall the previous validated configuration
+```
 
-A CLI is a module in `installer/adapters/`, listed in `ADAPTERS`, that follows the `Adapter` protocol of `installer/interface.py`: `install(plan)` adds its files, `finalize(plan, active)` merges its settings (and, when the CLI is no longer chosen, removes what the kit had put there), `doctor(ctx)`, `history(home, state)` for the usage review, and the declarations `AGENT_TOOLS` (does the CLI enforce an agent's tool list) and `OBSERVES` (what its logs show). Two optional capabilities: `ContextHost` (the CLI reads its context only from its own folder, so it gets a copy) and `LiveCheck` (`doctor --live`). `cli.py` names no CLI.
+- **Offline first install**: the release ZIP ships the Core as `core/ai-kit-core.bundle`; `init` activates it without network. `sync --offline` re-applies the locked versions after you edit `aikit.toml`.
+- **Git without surprises**: the kit runs `git` with hooks, credential helpers and local config neutralised, extracts without `tar`, and refuses an origin outside `git.allowed_hosts` ([ADR 0016](adr/0016-git-sources-anchored-origin-tar-free-extraction.md)).
+- **A Team never replaces governance**: a Team repository may not ship `commands/`, `policies/`, `hooks/` or `runtime/`.
+- **Rollback** returns to the previous validated Core and Team; a second rollback comes back ([ADR 0017](adr/0017-rollback-to-one-of-three-validated-configurations.md)).
+
+## One installation, step by step
+
+```mermaid
+flowchart LR
+    S["<b>settings</b><br/>Core → Team → person,<br/>managed.toml on top"] --> R["<b>resolution</b><br/>skills + dependencies,<br/>commands, agents,<br/>guardrails, MCP"]
+    R --> P["<b>plan</b><br/>every file to write,<br/>nothing CLI-specific"]
+    P --> AD["<b>adapters</b><br/>each chosen CLI adds<br/>its files and settings"]
+    AD --> CH{"<b>checks</b><br/>edited by hand? link?<br/>refused value?"}
+    CH -->|ok| CO["<b>commit</b><br/>backup, atomic writes,<br/>state.json"]
+    CH -->|no| STOP["nothing written"]
+    CO -->|error or Ctrl+C| RB["every file put back"]
+```
+
+| Step | Code |
+| --- | --- |
+| Launcher: find Python 3.11+, private venv `~/.ai-kit/runtime`, install the engine from the ZIP's wheels | `Installer.cmd`, `scripts/bootstrap.sh`, `scripts/launcher.py` |
+| Command line, sources | `installer/cli.py`, `installer/sync.py`, `installer/sources.py`, `installer/bootstrap.py` |
+| Settings and IT rules | `installer/settings.py`, `installer/config.py`, `installer/managed.py` |
+| Resolution and plan | `installer/resolve.py`, `installer/plan.py`, `installer/interface.py` |
+| One module per CLI | `installer/adapters/` (`gemini`, `agy`, `codex`, `claude`) |
+| All-or-nothing writes, uninstall | `installer/commit.py`, `installer/lifecycle.py` |
+| Read-only reports | `installer/status.py`, `installer/doctor.py`, `installer/usage.py`, `installer/validate.py` |
+| What runs inside the CLIs | `runtime/hooks/` (guardrails, session start), `runtime/friction.py` |
+
+**The adapter contract.** A CLI is one module in `installer/adapters/`, listed in `ADAPTERS`, following the `Adapter` protocol: `install(plan)` adds its files, `finalize(plan, active)` merges its settings (and removes the kit's entries when the CLI is dropped), `doctor(ctx)`, `history(home, state)` for `ai-kit usage`. `cli.py` names no CLI. Where each file lands: [CLI matrix](cli/matrice.md).
+
+## Repository layout
+
+| Folder | Content | Shipped as |
+| --- | --- | --- |
+| `installer/`, `runtime/`, `schemas/`, `templates/` | the engine | the Python package (wheel) |
+| `aikit.toml`, `context/`, `commands/`, `skills/`, `agents/`, `workflows/` | the Core content | Git tags of this repository; `core/ai-kit-core.bundle` in the ZIP |
+| `examples/team-repo/` | a Team repository to copy | — |
+| `tests/`, `evals/`, `scripts/` | offline tests, paid model evals, build and check scripts | the source only |
 
 ## Invariants
 
-These hold for every change; a test guards each.
+A test guards each.
 
-- **No byte installed changes by accident**: `tests/golden/install-snapshot.json` holds the digest of every file of 16 scenarios; `python3 tests/snapshot.py --update` after an intended change.
-- **A file the person edited is never overwritten**: managed files are tracked by digest; a hand edit stops `update` (the rule layers 00/10/20 are put back, the edited copy kept in the backup).
-- **All or nothing**: writes are atomic; an error or Ctrl+C restores every file from the backup taken just before.
-- **No model call, no network** in `setup`, `update`, `doctor`, `uninstall` and the tests (`scripts/offline_tests.py` takes the CLIs off the PATH and fails if one is reached).
-- **Every skill and agent has a version**, raised at each change (`versions.lock.json`, `scripts/versions.py`).
-- **Modules stay readable**: no module of `installer/` over 800 lines; past that, it is split by responsibility.
-- **Size ceilings**: the kit context template stays under 3,800 characters and each command prompt under 4,000, because the context is loaded at every session of every person: every line has a cost.
+- **No byte changes by accident**: `tests/golden/install-snapshot.json` holds the digest of every file of 16 scenarios; `python3 tests/snapshot.py --update` after an intended change.
+- **A file you edited is never overwritten**: managed files are tracked by digest; an edit stops the run (a rule layer is put back, your copy kept in `~/.ai-kit/backups/`).
+- **All or nothing**: atomic writes; an error or Ctrl+C restores every file.
+- **No model call** in `init`, `sync`, `status`, `doctor`, `uninstall` or the tests (`scripts/offline_tests.py` takes the CLIs off the PATH); only `doctor --live --yes` calls one. **No network** except `init`, `sync` and `team` towards allowed Git hosts.
+- **No administrator rights**: everything under the home folder; the only change outside the kit's files is your own PATH, when you choose the `ai-kit` command.
+- **Every skill and agent has a version**, raised at each change (`versions.lock.json`).
+- **Small and readable**: no `installer/` module over 800 lines; the kit context under 3,800 characters and each command under 4,000, because they load at every session.
 
 ## What the kit does not control
 
-| Dependency | Where | What breaks it |
+| Dependency | What breaks it | How it shows |
 | --- | --- | --- |
-| Each CLI's file layout and settings format | the adapters | a CLI release that moves a folder or renames a key; `doctor` then reports the missing piece |
-| The logs read by `usage` (Gemini chats, agy conversation database, Codex sessions, Claude Code transcripts) | `history` in each adapter | an undocumented format change: `usage` says so when it reads a CLI's logs and recognises nothing |
-| `~/.claude.json`, rewritten by Claude Code while it runs | the Claude adapter | an `update` during an open session; the docs say to close it first |
-| What is new, said at session start | `runtime/hooks/whats-new.py`, `NEWS.md`, `runtime/news.py` | the hook reads the kit's remote once a day, never writes it, never runs `update` (ADR 0012) |
-| The CLIs' tool names in the guardrails | `runtime/hooks/` | a new tool name; the guardrails refuse a call that names a protected path in a form they cannot read |
+| Each CLI's file layout and settings format | a CLI release that moves a folder or renames a key | `doctor`; the weekly `cli-drift` workflow reads each CLI's `--help` |
+| The CLIs' logs read by `ai-kit usage` | an undocumented format change | `usage` says it recognised nothing |
+| `~/.claude.json`, rewritten by Claude Code while it runs | a `sync` during an open session | close Claude Code first |
+| Whether the model follows a skill or a rule | the model | evals ([evals](evals.md)); guardrails for what must not happen |
 
-Each adapter declares the CLI version it was checked on (`VERIFIED`, shown in the [CLI matrix](cli/matrice.md)): `doctor` says when a newer one runs. Once a week, `.github/workflows/cli-drift.yml` installs the latest release of each CLI published on npm and runs `scripts/cli_drift.py`: the version, and the options the kit relies on, read from `--help`, without a model call. A red run means an adapter or the evals need a change; a newer version that still has every option is reported, then `VERIFIED` is raised after a check.
-
-## Migrations
-
-An installation is migrated by the next `update` from the three previous minor versions at least; older migration code can be removed. Each migration is said to the person (`[Info]`), keeps the old file in the backup, and has a test.
+Decisions and their reasons: [ADRs](adr/README.md).

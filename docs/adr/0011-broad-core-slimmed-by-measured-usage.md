@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, amended by 0018: there are no profiles; the broad core is the Core default selection, which Teams and people extend
 since: 0.8.0 (reconstructed from the CHANGELOG)
 ---
 # Ship a broad core, then slim it by measured usage, decided by people

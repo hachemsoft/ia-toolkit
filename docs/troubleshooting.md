@@ -1,55 +1,75 @@
 # Troubleshooting
 
-First step, always: `sh scripts/bootstrap.sh doctor` (Mac) or `Installer.cmd doctor` (Windows, in a Command Prompt opened in the kit folder: type `cmd` in the Explorer address bar): local checks, no model call. For sign-in, quota or network symptoms, add `--live`: it makes one real call to the model (your provider may bill it) and, for each known failure, gives the diagnosis and the command that fixes it. The symptoms below are those seen on real workstations; each new ticket adds one.
+With this page you diagnose a problem yourself: what `doctor` and `status` tell you, what each exit code means, and what to do for the messages people meet. Concepts: [architecture](architecture.md).
 
-> `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
+## First step: `doctor`
 
-| Symptom | Cause | What to do |
-| --- | --- | --- |
-| a sign-in, quota or model error | depends on the CLI | `doctor --live` names it; then the CLI's page, for example [Gemini CLI](cli/gemini.md#gemini-troubleshooting) |
-| "Skill conflict detected" at startup, the command does not do what the docs say | a personal copy with the same name in `~/.agents/skills` hides the kit's skill | `doctor` lists hidden skills; remove or rename the personal copy |
-| in one repo, a command behaves differently from the docs, or differently from one CLI to another | the repo has a skill named like a kit skill (`.agents/skills/<name>`): depending on the CLI, the repo's, the kit's or both are used | `doctor`, run from the repo ([how](getting-started.md#run-the-kit)), lists the clashes; rename the repo skill and point to it from `AGENTS.md` ([project layer](project-context.md#how-the-repo-combines-with-your-layers)) |
-| agy asks for permission on every shell command | normal behaviour: agy permissions belong to each person | answer; "always allow" saves the rule in your agy settings, and the kit does not touch them |
-| "It does not see my glossary" | CLI started outside the repo | `cd` into the repo, then start the CLI; the kit is global, the repo is not |
-| a command from the docs cannot be found | optional command, not in the Core default selection ([what is installed](getting-started.md#3-work-one-command-per-step)) | `extra_commands = ["spec"]` in `overrides.toml`, then `update`; if it is still missing, `doctor`, and check `disabled_skills` and `disabled_commands`; `00_KIT.md` lists the installed commands |
-| a kit skill or command named `ai-kit-<name>` | one of your own skills or commands already had the name | normal: yours is kept and the kit's takes the prefix (`skill_prefix`); the installer said which. Rename or remove yours, then `update`: the kit's gets its plain name back. With `skill_prefix = ""`, `update` stops instead: set a prefix |
-| dbt refuses to run: "Blocked by the kit: production target" | guardrail active | use the development target; an authorized person exports `AI_KIT_ALLOW_PROD=1` |
-| `update` stops on "modified locally" | a file installed by the kit (skill, agent, command, settings block) was edited | move the change to `30_USER.md` or a repo skill, restore, run again |
-| `update` says "was modified by hand: restored" | a rule layer (`00_KIT.md`, `10_COMPANY.md`, `20_…md`) was edited | normal: the kit version is back, your copy is in `~/.ai-kit/backups/`; personal preferences go in `30_USER.md`, a rule change through the kit repository |
+```sh
+ai-kit doctor          # local checks, no model call, no write
+ai-kit doctor --live   # also one real call to the model (may be billed); --yes without a terminal
+```
 
-## Other cases
+`doctor` prints a summary (what is ready, what to fix, the next step), then one line per check: `[OK]`, `[Check]` (to act on) or `[Info]`. It covers Python, `managed.toml`, the private environment and the `ai-kit` command, Git, the installation and `lock.toml`, where each setting comes from, each CLI's capabilities, the friction tracker, your identity, `USER.md` and `aikit.toml`, every installed file, the guardrails, versions, MCP servers, and skills of the current repo named like kit skills. `--live` names a sign-in, quota, network, proxy or certificate failure and what to ask IT. `AI_KIT_NO_LIVE=1` refuses it.
 
-CLI-specific issues are on each CLI's page: [Gemini CLI](cli/gemini.md#gemini-troubleshooting), [Antigravity CLI](cli/agy.md#troubleshooting), [Codex CLI](cli/codex.md), [Claude Code](cli/claude-code.md).
+`ai-kit status` is the short view: the AI Kit version, the active Core and Team (tag, commit), what `rollback` returns to, a newer tag seen at the last sync, the CLIs, whether IT administers the workstation, frictions waiting. `--verbose` adds where each setting comes from, the installed resources, MCP identities and CLI capabilities. No network; the only write is the friction upkeep ([frictions](frictions.md)).
 
-- **Python missing, too old or blocked**: the launcher says which, and what to ask IT: Python 3.11 or newer, usable by a standard account, provided or approved by the company. On Windows, the Microsoft Store alias without Python counts as missing; on a Mac, `/usr/bin/python3` without the developer tools too (the launcher does not trigger their installation). Do not change company policies.
-- **`Installer.cmd` blocked, or Windows asks to confirm a downloaded file**: follow your company's rule; if it is blocked, ask IT. The launcher only finds Python and runs `scripts\launcher.py`, which installs the kit in its private environment from the ZIP's own files; that helps IT decide. Do not unblock the file or change the policy yourself.
-- **"This Python has no venv or pip support"**: the Python found lacks its standard `venv` or `pip` module (on Linux, often the `python3-venv` package). Ask IT for a complete Python; the kit downloads nothing to work around it.
-- **"A previous installation of the kit runtime did not finish" or "failed"**: the last run stopped midway (closed window, Ctrl+C, network for a clone); this run starts the private environment again from scratch. If it fails again, the message shows pip's last lines: from a ZIP, extract the whole ZIP again; from a clone, check pip's access to your package index.
-- **"Another run of the kit installer is in progress"**: wait for the other window to finish. If none is open, the lock is from a run that crashed: it is taken over automatically when its process no longer exists.
-- **"Update incomplete: the new version was not fetched"** (git clone): local changes in the kit folder, no network, or a diverging history. Nothing was overwritten; the configuration of the current folder was reapplied. Commit or set aside your changes yourself, then update again.
-- **`ai-kit` shows an old version, or none of the new options, after `pip install .`**: another `ai-kit` command comes first on your PATH, often an earlier `pipx install`. `ai-kit --version` says which copy runs; `doctor` lists every copy. Remove the old one (`pipx uninstall ai-kit`, or `pip uninstall ai-kit` with the Python that installed it), or start the kit with the launcher of the kit folder, which always runs the private environment's copy.
-- **`ai-kit` is not recognised after the installation**: open a new terminal; the PATH of an open one does not change. Still nothing: `doctor` from the kit folder says whether the command was installed and where; a shell the kit does not know (fish, for example) gets the line to add to its startup file at `update`.
-- **"Issue not created" after a friction**: the friction is logged locally anyway. The line says why: `glab` or `gh` not on the PATH (install it following your IT procedure), not signed in (`glab auth login` with a personal access token, `gh auth login`), or no network. Then `ai-kit friction --sync`; `doctor` shows the tracker's state and how many frictions wait.
-- **The questions show odd characters or no arrows**: run with `--plain` (or set `AI_KIT_PLAIN=1`) for numbered questions in plain text.
-- **No network, proxy, certificate**: the installation is complete anyway; only `doctor --live` needs the model. `doctor --live` names the cause: no network or blocked hosts, a proxy asking for authentication (HTTP 407), or HTTPS inspection without the company root certificate. What to ask IT is in the message; never disable certificate checks.
-- **`30_USER.md` not applied**: saved as rich text, under another name (`30_USER.md.txt`) or in another encoding. `doctor` says which. TextEdit: Format > Make Plain Text, then save under the same name; Notepad: encoding UTF-8. Then `update`, and a new session of the CLI.
-- **Unreadable settings**: fix the existing JSON after making a backup. The kit does not accept JSON with comments (JSONC).
-- **Evals failing with an infrastructure error**: `evals/run.py` distinguishes an unavailable API response (401, 402 credits exhausted, 403, 429) from a behaviour failure; fix the CLI's authentication or billing before drawing conclusions about a skill.
-- **I edited a copy of `30_USER.md` and my change moved**: since 0.39 your file is `~/.ai-kit/context/30_USER.md`; some CLIs read a copy of it ([matrix](cli/matrice.md)). At `update`, your edit goes into the file when the file did not change since the copy; otherwise the file wins and your edit is in that update's backup. Edit `~/.ai-kit/context/30_USER.md` (or use `/me`), then `update`.
-- **Both `~/.ai-toolkit` and `~/.ai-kit` exist** (an installation from before 0.19): the kit stops without touching anything; keep `~/.ai-kit`, move what is missing into it, remove `~/.ai-toolkit`, then `update`.
-- **Context not loaded**: check with the CLI's command that the global layers appear before the project's `AGENTS.md`; the steps are on each CLI's page.
-- **Wrong identity detected**: run `update --user your.email@company`, or the installer's **Change my choices** (email step). The `30_USER.md` header is written only when the file is created: fix it by hand. Identity grants no rights.
-- **Doctor reports an out-of-domain account**: the CLI is logged in with an account that is not in `allowed_domains`. Log in again with your work account before working on company data.
-- **Skills not visible**: list them with the CLI's command, check that they are enabled and check managed policies. Having the files present does not guarantee they are enabled.
-- **MCP not configured**: this is normal, no server is enabled by default; see [MCP](mcp.md). A missing optional MCP server does not make doctor fail.
-- **Doctor returns 1**: at least one local check needs action; 2 means a configuration error. The setup/update actions return 0 on success, 2 on error. Through the launcher: 3 when the kit package did not install, 4 when another run is in progress, 1 for "Update incomplete".
+## Exit codes
 
-## Manual rollback
+| Code | Meaning |
+| --- | --- |
+| 0 | success |
+| 1 | refused or failed: nothing changed, or everything was put back. Also `doctor` with a `[Check]`, and `validate` with a problem |
+| 2 | wrong usage of a command |
+| 3 | `managed.toml` cannot be applied: nothing changed, ask IT |
+| 130 | interrupted (Ctrl+C) |
 
-Close the CLI. Each installation that modifies files creates a dated folder in `~/.ai-kit/backups`. It contains the previous files, with their path relative to the home folder, and a manifest of newly created files.
+The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) add: 2 when Python or the kit folder is unusable, 3 when the kit package did not install, 4 when another installer run is in progress.
 
-Copy the backed-up files to the same paths under your home folder. For files listed in `created`, remove them only if they have not received personal changes since. Never delete the CLI's folder or its skills wholesale. The manifest is not an automatic restore program.
+## Common messages
+
+| Message | What to do |
+| --- | --- |
+| `Python 3.11 or newer was not found (commands python3, python).` (or "older than 3.11", "could not be started") | ask IT for Python 3.11+ with `venv` and `pip`, usable by your standard account; do not change company policies |
+| `This Python has no venv or pip support …` | ask IT for a complete Python; the kit downloads nothing to work around it |
+| `Another run of the kit installer is in progress (process N) …` | wait for the other window; a lock left by a stopped run is taken over |
+| `Another ai-kit command is changing files (…). Wait for it to finish, then run again.` | wait; a lock from a dead process is taken over |
+| `Kit not installed: run ai-kit init.` | run `ai-kit init` |
+| `This AI Kit holds no content and no Core is installed: …` | run the installer from the kit folder, or `ai-kit sync --from-bundle <core bundle>` |
+| `No Core source: set [core] repo = "<URL>" in ~/.ai-kit/aikit.toml, or IT sets enterprise.core in managed.toml.` | set `[core] repo`, or ask IT |
+| `First use of <URL> needs your confirmation in a terminal: run ai-kit sync there.` | run `ai-kit sync` in a terminal and check the URL, tag and commit shown |
+| `git was not found: install Git (IT can provide it), then run the command again.` | ask IT for Git 2.29 or newer |
+| `git ls-remote failed (auth): …` (or `network`, `not-found`) | sign in to the Git host with your usual credential helper, check the network or the URL |
+| `Git URL refused (…)`, `Host … is not in git.allowed_hosts …`, `This Team is not in teams.allowed (managed.toml): …` | the origin is not allowed; ask IT or use the URL it publishes |
+| `No stable tag vX.Y.Z in the source: ask its owner to publish one.` | the repository has no `vX.Y.Z` tag yet |
+| `Tag … now points to another commit. Nothing was changed. …` | tell the repository's owner: a published tag must never move |
+| `Tag … is not signed by a key IT lists (managed.toml git.signers): nothing was changed.` | the tag owner signs it with an allowed key |
+| `… is revoked by IT (managed.toml git.revoked) …` | IT withdrew that version; wait for a new tag |
+| `Unknown Team <name>: give its repository URL, ai-kit team use <name> --url <URL> (or run it in a terminal).` | add `--url` |
+| `Nothing to roll back to: lock.toml has no previous configuration.` | there is only one configuration so far |
+| `… is not in the local cache: run ai-kit sync (network needed).` | run `ai-kit sync` with network |
+| `The content … needs AI Kit X.Y.Z or newer; this one is …` | install the newer AI Kit (new ZIP, or `git pull` in a clone) first |
+| `<path>: refused because it is not owned by root; …` (any `managed.toml` refusal) | exit code 3; IT fixes the file |
+| `MCP server <name> is required … nothing was changed.` | see [MCP](mcp.md); approve it in a terminal, or ask IT |
+| `… modified locally: <path>` | a file the kit installed was edited: move your change to `USER.md` or your `aikit.toml`, restore the file, run again |
+| `[Check] <file> was modified by hand: restored to the kit version; your copy: …` | normal for a rule layer (`00_KIT.md`, `10_…`, `20_…`): personal preferences go in `USER.md` |
+| `Blocked by the kit: …` (in the agent) | a guardrail refused the action ([guardrails](hooks.md)); do it yourself if it is right |
+| `doctor --live makes a real call to the model, refused because AI_KIT_NO_LIVE=1 is set.` | unset the variable if you accept the call |
+| `uninstall needs a confirmation: add --yes, or --dry-run to see what would be removed.` | add `--yes` |
+
+## Other symptoms
+
+- **`ai-kit` not recognised after `init`**: open a new terminal. On a shell the kit does not recognise, `init` prints the line to add to your startup file.
+- **`ai-kit` runs an old version**: another copy comes first on your PATH. `ai-kit --version` says which copy runs; `doctor` lists every copy.
+- **A command from the docs is missing**: it is optional. Add it with `extra_commands` in your `aikit.toml`, then `ai-kit sync --offline`. `00_KIT.md` lists what is installed.
+- **A kit skill or command is named `ai-kit-<name>`**: one of yours already had the name; yours is kept. Rename yours, then `ai-kit sync --offline`.
+- **`USER.md` not applied**: it must be plain UTF-8 text under that exact name; `doctor` says what is wrong.
+- **A friction issue was not created**: the friction is kept locally. Install and sign in to `glab` or `gh`, then `ai-kit friction --publish`.
+- **The questions show odd characters**: add `--plain`.
+
+## Manual restore
+
+Every run that changes files keeps a dated folder in `~/.ai-kit/backups` with the previous files, at their path relative to your home folder. Close the CLI and copy them back. Prefer `ai-kit rollback` for the Core and Team.
 
 ## Team rule
 
-A support ticket is never solved verbally twice. It becomes a `doctor` check, a line here, or a case in `evals/`.
+A support ticket is never solved verbally twice: it becomes a `doctor` check, a line on this page, or an eval case.

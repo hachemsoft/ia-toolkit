@@ -38,7 +38,7 @@ def toml_error(path, text, exc):
     line = lines[min(line_no, len(lines)) - 1]
     return (str(path) + ', line ' + str(line_no) + ', column ' + str(col) + ': ' + hint + '.\n'
             + '    ' + redact(line.rstrip()) + '\n    ' + ' ' * max(col - 1, 0) + '^\n'
-            + 'TOML: one key = value per line, texts in double quotes, lists in [ ], # starts a comment. A valid example: docs/customization.md.')
+            + 'TOML: one key = value per line, texts in double quotes, lists in [ ], # starts a comment. A valid example: docs/configuration.md.')
 
 def parse_toml(text, path='TOML'):
     try:

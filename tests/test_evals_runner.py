@@ -202,13 +202,13 @@ class WorkflowTests(unittest.TestCase):
 
 
 class EvalCasesPageTests(unittest.TestCase):
-    """docs/eval-cases.md explains every case: a new case without its section fails here."""
+    """docs/evals.md lists every case: a new case without its row fails here."""
     def test_every_case_has_a_section(self):
         root = Path(__file__).resolve().parents[1]
-        page = (root/'docs/eval-cases.md').read_text(encoding='utf-8')
+        page = (root/'docs/evals.md').read_text(encoding='utf-8')
         names = [json.loads(p.read_text(encoding='utf-8'))['name'] for p in sorted((root/'evals/cases').glob('*.json'))]
-        missing = [n for n in names if '### `' + n + '`' not in page]
-        self.assertEqual(missing, [], 'add a section to docs/eval-cases.md')
+        missing = [n for n in names if '`' + n + '`' not in page]
+        self.assertEqual(missing, [], 'add a row to the cases table of docs/evals.md')
 
 if __name__ == '__main__':
     unittest.main()

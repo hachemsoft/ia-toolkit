@@ -322,7 +322,7 @@ def listing(home=None, count=10):
                      + '  ' + str(entry.get('text', '')) + ('  -> ' + sent[entry['id']]['url'] if entry['id'] in sent else ''))
     pending = len(unsent(home))
     lines.append(str(len(found)) + ' friction' + ('s' if len(found) != 1 else '') + ' in ' + path
-                 + ('; ' + str(pending) + ' not sent to the tracker yet (--sync).' if pending else '; nothing is sent.' if not tracker(home) else '.'))
+                 + ('; ' + str(pending) + ' not sent to the tracker yet (ai-kit friction --publish).' if pending else '; nothing is sent.' if not tracker(home) else '.'))
     return lines
 
 def main(argv=None):

@@ -8,4 +8,4 @@ installed.
 3. Challenge: counter-examples, assumptions that change the result.
 4. Recommend one option and one ruled-out alternative; record it in the repo.
 
-A Team extends it through the "In the kit commands" section of its skills (`### /research`).
+A Team extends it with its own skills; /research activates them when the task fits.

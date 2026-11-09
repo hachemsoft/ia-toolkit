@@ -1,14 +1,12 @@
 # Contributed skills
 
-This is where the skills that people in the organization propose to the kit go, one folder per skill: `skills/contrib/<name>/SKILL.md`. What is under `skills/internal/` is shipped and maintained by the kit maintainers; what is here is maintained by the person named in the catalog.
+Skills that people in the organization propose to the Core, one folder per skill: `skills/contrib/<name>/SKILL.md`. What is under `skills/internal/` is maintained by the kit maintainers; what is here, by the owner named in the skill's front matter. How to write one: [add or change a component](../../docs/extending.md#add-or-change-a-component).
 
-`ai-kit new skill` creates the folder, its catalog entry and its eval case ([create a component](../../docs/extending.md#create-a-component-with-ai-kit-new)).
+Rules (checked by the tests):
 
-Rules (the first and the last are checked by the tests):
+- front matter `metadata`: `aikit-origin: "contrib"`, `aikit-owner: "<firstname.lastname or team>"`, `aikit-tier: "optional"`, `aikit-default: "false"` (never installed by default: a Team or a person turns it on with `extra_skills`), and `aikit-version` (`1.0.0` to start);
+- a name that does not already exist in the kit;
+- an evaluation case in `evals/cases/` that shows the skill in action, or a "Triggers" line in the description that says when it activates;
+- the version raised at every change (patch for a wording, minor for a behaviour added, major when what it produces or needs changes), then `python3 scripts/versions.py --update`.
 
-- an entry in `skills/catalog.json` with `"origin": "contrib"`, `"owner": "<firstname.lastname or team>"`, and `"tier": "optional"`: a contributed skill is never installed by default, each person enables it with one line (`extra_skills` in `~/.ai-kit/overrides.toml`);
-- a name that does not already exist in the kit; to replace a shipped skill, see [docs/extending.md](../../docs/extending.md);
-- an evaluation case in `evals/cases/` that shows the skill in action, or a "Triggers" line in the description that says when it activates.
-- a `"version"` in its catalog entry (`1.0.0` to start), raised at every change (patch for a wording, minor for a behaviour added, major when what it produces or needs changes), then `python3 scripts/versions.py --update`: the tests refuse a change under the same version.
-
-Promotion: when the usage review shows that a contributed skill is widely used, it moves under `skills/internal/` with `"origin": "internal"`, and joins a profile. Removal: a contributed skill without a reachable owner is removed at the next usage review.
+Promotion: a contributed skill the usage review shows widely used moves under `skills/internal/` with `aikit-origin: "internal"`. Removal: one without a reachable owner goes at the next usage review. A skill for one team only belongs in that team's Team repository.

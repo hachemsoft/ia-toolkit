@@ -18,7 +18,7 @@
       "matcher": "",
       "script": "whats-new.py",
       "default": true,
-      "description": "At session start (startup, resume), tells the agent once what is new: the installed version's CHANGELOG section, the entries of NEWS.md aimed at this profile and team, a newer version on the kit's origin (read once a day, never a pull; [news] check_remote = false keeps it local). The update is never run by the hook. On by default."
+      "description": "At session start (startup, resume), tells the agent once what is new: the installed version's CHANGELOG section and the NEWS.md entries aimed at the active Team, read from the copies in ~/.ai-kit/news (no network). It also runs the local friction upkeep. On by default."
     }
   }
 }

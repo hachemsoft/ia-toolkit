@@ -1,6 +1,5 @@
-"""Resources described by their own files (V2 slice 3, docs/v2/resources.md): the skill and agent catalogs are rebuilt from the
-aikit-* metadata of each SKILL.md and agent file, found by convention, instead of being read from skills/catalog.json and
-agents/catalog.json (still present until slice 8; a test checks that both give the same catalog). Pure: reads files, no
+"""Resources described by their own files: the skill and agent catalogs are rebuilt from the
+aikit-* metadata of each SKILL.md and agent file, found by convention. Pure: reads files, no
 other side effect. Also checks what a catalog alone could not: a dependency that does not exist, a cycle."""
 from pathlib import Path
 
@@ -30,7 +29,7 @@ def entry_from(meta, keys, rel):
 
 
 def skill_catalog(root):
-    """{name: entry} like skills/catalog.json: every skills/**/SKILL.md, its folder name as identifier, plus the aliases."""
+    """{name: entry}: every skills/**/SKILL.md, its folder name as identifier."""
     root = Path(root)
     catalog = {}
     for path in sorted((root/'skills').rglob('SKILL.md'), key=lambda p: p.as_posix()):
@@ -48,7 +47,7 @@ def skill_catalog(root):
 
 
 def agent_catalog(root):
-    """{name: entry} like agents/catalog.json: every agents/**/<name>.md with a front matter name (README files are not agents)."""
+    """{name: entry}: every agents/**/<name>.md with a front matter name (README files are not agents)."""
     root = Path(root)
     catalog = {}
     for path in sorted((root/'agents').rglob('*.md'), key=lambda p: p.as_posix()):

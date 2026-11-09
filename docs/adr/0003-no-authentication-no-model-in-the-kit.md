@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, amended: the re-apply command is `ai-kit sync --offline`; an authentication or model key in `aikit.toml` is reported as an unknown key and ignored
 since: 0.11.0, hardened in 0.36.0 (reconstructed from the CHANGELOG)
 ---
 # The kit never handles authentication or model choice

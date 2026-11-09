@@ -33,6 +33,16 @@ class IdentityTests(unittest.TestCase):
   self.assertIn('first.last@example.com',u.read_text(encoding='utf-8'));self.assertEqual(read_json(self.home/'.ai-kit/state.json')['user']['email'],'other@example.com')
  def test_no_identity_no_header(self):
   self.run_kit();text=(self.home/'.ai-kit/context/USER.md').read_text(encoding='utf-8');self.assertNotIn('Person:',text);self.assertNotIn('{identity}',text)
+ def test_identity_asked_by_init_only(self):
+  # sync, team and rollback keep the recorded identity; only init asks again.
+  from types import SimpleNamespace
+  state={'user':{'email':'first.last@example.com','source':'input'}}
+  with mock.patch.object(cli,'interactive',return_value=True),mock.patch('builtins.input',side_effect=AssertionError('asked')):
+   self.assertIsNone(cli.resolve_identity(SimpleNamespace(user=None,action='sync'),self.home,state))
+   self.assertIsNone(cli.resolve_identity(SimpleNamespace(user=None,action='rollback'),self.home,state))
+  with mock.patch.object(cli,'interactive',return_value=True),mock.patch('builtins.input',return_value='') as asked:
+   cli.resolve_identity(SimpleNamespace(user=None,action='init'),self.home,state)
+  asked.assert_called_once()
  def test_invalid_email_refused(self):
   with self.assertRaises(cli.KitError):self.run_kit(user={'email':'not-an-email','source':'option'})
  def test_cli_user_option_non_interactive(self):

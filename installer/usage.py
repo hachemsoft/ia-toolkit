@@ -11,7 +11,7 @@ from .interface import ContextHost
 
 
 def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
-    """Usage report for the usage review (docs/usage-review.md): commands typed, skills activated, agents called, from the logs each CLI already writes."""
+    """Usage report for the usage review (docs/frictions.md): commands typed, skills activated, agents called, from the logs each CLI already writes."""
     from collections import Counter
     state = read_json(home/'.ai-kit/state.json')
     if not state:
@@ -40,7 +40,7 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
         out = []
         for s in unused_skills:
             entry = catalog.get(s, {})
-            if entry.get('tier') == 'core' and s not in required_by_used and entry.get('category') in ('workflow','tool'):
+            if entry.get('default') and s not in required_by_used and entry.get('category') in ('workflow','tool'):
                 out.append(s)
         return out
     frictions, fixed_own = read_frictions(home, cutoff)
@@ -192,4 +192,4 @@ def print_report(report, c, not_observable, used_clis, observing, min_sessions, 
         print('Candidates to remove from the core (never activated, not required by a used command): '+', '.join(report['core_candidates_to_demote']))
     else:
         print('No core skill to remove over this window.')
-    print('Procedure: docs/usage-review.md. The logs read are local; nothing is sent.')
+    print('Procedure: docs/frictions.md. The logs read are local; nothing is sent.')

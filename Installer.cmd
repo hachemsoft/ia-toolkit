@@ -1,9 +1,9 @@
 @echo off
 rem AI Kit launcher for Windows: finds Python 3.11 or newer, then hands over to scripts\launcher.py, which installs the kit
-rem in its private environment (%USERPROFILE%\.ai-kit\runtime) and opens the installer (the menu when no argument is given).
+rem in its private environment (%USERPROFILE%\.ai-kit\runtime) and runs ai-kit (init when no action is given).
 rem Command prompt only: no PowerShell, no administrator rights, no change to the system or the execution policy. The only
 rem change outside %USERPROFILE%\.ai-kit: the ai-kit command on your own user PATH, if you chose it (removed by uninstall).
-rem Equivalent command, for IT: python -I scripts\launcher.py followed by setup, update, doctor or uninstall, run from this folder.
+rem Equivalent command, for IT: python -I scripts\launcher.py followed by the action (init, sync, doctor, uninstall...), run from this folder.
 setlocal
 rem Never run a py.exe or python.exe planted in the current folder: only the ones on the PATH.
 set "NoDefaultCurrentDirectoryInExePath=1"
@@ -31,7 +31,7 @@ goto :end
 
 :launch
 rem The current folder stays the user's: a relative path (--json, --home) resolves there, not in the kit.
-rem scripts\launcher.py prepares the private environment (git pull first for update in a clone), then runs the kit.
+rem scripts\launcher.py prepares the private environment, then runs the kit.
 rem -I: no module from the current folder or PYTHONPATH can be imported in place of the kit's.
 rem No parenthesised block around %*: a ")" in an argument (C:\Program Files (x86)) would close it.
 %KIT_PY% -I "%KIT_DIR%\scripts\launcher.py" %*

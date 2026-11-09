@@ -34,7 +34,10 @@ jobs:
           CLI_VERSION: ${{ inputs.cli_version }}
         run: npm install -g "@google/gemini-cli${CLI_VERSION:+@$CLI_VERSION}"
       - name: Install the kit into a temporary home
-        run: python3 -m installer setup --profile data-analyst --home "$RUNNER_TEMP/home" --user evals@example.org
+        run: |
+          mkdir -p "$RUNNER_TEMP/home/.ai-kit"
+          printf 'schema = 1\n\n[user]\nextra_skills = ["dbt-model-change", "infra-change", "python-js-change"]\n' > "$RUNNER_TEMP/home/.ai-kit/aikit.toml"
+          python3 -m installer init --home "$RUNNER_TEMP/home" --user evals@example.org --target gemini
       - name: Run evals
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

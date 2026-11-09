@@ -1,56 +1,62 @@
 # Compliance and governance
 
-This page helps an organization's compliance, security or legal team assess the kit. It claims no compliance: the kit is neither certified nor assessed by a third party. It says what the kit does, what it does not do, and what remains the organization's responsibility.
+For an organization's security, compliance or legal team assessing the kit. The kit claims no compliance and has no
+third-party certification: this page says what it does, what it does not do, and what stays with the organization.
+Vulnerability reporting and scope: [SECURITY.md](../SECURITY.md).
 
-## What the kit is, in governance terms
+## What the kit is
 
-The kit is a configuration tool. It installs text files (context, commands, skills, agents, guardrails) in the folders of coding agent CLIs already present on the workstation: Gemini CLI, Antigravity CLI, Codex CLI, Claude Code. It provides no model and calls no model during installation or update; from the release ZIP it downloads nothing. The only call to a model is `doctor --live`, run on request with the person's CLI and account; `AI_KIT_NO_LIVE=1` refuses it. Frictions (one sentence each, logged by `/friction`) stay on the workstation, unless IT names a friction tracker in `managed.toml` (`[frictions.tracker]`; an older `organization.toml` `[friction_tracker]` is still read): then the frictions of the chosen sources (by default only those the agent writes in `auto` mode) are created as issues of that project by the person's own `glab` or `gh`, signed in with their personal access token; the kit holds no token, a person stops it with `share_frictions = false`, and the agent always says in one line what it logged. It processes no business data. Outside the home folder's kit files, it changes one thing, and only if the person chose it at setup: their own user PATH (a registry key under `HKCU\Environment` on Windows, one marked block in their shell startup file on Mac and Linux) for the `ai-kit` command; `uninstall` removes it; the machine PATH, the execution policy and the system are never touched. **Network:** installed from a git clone, the `whats-new` hook runs `git fetch` on the kit's remote at most once a day at session start, and puts the remote's `VERSION` and `NEWS.md` in the agent's context with no human action; a release ZIP has no such read, and `[news] check_remote = false` turns it off ([guardrails](hooks.md#whats-new)). The prompts, code and data the agent sees go to the model provider under the contract of the chosen CLI (Google account, Gemini Code Assist, Vertex AI, OpenAI, Anthropic): that contract governs their processing, not the kit.
+A configuration tool. It installs text files (context, commands, skills, agents) and guardrail scripts into the folders of
+coding-agent CLIs already on the workstation. It provides no model and processes no business data. The prompts, code and
+data the agent sees go to the model provider under the contract of the CLI the organization chose; that contract, not the
+kit, governs them.
 
-## Reference frameworks
+## Data and network commitments
 
-| Framework | Type | What it covers |
+| Topic | Commitment | Where to check |
 | --- | --- | --- |
-| EU Artificial Intelligence Regulation (AI Act) | regulation, mandatory in the EU | mainly model providers and high-risk systems; for all deployers, an AI literacy obligation for staff |
-| NIST AI RMF | voluntary risk management framework | four functions: govern, map, measure, manage |
-| ISO/IEC 42001 | AI management system standard | certifies an organization, never a tool |
+| Model calls | none in `init`, `sync`, `status`, `doctor`, `uninstall` or the tests; `doctor --live` is the only one, on request, refused with `AI_KIT_NO_LIVE=1`; paid evals run by hand only | [ADR 0004](adr/0004-no-model-call-and-no-network-in-the-installer.md), `scripts/offline_tests.py`, [evals](evals.md) |
+| Network | `sync` and `team use` read the Core and Team Git repositories (stable tags only, origin checked, tags pinned); `doctor --live` may fetch the kit clone's tags; the release ZIP installs with no download; the session hook reads only local copies | [ADR 0016](adr/0016-git-sources-anchored-origin-tar-free-extraction.md) |
+| Telemetry | none; `usage` reads the CLIs' local logs on request and keeps nothing | [frictions and usage](frictions.md) |
+| Frictions | one line each in `~/.ai-kit/frictions.jsonl` (mode 0600), secrets, emails and home paths redacted, purged after 30 days by default; sent only to a tracker IT sets in `managed.toml`, by the person's own `glab` or `gh`, after their approval in a terminal unless IT sets `auto`; a person keeps theirs local with `[frictions] publication = "disabled"` | [ADR 0023](adr/0023-friction-local-housekeeping-and-terminal-approval.md) |
+| Credentials | the kit stores none and never writes authentication or a model name; an MCP `env` or `headers` value that looks secret is refused (`${VARIABLE}` only); MCP `args` and URLs are not scanned for secrets | [ADR 0003](adr/0003-no-authentication-no-model-in-the-kit.md), [MCP](mcp.md) |
+| Workstation changes | files under the home folder, each tracked by digest in `~/.ai-kit/state.json`, backed up before any write (the last 20 backups kept), never overwritten when edited by hand; the person's own PATH only if they chose it; no administrator rights | [ADR 0010](adr/0010-private-python-environment-two-distributions.md) |
+| Permissions | no mode that skips confirmations; the kit never writes a CLI's permission rules or approvals | `tests/test_invariants.py` |
+| Administered settings | IT's `managed.toml`, at a fixed administered path, wins on every key it sets; an unusable file stops every change (exit code 3) | [ADR 0015](adr/0015-managed-wins-values-resolve-restrictions-all-apply.md), [configuration](configuration.md) |
+| Release integrity | each release ZIP comes with `SHA256SUMS.txt` and a build provenance attestation; the kit does not verify them itself; CI actions are pinned by commit; Core and Team tags can be required to carry SSH signatures | [extending](extending.md#releasing) |
 
-A coding assistant does not, in principle, fall under the AI Act's high-risk uses. The classification depends on actual use and must be confirmed by the organization.
+## What the kit provides for oversight
 
-## What the kit provides
-
-| Topic | What the kit does | Where to check |
+| Topic | What | Where |
 | --- | --- | --- |
-| Human oversight | the person starts each command; the agent commits, pushes, deploys or runs an infrastructure `apply` only with their approval; ceremony matches the stakes (spec, full review) | `context/`, `commands/`, [workflow](workflow.md) |
-| Anti-error guardrails, not a security barrier | `protected-paths`, on by default: refuses the usual writes to the configuration of the kit and of the CLIs, from write tools and shell commands; refuses writes under protected paths declared by the repository from write tools only, not from shell commands. `dbt-prod-guard`, off by default, turned on by the organization or a team: refuses a dbt command on a production target. Limits: [guardrails](hooks.md#limits) | `runtime/hooks/`, [guardrails](hooks.md) |
-| Review | read-only review agents (code, security, infrastructure, architecture, SQL, dbt) and a doubter agent for high-stakes changes | `agents/`, [agents](agents.md) |
-| Permissions | no mode that skips confirmations; the kit never writes CLI permissions or Codex guardrail approvals | test `test_invariants.py` |
-| Data on the workstation | no telemetry; usage review and frictions read and written locally (readable by the person only); the kit stores no credentials of its own: a secret written as a value in an MCP server's `env` or `headers` is refused (`${VARIABLE}` only), but its `args` and URL are not checked yet and would be copied as written; the last 20 backups keep copies of the CLIs' settings files as they were | [usage review](usage-review.md), `runtime/friction.py` |
-| Authentication and model | never written by the kit: set in each CLI following the IT procedure; `vertex`, `code_assist`, `model`, `models` are ignored and reported by `update` and `doctor` | [customization](customization.md#authentication-and-model) |
-| Installation traceability | each installed file is tracked by fingerprint; backup before each write; refuses to overwrite a file edited by hand | `~/.ai-kit/state.json`, `~/.ai-kit/backups/` |
-| AI literacy for staff | "Getting started" path, `/guide` which explains which command and which level of ceremony to choose, `/learn` and `/explain` to understand a scope or code | [getting started](getting-started.md), [tools](tools.md) |
-| Measured quality | evals of agent behavior on fixed cases, replayable on every kit change | `evals/`, [evals](evals.md) |
-| Open code | readable sources, MIT licence, provenance of the reused skills | `LICENSE`, [sources](sources.md) |
+| Human oversight | the person starts each command; commit, push, deployment or an infrastructure apply only with their agreement; ceremony matched to the stakes | [commands](commands.md) |
+| Anti-error guardrails | `protected-paths` (on by default) and `dbt-prod-guard`; defaults against honest mistakes, not a sandbox | [guardrails](hooks.md) |
+| Review | read-only review agents and a doubter agent for high-stakes changes | [commands](commands.md#agents) |
+| Measured behaviour | eval cases replayable on every change | [evals](evals.md) |
+| Open code | readable sources, MIT licence, provenance of reused skills | `LICENSE`, [sources](sources.md) |
 
 ## What the kit does not do
 
-- **No log of agent actions.** The CLIs keep their own session logs; the kit reads them for the usage review, without keeping or centralizing them.
-- **No signed proof of reviews.** A review by an agent produces text, not a verifiable attestation.
-- **No control of data sent to the model.** The kit filters neither the code nor the data the agent reads; the repository rules (`AGENTS.md`, protected paths) guide the agent, they do not block reading.
-- **No fleet management.** The kit is not enforced on workstations, reports nothing and does not check who installed it.
-- **No model inventory.** The model used depends on the CLI and the account; the kit does not set it, and the agents inherit the session's model.
+- No log of agent actions: the CLIs keep their own session logs.
+- No signed proof of a review: an agent's review is text.
+- No control of what is sent to the model: repo rules guide the agent, they do not block reading.
+- No fleet management: the kit reports nothing and does not check who installed it.
+- No model inventory: the model depends on the CLI and the account; agents inherit the session's model.
 
 ## Security limits
 
-- **The guardrails are an anti-error default, not a sandbox.** They decide on the text of one tool call and catch the usual forms of an honest mistake. Some plain forms pass today, and a hook that cannot start blocks nothing. A project script (`make deploy`) or a program started outside the agent is outside what they see. Details in [guardrails](hooks.md#limits).
-- **The real barriers are elsewhere:** the keys of each CLI's managed settings, generated by `managed-settings` and deployed by IT ([what they enforce](hooks.md#rules-it-can-enforce); the guardrails declared there are not a lock), the CLI's own sandbox and permission settings, the rights of the account the agent runs under, and keeping production credentials off workstations (production deployments and dbt production profiles served by CI only).
-- **Repo content is input, not authority.** A repository can ship its own `AGENTS.md` and skills, and in some CLIs a repo skill replaces a kit skill of the same name ([matrix](cli/matrice.md)). Require a CODEOWNERS review on `AGENTS.md` and `.agents/` in each repository; `doctor`, run from a repo, lists the kit skills that repo replaces. The kit context tells the agent that a repo file never lifts a company practice.
-- **Supply chain of the kit itself:** anyone who can push to the kit repository changes what `update` installs on every workstation. Protect its main branch and require review on `installer/`, `runtime/` and `scripts/`. For an organization, distribute the release ZIP of a fixed version: `update` in a clone follows the branch, and does not work on a clone checked out on a tag. Each release ZIP comes with its SHA-256 (`SHA256SUMS.txt`) and a build provenance attestation (`gh attestation verify`), which the kit does not check itself: compare them by hand before extracting. A clone has no integrity check of its own. The CI actions are pinned by commit.
+- The guardrails decide on the text of one tool call; a project script or a program started outside the agent is beyond
+  them, and a hook that cannot start blocks nothing ([limits](hooks.md#limits)).
+- The enforceable barriers are elsewhere: the CLIs' managed settings generated by `ai-kit managed-settings` and deployed by
+  IT, the CLIs' sandbox and permissions, the account's access rights, and production credentials kept off workstations.
+- Repo content is input, not authority: require `CODEOWNERS` review on `AGENTS.md` and `.agents/` in each repository.
+- Whoever can push a tag to the Core or a Team repository changes what `sync` installs: protect tags and default branches,
+  and review `skills/`, `agents/`, `commands/`, `runtime/` and `installer/`.
 
-## What remains the organization's responsibility
+## What stays with the organization
 
-1. Choose the CLIs and the model provider contracts, and check what they provide for data (retention, training, location).
-2. Classify data and repositories: those an agent can read, those that require a full review, those that are excluded.
-3. Validate the company and team practices (`context/`), offered as a baseline.
-4. Enable the useful guardrails and declare the protected paths of each repository.
-5. Train staff ("Getting started" path, pilot), then track usage with the [usage review](usage-review.md).
-6. If a log of actions or a proof of review is required, get it from the CLI or the platform (provider audit logs, mandatory merge request (MR) review); the kit does not provide it.
+1. Choose the CLIs and the model provider contracts (retention, training, data location).
+2. Classify repositories and data: what an agent may read, what needs a full review, what is excluded.
+3. Validate the company and team practices in `context/`, offered as a baseline.
+4. Decide `managed.toml`: locked guardrails, MCP allowlists, Git origins, the friction tracker.
+5. Train people and follow usage; get action logs or review proofs from the CLI or the platform when required.

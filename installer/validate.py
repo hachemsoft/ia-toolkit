@@ -1,4 +1,4 @@
-"""ai-kit validate [folder] (V2 slice 3, docs/v2/resources.md): what a content tree (the kit's own, or a Core repository before it
+"""ai-kit validate [folder]: what a content tree (the kit's own, or a Core repository before it
 is tagged) must pass before any workstation installs it. Read-only; prints one line per problem; exit 1 when there is one.
 
 Checks: the manifest (aikit.toml), every skill and agent describing itself (aikit-* metadata, name = folder or file name),
@@ -35,7 +35,7 @@ def problems(root, engine_version):
     if manifest and manifest.get('kind') == 'team':
         return found + team_problems(root, manifest)
     if (root/'organization.toml').is_file() or (root/'practices').is_dir() or (root/'profiles').is_dir():
-        found.append('organization.toml, practices/ and profiles/ are not read by AI Kit 3: MCP servers go to mcp/servers.toml, the context to context/, IT settings to managed.toml, teams to Team repositories.')
+        found.append('organization.toml, practices/ and profiles/ are not read by AI Kit: MCP servers go to mcp/servers.toml, the context to context/, IT settings to managed.toml, teams to Team repositories.')
     try:
         skills = skill_catalog(root)
     except KitError as exc:

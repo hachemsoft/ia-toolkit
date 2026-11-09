@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, amended: organization-specific facts go in the organization's own Core and Team repositories and in `managed.toml`, not in an `organization.toml`
 since: 0.11.0 and 0.20.0 (reconstructed from the CHANGELOG)
 ---
 # A generic, public repository, in English, that names no organization and no competing product

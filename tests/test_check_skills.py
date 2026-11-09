@@ -1,5 +1,5 @@
 """runtime/check_skills.py: what a skill, an agent or a command must not carry before it is merged. Detection, not a
-sandbox: it finds the obvious patterns; review and the CLIs' permissions remain the barrier (docs/contributing.md)."""
+sandbox: it finds the obvious patterns; review and the CLIs' permissions remain the barrier (docs/extending.md)."""
 import contextlib
 import importlib.util
 import io

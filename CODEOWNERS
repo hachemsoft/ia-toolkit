@@ -8,11 +8,10 @@
 # /commands/          @your-org/ai-kit-maintainers
 # /templates/         @your-org/ai-kit-maintainers
 # /runtime/           @your-org/ai-kit-maintainers
-# /organization.toml  @your-org/platform
-# /practices/         @your-org/platform
+# /context/           @your-org/platform
+# /aikit.toml         @your-org/platform
 #
 # A contributed skill keeps its owner (skills/contrib/README.md):
 # /skills/contrib/<name>/  @your-org/<owning-team>
 #
-# A team's own practices, reviewed by that team:
-# /practices/20-<team>.md  @your-org/<team>
+# A team's own content lives in its Team repository, with its own CODEOWNERS.

@@ -1,4 +1,4 @@
-"""Minimal YAML front matter without dependencies (V2 slice 3, docs/v2/resources.md): scalars, flow lists [a, b], block
+"""Minimal YAML front matter without dependencies: scalars, flow lists [a, b], block
 lists (- a), and one-level tables of scalars (metadata:). Anything deeper is refused, never guessed."""
 import json
 import re

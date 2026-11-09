@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, amended: the package holds only the engine; content comes from a Core Git repository (`ai-kit sync`, ADR 0013 and 0016), and the release ZIP ships the Core as a git bundle
 since: 0.34.0, completed in 0.46.0 (reconstructed from the CHANGELOG)
 ---
 # A private Python environment and two distributions, with no administrator rights

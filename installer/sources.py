@@ -1,4 +1,4 @@
-"""Git sources (V2 slice 2, ADR 0016, docs/v2/git-sync.md): the only module that runs Git.
+"""Git sources (ADR 0016): the only module that runs Git.
 
 A source is a Core (later a Team) Git repository, identified by its canonical URL. Only stable vX.Y.Z tags are followed, never a
 branch. Git runs with an allowlisted environment, no global or system config, explicit -c overrides, and one credential helper

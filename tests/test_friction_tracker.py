@@ -222,7 +222,7 @@ class TextsTests(unittest.TestCase):
         self.assertIn('publication', read_json(ROOT/'schemas/aikit.schema.json')['properties']['frictions']['properties'])
         # 3.0: no organization.toml; IT sets the tracker in managed.toml [frictions.tracker].
         self.assertIn('tracker', read_json(ROOT/'schemas/managed.schema.json')['properties']['frictions']['properties'])
-        self.assertIn('[frictions.tracker]', (ROOT/'docs/managed.md').read_text(encoding='utf-8'))
+        self.assertIn('[frictions] tracker', (ROOT/'docs/configuration.md').read_text(encoding='utf-8'))
 
 
 if __name__ == '__main__':

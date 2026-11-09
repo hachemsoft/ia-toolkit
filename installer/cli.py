@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timezone
 
 from . import resolve
-from .core import (content_root, STATE_SCHEMA, check_state_schema, _PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, SECRET, KitError, friction_module, is_guardrail, read_json, json_bytes, digest,
+from .core import (content_root, STATE_SCHEMA, check_state_schema, _PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, KitError, friction_module, is_guardrail, read_json, json_bytes, digest,
                    safe_id, load_commands, load_agent, redact, user_context_refusal)
 from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
@@ -90,20 +90,6 @@ def user_context_text(identity, answers=None, role=None):
     if role:
         text = text.replace(ROLE_PLACEHOLDER, '- '+' '.join(str(role).split()))
     return text
-
-
-def write_quick_context(home, answers, role=None):
-    """The quick answers written into USER.md, only while the file is still the one the kit created (never over the
-    person's own text). Returns the file written, or None when it was left as is."""
-    state = read_json(home/'.ai-kit/state.json')
-    identity = state.get('user') or {}
-    user_file = home/state.get('context_dir', '.gemini')/USER_CONTEXT
-    if role and SECRET.search(str(role)):
-        raise KitError('This looks like a secret (key, token or password): it is not written in your personal context.')
-    if not user_file.is_file() or user_file.read_text(encoding='utf-8') != user_context_text(identity):
-        return None
-    atomic_write(user_file, user_context_text(identity, answers, role).encode('utf-8'))
-    return user_file
 
 
 def agent_instruction(definition):
@@ -280,7 +266,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         p.notices.append('[Info] Updated: '+', '.join(changed)+'. What changed: CHANGELOG.md of the kit.')
     tracker = friction_tracker(personal, managed)
     if tracker:
-        # approval (default): nothing is sent on its own; the person sends from a terminal (ai-kit friction --sync). D5, ADR 0023.
+        # approval (default): nothing is sent on its own; the person sends from a terminal (ai-kit friction --publish). D5, ADR 0023.
         tracker = None if publication(managed) == 'disabled' else {**tracker, 'publication': publication(managed)}
     if ((managed or {}).get('frictions') or {}).get('tracker') and tracker is None:
         p.notices.append('[Info] Frictions stay local: frictions.publication = "disabled" in your aikit.toml (your organization set a friction tracker).')
@@ -405,6 +391,14 @@ def text_editor(path):
     return None
 
 
+def older_tag(tag, version):
+    """True when the locked Core tag vX.Y.Z is older than this engine's version (a newer ZIP was extracted)."""
+    try:
+        return tuple(int(x) for x in tag.lstrip('v').split('-')[0].split('.')) < tuple(int(x) for x in version.split('.'))
+    except ValueError:
+        return False
+
+
 def interactive():
     """A person at a terminal: both ends, because on Windows a stdin redirected from NUL also reports isatty()."""
     return sys.stdin.isatty() and sys.stdout.isatty()
@@ -416,7 +410,7 @@ def resolve_identity(args, home, state):
         if not EMAIL.fullmatch(args.user):
             raise KitError('--user expects an email.')
         return {'email': args.user, 'source': 'option'}
-    if args.action == 'update' and state.get('user'):
+    if args.action != 'init' and state.get('user'):  # sync, team, rollback keep the recorded identity: asked once
         return None
     detected = detect_identity(home)
     shown = detected.get('email') or detected.get('name')
@@ -440,7 +434,7 @@ def main(argv=None):
         except (AttributeError, ValueError):
             pass
     if sys.version_info < (3,11):
-        print('Python 3.11 minimum required (AI Kit 2.0; workstations on Python 3.9 or 3.10 stay on AI Kit 0.52).',file=sys.stderr)
+        print('Python 3.11 minimum required.',file=sys.stderr)
         return 2
     argv = sys.argv[1:] if argv is None else list(argv)
     if argv and argv[0] == 'friction':
@@ -479,7 +473,7 @@ SHIPPED = [None]  # the Core bundle the release ZIP ships, while a first install
 
 
 def command_main(argv):
-    """The AI Kit 3 command line (ADR 0025, docs/v2/cli.md). Exit codes: 0 success, 1 refused or failed (nothing changed, or all
+    """The AI Kit command line (ADR 0025). Exit codes: 0 success, 1 refused or failed (nothing changed, or all
     restored), 2 usage, 3 administered configuration unusable, 130 interrupted."""
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
     parser.add_argument('action', nargs='?', choices=['init', 'sync', 'team', 'status', 'doctor', 'rollback', 'user', 'uninstall', 'usage', 'friction', 'managed-settings', 'validate'],
@@ -578,7 +572,9 @@ def command_main(argv):
                 return make_ui(args.plain).text('Repository URL of the Team '+name+' (https://... or git@...)') or None
             locked = bool(read_toml(home/'.ai-kit/lock.toml', {}).get('sources'))
             APPROVE[0] = confirm if interactive() else None
-            first_shipped = SHIPPED[0] is not None and not locked and args.action in ('init', 'sync')
+            core_tag = ((read_toml(home/'.ai-kit/lock.toml', {}).get('sources') or {}).get('core') or {}).get('tag', '')
+            # The Core a release ZIP ships: activated at the first install, and by the installer of a newer ZIP.
+            first_shipped = SHIPPED[0] is not None and args.action == 'init' and (not locked or older_tag(core_tag, (ROOT/'VERSION').read_text(encoding='utf-8').strip()))
             if args.action == 'team':
                 action = 'team-use'
             elif args.action == 'rollback':

@@ -117,7 +117,7 @@ def json_error(path, text, exc):
     line = lines[min(exc.lineno, len(lines)) - 1]
     return (str(path) + ', line ' + str(exc.lineno) + ', column ' + str(exc.colno) + ': ' + hint + '.\n'
             + '    ' + redact(line.rstrip()) + '\n    ' + ' ' * max(exc.colno - 1, 0) + '^\n'
-            + 'JSON allows no comments; keys starting with _ can hold explanations. A valid example: docs/customization.md.')
+            + 'JSON allows no comments; keys starting with _ can hold explanations. A valid example: docs/configuration.md.')
 
 def json_bytes(value):
     return (json.dumps(value, ensure_ascii=False, indent=2)+'\n').encode('utf-8')

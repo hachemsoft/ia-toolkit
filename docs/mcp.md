@@ -1,93 +1,94 @@
-# MCP connections
+# MCP servers
 
-An MCP server gives the agent access to a tool or to data: a documentation site, GitHub, an issue tracker, a database. The kit writes the same server into each installed CLI, under the name `ai-kit-<name>` ([where, CLI by CLI](cli/matrice.md)). It never downloads, starts or tests a server, and handles neither tokens nor OAuth.
+With this page you know where the agent's MCP servers come from, how to turn one on or off, and what IT and approvals allow. An MCP server gives the agent a tool or data: documentation, an issue tracker, a database. Concepts: [architecture](architecture.md).
 
-> `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
+The kit writes each server into every installed CLI under the name `ai-kit-<name>`. It never downloads, starts or tests a server, and holds no token.
 
-## The rule: who decides what
+## Where servers come from
 
-| File | Who writes it | What it says | Example |
-| --- | --- | --- | --- |
-| `mcp/servers.toml` (Core repository) | the platform team, by merge request | **how** to reach each approved server | `httpUrl = "https://…"` under `[servers.docs]` |
-| `aikit.toml` `[defaults]` of a Team repository | the team, by merge request | **which** servers are on for its members, same formats as yours | `mcp = { github = true }` |
-| `~/.ai-kit/overrides.toml` (your workstation) | you | **your exceptions**: turn one on or off, or add your own | `mcp = { docs = false, github = true }` |
-| `managed.toml` (IT) | IT | **refusals** nobody lifts | `denied = ["legacy-db"]` under `[mcp]` ([managed](managed.md)) |
+| Source | File | Default |
+| --- | --- | --- |
+| Core | `mcp/servers.toml` of the Core repository | off, unless the server says `enabled = true` (then on for everyone) |
+| Team | `mcp/servers.toml` of the Team repository | on for the Team's members, unless `enabled = false` |
+| You | `[mcp] enabled` and `denied` in `~/.ai-kit/aikit.toml` | names only: you turn a defined server on or off |
+| A project | the CLI's own project configuration | not touched: the kit never modifies a project repository |
 
-A server is installed when it is **defined** (in `mcp/servers.toml` or in your file) **and on** (through `enabled = true` in `mcp/servers.toml`, through your Team, or through your file), and IT does not refuse it. Order: Core, Team, you; your file has the last word, except for what IT refuses in `managed.toml`. Teams: [Core and Team sources](core-source.md#teams). An `organization.toml` in an organization's own Core copy (before 3.0) is still read: its `[defaults.mcp]` servers and its `teams` count as above, and `ai-kit validate` says where they go now. After any change: `update`, then restart the CLI.
+A server is installed when it is defined (Core or Team), turned on, and not refused by IT. Servers you add yourself in a CLI's own settings are left alone: the kit manages only the `ai-kit-<name>` ones.
 
-## For the platform team: define the approved servers
+## Defining a server
 
-In the Core's `mcp/servers.toml`, describe each server once, one `[servers.<name>]` table each. A server listed here is off, except for the Teams and people who turn it on:
+One `[servers.<name>]` table per server, a single transport:
 
 ```toml
-[servers.github]
-command = "docker"
-args = [
-  "run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
-  "ghcr.io/github/github-mcp-server:<pinned version>",
-]
-env = { GITHUB_PERSONAL_ACCESS_TOKEN = "${GITHUB_PERSONAL_ACCESS_TOKEN}" }
-
 [servers.docs]
 enabled = true
 httpUrl = "https://docs-mcp.example.org/mcp"
+
+[servers.tracker]
+command = "tracker-mcp"
+args = ["--read-only"]
+env = { TRACKER_TOKEN = "${TRACKER_TOKEN}" }
+required = false
 ```
 
-- `enabled = true` (here `docs`) turns a server on for **everyone**.
-- A server has a single transport. Use `httpUrl` (streamable HTTP) or `url` (SSE), always `https://`, for a remote server. Use `command`, with `args` and `env`, for a local server. Do not use `cwd`: not every CLI has it, and the kit refuses it there; give the full path in `command`.
-- **Never write a secret.** Write `${VARIABLE}`, and each person defines the variable in their environment. `doctor` flags a key or token written in plain text in `~/.ai-kit/overrides.toml`; nothing checks `mcp/servers.toml`, so review it in the merge request.
-- Pin image and package versions (`:1.2.3`, not `:latest`): a new version should arrive by your choice, not by itself.
-- A local server needs its executable on the workstation (`docker`, a language runtime…), installed by the IT procedure. The kit does not install it. Prefer a remote server when one exists: nothing to install on the workstations.
-- `trust: true` is refused: the CLI must keep asking before a server's tools act.
-- To make this list the only one allowed on the workstations, IT deploys the managed settings generated with `managed-settings --managed-mcp-only` ([guardrails](hooks.md#rules-it-can-enforce)). Without them, a person can still add a server of their own.
-
-## For a Team: turn servers on
-
-In the Team repository's `aikit.toml`, under `[defaults]`, the servers its members need:
-
-```toml
-[defaults]
-mcp = { github = true }
-```
-
-These are names only. The address and the authentication depend on the organization, not on the team. A name that the Core does not define installs nothing, and `doctor` reports it as chosen but not defined. No server is defined in the public kit, so nothing is installed until the organization defines them. An installation made with a profile (before 3.0) keeps the servers its profile turned on, as `[mcp] <name> = true` lines in `overrides.toml`.
-
-## For each person: your exceptions and your own servers
-
-In `~/.ai-kit/overrides.toml`, under `mcp`, one line per exception:
-
-| You want | You write |
+| Key | Meaning |
 | --- | --- |
-| a server the Core defines that is not on for you | `github = true` under `[mcp]` |
-| to turn off a server that is on for you | `docs = false` under `[mcp]` |
-| your own server, for every installed CLI | `[mcp.mine]` then `server = { command = "my-mcp", env = { TOKEN = "${MY_TOKEN}" } }` |
-| to keep your server's definition but turn it off for now | `enabled = false` under `[mcp.mine]`, next to its `server` |
+| `command`, `args`, `env`, `cwd` | a local (stdio) server |
+| `httpUrl` or `url` | a remote server; `https://` only |
+| `headers` | remote headers |
+| `required` | `true`: if the server is refused, the run fails and nothing changes |
+| `enabled` | on or off by default, as in the table above |
 
-Full example:
+- A value in `env` or `headers` that looks secret is refused: write `${VARIABLE}`, defined in each person's environment.
+- `trust` is refused: the CLI keeps asking before a server's tools act.
+- An unknown key, or a shell (or a shell script) as the command, is reported.
+- Pin versions (`:1.2.3`, `pkg==1.2.3`, `pkg@1.2.3`), never `latest`.
+- A local server needs its program on the workstation, installed by your IT procedure.
+
+## Turning a server on or off
 
 ```toml
+# ~/.ai-kit/aikit.toml
 [mcp]
-github = true
-docs = false
-
-[mcp.mine]
-server = { httpUrl = "https://my-mcp.example.org/mcp" }
+enabled = ["tracker"]   # a Core or Team server, turned on
+denied = ["docs"]       # turned off; a refusal wins over enabled
 ```
 
-Then `update`, and restart the CLI (some CLIs must be closed before an update that changes MCP: [CLI matrix](cli/matrice.md#known-limits-of-the-clis)). Check with the CLI's own MCP command that the server answers (each CLI's command and settings file: [CLI matrix](cli/matrice.md)). Then run `doctor`: its line `[Info] MCP servers: …` lists what is installed.
+Then `ai-kit sync --offline` and restart the CLI. `doctor` prints `[Info] MCP servers: …`, and the names you chose that nothing defines.
 
-**A server for one CLI only:** add it directly in that CLI's own settings ([CLI matrix](cli/matrice.md)), never in a file the kit manages (it rewrites them). The kit only manages the servers named `ai-kit-<name>` and never touches the others.
+## What IT allows
 
-## Removing
+In `managed.toml` `[mcp]` ([configuration](configuration.md#managedtoml-it)):
 
-Remove the name from the Team's `[defaults]` or from `mcp/servers.toml`, or write `<name> = false` under `[mcp]` in your file, then `update`. Only the `ai-kit-<name>` server is removed; the others stay. If a managed server was edited by hand in a CLI's settings, `update` stops and asks you to choose: move the change to `overrides.toml`, or restore the server.
+| Key | Effect |
+| --- | --- |
+| `denied` | never installed: a name, a URL prefix (`https://host/path`) or an executable |
+| `allow_stdio = false` | no local server at all |
+| `allowed_stdio` | only the local servers whose identity is listed |
+| `allowed_http` | only the remote servers whose identity is listed |
 
-## BigQuery and dbt
+A refused server is reported: `[Info] MCP server <name> not installed: <why>.` For the CLIs that support it, `ai-kit managed-settings --out <folder> --managed-mcp-only` writes policy files that allow only the Core's servers.
 
-- The platform team chooses the server and the authentication mode.
-- Real limits come from IAM and from the tools the server exposes. Instructions to the agent are not access control.
-- Specific GCP projects, datasets, dbt targets and budgets stay in the repo that owns them.
-- Check that the dbt tools match your versions and your deployment mode.
-- Test discovery, connection and allowed operations from each CLI on a development environment.
+## Team servers
 
-`doctor` checks that the configuration is written (and, for some CLIs, that a local server's executable is on the PATH). It does not call the server, check the identity or test permissions.
+A Team brings its own servers, so the local ones are checked before they run:
+
+| Case | Result |
+| --- | --- |
+| remote server | installed, subject to IT's rules above |
+| local server, identity in IT's `allowed_stdio` | installed |
+| local server, approved on this workstation | installed |
+| local server, not approved, at a terminal | the kit shows the command and asks: "Allow it on this workstation?" |
+| local server, not approved, no terminal | not installed |
+| `npx`, `uvx`, `bunx`, `pnpx` or `pipx` with a package without an exact version | refused |
+| any refusal of a server marked `required` | the run fails: `MCP server <name> is required by the Team but …: nothing was changed.` |
+
+An approval is recorded once per identity, in `~/.ai-kit/state.json`.
+
+## Identity
+
+A server's identity is `sha256:` of its exact command, arguments, `env` templates and `cwd` (local), or of its URL and header templates (remote). A rename does not change it; a changed argument does, so the server needs a new approval or a new IT entry. `ai-kit status --verbose` prints each installed server's identity, the value IT copies into `allowed_stdio` or `allowed_http`.
+
+## Limits
+
+`doctor` checks that the configuration is written; it does not call the server, check the account or test permissions. Real limits come from the server's own access rights, not from instructions to the agent.

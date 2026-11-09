@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "managed.schema.json",
   "title": "AI Kit managed.toml",
-  "description": "Settings IT imposes on AI Kit (docs/managed.md). Closed: an unknown key refuses the file.",
+  "description": "Settings IT imposes on AI Kit (docs/configuration.md). Closed: an unknown key refuses the file.",
   "type": "object",
   "required": [
     "managed_schema"
@@ -114,7 +114,8 @@
               "items": {
                 "enum": [
                   "person",
-                  "agent"
+                  "agent",
+                  "doctor"
                 ]
               }
             }

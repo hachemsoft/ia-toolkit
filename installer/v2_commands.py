@@ -37,7 +37,7 @@ def user_edit(home, at_terminal):
         raise KitError('Kit not installed: run ai-kit init.')
     path = home/state.get('context_dir', '.ai-kit/context')/USER_CONTEXT
     if not path.is_file():
-        raise KitError(str(path)+' does not exist yet: run /me in your CLI, or update to create it.')
+        raise KitError(str(path)+' does not exist yet: run /me in your CLI, or ai-kit init to create it.')
     if not at_terminal:
         print(str(path))
         return 0

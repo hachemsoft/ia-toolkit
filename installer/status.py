@@ -1,4 +1,4 @@
-"""ai-kit status [--verbose] (V2 slice 5, docs/v2/cli.md): what is active, read from local files only, no network, no write.
+"""ai-kit status [--verbose] (docs/architecture.md): what is active, read from local files only, no network; it runs the friction upkeep (purges old local frictions).
 Core and Team (tag, commit), the configuration rollback returns to, the CLIs configured, the keys IT imposes; --verbose adds
 where each setting comes from, the installed resources and each CLI's capabilities."""
 from .adapters import ADAPTERS
@@ -28,7 +28,7 @@ def status(home, verbose=False):
         from .core import friction_module
         upkeep = friction_module().housekeep(str(home), state.get('frictions_retention'))
         if upkeep['waiting']:
-            print(str(upkeep['waiting'])+' friction(s) wait for your approval: ai-kit friction --sync sends them.')
+            print(str(upkeep['waiting'])+' friction(s) wait for your approval: ai-kit friction --publish sends them.')
     if not verbose or not state:
         return 0
     from .plan import effective_settings

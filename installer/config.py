@@ -55,7 +55,7 @@ def load_managed(path=None, guardrail_names=()):
     if not path.exists():
         return None
     def refuse(reason):
-        raise ManagedConfigError(str(path)+': '+reason+'. Nothing was changed; ask IT to fix the file (docs/v2/config.md).')
+        raise ManagedConfigError(str(path)+': '+reason+'. Nothing was changed; ask IT to fix the file (docs/configuration.md).')
     problem = ownership_problem(path)
     if problem:
         refuse('refused because '+problem+'; an administered file must be changeable by IT only')
@@ -320,7 +320,7 @@ def summary(managed, path=None):
     return 'Managed by IT: '+str(path or managed_path())+' (sets '+(', '.join(keys) if keys else 'nothing')+').'
 
 
-# --- ~/.ai-kit/aikit.toml: the person's V2 settings (docs/managed.md, docs/v2/config.md) ---------------------------------
+# --- ~/.ai-kit/aikit.toml: the person's V2 settings (docs/configuration.md) ---------------------------------
 
 AIKIT_FILE = 'aikit.toml'
 AIKIT_SCHEMAS = {1}

@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, amended: the layers are `00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md` and the personal `USER.md` (ADR 0024); copies are refreshed by every activation (`ai-kit sync --offline`)
 since: 0.31.0 and 0.39.0 (reconstructed from the CHANGELOG)
 ---
 # One neutral folder for the context layers; rule layers are restored, the personal layer never rewritten
