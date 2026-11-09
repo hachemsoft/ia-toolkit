@@ -12,13 +12,13 @@ from ..core import (USER_CONTEXT, KitError, digest, hook_command, cli_event, spl
 
 CODEX_DIR = '.codex'
 # Managed block markers: no path, so they never change when a folder is renamed. Their text is an identifier, kept as
-# written up to 0.36 ("overrides.json" is now overrides.toml): changing it would orphan the blocks already installed.
-CODEX_MD = ('<!-- ai-kit:start : block managed by the AI Kit; do not edit here (30_USER.md, overrides.json, then update) -->', '<!-- ai-kit:end -->')
-CODEX_TOML = ('# >>> ai-kit : block managed by the AI Kit; do not edit here (overrides.json, then update) >>>', '# <<< ai-kit <<<')
+# written up to 0.36 ("overrides.json" is now aikit.toml): changing it would orphan the blocks already installed.
+CODEX_MD = ('<!-- ai-kit:start : block managed by the AI Kit; do not edit here (USER.md, aikit.toml, then ai-kit sync --offline) -->', '<!-- ai-kit:end -->')
+CODEX_TOML = ('# >>> ai-kit : block managed by the AI Kit; do not edit here (aikit.toml, then ai-kit sync --offline) >>>', '# <<< ai-kit <<<')
 # Markers written by earlier versions (French, before and after 0.18): recognised to take the block over, then replaced.
 LEGACY_STARTS = {
-    CODEX_MD[0]: ('<!-- ai-kit:début : bloc géré par le kit IA ; modifier ~/.gemini/30_USER.md ou ~/.ai-toolkit/overrides.json, puis update -->',
-                  '<!-- ai-kit:début : bloc géré par le Kit IA ; ne pas le modifier ici (30_USER.md, overrides.json, puis update) -->'),
+    CODEX_MD[0]: ('<!-- ai-kit:début : bloc géré par le kit IA ; modifier ~/.gemini/USER.md ou ~/.ai-toolkit/overrides.json, puis update -->',
+                  '<!-- ai-kit:début : bloc géré par le Kit IA ; ne pas le modifier ici (USER.md, overrides.json, puis update) -->'),
     CODEX_TOML[0]: ('# >>> ai-kit : bloc géré par le kit IA ; modifier ~/.ai-toolkit/overrides.json, puis update >>>',
                     '# >>> ai-kit : bloc géré par le Kit IA ; ne pas le modifier ici (overrides.json, puis update) >>>'),
 }
@@ -64,10 +64,10 @@ def toml_value(value):
         return '['+', '.join(toml_value(v) for v in value)+']'
     return json.dumps(str(value), ensure_ascii=False)
 
-USER_COPY = '<!-- Copy of 30_USER.md, refreshed by update. -->'
+USER_COPY = '<!-- Copy of USER.md, refreshed by update. -->'
 
 def copied_user_text(block):
-    """The copy of 30_USER.md inside a kit block of ~/.codex/AGENTS.md, or ''."""
+    """The copy of USER.md inside a kit block of ~/.codex/AGENTS.md, or ''."""
     if not block or USER_COPY not in block:
         return ''
     return block.split(USER_COPY, 1)[1].rsplit(CODEX_MD[1], 1)[0].strip()
@@ -109,7 +109,7 @@ NAME = 'codex'
 
 # V2 slice 4: what this CLI does with each kit capability (docs/v2/resources.md, measured); doctor shows it.
 CAPABILITIES = {
-    'context': ('DEGRADED', 'a copy: run update after a change'),
+    'context': ('DEGRADED', 'a copy: run ai-kit sync --offline after a change'),
     'skills': ('OK', ''),
     'user-only skills': ('OK', 'allow_implicit_invocation = false'),
     'commands': ('DEGRADED', '$name, not /name'),
@@ -184,7 +184,7 @@ def finalize(p: Plan, active: bool = True) -> None:
         text = original = path.read_text(encoding='utf-8') if path.exists() else ''
         before, old_block, after, written = read_block(text, markers, label)
         if old_block is not None and old_blocks.get(rel) != digest(normalize_newlines(written).encode('utf-8')):
-            raise KitError('Kit block edited by hand in '+label+': move your changes outside the block (or into overrides.toml), remove the block, then update.')
+            raise KitError('Kit block edited by hand in '+label+': move your changes outside the block (or into aikit.toml), remove the block, then ai-kit sync --offline.')
         outside = before.rstrip('\n')+('\n' if before.strip() and after.strip() else '')+after.lstrip('\n')
         block = None
         if active and rel.endswith('AGENTS.md'):
@@ -202,11 +202,11 @@ def finalize(p: Plan, active: bool = True) -> None:
             if p.enabled_hooks and re.search(r'^\s*(hooks\.)?(PreToolUse|SessionStart)\s*=', outside, re.M):
                 raise KitError('~/.codex/config.toml already defines hooks.PreToolUse or hooks.SessionStart in another form: the kit cannot add its hooks without rewriting it.')
             if re.search(r'^\s*\[\s*(agents|mcp_servers)\.ai-kit-', outside, re.M):
-                raise KitError('~/.codex/config.toml already contains ai-kit- entries outside the kit block: remove them, then update.')
+                raise KitError('~/.codex/config.toml already contains ai-kit- entries outside the kit block: remove them, then ai-kit sync --offline.')
             hook_commands = [(cli_event(p.hook_manifest[name]['event']), hook_command(p.hooks_dir/p.hook_manifest[name]['script'])) for name in p.enabled_hooks]
             block = codex_config_block(p.adapter_data.get(NAME, {}).get('agents', {}), hook_commands, p.enabled_mcp)
         if block is not None:
-            # Normalised line endings: a 30_USER.md edited on Windows (CRLF) must not change the digest of the block read back.
+            # Normalised line endings: a USER.md edited on Windows (CRLF) must not change the digest of the block read back.
             block = normalize_newlines(block)
         new_text = place_block(outside, block, position)
         if rel.endswith('config.toml') and block is not None:
@@ -244,7 +244,7 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     user_file = home/state.get('context_dir', '.gemini')/USER_CONTEXT
     if agents_md.exists() and user_file.exists():
         current = user_file.read_text(encoding='utf-8').strip() in agents_md.read_text(encoding='utf-8')
-        status(current, 'Codex has the latest version of 30_USER.md'+('' if current else ' (run update after editing it)'))
+        status(current, 'Codex has the latest version of USER.md'+('' if current else ' (run ai-kit sync --offline after editing it)'))
     if (home/CODEX_DIR/'AGENTS.override.md').exists():
         status(False, '~/.codex/AGENTS.override.md exists: Codex reads it instead of AGENTS.md, the kit context is ignored')
     if state.get('hooks'):

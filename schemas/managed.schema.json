@@ -171,6 +171,13 @@
             "pattern": "^[0-9a-f]{40}$"
           },
           "description": "Commits never activated, even by rollback."
+        },
+        "signers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "SSH public keys whose signature a tag must carry (optional)."
         }
       }
     },

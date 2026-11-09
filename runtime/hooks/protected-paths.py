@@ -18,8 +18,8 @@ PATTERN_FILES = (os.path.join('.ai-kit', 'protected-paths'), os.path.join('.gemi
 
 # Configuration of the kit and of the CLIs, always protected: an agent must not be able to switch off its own guardrails.
 # Relative to the home folder; a trailing / protects a whole folder. ~/.ai-kit/learning/ (personal /learn progress) and
-# ~/.ai-kit/context/30_USER.md (the person's own file) stay writable. Every file the kit installed (state.json) is protected too.
-CONFIG_PATHS = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/sources/', '.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/state.json', '.ai-kit/hooks/', '.ai-kit/bin/', '.ai-kit/backups/',
+# ~/.ai-kit/context/USER.md (the person's own file) stay writable. Every file the kit installed (state.json) is protected too.
+CONFIG_PATHS = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/sources/', '.ai-kit/state.json', '.ai-kit/hooks/', '.ai-kit/bin/', '.ai-kit/backups/',
                 '.ai-kit/runtime/', '.ai-kit/schemas/', '.ai-kit/context/00_', '.ai-kit/context/10_', '.ai-kit/context/20_',
                 '.gemini/00_', '.gemini/10_', '.gemini/20_', '.gemini/settings.json', '.gemini/.env', '.gemini/config/plugins/ai-kit/',
                 '.codex/config.toml', '.codex/AGENTS.md', '.codex/ai-kit/', '.claude/settings.json', '.claude/CLAUDE.md', '.claude/agents/ai-kit-',
@@ -111,7 +111,7 @@ def installed_files():
             files = json.load(handle).get('files') or {}
     except (OSError, ValueError, AttributeError):
         return ()
-    return tuple(rel for rel in files if isinstance(rel, str) and not rel.endswith('/30_USER.md'))
+    return tuple(rel for rel in files if isinstance(rel, str) and not rel.endswith('/USER.md'))
 
 # --- Shell commands ---------------------------------------------------------------------------------------------------
 
@@ -133,7 +133,7 @@ CHANGES_DIRECTORY = {'cd', 'pushd', 'chdir', 'set-location', 'sl', 'push-locatio
 HEREDOC = re.compile(r'<<-?\s*["\']?([A-Za-z_][A-Za-z0-9_]*)["\']?')
 MAX_COMMAND = 50000  # longer: judged on its own (a pathological command is refused when it names a protected path)
 BLOCKED = ('Blocked by the kit: this command touches "{}", configuration of the kit or of a CLI; the agent does not change it. '
-           'Reading it with cat, grep or ls is fine. Tell the person what to change (then run update).')
+           'Reading it with cat, grep or ls is fine. Tell the person what to change (then run ai-kit sync --offline).')
 
 def without_data_heredocs(text):
     """The command without the bodies of heredocs given to a program that is not a shell (python3 - <<EOF): that text is
@@ -229,7 +229,7 @@ KIT_TOOLS = ('/.ai-kit/bin/friction.py', '/.ai-kit/bin/news.py')  # run by the k
 
 # The kit's own subcommands that change the installation or bill a model call: the agent tells the person, it does not run them
 # (0.52.0). Reading ones (doctor, usage, news, friction logging, --version, managed-settings into an empty folder) stay allowed.
-KIT_REFUSED = {'init', 'setup', 'update', 'sync', 'rollback', 'uninstall', 'new'}
+KIT_REFUSED = {'init', 'sync', 'rollback', 'uninstall'}
 KIT_COMMAND_BLOCKED = ('Blocked by the kit: `ai-kit {}` changes the installation or bills a model call; the agent does not run it. '
                        'Tell the person the command to run in a terminal.')
 
@@ -256,9 +256,8 @@ def kit_command_reason(command):
                 continue
             sub = next((w for w in arguments if not w.startswith('-')), '')
             rest = arguments[arguments.index(sub) + 1:] if sub else []
-            mode = rest.index('--mode') if '--mode' in rest else None
-            if (sub in KIT_REFUSED or (sub == 'doctor' and '--live' in rest) or (sub == 'friction' and '--sync' in rest) or (sub == 'team' and 'use' in rest)
-                    or (sub == 'friction' and mode is not None and mode + 1 < len(rest) and not rest[mode + 1].startswith('-'))):
+            if (sub in KIT_REFUSED or (sub == 'doctor' and '--live' in rest) or (sub == 'friction' and ('--publish' in rest or '--sync' in rest))
+                    or (sub == 'team' and 'use' in rest)):
                 return KIT_COMMAND_BLOCKED.format(' '.join([sub] + rest[:2]).strip())
     return None
 
@@ -294,7 +293,7 @@ def touches_config_folder(program, words):
             return True
     if program not in READERS and program != '=' and any(is_folder(w) for w in words):
         return True
-    # cp into a configuration folder (cp overrides.toml ~/.ai-kit/, cp -t ~/.ai-kit x): the file it writes is not named.
+    # cp into a configuration folder (cp aikit.toml ~/.ai-kit/, cp -t ~/.ai-kit x): the file it writes is not named.
     if program == 'cp':
         destinations = [w.split('=', 1)[-1] for w in words if w.startswith('--target-directory')]
         destinations += [words[i + 1] for i, w in enumerate(words[:-1]) if w == '-t']
@@ -479,7 +478,7 @@ def config_reason(absolute, directories, content=''):
         lowered = relative.lower()
         for entry in CONFIG_PATHS + installed_files():
             if lowered == entry.lower().rstrip('/') or (entry.endswith(('/', '_', '-')) and lowered.startswith(entry.lower())):
-                return 'Blocked by the kit: "~/' + relative + '" is configuration of the kit or of a CLI; the agent does not change it. Make the change yourself (then run update).'
+                return 'Blocked by the kit: "~/' + relative + '" is configuration of the kit or of a CLI; the agent does not change it. Make the change yourself (then run ai-kit sync --offline).'
     for directory in directories:
         try:
             inner = os.path.relpath(absolute, real(directory)).replace(os.sep, '/').lower()

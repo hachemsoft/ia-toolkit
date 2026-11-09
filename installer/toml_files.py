@@ -1,4 +1,4 @@
-"""The kit's TOML files: the person's overrides.toml, the organization's organization.toml and the profiles. Read with
+"""The kit's TOML files: the person's aikit.toml, managed.toml, the manifests and lock.toml. Read with
 tomllib (standard library); written only in two narrow ways, both checked by reading the result back:
 a whole file when an overrides.json is migrated, and one top-level list at a time, the rest of the file (comments
 included) kept as is."""
@@ -132,13 +132,13 @@ def dump_toml(data, schema=None):
         raise KitError('The conversion to TOML would change a value: nothing was converted. Please report it.')
     return text
 
-def set_list(text, key, values, path='overrides.toml'):
+def set_list(text, key, values, path='aikit.toml'):
     """The document with the top-level key set to a list of names, everything else untouched (comments, order, other
     keys); the key is added before the first [section] when absent. Checked by reading the result back."""
     return set_key(text, key, list(values), path, 'the list ')
 
 
-def set_key(text, key, value, path='overrides.toml', label=''):
+def set_key(text, key, value, path='aikit.toml', label=''):
     """The document with the top-level key set to a value (a list or a plain value), everything else untouched."""
     lines = text.split('\n')
     first_section = next((i for i, line in enumerate(lines) if re.match(r'\s*\[', line)), len(lines))

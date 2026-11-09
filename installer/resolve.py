@@ -7,12 +7,6 @@ from pathlib import Path
 from .core import KitError
 from .frontmatter import aikit_metadata, csv, parse
 
-# Former skill names, kept by the engine rather than by the sources: an old name in a person's settings still works.
-SKILL_ALIASES = {
-    'clarify-request': {'replaced_by': ['grilling'], 'description': 'Replaced in 0.2.0 by grilling.'},
-    'debug-systematically': {'replaced_by': ['diagnosing-bugs'], 'description': 'Replaced in 0.2.0 by diagnosing-bugs.'},
-    'verify-change': {'replaced_by': ['tdd', 'mr'], 'description': 'Replaced in 0.2.0 by tdd and mr.'},
-}
 SKILL_KEYS = (('version', 'version', str), ('origin', 'origin', str), ('license', 'license', str), ('summary', 'description', str),
               ('category', 'category', str), ('tier', 'tier', str), ('requires', 'requires', csv),
               ('needs-agents', 'needs_agents', lambda v: v == 'true'), ('protected', 'protected', lambda v: v == 'true'), ('owner', 'owner', str),
@@ -49,8 +43,6 @@ def skill_catalog(root):
         catalog[name] = entry_from(meta, SKILL_KEYS, path.parent.relative_to(root).as_posix())
         if 'description' not in catalog[name] and isinstance(meta.get('description'), str):
             catalog[name]['description'] = meta['description']  # no aikit-summary: the skill's own description
-    for name, alias in SKILL_ALIASES.items():
-        catalog.setdefault(name, dict(alias))
     check_graph(catalog)
     return catalog
 

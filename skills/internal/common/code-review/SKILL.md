@@ -3,7 +3,7 @@ name: code-review
 description: "Review changes, committed or not: the branch's commits, the staged and unstaged changes and the new files, by default; or a narrower scope the person names. Finds bugs, security issues, breaks of the repo's standards and of the spec when there is one, ranked on one severity scale. Use when the person asks to review their work, a branch, a PR or MR, or \"what changed since X\"; /review runs it."
 metadata:
   aikit-default: "true"
-  aikit-version: "1.0.0"
+  aikit-version: "1.0.1"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Review changes, committed or not (branch commits, staged, unstaged, new files), on bugs, security, standards and the spec when one exists; one severity scale."
@@ -72,4 +72,4 @@ A smell from the baseline is at most Minor and always worded as a judgement call
 
 ## 5. Report
 
-The scope line, the findings ranked, then the limits (what was not reviewed and why). If the repo's `AGENTS.md` or the person's `30_USER.md` has a "## Report" section, shape the report as it says.
+The scope line, the findings ranked, then the limits (what was not reviewed and why). If the repo's `AGENTS.md` or the person's `USER.md` has a "## Report" section, shape the report as it says.

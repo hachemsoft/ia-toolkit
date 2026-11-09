@@ -5,15 +5,14 @@ import re
 import shutil
 import subprocess
 
-from .core import (content_root, ROOT, KIT_CONTEXT, EMAIL, SECRET, KitError, read_json, safe_id)
+from .core import (content_root, KIT_CONTEXT, EMAIL, SECRET, KitError, safe_id)
 from .toml_files import read_toml
 from .adapters import ADAPTERS
 
 
 def context_folder(root=None):
-    """The content's context layers: context/ (2.2), or practices/ in a Core from before (read the same way)."""
-    root = root or content_root()
-    return root/'context' if (root/'context').is_dir() or not (root/'practices').is_dir() else root/'practices'
+    """The content's context layers."""
+    return (root or content_root())/'context'
 
 
 def practice_file(practice_id):
@@ -38,22 +37,6 @@ def core_selection():
             'skills': [n for n, e in skill_catalog(content_root()).items() if e.get('default')],
             'agents': [n for n, e in agent_catalog(content_root()).items() if e.get('default')],
             'commands': [c['name'] for c in load_commands() if c.get('default', True)]}
-
-
-def carried_over(state, selection, overrides, catalog, agent_names, command_names):
-    """ADR 0018: what a V1 (or 2.0/2.1) installation had and the Core default no longer gives, kept as plain personal lines:
-    {extra_skills: [...], extra_agents: [...], extra_commands: [...]}; nothing when the state already uses the Core selection."""
-    if not state.get('profile') or state.get('profile') == CORE_SELECTION:
-        return {}
-    installed = state.get('installed') or {}
-    def kept(names, default, extra, disabled, known):
-        return [n for n in names if n in known and n not in default and n not in overrides.get(extra, []) and n not in overrides.get(disabled, [])]
-    found = {'extra_skills': kept(installed.get('skills', []), selection['skills'], 'extra_skills', 'disabled_skills',
-                                  {n for n, e in catalog.items() if 'path' in e}),
-             'extra_agents': kept([a[len('ai-kit-'):] if a.startswith('ai-kit-') else a for a in installed.get('agents', [])], selection['agents'],
-                                  'extra_agents', 'disabled_agents', set(agent_names)),
-             'extra_commands': kept(installed.get('commands', []), selection['commands'], 'extra_commands', 'disabled_commands', set(command_names))}
-    return {k: v for k, v in found.items() if v}
 
 
 def managed_context_names(profile):
@@ -139,89 +122,71 @@ def detect_identity(home):
 
 
 def organization():
-    """What the organization decides. 2.2: the Core holds no organization.toml; its MCP servers are in mcp/servers.toml
-    ([servers.<name>], read as the defaults' mcp). An organization.toml still present in a Core (an organization's own copy) is
-    read the same way as before, and ai-kit validate says where its keys go (managed.toml, mcp/servers.toml, Team repos)."""
-    org = read_toml(content_root()/'organization.toml', {})
+    """The Core's settings: its MCP servers (mcp/servers.toml, [servers.<name>]) as the defaults' mcp. IT's decisions are in
+    managed.toml, a team's in its Team repository."""
     servers = read_toml(content_root()/'mcp'/'servers.toml', {}).get('servers', {})
-    if servers:
-        if not isinstance(servers, dict) or not all(isinstance(v, dict) for v in servers.values()):
-            raise KitError('mcp/servers.toml: one table per server ([servers.<name>]).')
-        defaults = dict(org.get('defaults') or {})
-        defaults['mcp'] = {**{n: {k: v for k, v in {'server': {x: y for x, y in s.items() if x != 'enabled'}, 'enabled': s.get('enabled')}.items() if v is not None}
-                              for n, s in servers.items()}, **(defaults.get('mcp') or {})}
-        org = {**org, 'defaults': defaults}
-    if not isinstance(org.get('defaults', {}), dict):
-        raise KitError('organization.toml: defaults must be a table ([defaults]).')
-    teams = org.get('teams', {})
-    if not isinstance(teams, dict) or not all(isinstance(v, dict) for v in teams.values()):
-        raise KitError('organization.toml: teams must be tables, one per team ([teams.<team>]).')
-    for name in teams:
-        safe_id(name)
-    return org
+    if not isinstance(servers, dict) or not all(isinstance(v, dict) for v in servers.values()):
+        raise KitError('mcp/servers.toml: one table per server ([servers.<name>]).')
+    mcp = {n: {k: v for k, v in {'server': {x: y for x, y in s.items() if x != 'enabled'}, 'enabled': s.get('enabled')}.items() if v is not None}
+           for n, s in servers.items()}
+    return {'defaults': {'mcp': mcp}} if mcp else {}
 
 
 TRACKER_KINDS = ('gitlab', 'github')
 TRACKER_SOURCES = ('agent', 'person', 'doctor')
 
 
-def friction_tracker(org, personal, managed=None):
-    """[friction_tracker] of organization.toml, validated, with its defaults, or None: no tracker, or the person wrote
+def friction_tracker(personal, managed=None):
+    """managed.toml [frictions.tracker], validated, with its defaults, or None: no tracker, or the person wrote
     share_frictions = false. What the /friction script reads from state.json (runtime/friction.py)."""
-    # 2.2: IT sets the tracker in managed.toml [frictions.tracker]; organization.toml [friction_tracker] is read as before.
-    config = ((managed or {}).get('frictions') or {}).get('tracker', org.get('friction_tracker'))
+    config = ((managed or {}).get('frictions') or {}).get('tracker')
     if config is None:
         return None
     if not isinstance(config, dict):
-        raise KitError('organization.toml: friction_tracker must be a table ([friction_tracker]).')
+        raise KitError('managed.toml: frictions.tracker must be a table ([frictions.tracker]).')
     kind, project, host = config.get('kind'), config.get('project'), config.get('host', '')
     if kind not in TRACKER_KINDS:
-        raise KitError('organization.toml: friction_tracker.kind must be gitlab or github.')
+        raise KitError('managed.toml: frictions.tracker.kind must be gitlab or github.')
     if not isinstance(project, str) or not re.fullmatch(r'[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)+', project):
-        raise KitError('organization.toml: friction_tracker.project must be the project path on the host (group/project), without URL.')
+        raise KitError('managed.toml: frictions.tracker.project must be the project path on the host (group/project), without URL.')
     if not isinstance(host, str) or (host and not re.fullmatch(r'[a-z0-9.-]+(:[0-9]+)?', host)):
-        raise KitError('organization.toml: friction_tracker.host must be a host name (gitlab.example.org), without scheme or path.')
+        raise KitError('managed.toml: frictions.tracker.host must be a host name (gitlab.example.org), without scheme or path.')
     labels = config.get('labels', ['friction'])
     if not isinstance(labels, list) or not all(isinstance(label, str) and re.fullmatch(r'[^,\s][^,]{0,49}', label) for label in labels):
-        raise KitError('organization.toml: friction_tracker.labels must be a list of label names.')
+        raise KitError('managed.toml: frictions.tracker.labels must be a list of label names.')
     sources = config.get('sources', ['agent'])
     if not isinstance(sources, list) or not sources or any(source not in TRACKER_SOURCES for source in sources):
-        raise KitError('organization.toml: friction_tracker.sources must list agent, person or doctor.')
+        raise KitError('managed.toml: frictions.tracker.sources must list agent, person or doctor.')
     share = personal.get('share_frictions', True)
     if not isinstance(share, bool):
-        raise KitError('overrides.toml: share_frictions must be true or false.')
+        raise KitError('aikit.toml: frictions.publication must be approval or disabled.')
     if not share:
         return None
     return {'kind': kind, 'project': project, 'host': host, 'labels': labels, 'sources': sources}
 
 
 def team_settings(team):
-    """The team's settings in organization.toml (same keys as overrides.toml), between the organization and the person; a V2
-    Team's [defaults] (teams/<team>.toml in the active content) on top."""
-    if not team:
-        return {}
-    layer = dict(organization().get('teams', {}).get(team, {}))
-    layer.update(read_toml(content_root()/'teams'/(safe_id(team)+'.toml'), {}))
-    return layer
+    """The active Team's [defaults] (teams/<team>.toml in the content the Team is overlaid on), between the Core and the person."""
+    return read_toml(content_root()/'teams'/(safe_id(team)+'.toml'), {}) if team else {}
 
 
 def resolve_mcp(org_mcp, profile_mcp, personal_mcp, team_mcp=None):
     """MCP servers to install, by name, and the names chosen without a definition.
-    organization.toml says how to reach each server, the profile which ones are active; the team (organization.toml teams)
-    then the person (overrides.toml) adjust: true / false for a defined server, or a server of their own ([mcp.<name>.server])."""
+    The Core's mcp/servers.toml says how to reach each server (active for everyone with enabled = true); the Team then the
+    person turn a defined server on or off."""
     team_mcp = team_mcp or {}
-    for label, entries in (('organization.toml', org_mcp), ('organization.toml teams', team_mcp), ('overrides.toml', personal_mcp)):
+    for label, entries in (('mcp/servers.toml', org_mcp), ('Team', team_mcp), ('aikit.toml', personal_mcp)):
         if not isinstance(entries, dict):
             raise KitError(label+': mcp must be an object.')
     if not isinstance(profile_mcp, list) or not all(isinstance(n, str) for n in profile_mcp):
         raise KitError('Profile: mcp must be a list of server names.')
     defined, active = {}, set(profile_mcp)
-    for source, entries in (('organization.toml', org_mcp), ('team', team_mcp), ('overrides.toml', personal_mcp)):
+    for source, entries in (('mcp/servers.toml', org_mcp), ('Team', team_mcp), ('aikit.toml', personal_mcp)):
         for name, entry in entries.items():
             safe_id(name)
             if isinstance(entry, bool):
-                if source == 'organization.toml':
-                    raise KitError('organization.toml: mcp.'+name+' must describe the server ([mcp.'+name+'.server]).')
+                if source == 'mcp/servers.toml':
+                    raise KitError('mcp/servers.toml: '+name+' must describe the server ([servers.'+name+']).')
                 if entry:
                     active.add(name)
                 else:
@@ -231,9 +196,8 @@ def resolve_mcp(org_mcp, profile_mcp, personal_mcp, team_mcp=None):
                 raise KitError(source+': mcp.'+name+' must be true, false or a server ([mcp.'+name+'.server]).')
             if entry.get('server') is not None:
                 defined[name] = validate_server(entry['server'])
-            # An organization server is active only for the profiles that choose it, unless "enabled": true (everyone).
-            # A person's entry is active unless "enabled": false (older format: "enabled": true with or without server).
-            if entry.get('enabled', source != 'organization.toml'):
+            # A Core server is active when enabled = true (everyone) or turned on by the Team or the person.
+            if entry.get('enabled', source != 'mcp/servers.toml'):
                 active.add(name)
             elif 'enabled' in entry:
                 active.discard(name)
@@ -258,9 +222,9 @@ def merge_settings(base, extra):
 
 
 def unknown_keys(settings):
-    """Keys of an overrides.toml (or organization defaults) the kit does not know: usually a typo. The schema is the list."""
-    known = set(read_json(ROOT/'schemas'/'overrides.schema.json').get('properties', {}))
-    return sorted(k for k in settings if not str(k).startswith(('_', '$')) and k not in known and k not in RETIRED_KEYS)
+    """Keys of a settings layer (the person's aikit.toml translated, a Team's [defaults]) the engine does not know."""
+    known = set(CHOICE_KEYS) | {'hooks', 'mcp', 'skill_prefix', 'frictions', 'share_frictions'}
+    return sorted(k for k in settings if not str(k).startswith(('_', '$')) and k not in known)
 
 
 def setting_differences(base, effective, prefix=''):
@@ -276,40 +240,8 @@ def setting_differences(base, effective, prefix=''):
     return changed
 
 
-def allowed_domains():
-    value = organization().get('allowed_domains', [])
-    if not isinstance(value, list) or not all(isinstance(x,str) and x for x in value):
-        raise KitError('organization.toml: allowed_domains must be a list of domains.')
-    return [x.lower().lstrip('@') for x in value]
-
-
-def domain_allowed(email, domains):
-    return not domains or email.rsplit('@',1)[-1].lower() in domains
-
-
-def team_ids():
-    """Teams: those with their own practices (context/20-<team>.md, besides the shared 20-team.md) or their own settings
-    (teams in organization.toml): context, tools, or both."""
-    files = {p.stem[3:] for p in context_folder().glob('20-*.md') if p.stem != '20-team'}
-    v2 = {p.stem for p in (content_root()/'teams').glob('*.toml')} if (content_root()/'teams').is_dir() else set()
-    return sorted(files | set(organization().get('teams', {})) | v2)
-
-
-def profile_practices(profile, team):
-    """The profile's practices, with the shared team practice replaced by the person's team when it has its own file."""
-    if team and team not in team_ids():
-        raise KitError('Unknown team: '+team+'. Teams: '+(', '.join(team_ids()) or 'none (context/20-<team>.md or teams in organization.toml)'))
-    own = team and (context_folder()/('20-'+team+'.md')).is_file()
-    return [team if p == 'team' and own else p for p in profile['practices']]
-
-
-# 0.26: skills renamed so that no skill shares a command's name (Gemini CLI turns every skill into a /command).
-RENAMED_SKILLS = {'guide': 'routing', 'handoff': 'handover', 'research': 'investigation', 'retro': 'retrospective',
-                  'triage': 'ticket-sorting', 'wizard': 'manual-steps'}
-
-
 def resolve_skills(profile, overrides, catalog, log=print):
-    """Final selection: profile + extra, replacements followed, dependencies added, disabled skills respected."""
+    """Final selection: the Core default + extra, dependencies added, disabled skills respected."""
     disabled = set(overrides.get('disabled_skills', []))
     selected = []
     def add(name, via=None):
@@ -317,14 +249,9 @@ def resolve_skills(profile, overrides, catalog, log=print):
         if name not in catalog:
             raise KitError('Unknown skill: '+name)
         entry = catalog[name]
-        if entry.get('replaced_by'):
-            log('Skill replaced: '+name+' → '+', '.join(entry['replaced_by']))
-            for replacement in entry['replaced_by']:
-                add(replacement, via)
-            return
         if name in disabled:
             if via:
-                raise KitError('Skill '+name+' is disabled in overrides.toml but required by '+via+'.')
+                raise KitError('Skill '+name+' is disabled in your aikit.toml but required by '+via+'.')
             return
         if name in selected:
             return
@@ -346,20 +273,12 @@ def skill_note(skill, selected, catalog):
 
 
 # Authentication and model belong to each CLI and to the IT procedure: the kit stopped writing them in 0.36.
-RETIRED_KEYS = ('vertex', 'code_assist', 'model', 'models')
-
-
-def retired_key_notice(key):
-    return ('[Info] overrides.toml: "'+key+'" is no longer handled by the kit (0.36): what it set before stays in your CLI\'s'
-            ' configuration; change authentication or model in the CLI itself (docs/customization.md#authentication-and-model).')
-
-
 def unknown_names(overrides, catalog, agent_catalog, notices):
     """disabled_skills and disabled_agents naming nothing the kit knows: a typo, reported, never silently ignored."""
     for key, known in (('disabled_skills', catalog), ('disabled_agents', agent_catalog)):
         unknown = [name for name in overrides.get(key, []) if name not in known]
         if unknown:
-            notices.append('[Check] overrides.toml '+key+': unknown name '+', '.join(unknown)+' (a typo?); it has no effect.')
+            notices.append('[Check] aikit.toml '+key+': unknown name '+', '.join(unknown)+' (a typo?); it has no effect.')
 
 
 def allowed_commands(profile_commands, overrides, command_names):
@@ -386,7 +305,6 @@ def version_changes(before, now):
             if name in (before.get(kind) or {}) and before[kind][name] != version]
 
 
-LEGACY_KIT_DIR = '.ai-toolkit'  # kit folder name before 0.19
 
 
 def recorded_targets(state):
@@ -394,21 +312,13 @@ def recorded_targets(state):
     return state.get('targets') or (state.get('installed') or {}).get('clis') or None
 
 
-PERSONAL_FILE = 'overrides.toml'
-
-
-LEGACY_PERSONAL_FILE = 'overrides.json'  # before 0.37: becomes overrides.toml at the next setup or update
+PERSONAL_FILE = 'aikit.toml'  # 3.0: the person's only settings file
 
 
 def personal_settings(kit):
-    """The person's settings: ~/.ai-kit/aikit.toml (2.0) when it exists, translated to the engine's keys; otherwise
-    ~/.ai-kit/overrides.toml, or the overrides.json of a version before 0.37 not converted yet."""
-    from .config import AIKIT_FILE, load_aikit, to_overrides
-    if (kit/AIKIT_FILE).exists():
-        return to_overrides(load_aikit(kit/AIKIT_FILE)[0])
-    if (kit/PERSONAL_FILE).exists() or not (kit/LEGACY_PERSONAL_FILE).exists():
-        return read_toml(kit/PERSONAL_FILE, {})
-    return read_json(kit/LEGACY_PERSONAL_FILE, {})
+    """The person's settings: ~/.ai-kit/aikit.toml, in the engine's vocabulary (to_overrides); none when it does not exist."""
+    from .config import load_aikit, to_overrides
+    return to_overrides(load_aikit(kit/PERSONAL_FILE)[0]) if (kit/PERSONAL_FILE).exists() else {}
 
 
 CHOICE_KEYS = ('extra_skills', 'disabled_skills', 'extra_commands', 'disabled_commands', 'extra_agents', 'disabled_agents')

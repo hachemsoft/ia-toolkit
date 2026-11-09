@@ -1,6 +1,6 @@
 ---
 name: me
-description: "Fill or refresh your personal context (30_USER.md) through a short interview: your domains, how you want answers, how to work with you"
+description: "Fill or refresh your personal context (USER.md) through a short interview: your domains, how you want answers, how to work with you"
 category: tool
 skills: []
 order: 105
@@ -8,9 +8,9 @@ order: 105
 
 Input: {{args}} (optional: what to change, for example "simpler answers in reviews").
 
-Goal: a 30_USER.md that changes how you answer this person, at most 20 lines. Interview them; never guess.
+Goal: a USER.md that changes how you answer this person, at most 20 lines. Interview them; never guess.
 
-Where it is: ~/.ai-kit/context/30_USER.md (before 0.39: ~/.gemini/30_USER.md). Read it first: it is theirs; keep what they wrote unless they change it.
+Where it is: ~/.ai-kit/context/USER.md (before 0.39: ~/.gemini/USER.md). Read it first: it is theirs; keep what they wrote unless they change it.
 
 1. Facts first, never asked, only these: the current file, git config user.name, OS and shell, CLIs on the PATH, the repo's languages, profile and team in the kit context. Say in two lines what you found and how many questions remain.
 
@@ -34,6 +34,6 @@ Where it is: ~/.ai-kit/context/30_USER.md (before 0.39: ~/.gemini/30_USER.md). R
 
 4. Show the difference with the current file (lines added, changed, removed), then a before and after: answer one real question of theirs (or one they give) as you would without the file, then with it, a few lines each. Wait for their go-ahead; change what they ask.
 
-5. With their agreement only, write the file (plain UTF-8 text, same name and place). Then say: start a new session of the CLI to load it; in Gemini CLI and Codex CLI, run update first (they read a copy). Offer three first prompts suited to their role.
+5. With their agreement only, write the file (plain UTF-8 text, same name and place). Then say: start a new session of the CLI to load it; in Gemini CLI and Codex CLI, run ai-kit sync --offline first (they read a copy). Offer three first prompts suited to their role.
 
 Never edit 00_KIT.md, 10_COMPANY.md, 20_TEAM.md or the kit's settings: if they want a rule for everyone, say it goes through the kit repository.

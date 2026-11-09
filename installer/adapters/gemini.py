@@ -180,7 +180,7 @@ NAME = 'gemini'
 
 # V2 slice 4: what this CLI does with each kit capability (docs/v2/resources.md, measured); doctor shows it.
 CAPABILITIES = {
-    'context': ('DEGRADED', 'a copy: run update after a change'),
+    'context': ('DEGRADED', 'a copy: run ai-kit sync --offline after a change'),
     'skills': ('OK', 'each skill is also a command'),
     'user-only skills': ('BLOCKED', 'ignored: the model may activate any skill'),
     'commands': ('OK', '/name'),
@@ -203,7 +203,7 @@ def present(home):
     return bool(shutil.which(COMMAND)) or (home/HOME_DIR/'settings.json').is_file()
 
 def context_dir(home):
-    """Gemini only imports files located in ~/.gemini (checked on 0.65): it gets a copy of the layers and of 30_USER.md there.
+    """Gemini only imports files located in ~/.gemini (checked on 0.65): it gets a copy of the layers and of USER.md there.
     Before 0.39 the files themselves lived there."""
     return home/HOME_DIR
 
@@ -211,14 +211,14 @@ def is_managed(rel):
     """Path a kit installation may have put in place for Gemini, so one it can remove if intact."""
     if rel.startswith(MANAGED_PREFIXES):
         return True
-    return rel.startswith('.gemini/') and bool(CONTEXT_NAME.fullmatch(rel[len('.gemini/'):]))  # 30_USER.md included: a copy since 0.39
+    return rel.startswith('.gemini/') and bool(CONTEXT_NAME.fullmatch(rel[len('.gemini/'):]))  # USER.md included: a copy since 0.39
 
 def active_account(home):
     return gemini_active_account(home)
 
 def copy_context(p: Plan) -> None:
-    """Copies of the layers and of 30_USER.md in ~/.gemini, the only folder Gemini reads them from. A layer copy edited by
-    hand is put back, as the layers are. The 30_USER.md copy edited by hand while the file itself did not change since
+    """Copies of the layers and of USER.md in ~/.gemini, the only folder Gemini reads them from. A layer copy edited by
+    hand is put back, as the layers are. The USER.md copy edited by hand while the file itself did not change since
     the last copy: the person edited the wrong file, so the edit goes into the file itself; if both changed, the file wins
     and the edited copy is in the backup."""
     gemini = p.home/HOME_DIR
@@ -343,7 +343,7 @@ def remove_kit_settings(p: Plan) -> None:
         context = settings.get('context')
         if isinstance(context, dict) and isinstance(context.get('fileName'), list):
             layers = {rel.split('/', 1)[1] for rel in p.old_files if re.fullmatch(r'\.gemini/\d\d_[A-Z_]+\.md', rel)}
-            # 30_USER.md stays declared only where it is the person's own file (installed before 0.39), not the kit's copy.
+            # USER.md stays declared only where it is the person's own file (installed before 0.39), not the kit's copy.
             own_user_file = HOME_DIR+'/'+USER_CONTEXT not in p.old_files
             context['fileName'] = [n for n in context['fileName'] if n not in layers or (n == USER_CONTEXT and own_user_file)]
         p.writes[settings_file] = json_bytes(settings)
@@ -439,7 +439,6 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     identity = state.get('user', {})
     if active:
         status(not identity.get('email') or active.lower() == identity['email'].lower(),'Active Gemini account matches the recorded identity: '+active)
-        status(ctx.domain_allowed(active, ctx.allowed_domains()),'Active Gemini account in the allowed domains')
     else:
         print('[Info] No active Gemini account detected (not signed in, or API key / Vertex mode).')
     skills = installed_skills(home, state)

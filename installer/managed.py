@@ -1,5 +1,5 @@
 """managed-settings: the files IT deploys so that the kit's guardrails hold whatever a person or an agent changes on the
-workstation. Generated from organization.toml; nothing is installed, nothing outside the output folder is written."""
+workstation. Generated from the Core's guardrails and MCP servers and from managed.toml; nothing is installed, nothing outside the output folder is written."""
 import json
 from pathlib import Path
 
@@ -7,9 +7,9 @@ from .core import ROOT, KitError, read_json, is_guardrail
 from .toml_files import toml_value
 from .settings import organization
 
-# Written by an agent, these would switch a guardrail off or change what every session loads. 30_USER.md and
+# Written by an agent, these would switch a guardrail off or change what every session loads. USER.md and
 # ~/.ai-kit/learning stay writable: /me and /learn write there.
-KIT_FILES = ('~/.ai-kit/overrides.toml', '~/.ai-kit/state.json', '~/.ai-kit/hooks/**', '~/.ai-kit/bin/**', '~/.ai-kit/backups/**',
+KIT_FILES = ('~/.ai-kit/aikit.toml', '~/.ai-kit/state.json', '~/.ai-kit/hooks/**', '~/.ai-kit/bin/**', '~/.ai-kit/backups/**',
              '~/.ai-kit/runtime/**', '~/.ai-kit/schemas/**', '~/.ai-kit/context/00_*', '~/.ai-kit/context/10_*', '~/.ai-kit/context/20_*')
 CLAUDE_FILES = ('~/.claude/settings.json', '~/.claude/CLAUDE.md', '~/.claude/agents/ai-kit-*', '~/.claude/skills/ai-kit-*/**', '~/.claude.json')
 POSIX_PYTHON = '"$HOME/.ai-kit/runtime/venv/bin/python"'
@@ -17,12 +17,8 @@ POSIX_HOOKS = '"$HOME/.ai-kit/hooks/'
 
 
 def locked(org, manifest):
-    """The guardrails to enforce: those the organization locks, or every guardrail on by default when it locks none."""
-    names = org.get('locked_hooks') or [n for n, spec in manifest.items() if spec.get('default') and is_guardrail(spec)]
-    unknown = [n for n in names if n not in manifest or not is_guardrail(manifest[n])]
-    if unknown:
-        raise KitError('organization.toml locked_hooks: unknown guardrail '+', '.join(unknown)+' (known: '+', '.join(sorted(n for n, s in manifest.items() if is_guardrail(s)))+').')
-    return names
+    """The guardrails every workstation enforces by default (managed.toml hooks.locked then adds IT's own)."""
+    return [n for n, spec in manifest.items() if spec.get('default') and is_guardrail(spec)]
 
 
 def command(spec):
@@ -30,10 +26,9 @@ def command(spec):
 
 
 def org_servers(org):
-    """The MCP servers the organization defines, in its defaults and in its teams: the only ones an MCP lock allows.
-    Named as the kit installs them (ai-kit-<name>); a name defined twice keeps the defaults' definition."""
+    """The MCP servers the Core defines (mcp/servers.toml): the only ones an MCP lock allows, named as the kit installs them."""
     found = {}
-    for layer in [org.get('defaults', {})] + list(org.get('teams', {}).values()):
+    for layer in [org.get('defaults', {})]:
         for name, entry in (layer.get('mcp') or {}).items():
             if isinstance(entry, dict) and isinstance(entry.get('server'), dict):
                 found.setdefault('ai-kit-'+name, entry['server'])
@@ -93,7 +88,7 @@ def codex(mcp=None):
             '# and the person cannot start it without a sandbox or without approvals.\n'
             'allowed_sandbox_modes = ["read-only", "workspace-write"]\n'
             'allowed_approval_policies = ["untrusted", "on-request"]\n'
-            + ('' if mcp is None else '\n# MCP: only the servers organization.toml defines, by name and identity.\n'+codex_mcp(mcp)))
+            + ('' if mcp is None else '\n# MCP: only the servers the Core defines (mcp/servers.toml), by name and identity.\n'+codex_mcp(mcp)))
 
 
 
@@ -102,7 +97,7 @@ def mcp_readme(mcp):
     if mcp is None:
         return ''
     listed = ', '.join(sorted(mcp)) or 'none: every MCP server is blocked'
-    return ('\n\nMCP lock (--managed-mcp-only): only the servers organization.toml defines are allowed ('+listed+').\n'
+    return ('\n\nMCP lock (--managed-mcp-only): only the servers the Core defines (mcp/servers.toml) are allowed ('+listed+').\n'
             '  Claude Code: allowedMcpServers with allowManagedMcpServersOnly, so a person cannot widen the list; a remote\n'
             '  server matches by URL, a local one by its exact command and arguments.\n'
             '  Codex CLI: mcp_servers in requirements.toml, matched by the name the kit installs (ai-kit-<name>) and the\n'
@@ -142,6 +137,6 @@ def managed_settings(out, hooks_only=False, mcp_only=False, managed_file=None):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding='utf-8')
     if mcp is not None and not mcp:
-        print('[Info] organization.toml defines no MCP server: the MCP lock allows none, in Claude Code and Codex CLI.')
+        print('[Info] The Core defines no MCP server (mcp/servers.toml): the MCP lock allows none, in Claude Code and Codex CLI.')
     print('Managed settings written to '+str(out)+' ('+', '.join(sorted(files))+'). Where to deploy them: README.txt.')
     return 0

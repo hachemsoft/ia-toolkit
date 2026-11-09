@@ -12,6 +12,10 @@ def status(home, verbose=False):
     state = read_json(kit/'state.json')
     print('AI Kit '+(ROOT/'VERSION').read_text(encoding='utf-8').strip()+(' | configuration applied by '+state['version'] if state.get('version') else ' | not installed: run ai-kit init'))
     print(lock_summary(kit) or 'Core: the package content (no Core source synced) | Team: '+(state.get('team') or 'none'))
+    from .sync import newer_available
+    newer = newer_available(kit)
+    if newer:
+        print('A newer version was seen at the last sync: '+', '.join(newer)+'. Run ai-kit sync to install it.')
     if state:
         print('CLIs: '+', '.join(state.get('targets') or []))
     try:

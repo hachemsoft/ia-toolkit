@@ -1,0 +1,25 @@
+#:schema ../schemas/aikit.schema.json
+# Your own AI Kit settings, on top of the Core and your Team; IT's managed.toml wins over everything. Run ai-kit sync (or
+# a re-install) after a change. See docs/customization.md.
+#
+# The installer's choices screen writes [user] for you; your comments stay. Examples:
+#
+# [user]
+# extra_skills = ["sql-review"]        # an optional resource, added
+# disabled_commands = ["learn"]        # a default one, removed
+# skill_prefix = "ai-kit-"
+#
+# [hooks]
+# dbt-prod-guard = true
+#
+# [mcp]
+# enabled = ["docs"]                   # a server of the Core or your Team, turned on
+# denied = ["legacy-db"]               # turned off
+#
+# [frictions]
+# capture = "propose"                  # propose | auto | off
+# publication = "disabled"             # your frictions stay local
+#
+# [core]
+# repo = "https://gitlab.example.org/ai-toolkit/ai-core.git"   # unless IT sets enterprise.core
+schema = 1
