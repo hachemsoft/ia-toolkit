@@ -58,6 +58,19 @@ class ChoicesTests(Base):
         self.assertEqual(parse_toml(set_list(text, 'c', ['z'])), {'a': ['x # not a comment', ']'], 'b': 1, 'c': ['z']})
 
 
+class LineEndingTests(unittest.TestCase):
+    def test_aikit_toml_untouched_without_a_choice_and_crlf_kept_with_one(self):
+        import tempfile
+        from installer.plan import personal_file
+        with tempfile.TemporaryDirectory() as tmp:
+            kit = Path(tmp)
+            (kit/'aikit.toml').write_bytes(b'schema = 1\r\n# mine\r\n')
+            self.assertIsNone(personal_file(kit, {}, [])[1])
+            written = personal_file(kit, {'extra_skills': ['teach']}, [])[1]
+            self.assertIn(b'# mine\r\n', written)
+            self.assertNotIn(b'\n', written.replace(b'\r\n', b''))
+
+
 class ErrorTests(Base):
     def test_a_mistake_is_reported_with_its_line_and_a_hint(self):
         self.kit.mkdir()

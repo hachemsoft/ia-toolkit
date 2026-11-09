@@ -23,7 +23,7 @@ VERSION = (ROOT/'VERSION').read_text(encoding='utf-8').strip()
 
 def files_of(home):
     # The home folder is written into some files (paths): compared without it.
-    return {p.relative_to(home).as_posix(): p.read_bytes().replace(str(home).encode(), b'~').replace(home.as_uri().encode(), b'~') for p in sorted(home.rglob('*'))
+    return {p.relative_to(home).as_posix(): p.read_bytes().replace(str(home).encode(), b'~').replace(home.as_uri().encode(), b'~').replace(home.as_posix().encode(), b'~') for p in sorted(home.rglob('*'))
             if p.is_file() and not p.relative_to(home).as_posix().startswith(('.ai-kit/state.json', '.ai-kit/backups/'))}
 
 

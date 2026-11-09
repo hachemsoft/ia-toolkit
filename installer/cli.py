@@ -180,7 +180,8 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     selected, allowed = resolve_selection(profile, overrides, catalog, manifest)
     writes, deletes = {}, []
     personal_path, personal_bytes, personal_notices = personal_file(kit, choices, deletes)
-    writes[personal_path] = personal_bytes
+    if personal_bytes is not None:  # the person's file: created once, then written only for a choice of this run
+        writes[personal_path] = personal_bytes
     identity = dict(user) if user else dict(state.get('user', {}))
     if identity.get('email') and not EMAIL.fullmatch(identity['email']):
         raise KitError('Invalid email: '+identity['email'])

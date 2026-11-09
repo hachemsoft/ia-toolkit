@@ -46,6 +46,9 @@ def personal_file(kit, choices, deletes):
     """The text of ~/.ai-kit/aikit.toml after this run: created once from the template, then only the chosen keys changed
     ([user] lists, [frictions] capture), the person's other keys and comments kept. Returns (path, bytes, notices)."""
     path = kit/AIKIT_FILE
+    if path.exists() and not choices:
+        return path, None, []  # nothing to record: the file stays byte for byte as the person left it
+    crlf = path.exists() and b'\r\n' in path.read_bytes()  # keep the person's line endings (Notepad writes CRLF)
     if path.exists():
         text = path.read_text(encoding='utf-8-sig')
     else:
@@ -54,7 +57,7 @@ def personal_file(kit, choices, deletes):
     for key, values in choices.items():
         text = (set_section_key(text, 'frictions', 'capture', values, '~/.ai-kit/aikit.toml') if key == 'frictions'
                 else set_section_key(text, 'user', key, list(values), '~/.ai-kit/aikit.toml'))
-    return path, text.encode('utf-8'), []
+    return path, (text.replace('\r\n', '\n').replace('\n', '\r\n') if crlf else text).encode('utf-8'), []
 
 
 def practice_layers(profile):

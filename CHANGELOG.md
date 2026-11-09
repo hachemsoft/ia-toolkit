@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.0.1
+
+- The 4.0.0 release was not published: on Windows, each installation rewrote `~/.ai-kit/aikit.toml` and turned its Windows line endings into Unix ones. The file is now left byte for byte as you wrote it unless the run records a choice, and its line endings are kept when it does. A test that compares two installations now also ignores the home folder written with forward slashes.
+
 ## 4.0.0
 
 The final V2 design, without any compatibility layer for earlier versions. **Breaking**: reinstall from the 4.0.0 ZIP; older settings files are not read.
