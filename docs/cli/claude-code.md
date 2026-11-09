@@ -1,44 +1,66 @@
 # Claude Code
 
-What the kit does for Claude Code, and what is specific to this CLI. Formats read and evals run (`claude -p`) on Claude Code 2.1.316; the interactive checks (below) are still to do on each new version. Shared concepts are in the [CLI matrix](matrice.md).
+What the kit does for Claude Code. Formats read and evals run (`claude -p`) on Claude Code 2.1.316; the interactive checks
+below are to redo on each new version. Shared concepts: [CLI matrix](matrice.md).
 
-## Install for Claude Code
+## Install
 
-The first `setup` installs for Claude Code when the `claude` command is present or `~/.claude/settings.json` exists (`--target auto`); afterwards `update` keeps the CLIs you chose. `--target all` includes it, `--target claude` installs it alone; the guided installer lists it with the other CLIs. Claude Code signs in with its own account (`claude` then `/login`, an API key, Bedrock or Vertex): the kit does not touch it, nor the model or the permissions.
+`ai-kit init` installs for Claude Code when `claude` is present or `~/.claude/settings.json` exists (`--target auto`);
+later activations keep the CLIs chosen. `--target claude` installs it alone, `--target all` with the others. Claude Code
+signs in with its own account (`/login`, an API key, Bedrock or Vertex): the kit touches neither that, nor the model, nor
+the permissions.
 
 ## What the kit installs
 
-- **Context**: a managed block at the top of `~/.claude/CLAUDE.md`, between two `ai-kit` markers, that imports the kit layers and your `30_USER.md` by path (`@~/.ai-kit/context/00_KIT.md`, …). Nothing is copied: an edit of `30_USER.md` is read at the next session, without `update`. The rest of the file is yours and never changes.
-- **Skills** in `~/.claude/skills/`, with a prefix: `ai-kit-tdd`, `ai-kit-code-review`… Claude Code ships its own `code-review`, and many people keep personal skills with the same names as the kit's; the prefix keeps both. The texts the kit installs name its skills with the prefix, and the block of `CLAUDE.md` says to read any other mention the same way. "On command only" (`disable-model-invocation`) is honoured natively.
-- **Commands** in `~/.claude/commands/<name>.md`: `/intent`, `/build`, `/review`… as in the other CLIs. When one of your own skills or commands already has the name, the kit's is installed as `/ai-kit-<name>` (with your prefix), and the installer and the block of `CLAUDE.md` say so; yours is never touched.
-- **Agents** in `~/.claude/agents/ai-kit-<name>.md`. Their tool list is applied by Claude Code itself: a reviewer gets `Read` and `Grep` only, the verifier also `Glob` and `Bash`. They inherit the session's model.
-- **Guardrails** that are enabled: groups under `hooks.PreToolUse` in `~/.claude/settings.json` (`Bash` for `dbt-prod-guard`; `Bash|Write|Edit|MultiEdit|NotebookEdit` for `protected-paths`), next to your own hooks, which stay as they are. Claude Code runs them without an approval step.
-- **MCP servers** that are enabled: `ai-kit-<name>` entries in `mcpServers` of `~/.claude.json`, translated from the kit's form (`command` → `stdio`, `httpUrl` → `http`, `url` → `sse`, with `args`, `env` and `headers`). A server with `cwd` is refused: give the full path in `command`. Your own servers and the rest of the file stay as they are.
+- **Context**: a managed block at the top of `~/.claude/CLAUDE.md`, between two `ai-kit` markers, that imports the layers
+  and `USER.md` by path (`@~/.ai-kit/context/00_KIT.md`, …). No copy: an edit of `USER.md` is read at the next session. The
+  rest of the file is yours.
+- **Skills** in `~/.claude/skills/`, always prefixed: `ai-kit-tdd`, `ai-kit-code-review`… Claude Code ships its own
+  `code-review`, and many people keep personal skills with the kit's names; the prefix keeps both. The installed texts name
+  the kit's skills with the prefix. User-only skills (`disable-model-invocation`) are honoured.
+- **Commands** in `~/.claude/commands/<name>.md` (`$ARGUMENTS`): `/intent`, `/build`, `/review`… When one of your own
+  skills or commands has the name, the kit's is `/ai-kit-<name>`, and the installer and the block say so.
+- **Agents** in `~/.claude/agents/ai-kit-<name>.md`; Claude Code applies their tool list (reviewers `Read` and `Grep`, the
+  verifier also `Glob` and `Bash`). They inherit the session's model.
+- **Guardrails** that are on: groups under `hooks.PreToolUse` of `~/.claude/settings.json` (`Bash` for `dbt-prod-guard`;
+  `Bash|Write|Edit|MultiEdit|NotebookEdit` for `protected-paths`), next to your own hooks; no approval step. The
+  `whats-new` hook: a group under `hooks.SessionStart`, no matcher.
+- **MCP servers** that are on: `ai-kit-<name>` entries in `mcpServers` of `~/.claude.json`, translated from the kit's form
+  (`command` → `stdio`, `httpUrl` → `http`, `url` → `sse`). A server with `cwd` is refused: give the full path in `command`.
 
-The `whats-new` hook is a group under `hooks.SessionStart` (no matcher: the script reads `source` itself and answers only a new session or a resume), its JSON `additionalContext` reaching Claude before the first prompt. A kit entry edited by hand (the block, a guardrail group, an MCP entry) stops `update` instead of being overwritten. Every file is backed up before a change.
+A kit entry edited by hand (the block, a guardrail group, an MCP entry) stops the activation instead of being overwritten.
+Every file is backed up before a change.
 
 ## The prefix
 
-`skill_prefix` in `~/.ai-kit/overrides.toml` (or in the organization's or the team's defaults) sets it: `"ai-kit-"` by default, up to 20 lowercase letters, digits or dashes. The other CLIs use the same prefix, but only for a name already taken by one of your skills or commands. `""` installs the skills without a prefix; the installer then refuses if a name collides (a skill shipped with Claude Code, one of yours) and lists them. Changing the prefix renames the kit's files at the next `update`; the agents stay `ai-kit-<name>`.
+`skill_prefix` in `[user]` of `~/.ai-kit/aikit.toml`: `"ai-kit-"` by default, up to 20 lowercase letters, digits or dashes.
+The other CLIs use it only for a name already taken. `""` installs without a prefix; the installer then refuses a name that
+collides with a skill shipped with Claude Code or one of yours, and lists them. Agents stay `ai-kit-<name>`.
 
 ## The repository's AGENTS.md
 
-Since 2.1.277, Claude Code reads a repository's `AGENTS.md` itself when the repository has no `CLAUDE.md` ([its docs](https://code.claude.com/docs/en/memory#agents-md)). When the repository has a `CLAUDE.md`, Claude Code reads that instead; the block of `~/.claude/CLAUDE.md` then asks it to read `AGENTS.md` (and the one of the area it works in) before working. For a repository used with Claude Code, "Initialize the project context" also proposes a one-line `CLAUDE.md`, `@AGENTS.md`, so the context loads on its own; the kit never writes a second copy of the content.
+Claude Code reads a repository's `AGENTS.md` when the repository has no `CLAUDE.md`. When it has one, Claude Code reads
+that instead, and the block of `~/.claude/CLAUDE.md` asks it to read `AGENTS.md` (and the one of the area it works in).
+"Initialize the project context" proposes a one-line `CLAUDE.md`, `@AGENTS.md`, so the context loads on its own.
 
-## Close Claude Code before an update
+## Close Claude Code before an activation
 
-Claude Code keeps `~/.claude.json` in memory and writes it back: an `update` made while a session is open can lose its MCP entries. Close the sessions, run `update`, then start a new one. `doctor` reports a missing kit MCP server.
+Claude Code keeps `~/.claude.json` in memory and writes it back: an activation made while a session is open can lose its
+MCP entries. Close the sessions, run `ai-kit sync` (or `sync --offline`), then start a new one. `doctor` reports a missing
+kit MCP server.
 
 ## Check in Claude Code
 
-In a session, without sending a message: `/memory` (the imported files), `/skills` (the `ai-kit-` skills), `/agents`, `/hooks` (the kit's groups next to yours), `/mcp`. Then `/guide I need to …` in a repository. `doctor --live` makes one real call (`claude -p`), which your provider may bill.
-
-## Usage report
-
-`usage` reads the session transcripts in `~/.claude/projects/`: the prompts and commands typed, the skills called (the prefix removed), the `ai-kit-*` agents called, the API errors. The format is Claude Code's own and not documented as stable: an unknown line is skipped.
+Without sending a message: `/memory` (the imported files), `/skills` (the `ai-kit-` skills), `/agents`, `/hooks`, `/mcp`.
+Then `/guide I need to …` in a repository. `doctor --live` makes one real call (`claude -p`), which may be billed.
 
 ## Specifics
 
-- `protected-paths` also blocks agent writes to `~/.claude/settings.json`, `~/.claude/CLAUDE.md`, `~/.claude/agents/ai-kit-*` and `~/.claude.json`: Claude Code itself can no longer change them through its tools; you make such changes, then `update`.
-- A Claude Code plugin (marketplace) would isolate the kit's names natively, but depends on Claude Code installing it at the start of a session: not used.
-- Evals: `evals/run.py --cli claude` runs `claude -p` without shell or file writes (`--disallowedTools`); a real run is billed and needs `--confirm-paid-run`.
+- `protected-paths` also blocks agent writes to `~/.claude/settings.json`, `~/.claude/CLAUDE.md`,
+  `~/.claude/agents/ai-kit-*` and `~/.claude.json`: you make such changes, then run `ai-kit sync --offline`.
+- `usage` reads `~/.claude/projects/` (prompts, skills called with the prefix removed, `ai-kit-*` agents, API errors); the
+  format is not documented as stable, and an unknown line is skipped.
+- A Claude Code plugin would isolate the kit's names natively, but depends on Claude Code installing it at session start:
+  not used.
+- Evals: `evals/run.py --cli claude` runs `claude -p` without shell or file writes; a real run is billed and needs
+  `--confirm-paid-run`.

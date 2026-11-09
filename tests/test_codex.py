@@ -3,7 +3,8 @@ from pathlib import Path
 from installer.cli import doctor
 from installer.core import KitError, read_json, ROOT
 from installer.adapters.codex import CODEX_MD, CODEX_TOML
-from installer.toml_files import dump_toml
+from unittest import mock
+from personal import write_personal  # noqa: E402
 from v1_profiles import apply_as  # noqa: E402
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload):
@@ -16,7 +17,7 @@ class CodexAdapterTests(unittest.TestCase):
   self.agents.write_text('# My instructions\n- always in French\n',encoding='utf-8');self.config.write_text('model = "gpt-x"\n\n[projects."/x"]\ntrust_level = "trusted"\n',encoding='utf-8')
  def run_kit(self,role='data-developer',target='all',overrides=None):
   if overrides is not None:
-   (self.home/'.ai-kit').mkdir(exist_ok=True);(self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides),encoding='utf-8')
+   write_personal(self.home,overrides)
   out=io.StringIO()
   with contextlib.redirect_stdout(out):apply_as(role,self.home,False,{'email':'t@example.org'},target)
   return out.getvalue()
@@ -24,7 +25,7 @@ class CodexAdapterTests(unittest.TestCase):
   self.run_kit(target='codex')
   self.assertFalse((self.home/'.gemini').exists())
   ctx=self.home/'.ai-kit/context'
-  self.assertTrue((ctx/'00_KIT.md').is_file());self.assertTrue((ctx/'30_USER.md').is_file())
+  self.assertTrue((ctx/'00_KIT.md').is_file());self.assertTrue((ctx/'USER.md').is_file())
   self.assertIn((ctx/'00_KIT.md').read_text(encoding='utf-8').strip()[:200],(self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
   out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
@@ -32,26 +33,26 @@ class CodexAdapterTests(unittest.TestCase):
   self.assertEqual([line for line in out.getvalue().splitlines() if line.startswith('[Check]') and 'approved in Codex' not in line],[],out.getvalue())
 
  def test_crlf_user_context_keeps_block_stable(self):
-  # 30_USER.md edited on Windows (CRLF), then switch to Codex only and update: the block must not look edited by hand.
+  # USER.md edited on Windows (CRLF), then switch to Codex only and update: the block must not look edited by hand.
   self.run_kit(target='all')
-  (self.home/'.gemini/30_USER.md').write_bytes(b'# Me\r\nWindows preference.\r\n')
+  (self.home/'.gemini/USER.md').write_bytes(b'# Me\r\nWindows preference.\r\n')
   self.run_kit(target='codex');self.run_kit(target='codex')
   self.assertIn('Windows preference.',(self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
   self.assertNotIn(b'\r',(self.home/'.codex/AGENTS.md').read_bytes().split(CODEX_MD[1].encode())[0])
 
  def test_user_context_follows_location_without_deleting(self):
-  # 0.39: one file, ~/.ai-kit/context/30_USER.md, whatever the CLIs; Gemini gets a copy. Editing that copy (the habit
+  # 0.39: one file, ~/.ai-kit/context/USER.md, whatever the CLIs; Gemini gets a copy. Editing that copy (the habit
   # before 0.39), then dropping Gemini: the edit goes into the file, never lost.
   self.run_kit(target='all')
   mine='# Me\nPersonal preference kept.\n'
-  (self.home/'.gemini/30_USER.md').write_text(mine,encoding='utf-8')
+  (self.home/'.gemini/USER.md').write_text(mine,encoding='utf-8')
   self.run_kit(target='codex')
-  self.assertEqual((self.home/'.ai-kit/context/30_USER.md').read_text(encoding='utf-8'),mine)
-  self.assertFalse((self.home/'.gemini/30_USER.md').exists());self.assertFalse((self.home/'.gemini/00_KIT.md').exists())
+  self.assertEqual((self.home/'.ai-kit/context/USER.md').read_text(encoding='utf-8'),mine)
+  self.assertFalse((self.home/'.gemini/USER.md').exists());self.assertFalse((self.home/'.gemini/00_KIT.md').exists())
   self.assertIn('Personal preference kept',(self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
   self.run_kit(target='all')
   self.assertTrue((self.home/'.gemini/00_KIT.md').is_file());self.assertTrue((self.home/'.ai-kit/context/00_KIT.md').is_file())
-  self.assertEqual((self.home/'.gemini/30_USER.md').read_text(encoding='utf-8'),mine)
+  self.assertEqual((self.home/'.gemini/USER.md').read_text(encoding='utf-8'),mine)
 
  def test_install_keeps_user_content_and_adds_blocks(self):
   self.run_kit();a=self.agents.read_text(encoding='utf-8');c=self.config.read_text(encoding='utf-8')
@@ -76,10 +77,11 @@ class CodexAdapterTests(unittest.TestCase):
   self.run_kit();self.agents.write_text(self.agents.read_text(encoding='utf-8').replace('# AI Kit (Codex)','# AI Kit edited'),encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()
  def test_user_context_change_reaches_codex_on_update(self):
-  self.run_kit();u=self.home/'.gemini/30_USER.md';u.write_text(u.read_text(encoding='utf-8')+'\n- Short answers.\n',encoding='utf-8')
+  self.run_kit();u=self.home/'.gemini/USER.md';u.write_text(u.read_text(encoding='utf-8')+'\n- Short answers.\n',encoding='utf-8')
   self.run_kit();self.assertIn('- Short answers.',self.agents.read_text(encoding='utf-8'))
  def test_hooks_declared_and_mcp(self):
-  out=self.run_kit(overrides={'hooks':{'dbt-prod-guard':True},'mcp':{'documentation':{'enabled':True,'server':{'httpUrl':'https://docs.example.org/mcp'}}}})
+  core={'defaults':{'mcp':{'documentation':{'server':{'httpUrl':'https://docs.example.org/mcp'}}}}}  # the Core's mcp/servers.toml
+  with mock.patch('installer.plan.organization',return_value=core):out=self.run_kit(overrides={'hooks':{'dbt-prod-guard':True},'mcp':{'documentation':True}})
   c=self.config.read_text(encoding='utf-8');self.assertIn('[[hooks.PreToolUse]]',c);self.assertIn('dbt-prod-guard.py',c);self.assertIn('[mcp_servers.ai-kit-documentation]',c);self.assertIn('url = "https://docs.example.org/mcp"',c);self.assertIn('Trust',out)
  def test_conflicting_hooks_refused(self):
   self.config.write_text('hooks.PreToolUse = []\n',encoding='utf-8')
@@ -94,7 +96,7 @@ class CodexAdapterTests(unittest.TestCase):
  def test_doctor_reports_codex_blocks(self):
   self.run_kit();out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)
-  self.assertIn('[OK] Kit block intact in ~/.codex/AGENTS.md',out.getvalue());self.assertIn('[OK] Codex has the latest version of 30_USER.md',out.getvalue())
+  self.assertIn('[OK] Kit block intact in ~/.codex/AGENTS.md',out.getvalue());self.assertIn('[OK] Codex has the latest version of USER.md',out.getvalue())
 
 class CodexHookPayloadTests(unittest.TestCase):
  def test_dbt_guard_codex_shell_list_and_output_format(self):

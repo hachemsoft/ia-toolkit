@@ -5,30 +5,9 @@ import shlex
 import subprocess
 import sys
 
-from .config import AIKIT_FILE, aikit_from_overrides, load_managed
+from .config import load_managed
 from .core import USER_CONTEXT, KitError, read_json
-from .commit import atomic_write
-from .plan import refuse_links
-from .settings import personal_settings
 from .toml_files import parse_toml, read_toml
-
-
-def migrate_config(home, dry_run=False):
-    """overrides.toml -> aikit.toml (2.0), once: overrides.toml is kept as it is (AI Kit 0.52 reads it after a return), and
-    is no longer read once aikit.toml exists. Prints where each setting went."""
-    kit = home/'.ai-kit'
-    if (kit/AIKIT_FILE).exists():
-        print('[Info] ~/.ai-kit/aikit.toml already exists: nothing to migrate.')
-        return
-    text, report = aikit_from_overrides(personal_settings(kit), (kit/'schemas'/'aikit.schema.json').as_uri())
-    print('Migration of your settings to ~/.ai-kit/aikit.toml'+(' (preview, nothing written)' if dry_run else '')+':')
-    for line in report or ['nothing to carry over: aikit.toml starts empty']:
-        print('  '+line)
-    if not dry_run:
-        refuse_links(home, [kit/AIKIT_FILE])
-        kit.mkdir(parents=True, exist_ok=True)
-        atomic_write(kit/AIKIT_FILE, text.encode('utf-8'))
-        print('[OK] ~/.ai-kit/aikit.toml written; overrides.toml is kept for AI Kit 0.52 and no longer read.')
 
 
 def core_synced(kit, extra_writes):
@@ -55,10 +34,10 @@ def user_edit(home, at_terminal):
     editor); off a terminal, only its path. The kit writes nothing: the editor does."""
     state = read_json(home/'.ai-kit/state.json')
     if not state:
-        raise KitError('Kit not installed: run setup.')
+        raise KitError('Kit not installed: run ai-kit init.')
     path = home/state.get('context_dir', '.ai-kit/context')/USER_CONTEXT
     if not path.is_file():
-        raise KitError(str(path)+' does not exist yet: run /me in your CLI, or update to create it.')
+        raise KitError(str(path)+' does not exist yet: run /me in your CLI, or ai-kit init to create it.')
     if not at_terminal:
         print(str(path))
         return 0

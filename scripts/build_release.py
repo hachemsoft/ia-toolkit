@@ -28,21 +28,22 @@ SHIPPED = ('Installer.cmd', 'scripts/bootstrap.sh', 'scripts/bootstrap.ps1', 'sc
 
 INSTALL_TXT = """AI Kit {version}
 
-Install or update
+Install
   Windows: double-click Installer.cmd (or, in a Command Prompt opened in this folder: Installer.cmd).
   Mac and Linux: in Terminal, from this folder: sh scripts/bootstrap.sh
 
 What happens
   The installer needs Python 3.11 or newer with its standard venv and pip modules. It creates the kit's private Python
   environment in your home folder (.ai-kit/runtime), installs the kit from the wheels/ folder of this ZIP (no download,
-  no administrator rights, no change to your Python), then asks your choices and configures your CLI. Unless you say no
+  no administrator rights, no change to your Python), then asks your work email and configures your CLIs. Unless you say no
   (--command-on-path no), it adds the ai-kit command to your own PATH: a registry key of your user on Windows, one marked
   block in your shell startup file on Mac and Linux; uninstall removes it.
   Keep this folder: the ai-kit command runs from it, and it is how you come back to this version later. The agents and
   their guardrails keep working without it. A new version comes as a new ZIP: run its installer.
 
 Other actions (same command, followed by)
-  update      reapply the configuration (after editing your choices)
+  sync        move to the newest Core and Team (--offline: reapply after editing ~/.ai-kit/aikit.toml)
+  status      what is active
   doctor      local checks, no call to the model
   uninstall   remove what the kit installed (--dry-run first shows what would go)
 

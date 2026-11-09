@@ -1,62 +1,70 @@
 # CLI matrix
 
-The kit content (practices, skills, commands, agents, guardrails) is written once, with nothing specific to any CLI. Each CLI receives it through its adapter, in the place and form it reads. This page says where, CLI by CLI. To plug in a new one, fill in its column: that is the specification for its adapter.
+The kit content (context, commands, skills, agents, guardrails) is written once, with nothing specific to a CLI. Each CLI
+receives it through its adapter (`installer/adapters/`), in the place and form it reads. This page says where.
 
-## Status of each CLI
+## Status
 
 | CLI | Adapter | Verified on | Page |
 | --- | --- | --- | --- |
-| Gemini CLI | ✅ integrated | 0.65 | [Gemini CLI](gemini.md) |
-| Antigravity CLI (agy) | ✅ integrated | 1.4.12 | [Antigravity CLI](agy.md) |
-| Codex CLI | ✅ integrated | 0.164 (files, repo skills and evals) | [Codex CLI](codex.md) |
-| Claude Code | ✅ integrated | 2.1.316 (files and evals in `claude -p`; interactive checks to do) | [Claude Code](claude-code.md) |
+| Gemini CLI | integrated | 0.65 | [Gemini CLI](gemini.md) |
+| Antigravity CLI (agy) | integrated | 1.4.12 | [Antigravity CLI](agy.md) |
+| Codex CLI | integrated | 0.164 (files, repo skills and evals) | [Codex CLI](codex.md) |
+| Claude Code | integrated | 2.1.316 (files and evals in `claude -p`) | [Claude Code](claude-code.md) |
 
-A CLI without an adapter can already read the kit's repository files (`AGENTS.md`, `GLOSSARY.md`, `REVIEW.md`) if it reads `AGENTS.md`, but it has none of the kit's global layers, commands, skills or guardrails.
+`doctor` says when a newer CLI version than the verified one runs. `.github/workflows/cli-drift.yml` checks each week,
+with `--version` and `--help` only, that the latest CLIs still offer what the kit relies on (`scripts/cli_drift.py`).
 
 ## Concept by concept
 
 | Kit concept | Gemini CLI | Antigravity CLI (agy) | Codex CLI | Claude Code |
 | --- | --- | --- | --- | --- |
-| CLI folder | `~/.gemini/` | `~/.gemini/` (also read by agy) and `~/.gemini/config/plugins/ai-kit/` | `~/.codex/` | `~/.claude/` and `~/.claude.json` |
-| Context layers (`00_KIT`, `10_COMPANY`, `20_TEAM`) | copies in `~/.gemini/`, refreshed by `update`, declared in `context.fileName` of `settings.json` | included by path from the plugin's `rules/AGENTS.md` | managed block at the top of `~/.codex/AGENTS.md` | imported by path from the managed block at the top of `~/.claude/CLAUDE.md` |
-| Personal context `30_USER.md` (always `~/.ai-kit/context/30_USER.md`) | a copy in `~/.gemini/30_USER.md`, declared in `context.fileName`, refreshed by `update` | included by path from the plugin | copied into that block on every `update` | imported by path from that block (no copy) |
-| Repository context | `AGENTS.md` or `GEMINI.md`, at the root and in the folders traversed | `AGENTS.md`, `GEMINI.md`, `.agents/rules/` | `AGENTS.md` (and `AGENTS.override.md`), at the root and in the folders | `AGENTS.md` when the repo has no `CLAUDE.md` (Claude Code 2.1.277 or later); otherwise `CLAUDE.md`, and the block asks to read `AGENTS.md` |
-| Kit skills | `~/.gemini/skills/<name>/SKILL.md` | the same (`~/.gemini/skills/`) | `~/.codex/skills/<name>/SKILL.md`, "on command only" honored (`agents/openai.yaml`) | `~/.claude/skills/<prefix><name>/SKILL.md` (`ai-kit-` by default, `skill_prefix`), "on command only" honored |
-| Name already taken by one of your skills or commands | the kit's is installed as `<prefix><name>`, yours kept; the kit's texts name it so | the same | the same; the kit block says which name to type (`$<prefix><name>`) | always prefixed for skills; the same for commands |
-| Your own skills (personal, any name the kit does not install) | `~/.gemini/skills/<name>/SKILL.md` | the same (`~/.gemini/skills/`) | `~/.codex/skills/<name>/SKILL.md` | `~/.claude/skills/<name>/SKILL.md`, kept next to the kit's prefixed ones |
-| Repository skills | `<repo>/.agents/skills/` or `<repo>/.gemini/skills/`; loaded last, so a repo skill named like a kit or personal skill replaces it, only in a trusted folder (verified on 0.65) | `<repo>/.agents/skills/`; a repo skill named like a kit or personal skill is ignored, the kit's is kept (verified) | `<repo>/.agents/skills/`; a repo skill named like a kit skill does not replace it: both are listed to the model, which chooses (verified on 0.164) | `<repo>/.claude/skills/` (not verified) |
-| Commands (`commands/<name>.md`) | `~/.gemini/commands/<name>.toml` | a command skill in the plugin, `~/.gemini/config/plugins/ai-kit/skills/<name>/` (in agy, every skill is a command) | a command skill, called with `$<name>` | `~/.claude/commands/<name>.md` (`$ARGUMENTS`); `<prefix><name>` when one of your skills or commands has the name |
-| Override a command in a repository | `<repo>/.gemini/commands/<name>.toml` | not reliable: a repo skill named like the command skill does not replace it (see the line above); give the repo skill another name | not reliable: both are listed (see the line above); give the repo skill another name | `<repo>/.claude/commands/<name>.md` (not verified) |
+| CLI folder | `~/.gemini/` | `~/.gemini/` and the plugin `~/.gemini/config/plugins/ai-kit/` | `~/.codex/` | `~/.claude/` and `~/.claude.json` |
+| Context layers (`00_KIT`, `10_COMPANY`, `20_TEAM`) | copies in `~/.gemini/`, declared in `context.fileName` | included by path from the plugin's `rules/AGENTS.md` | managed block at the top of `~/.codex/AGENTS.md` | imported by path from a managed block in `~/.claude/CLAUDE.md` |
+| `USER.md` (always `~/.ai-kit/context/USER.md`) | a copy in `~/.gemini/USER.md` | included by path | copied into the block | imported by path |
+| Repository context | `AGENTS.md` or `GEMINI.md`, root and folders traversed | `AGENTS.md`, `GEMINI.md`, `.agents/rules/` | `AGENTS.md` (and `AGENTS.override.md`) | `AGENTS.md` when the repo has no `CLAUDE.md`; otherwise `CLAUDE.md`, and the block asks to read `AGENTS.md` |
+| Kit skills | `~/.gemini/skills/<name>/` | the same | `~/.codex/skills/<name>/`, user-only honoured | `~/.claude/skills/<prefix><name>/` (`ai-kit-` by default), user-only honoured |
+| Name taken by one of your skills or commands | the kit's installed as `<prefix><name>`, yours kept | the same | the same; the block says which name to type | skills always prefixed; commands only when taken |
+| Your own skills | `~/.gemini/skills/<name>/` | the same | `~/.codex/skills/<name>/` | `~/.claude/skills/<name>/` |
+| Repository skills | `.agents/skills/` or `.gemini/skills/`; a repo skill named like a kit skill replaces it, in a trusted folder | `.agents/skills/`; a same-name repo skill is ignored | `.agents/skills/`; both are listed, the model chooses | `.claude/skills/` (not verified) |
+| Commands (`commands/<name>.md`) | `~/.gemini/commands/<name>.toml` | a command skill in the plugin (every skill is a command) | a command skill, called with `$<name>` | `~/.claude/commands/<name>.md` (`$ARGUMENTS`) |
+| Override a command in a repository | `.gemini/commands/<name>.toml` | not reliable: use another name | not reliable: use another name | `.claude/commands/<name>.md` (not verified) |
 | Agents | `~/.gemini/agents/ai-kit-<name>.md` | plugin `agents/` | `[agents.ai-kit-<name>]` in the managed block of `config.toml` | `~/.claude/agents/ai-kit-<name>.md` |
-| Agent turn and time limits | `max_turns`, `timeout_mins` in the header | the same | none written: Codex's own | none written: Claude Code's own |
-| Agent tool list (`AGENT_TOOLS`) | native: the header's `tools` are the only tools | native: `tools` in the header, with agy's tool names (`view_file`, `grep_search`, `list_dir`, `run_command`) | instruction only: a role has no tool list in Codex; the session's sandbox and approvals apply | native: `tools` in the header (`Read`, `Grep`, `Glob`, `Bash`) |
-| Guardrails | `ai-kit-*` groups under `hooks.BeforeTool` of `settings.json` | plugin `hooks.json` (`PreToolUse`) | `[[hooks.PreToolUse]]` in that block, to approve in Codex ("Trust") | groups under `hooks.PreToolUse` of `~/.claude/settings.json`, next to your own hooks; no approval step |
-| `whats-new` hook (what is new, at session start) | `ai-kit-whats-new` group under `hooks.SessionStart` of `settings.json`, no matcher | plugin `hooks.json` (`SessionStart`, a flat list of commands); the script answers in agy's own contract, `injectSteps` with a persisted `systemMessage` | `[[hooks.SessionStart]]` in that block, to approve in Codex ("Trust") | group under `hooks.SessionStart` of `~/.claude/settings.json`; no approval step |
-| Repository protected paths | `<repo>/.ai-kit/protected-paths`, read by the kit script | the same file, read by the same script | the same file, read by the same script | the same file, read by the same script |
-| MCP | `mcpServers` of `settings.json` | plugin `mcp_config.json` | `[mcp_servers.ai-kit-<name>]` in that block | `ai-kit-<name>` entries in `mcpServers` of `~/.claude.json` |
-| Permissions | Gemini approval mode | each person's rules in `~/.gemini/antigravity-cli/settings.json`, never written by the kit | Codex sandbox and approvals, never set by the kit | Claude Code's own permission modes and rules, never set by the kit |
-| Logs read by `usage` | `~/.gemini/tmp/*/chats/*.json` | `~/.gemini/antigravity-cli/history.jsonl` and `conversations/*.db` (read-only) | `~/.codex/history.jsonl` and `~/.codex/sessions/**/rollout-*.jsonl` | `~/.claude/projects/*/*.jsonl` |
-| What `usage` can observe (`OBSERVES`) | prompts, so commands; skills activated; agents called; errors | prompts, so commands; skill files read; agents called (no error events) | prompts, so commands; skill files read; agents called; errors | prompts, so commands; skills called; agents called; errors |
-| Real call by `doctor --live` | `gemini -p` | `agy -p` | `codex exec`, read-only and ephemeral | `claude -p` |
-| Evals | `evals/run.py --cli gemini` | `evals/run.py --cli agy` | `evals/run.py --cli codex` | `evals/run.py --cli claude` |
-| Model | never set by the kit (`/model`); agents inherit the session model | never set by the kit | never set by the kit | never set by the kit (`/model`) |
-| Authentication | never set by the kit (`/auth`); what a version before 0.36 wrote stays | never (see [the agy page](agy.md#authentication-google-account-or-google-cloud-project)) | never (`codex login`) | never (`/login`) |
-| Detailed page | [Gemini CLI](gemini.md) | [Antigravity CLI](agy.md) | [Codex CLI](codex.md) | [Claude Code](claude-code.md) |
+| Agent turn and time limits | `max_turns`, `timeout_mins` in the header | the same | the CLI's own | the CLI's own |
+| Agent tool list (`AGENT_TOOLS`) | native | native, with agy's tool names | instruction only; the session's sandbox applies | native (`Read`, `Grep`, `Glob`, `Bash`) |
+| Guardrails | `ai-kit-*` groups under `hooks.BeforeTool` | plugin `hooks.json` (`PreToolUse`) | `[[hooks.PreToolUse]]` in the block, to approve ("Trust") | groups under `hooks.PreToolUse` of `settings.json` |
+| `whats-new` hook | group under `hooks.SessionStart` | plugin `hooks.json` (`SessionStart`, `injectSteps`) | `[[hooks.SessionStart]]`, to approve | group under `hooks.SessionStart` |
+| Repo protected paths | `<repo>/.ai-kit/protected-paths`, read by the kit script | the same | the same | the same |
+| MCP | `mcpServers` of `settings.json` | plugin `mcp_config.json` | `[mcp_servers.ai-kit-<name>]` in the block | `ai-kit-<name>` in `mcpServers` of `~/.claude.json` |
+| Permissions | the CLI's approval mode | each person's rules, never written by the kit | sandbox and approvals, never set by the kit | the CLI's own modes and rules, never set by the kit |
+| Logs read by `usage` | `~/.gemini/tmp/*/chats/*.json` | `~/.gemini/antigravity-cli/history.jsonl`, `conversations/*.db` (read-only) | `~/.codex/history.jsonl`, `~/.codex/sessions/**/rollout-*.jsonl` | `~/.claude/projects/*/*.jsonl` |
+| What `usage` observes (`OBSERVES`) | commands, skills activated, agents, errors | commands, skill files read, agents | commands, skill files read, agents, errors | commands, skills called, agents, errors |
+| Real call by `doctor --live` | `gemini -p` | `agy -p` | `codex exec`, read-only, ephemeral | `claude -p` |
+| Evals | `--cli gemini` | `--cli agy` | `--cli codex` | `--cli claude` |
+| Model and authentication | never set by the kit | never set by the kit | never set by the kit | never set by the kit |
 
-**Where the layers and `30_USER.md` live.** Always in `~/.ai-kit/context/`, whatever the CLIs (0.39): one place to remember, one file to edit. agy and Claude Code include them from there by path, so an edit counts at the next session. Gemini imports only files located in `~/.gemini` (verified on 0.65) and Codex cannot include a file: they get a copy at each `update`, so after editing `30_USER.md` by hand, run `update` (`/me` says so). A copy edited by hand is never lost: for `30_USER.md`, the edit goes into the file itself when the file did not change since it was copied, otherwise the file wins and the edit is in the update's backup; a layer copy is put back like the layers. An installation before 0.39 kept the files in `~/.gemini/`: the next `update` copies `30_USER.md` to `~/.ai-kit/context/`, and the old file becomes Gemini's copy, with the same text. A `30_USER.md` that seems to hold a secret, or is not plain UTF-8 text, is never copied (neither to a new place nor into the Codex block): the source stays as it is, the last valid copy stays in place, and the installer says why. `doctor` shows the file in effect.
+**Copies and paths.** The layers and `USER.md` always live in `~/.ai-kit/context/`. agy and Claude Code read them by path,
+so an edit counts at the next session. Gemini CLI reads only files in `~/.gemini` and Codex cannot include a file: they get
+a copy at each activation, so after editing `USER.md` by hand run `ai-kit sync --offline`. A copy edited by hand is never
+lost: the edit goes into `USER.md` when the file did not change since the copy, otherwise it is in the backup. A `USER.md`
+that seems to hold a secret, or is not plain UTF-8, is never copied.
 
-**Chosen CLIs.** The CLIs chosen at setup are recorded and kept by every `update`, whatever folders exist on the machine. Removing a CLI from the choice removes what the kit had put there (files, settings entries, managed blocks, kit references in `context.fileName`) and keeps the person's own settings.
+**Chosen CLIs.** `ai-kit init --target` records the CLIs (`auto`, `gemini`, `agy`, `codex`, `claude`, `both` for Gemini
+CLI and agy, `all`); later activations keep them. Removing a CLI from the choice removes what the kit put there and keeps
+the person's own settings.
 
 ## Known limits of the CLIs
 
-What remains different comes from the CLIs themselves, not from a part of the kit left undone:
-
-- **Codex**: commands are skills, typed `$intent` (Codex has no custom `/` commands); `30_USER.md` is copied into the block (Codex does not import files), so a change needs an `update`; the guardrails must be approved once in Codex ("Trust"); an agent role has no tool list.
-- **Gemini and agy**: these CLIs have no field for "on command only", and the kit does not translate it: these skills can activate on their own there.
-- **Commands and "on command only" (0.52.0)**: Claude Code and Codex hide a skill marked "on command only" from the model, and Claude Code refuses it in its Skill tool, so a kit command never chains such a skill. `/build` activates `tdd` then `code-review`, `/intent` activates `grilling` and `domain-modeling`; the skills a command carries (`to-spec`, `teach`, `retrospective`, `wayfinder`, `ticket-sorting`, `to-questionnaire`, `improve-codebase-architecture`, `zoom-out`, `wait-what`, `handover`) are model-invocable with a description that says to use them only on their command. `implement` and `grill-with-docs` stay "on command only", for the person to call directly.
-- **Claude Code**: it rewrites `~/.claude.json` while running, so close it before an `update` that changes MCP; in a repo that has a `CLAUDE.md`, it reads that instead of `AGENTS.md` (the block asks it to read `AGENTS.md` too, and a one-line `@AGENTS.md` makes it automatic).
-- **agy**: `usage` sees no error events; its conversation files are an undocumented format, read read-only and skipped if they change.
+- **User-only skills**: Claude Code and Codex hide them from the model, and Claude Code refuses them in its Skill tool, so
+  no command chains one; Gemini CLI and agy have no such field and may activate them on their own.
+- **Codex**: commands are typed `$intent`; `USER.md` is a copy; guardrails need one approval ("Trust"); an agent role has
+  no tool list.
+- **Claude Code**: it rewrites `~/.claude.json` while running: close it before an activation that changes MCP.
+- **agy**: `usage` sees no error events; its conversation files are an undocumented format, skipped if unreadable.
 
 ## Add a CLI
 
-A new CLI is a module in `installer/adapters/`, added to the `ADAPTERS` list, that follows the `Adapter` contract of `installer/interface.py` (including `AGENT_TOOLS` and `OBSERVES`, and `live` if `doctor --live` should reach it), plus its column in the table above and its scenarios in `tests/snapshot.py`. What this adapter must know how to do: where to write each row above, how the CLI loads the files of `~/.ai-kit/context/` (by path when it can, otherwise a copy at each `update`), in what form it receives a command, and how it passes a tool call to a guardrail script (the JSON it sends and the response it expects).
+A module in `installer/adapters/`, added to `ADAPTERS`, following the `Adapter` contract of `installer/interface.py`
+(including `AGENT_TOOLS`, `OBSERVES`, `VERIFIED`, and `live` for `doctor --live`), its scenarios in `tests/snapshot.py`, its
+column above and its page here. It must know where each row above goes, how the CLI loads `~/.ai-kit/context/` (by path,
+or a copy at each activation), the form of a command, and how the CLI passes a tool call to a guardrail script.

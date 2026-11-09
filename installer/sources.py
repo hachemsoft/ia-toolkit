@@ -1,4 +1,4 @@
-"""Git sources (V2 slice 2, ADR 0016, docs/v2/git-sync.md): the only module that runs Git.
+"""Git sources (ADR 0016): the only module that runs Git.
 
 A source is a Core (later a Team) Git repository, identified by its canonical URL. Only stable vX.Y.Z tags are followed, never a
 branch. Git runs with an allowlisted environment, no global or system config, explicit -c overrides, and one credential helper
@@ -154,7 +154,7 @@ def git(args, kit, git_dir=None, schemes=('https', 'ssh'), input_bytes=None, tim
         err = proc.stderr.decode('utf-8', 'replace').strip()
         low = err.lower()
         kind = ('auth' if any(w in low for w in ('authentication', 'permission denied', 'could not read username', 'terminal prompts disabled', '403'))
-                else 'not-found' if any(w in low for w in ('not found', 'does not exist', "couldn't find remote ref", '404'))
+                else 'not-found' if any(w in low for w in ('not found', 'does not exist', "couldn't find remote ref", '404', 'does not appear to be a git repository'))
                 else 'network' if any(w in low for w in ('could not resolve', 'timed out', 'connection', 'unable to access'))
                 else 'invalid')
         raise SourceError(kind, 'git '+args[0]+' failed ('+kind+'): '+err.splitlines()[-1][:300] if err else 'git '+args[0]+' failed')
@@ -234,6 +234,18 @@ def revoked(commit, git_settings):
 
 def cache_dir(kit, url):
     return engine_dir(kit)/(source_id(url)+'.git')
+
+
+def verify_signature(kit, cache, tag, signers):
+    """IT's git.signers (SSH public keys, as in an allowed-signers file): the tag must carry an SSH signature from one of them."""
+    if not signers:
+        return
+    allowed = engine_dir(kit)/'allowed_signers'
+    allowed.write_text(''.join('ai-kit '+key.strip()+'\n' for key in signers), encoding='utf-8')
+    try:
+        git(['-c', 'gpg.format=ssh', '-c', 'gpg.ssh.allowedSignersFile='+str(allowed), 'verify-tag', '--raw', tag], kit, git_dir=cache)
+    except SourceError:
+        raise SourceError('invalid', 'Tag '+tag+' is not signed by a key IT lists (managed.toml git.signers): nothing was changed.') from None
 
 
 def fetch(kit, url, tag, expected_commit, schemes=('https', 'ssh'), home=None):

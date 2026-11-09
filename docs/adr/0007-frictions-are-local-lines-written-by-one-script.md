@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, amended by 0023: IT may set a tracker in `managed.toml` `[frictions.tracker]`; frictions are then published after the person's approval in a terminal by default
 since: 0.14.0, hardened in 0.16.0 and 0.41.0 (reconstructed from the CHANGELOG)
 ---
 # A friction is one local line, written by one script, and nothing is sent
@@ -8,4 +8,4 @@ A friction (something that slowed the person down or made them work around the k
 
 **Considered**: sending frictions to a tracker or a telemetry endpoint. Rejected: it needs a network and a consent the kit cannot assume, and a feedback loop people distrust gets no feedback.
 
-**Amended** (0.47.0, recorded in 0.51.1): an organization can define `[friction_tracker]` in `organization.toml`; the frictions of the chosen sources are then sent as issues through the person's own `glab` or `gh`, and `share_frictions = false` keeps a person's frictions local. Without a tracker, nothing is sent.
+**Amended** by ADR 0023: IT can set `[frictions.tracker]` in `managed.toml`; frictions are then sent as issues through the person's own `glab` or `gh`, after the person's approval in a terminal unless IT sets `auto`, and `[frictions] publication = "disabled"` in `aikit.toml` keeps a person's frictions local. Without a tracker, nothing is sent.

@@ -1,5 +1,20 @@
 # Changelog
 
+## 4.0.0
+
+The final V2 design, without any compatibility layer for earlier versions. **Breaking**: reinstall from the 4.0.0 ZIP; older settings files are not read.
+
+- **One command line**: `init`, `sync` (`--offline` re-applies, `--from-bundle`), `team list|use`, `status`, `doctor`, `rollback`, `user edit`, `uninstall`, `usage`, `friction`, `managed-settings`, `validate`. `setup`, `update`, `news`, `new` and the guided installer are gone; the launchers run `init` when no action is given. Exit codes: 1 refused or failed, 2 usage error, 3 `managed.toml` unusable.
+- **One personal file**: `~/.ai-kit/aikit.toml` (`[user]`, `[hooks]`, `[mcp] enabled/denied`, `[frictions]`, `[core]`, `[teams.<name>]`); `overrides.toml` is not read. The personal context is `USER.md`.
+- **No organization file**: the Core defines its MCP servers in `mcp/servers.toml`; IT sets locked guardrails and the friction tracker in `managed.toml`; teams are Team repositories.
+- **Team MCP servers** (ADR 0022): a Team may ship `mcp/servers.toml`. A local server it brings runs only when IT lists its exact identity (`mcp.allowed_stdio`) or you approve it once in a terminal; an unpinned `npx`/`uvx` launcher is refused; a `required` server that cannot run stops the change.
+- **Signed tags** (optional): with `git.signers` in `managed.toml`, a Core or Team tag must carry an SSH signature from one of the listed keys.
+- **What's new** is read from the installed copies of `CHANGELOG.md` and `NEWS.md` (`~/.ai-kit/news/`), never from the network.
+- `sync`, `team use` and `rollback` no longer ask your identity again; only `init` does.
+- An invalid `[frictions.tracker]` in `managed.toml` exits with code 3, like any unusable managed setting.
+- Documentation rewritten and shortened, with architecture diagrams; the V2 decisions (ADR 0013 to 0026) are published in `docs/adr/`.
+- Removed: the friction `--mode` option (set `[frictions] capture` in `aikit.toml`), skill and guardrail aliases, legacy folder and settings migrations.
+
 ## 3.0.1
 
 - The 3.0.0 release was not published: in CI, the tests that build a release ZIP ran on a shallow clone, whose Core bundle missed objects. The test jobs now fetch the whole history, `scripts/build_release.py` refuses a shallow clone with a clear message, and the schema check covers the new schemas and manifests (organization.toml left the Core). No change to the kit itself.
@@ -354,7 +369,7 @@ Documentation reviewed from three newcomers' paths (install, use in a repo, adju
 
 ## 0.29.0
 
-Teams bring their tools, not only their context ([customization › Teams](docs/customization.md#teams)).
+Teams bring their tools, not only their context ([customization › Teams](docs/configuration.md)).
 - `organization.json` gets a `teams` section: per team, the same keys and formats as `overrides.json` (skills, commands, agents, guardrails, MCP servers, model). Order: organization defaults, team, then the person's `overrides.json`, which keeps the last word.
 - A team can have settings, a practices file (`practices/20-<team>.md`), or both. A team with settings only keeps the shared team practices.
 - `setup` lists every team; `doctor` shows the team and where its content comes from, and checks the team's keys like the others.
@@ -381,7 +396,7 @@ Enterprise installation, the same on Windows and macOS, with a standard account:
 - **`30_USER.md` guidance**: at the end of an interactive setup, its real path, then an offer to open it in Notepad or the Mac's text editor (plain text). After saving, the file is checked (rich text, renamed, not UTF-8) and applied, with a reminder to start a new CLI session. `doctor` runs the same checks.
 - **No secret kept**: frictions, manual and automatic, are redacted (keys, tokens, passwords); `doctor` flags a secret written in `30_USER.md` or `overrides.json` without printing it.
 - **Offline and company networks**: the final model check names a network failure, a proxy asking for authentication (407) or HTTPS inspection without the company root certificate, with what to ask IT; it never suggests disabling a protection. The installation itself needs no network.
-- **Validation**: [docs/validation.md](docs/validation.md) states the commitments, what CI proves and the manual checks on real company workstations. Tests: launchers from folders with spaces and accents, Python absent, old or blocked, extracted folder deleted, new version from another folder, no system-change command in the installer and launchers, nothing downloaded.
+- **Validation**: [docs/validation.md](docs/getting-started.md) states the commitments, what CI proves and the manual checks on real company workstations. Tests: launchers from folders with spaces and accents, Python absent, old or blocked, extracted folder deleted, new version from another folder, no system-change command in the installer and launchers, nothing downloaded.
 
 ## 0.26.0
 No skill shares a command's name any more: Gemini CLI 0.65 turns every skill into a `/command`, so `/guide` and the `guide` skill were both renamed (`/user.guide`, `/guide1`). Skills renamed: `guide` → `routing`, `handoff` → `handover`, `research` → `investigation`, `retro` → `retrospective`, `triage` → `ticket-sorting`, `wizard` → `manual-steps`; the commands keep their names and, in agy and Codex, now get their own command skill with the kit's instructions. Old names still work in `overrides.json` (with a notice); `update` removes the old skill folders. A test forbids a skill named like a command.

@@ -7,7 +7,7 @@ AI_KIT_NO_LIVE=1 refuses it. Without a model: --dry-run lists the cases and chec
 Usage: python3 evals/run.py [--home DIR] [--cases evals/cases] [--only name] [--dry-run] [--report path.json] [--baseline]
        [--cli gemini|agy|codex|claude] [--model NAME] [--approval-mode MODE] [--timeout S] [--retries N] [--confirm-paid-run | --stand-in PATH]
 Each case is a JSON file: {"name", "prompt", "cwd" (fixture relative to evals/fixtures, optional), "subdir" (launch subfolder, optional),
-"requires": {"profile": ..., "commands": [...], "skills": [...]} (optional, checked against the installed kit),
+"requires": {"commands": [...], "skills": [...]} (optional, checked against the installed kit),
 "git": {"commit": true, "uncommitted": {"path": "text"}} (optional: a real repository, the fixture committed, then these files changed),
 "expect": {"contains": [...], "not_contains": [...], "regex": [...], "files_absent": [...], "files_present": [...]}}.
 files_absent and files_present are paths relative to the repo; a bare name (intent.md) matches at any depth, where the
@@ -112,13 +112,11 @@ def blocked(case, state, baseline):
     return unmet_preconditions(case, state) if case.get('requires') and not baseline else []
 
 def unmet_preconditions(case, state):
-    """What the case needs from the installed kit (profile, commands, skills) and is not there."""
+    """What the case needs from the installed kit (commands, skills) and is not there."""
     needs, installed = case.get('requires', {}), state.get('installed', {}) if state else {}
     missing = []
     if not state:
         return ['kit not installed in this home folder']
-    if needs.get('profile') and state.get('profile') != needs['profile']:
-        missing.append('profile ' + needs['profile'] + ' (installed: ' + str(state.get('profile')) + ')')
     for kind in ('commands', 'skills'):
         missing += [kind[:-1] + ' ' + name + ' not installed' for name in needs.get(kind, []) if name not in installed.get(kind, [])]
     return missing
@@ -252,7 +250,7 @@ def main(argv=None):
         print(args.cli + ' not on the PATH.' if not args.stand_in else 'Stand-in not found: ' + str(args.stand_in), file=sys.stderr)
         return 2
     kit_version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-    meta = {'kit': kit_version, 'installed_kit': state.get('version'), 'profile': state.get('profile'), 'cli': args.cli,
+    meta = {'kit': kit_version, 'installed_kit': state.get('version'), 'cli': args.cli,
             'cli_version': version_of(executable), 'model': args.model or 'CLI default', 'approval_mode': args.approval_mode,
             'retries': args.retries, 'timeout': args.timeout, 'simulated': bool(args.stand_in), 'baseline': args.baseline}
     print('Kit ' + kit_version + ' | ' + args.cli + ' ' + str(meta['cli_version']) + ' | model ' + meta['model'] + (' | stand-in, no model' if args.stand_in else ''))

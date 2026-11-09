@@ -132,6 +132,23 @@ class TeamTests(unittest.TestCase):
         self.assertEqual((merged/'skills/team-data/tdd/SKILL.md').read_text(encoding='utf-8').split('\n')[1], 'name: tdd')
         self.assertFalse((merged/'skills/internal/common/tdd').exists())
 
+    def test_team_mcp_servers_need_an_approved_identity(self):
+        # ADR 0022: a Team's local server runs only once approved (or listed by IT); an unpinned fetch-and-run is refused.
+        (self.work/'mcp').mkdir()
+        (self.work/'mcp/servers.toml').write_text('[servers.warehouse]\ncommand = "uvx"\nargs = ["warehouse-mcp==1.2.0"]\n\n'
+                                                  '[servers.loose]\ncommand = "npx"\nargs = ["-y", "some-mcp"]\n', encoding='utf-8')
+        self.commit_tag('v1.1.0', push=True)
+        self.use('data', self.url)  # no terminal: nothing approved
+        self.assertNotIn('ai-kit-warehouse', self.state().get('mcp', {}))
+        with mock.patch.object(cli, 'APPROVE', [lambda question: True]):
+            out = self.use('data', self.url)
+        self.assertIn('ai-kit-warehouse', self.state()['mcp'])
+        self.assertNotIn('ai-kit-loose', self.state()['mcp'])
+        self.assertIn('loose not installed: its launcher fetches a package without an exact version', out)
+        self.assertEqual(len(self.state()['mcp_approvals']), 1)
+        self.use('data', self.url)  # approved once: kept without asking
+        self.assertIn('ai-kit-warehouse', self.state()['mcp'])
+
     def test_rollback_restores_the_previous_team_and_status_shows_it(self):
         self.use('data', self.url)
         self.use('none')

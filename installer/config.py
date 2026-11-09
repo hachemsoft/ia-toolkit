@@ -10,10 +10,10 @@ from pathlib import Path
 import sys
 
 from .core import KitError, digest
-from .toml_files import dump_toml, parse_toml, read_toml
+from .toml_files import read_toml
 
 MANAGED_SCHEMAS = {1}
-MANAGED_GIT = ('allowed_hosts', 'allowed_groups', 'allowed_schemes', 'allow_prerelease', 'revoked')
+MANAGED_GIT = ('allowed_hosts', 'allowed_groups', 'allowed_schemes', 'allow_prerelease', 'revoked', 'signers')
 FRICTION_CAPTURE = ('propose', 'auto', 'off')
 FRICTION_PUBLICATION = ('approval', 'auto', 'disabled')
 
@@ -55,7 +55,7 @@ def load_managed(path=None, guardrail_names=()):
     if not path.exists():
         return None
     def refuse(reason):
-        raise ManagedConfigError(str(path)+': '+reason+'. Nothing was changed; ask IT to fix the file (docs/v2/config.md).')
+        raise ManagedConfigError(str(path)+': '+reason+'. Nothing was changed; ask IT to fix the file (docs/configuration.md).')
     problem = ownership_problem(path)
     if problem:
         refuse('refused because '+problem+'; an administered file must be changeable by IT only')
@@ -103,7 +103,7 @@ def load_managed(path=None, guardrail_names=()):
     if 'publication' in frictions and frictions['publication'] not in FRICTION_PUBLICATION:
         refuse('frictions.publication must be '+', '.join(FRICTION_PUBLICATION))
     if 'tracker' in frictions and not isinstance(frictions['tracker'], dict):
-        refuse('frictions.tracker must be a table: kind, project, host, labels, sources (checked like organization.toml friction_tracker)')
+        refuse('frictions.tracker must be a table: kind, project, host, labels, sources (kind, project, host, labels, sources)')
     if 'retention_days' in frictions and (not isinstance(frictions['retention_days'], int) or isinstance(frictions['retention_days'], bool) or frictions['retention_days'] < 1):
         refuse('frictions.retention_days must be a whole number of days, 1 or more')
     # Git sources (2.0, slice 2): the Core IT imposes, and the origins allowed.
@@ -113,7 +113,7 @@ def load_managed(path=None, guardrail_names=()):
         refuse('unknown key '+', '.join(k if k.startswith('git.') else 'enterprise.'+k for k in unknown))
     if 'core' in enterprise and (not isinstance(enterprise['core'], str) or not enterprise['core']):
         refuse('enterprise.core must be the URL of the Core repository')
-    for key in ('allowed_hosts', 'allowed_groups', 'allowed_schemes', 'revoked'):
+    for key in ('allowed_hosts', 'allowed_groups', 'allowed_schemes', 'revoked', 'signers'):
         if key in git and (not isinstance(git[key], list) or not all(isinstance(v, str) and v for v in git[key])):
             refuse('git.'+key+' must be a list of texts')
     if not set(git.get('allowed_schemes', [])) <= {'https', 'ssh'}:
@@ -156,7 +156,7 @@ def apply_values(overrides, managed):
 
 
 def locked_guardrails(managed):
-    """Guardrails IT keeps on (a restriction: added to organization.toml locked_hooks)."""
+    """Guardrails IT keeps on, whatever a Team or a person writes."""
     return list((managed or {}).get('hooks', {}).get('locked', []))
 
 
@@ -175,6 +175,48 @@ def server_warnings(short, server):
         found.append('[Check] MCP server '+short+': runs a shell or a shell script ('+command+'); name the program itself. '
                      'It will be refused in a later release.')
     return found
+
+
+FETCH_AND_RUN = ('npx', 'uvx', 'bunx', 'pnpx', 'pipx')
+
+
+def unpinned_launcher(server):
+    """A fetch-and-run launcher (npx, uvx...) whose package has no exact version: what runs changes without anyone seeing it."""
+    command = Path(str(server.get('command') or '').replace('\\', '/')).name.lower()
+    if command not in FETCH_AND_RUN:
+        return False
+    packages = [a for a in server.get('args') or [] if not a.startswith('-') and a not in ('run', 'dlx', 'exec')]
+    return not packages or not any(('==' in a) or re.search(r'@\d', a) for a in packages[:1])
+
+
+def team_mcp_gate(enabled_mcp, team_servers, managed, approved, approve=None):
+    """ADR 0022 for the servers a Team brings: a local (stdio) one is kept only when its exact identity is listed by IT
+    (mcp.allowed_stdio) or approved on this workstation (state.json mcp_approvals, asked in a terminal through approve);
+    an unpinned fetch-and-run launcher is refused. Returns (kept, notices, approvals)."""
+    allowed = set(((managed or {}).get('mcp') or {}).get('allowed_stdio') or [])
+    kept, notices, approvals = {}, [], set(approved or [])
+    for name, server in enabled_mcp.items():
+        short = name[len('ai-kit-'):]
+        if short not in team_servers or not server.get('command'):
+            kept[name] = server
+            continue
+        identity = server_identity(server)
+        why = None
+        if unpinned_launcher(server):
+            why = 'its launcher fetches a package without an exact version'
+        elif identity not in allowed and identity not in approvals:
+            if approve and approve('The Team adds a local MCP server '+short+' that runs: '+' '.join([server['command']]+list(server.get('args') or []))
+                                   + ' (identity '+identity[:19]+'...). Allow it on this workstation?'):
+                approvals.add(identity)
+            else:
+                why = 'a local server from a Team needs your approval in a terminal (or IT lists its identity in mcp.allowed_stdio)'
+        if why and team_servers[short].get('required'):
+            raise KitError('MCP server '+short+' is required by the Team but '+why+': nothing was changed.')
+        if why:
+            notices.append('[Info] MCP server '+short+' not installed: '+why+'.')
+        else:
+            kept[name] = server
+    return kept, notices, sorted(approvals)
 
 
 def server_identity(server):
@@ -244,10 +286,10 @@ def drift(recorded, path=None):
     if current == recorded:
         return None
     if recorded is None:
-        return 'IT added managed.toml since the last update: run ai-kit update to apply it'
+        return 'IT added managed.toml since the last update: run ai-kit sync --offline to apply it'
     if current is None:
-        return 'IT removed managed.toml since the last update: run ai-kit update'
-    return 'IT changed managed.toml since the last update: run ai-kit update to apply it'
+        return 'IT removed managed.toml since the last update: run ai-kit sync --offline'
+    return 'IT changed managed.toml since the last update: run ai-kit sync --offline to apply it'
 
 
 def provenance(org_defaults, team_layer, personal, managed=None):
@@ -278,9 +320,7 @@ def summary(managed, path=None):
     return 'Managed by IT: '+str(path or managed_path())+' (sets '+(', '.join(keys) if keys else 'nothing')+').'
 
 
-# --- ~/.ai-kit/aikit.toml: the person's V2 settings (docs/managed.md, docs/v2/config.md) ---------------------------------
-# overrides.toml keeps working through an adapter: personal_settings() reads aikit.toml when it exists (overrides.toml is
-# then no longer read, and stays untouched for a return to 0.52), otherwise overrides.toml as before.
+# --- ~/.ai-kit/aikit.toml: the person's V2 settings (docs/configuration.md) ---------------------------------
 
 AIKIT_FILE = 'aikit.toml'
 AIKIT_SCHEMAS = {1}
@@ -331,7 +371,7 @@ def load_aikit(path):
 
 
 def to_overrides(data):
-    """aikit.toml in the engine's settings vocabulary (the keys of overrides.toml), so that one resolver serves both files."""
+    """aikit.toml in the engine's settings vocabulary (the keys of aikit.toml), so that one resolver serves both files."""
     user, mcp, frictions = data.get('user', {}), data.get('mcp', {}), data.get('frictions', {})
     out = {k: list(user[k]) for k in USER_LISTS if k in user}
     if 'skill_prefix' in user:
@@ -346,44 +386,6 @@ def to_overrides(data):
     if frictions.get('publication') == 'disabled':
         out['share_frictions'] = False
     return out
-
-
-def aikit_from_overrides(overrides, schema_uri=None):
-    """The aikit.toml text for a person's overrides.toml, and the migration report: one line per V1 key, where it goes, or why
-    it is not carried over. Checked by reading it back and translating it again."""
-    data, report = {'schema': 1}, []
-    def put(section, key, value, origin):
-        data.setdefault(section, {})[key] = value
-        report.append(origin+' -> '+section+'.'+key)
-    for key in USER_LISTS:
-        if overrides.get(key):
-            put('user', key, list(overrides[key]), key)
-    if 'skill_prefix' in overrides:
-        put('user', 'skill_prefix', overrides['skill_prefix'], 'skill_prefix')
-    for name, value in (overrides.get('hooks') or {}).items():
-        put('hooks', name, value, 'hooks.'+name)
-    for name, value in (overrides.get('mcp') or {}).items():
-        if value is True:
-            data.setdefault('mcp', {}).setdefault('enabled', []).append(name)
-            report.append('mcp.'+name+' = true -> mcp.enabled')
-        elif value is False:
-            data.setdefault('mcp', {}).setdefault('denied', []).append(name)
-            report.append('mcp.'+name+' = false -> mcp.denied')
-        else:
-            report.append('mcp.'+name+' (your own server) not carried over: add it in your CLI; overrides.toml keeps it for AI Kit 0.52')
-    if 'frictions' in overrides:
-        put('frictions', 'capture', overrides['frictions'], 'frictions')
-    if overrides.get('share_frictions') is False:
-        put('frictions', 'publication', 'disabled', 'share_frictions = false')
-    if 'news' in overrides:
-        report.append('news not carried over: AI Kit 2 no longer reads the kit remote at session start')
-    for key in sorted(set(overrides) - set(USER_LISTS) - {'skill_prefix', 'hooks', 'mcp', 'frictions', 'share_frictions', 'news', '$schema'}):
-        report.append(key+' not carried over: not a setting of AI Kit 2')
-    text = dump_toml(data, schema_uri)
-    expected = {k: v for k, v in to_overrides(data).items()}
-    if to_overrides(parse_toml(text)) != expected:
-        raise KitError('The migration to aikit.toml would change a value: nothing was written. Please report it.')
-    return text, report
 
 
 # --- The content's manifest: aikit.toml at the root of a content tree (a Core source later) ------------------------------

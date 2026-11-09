@@ -1,4 +1,4 @@
-"""ai-kit status [--verbose] (V2 slice 5, docs/v2/cli.md): what is active, read from local files only, no network, no write.
+"""ai-kit status [--verbose] (docs/architecture.md): what is active, read from local files only, no network; it runs the friction upkeep (purges old local frictions).
 Core and Team (tag, commit), the configuration rollback returns to, the CLIs configured, the keys IT imposes; --verbose adds
 where each setting comes from, the installed resources and each CLI's capabilities."""
 from .adapters import ADAPTERS
@@ -12,6 +12,10 @@ def status(home, verbose=False):
     state = read_json(kit/'state.json')
     print('AI Kit '+(ROOT/'VERSION').read_text(encoding='utf-8').strip()+(' | configuration applied by '+state['version'] if state.get('version') else ' | not installed: run ai-kit init'))
     print(lock_summary(kit) or 'Core: the package content (no Core source synced) | Team: '+(state.get('team') or 'none'))
+    from .sync import newer_available
+    newer = newer_available(kit)
+    if newer:
+        print('A newer version was seen at the last sync: '+', '.join(newer)+'. Run ai-kit sync to install it.')
     if state:
         print('CLIs: '+', '.join(state.get('targets') or []))
     try:
@@ -24,7 +28,7 @@ def status(home, verbose=False):
         from .core import friction_module
         upkeep = friction_module().housekeep(str(home), state.get('frictions_retention'))
         if upkeep['waiting']:
-            print(str(upkeep['waiting'])+' friction(s) wait for your approval: ai-kit friction --sync sends them.')
+            print(str(upkeep['waiting'])+' friction(s) wait for your approval: ai-kit friction --publish sends them.')
     if not verbose or not state:
         return 0
     from .plan import effective_settings

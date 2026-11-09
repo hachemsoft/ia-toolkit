@@ -2,7 +2,6 @@ import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.adapters.gemini import diagnose_live
 from installer.core import read_json
-from installer.toml_files import dump_toml
 from v1_profiles import apply_as  # noqa: E402
 S_KEY={'security':{'auth':{'selectedType':'gemini-api-key'}}}
 class LiveDiagnosisTests(unittest.TestCase):
@@ -28,17 +27,10 @@ class RetiredAuthAndModelTests(unittest.TestCase):
  """0.36: the kit no longer writes authentication or models. What an earlier version wrote stays, now the person's."""
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
- def overrides(self,v):
-  p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
  def run_kit(self):
   out=io.StringIO()
   with contextlib.redirect_stdout(out):notices=apply_as('data-analyst',self.home,False,None,'gemini')
   return notices
- def test_retired_keys_write_nothing_and_are_reported(self):
-  self.overrides({'vertex':{'project':'demo-project-01'},'model':'gemini-2.5-flash','models':{'fast':'x'},'code_assist':{'project':'demo-project-02'}})
-  notices=self.run_kit();settings=read_json(self.home/'.gemini/settings.json')
-  self.assertNotIn('security',settings);self.assertNotIn('model',settings);self.assertFalse((self.home/'.gemini/.env').exists())
-  for key in ('vertex','model','models','code_assist'):self.assertTrue(any('"'+key+'" is no longer handled by the kit' in n for n in notices),key)
  def test_what_an_earlier_version_wrote_is_kept(self):
   # As 0.35 left it: a kit-marked block in ~/.gemini/.env and the auth type in settings.json.
   env=self.home/'.gemini/.env';env.parent.mkdir(parents=True)

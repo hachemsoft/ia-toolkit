@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "aikit.schema.json",
   "title": "AI Kit ~/.ai-kit/aikit.toml",
-  "description": "The person's AI Kit 2 settings (docs/customization.md). Unknown keys are reported and ignored.",
+  "description": "The person's AI Kit 2 settings (docs/configuration.md). Unknown keys are reported and ignored.",
   "type": "object",
   "required": [
     "schema"

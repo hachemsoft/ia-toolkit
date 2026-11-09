@@ -1,60 +1,108 @@
 # Evals
 
-Context, skills, commands and agents drive the agent's behavior: they are tested like code. The `evals/` suite replays real prompts against each supported CLI (`--cli gemini`, `--cli agy`, `--cli codex` or `--cli claude`), in non-interactive mode, and checks deterministic criteria on the response and on the files.
+Context, commands, skills and agents steer the agent's behaviour, so they are tested on behaviour. `evals/run.py` replays
+real prompts against one CLI in non-interactive mode and checks deterministic criteria on the answer and on the files.
+They are regression tests for the kit's prompts, not a study: model answers vary, so the criteria are broad on purpose.
 
-## Run
+## Cost first
+
+Every real run calls the model at least once per case and is **billed** by the provider. The runner refuses a real run
+without `--confirm-paid-run`, and refuses it even with that flag when `AI_KIT_NO_LIVE=1` is set. `--timeout` (300 s per
+case by default) bounds time, not money. `--retries` is 0 by default, at most 2, only after an infrastructure error, and
+each retry is billed. Choose one case with `--only` before running anything; a full suite is the maintainer's decision.
+The model-free test suite (`scripts/offline_tests.py`) never runs them.
+
+## Run one targeted case
+
+The run measures the kit installed in the `--home` folder (your home by default), not the repository: install the version
+to measure there first, with the CLI signed in. The report's `installed_kit` says which version was measured.
 
 ```sh
-python3 evals/run.py --dry-run                        # lists the cases and their preconditions, no model call
-python3 evals/run.py --stand-in ./fake-cli            # replays the cases against a stand-in executable, no model call
-python3 evals/run.py --confirm-paid-run               # real run against the kit installed in your home folder: billed
-python3 evals/run.py --confirm-paid-run --home ./sandbox-user --only guide-routes-to-commands
+python3 evals/run.py --confirm-paid-run --cli claude --only explain-uses-glossary --retries 0 --report run.json
 ```
 
-The run measures the kit installed in that home folder, not the repository: to evaluate a change, `update` from it first. The report's `installed_kit` says which version was measured.
+Options: `--cli gemini|agy|codex|claude` (default `gemini`), `--home`, `--cases`, `--model` (the kit sets none),
+`--approval-mode` (one CLI only), `--timeout`, `--retries`, `--report`. Without a model, `--stand-in PATH` replays the cases
+against a stand-in executable; it is how the runner's own tests run.
 
-Each case runs in a temporary copy of a fixture (`evals/fixtures/`), with writes and shell denied: Gemini CLI in default approval mode with the `evals/policy.toml` policy, Codex in a read-only, ephemeral `exec`, Claude Code in print mode without `Bash`, `Write` and `Edit`, agy in print mode where tools that need a permission are refused. The agent writes no file. Options: `--cli gemini|agy|codex|claude`, `--model`, `--approval-mode` (Gemini only), `--timeout`, `--retries` (0 by default, at most 2, only after an infrastructure error). Exit code 1 if a case fails, 2 if none could run; `--report` writes the details as JSON with the versions of the kit and the CLI, the model and the settings.
+Each case runs in a temporary copy of a fixture (`evals/fixtures/`) with writes and shell denied:
 
-Cost: every real run calls the model at least once per case and is billed by the provider. Without `--confirm-paid-run` the runner refuses; `AI_KIT_NO_LIVE=1` refuses even with it. A timeout or a turn limit bounds time, not cost: choose the cases (`--only`) before running.
+| CLI | How writes and shell are denied |
+| --- | --- |
+| Gemini CLI | default approval mode with the `evals/policy.toml` policy (skill activation allowed, shell and writes denied) |
+| Antigravity CLI | print mode; a tool that needs a permission is refused, and that is reported as an infrastructure error |
+| Codex CLI | read-only, ephemeral `exec`; `/intent` in a prompt becomes `$intent` |
+| Claude Code | print mode with shell, write and edit tools disallowed |
 
-Statuses: `OK`; `FAIL`, a behaviour result; `ERROR`, an execution failure (the CLI exited with a non-zero code, API error, quota, timeout), whatever the output contains; `SKIP`, a precondition of the case (`requires`) is not met by the installed kit.
+Statuses: `OK`; `FAIL` (behaviour); `ERROR` (infrastructure: non-zero exit, API, quota, sign-in, timeout); `SKIP` (the
+installed kit lacks a command or skill the case `requires`). Exit code 1 when a case fails, 2 when none could run.
 
 ## With and without the kit
 
-The question a pilot asks is not "does the kit pass its cases" but "does the agent do better with it". Run the same cases twice, with the same CLI and model: once in the home folder where the kit is installed, once with `--baseline` in a home folder where the CLI is signed in and the kit is not installed. Then compare:
+To measure what the kit brings, run the same case twice with the same CLI and model: once where the kit is installed, once
+with `--baseline` in a home folder where the CLI is signed in and the kit is not installed (`--baseline` refuses a home
+that holds the kit, and ignores `requires`). Then compare, without a model call:
 
 ```sh
-python3 evals/run.py --confirm-paid-run --cli claude --report with-kit.json
-python3 evals/run.py --confirm-paid-run --cli claude --home ./no-kit --baseline --report without-kit.json
-python3 evals/compare.py with-kit.json without-kit.json      # no model call
+python3 evals/compare.py with-kit.json without-kit.json
 ```
 
-The home folder without the kit needs its own sign-in: start the CLI there once (`HOME=./no-kit claude`, then `/login`), since a CLI keeps its sign-in in the home folder. Every case starts with a kit command, which the agent without the kit only reads as text: the comparison measures what the commands bring, not the context alone. `--baseline` refuses a home folder that holds the kit, and runs every case, the ones that require a kit command included: without the kit, that command is just text the agent reads. The comparison lists the cases that pass only with the kit, only without it, and with both; it refuses two reports of different CLIs or models. Both runs are billed; one run of each varies with the model, so repeat them before concluding.
+It lists the cases that pass only with the kit, only without it, and with both, and refuses reports of different CLIs or
+models. Both runs are billed; repeat them before concluding.
 
 ## Write a case
 
-A file `evals/cases/NN-name.json`: `name`, `prompt` (a kit command or a request as a user types it), `cwd` (fixture), `subdir` (optional: subfolder where the CLI starts, for a monorepo), `requires` (`profile`, `commands`, `skills` the installed kit must have; a case whose command is not installed is skipped, not failed), `git` (optional: a real repository, the fixture committed then the `uncommitted` files written over it, to review changes that are not committed), `expect` with `contains`, `not_contains`, `regex`, `files_absent`, `files_present`. A file criterion with a folder is a path from the repo root; a bare name (`intent.md`) matches at any depth, because the commands write into `docs/sdlc/<date>-<slug>/`. Prefer what can be observed (a file written or not, a command cited) to keywords. The criteria cover what a human would check: the right command is suggested, the glossary is used, no production command is suggested, no file is created without approval.
-
-One case per incident or repeated error: when the agent gets it wrong, the prompt that caused the error becomes a case, before fixing the skill.
-
-## In CI
-
-`.github/workflows/agent-evals.yml` never runs on its own: no trigger on merge requests, pushes or a schedule. Someone starts it by hand (workflow_dispatch) and ticks `confirm_paid_run`, off by default; the job then installs the kit in a temporary folder and runs the suite on Gemini CLI, at the version given in `cli_version` for a reference campaign. It expects a `GEMINI_API_KEY` secret. The model-free tests run on every push in `portability.yml`, with `AI_KIT_NO_LIVE=1`. agy, Codex and Claude Code are evaluated on a signed-in workstation, with `--cli agy`, `--cli codex` or `--cli claude`.
-
-## Limits
-
-Gemini CLI ([its page](cli/gemini.md)): in non-interactive mode, version 0.65 does not expose the `activate_skill` tool, so the cases measure what the command prompts achieve on their own, not the skills. `plan` mode also blocks skills; the runner uses the default approval mode with `evals/policy.toml` (writes and shell denied). If the default model loops on your access ("Model fallback activated"), force a model with `--model` (the kit sets none: the CLI's own setting applies otherwise).
-
-Model responses vary; the criteria are deliberately broad and check facts (a command cited, a term used, a file absent). A case that fails one time in ten says something about the prompt or the skill, not only about the model.
-
-## Known variance: `/test` (case `no-prod-dbt-proposed`)
-
-The case asks `/test`, in the dbt fixture, to list the checks and their target based on `AGENTS.md`, which requires the development target. On Gemini CLI ([its page](cli/gemini.md)) in non-interactive mode, one run in two failed the same way: the model writes "I'm reading AGENTS.md" without calling the read tool, so it never sees the rule, and suggests `dbt test` without a target. Nothing is broken in the kit or the repository; the model skips a step it announces. Two countermeasures, both in place: the `/test` prompt now requires reading `AGENTS.md` with the read tool before any suggestion and forbids assuming its content; and the `dbt-prod-guard` guardrail, when enabled, blocks any dbt command on a production target anyway. If the case still fails now and then, it measures model variance, to note, not a ticket.
+`evals/cases/NN-<name>.json`: `name`, `prompt` (typed as a person would), `cwd` (a fixture), optional `subdir` (where the
+CLI starts, for a monorepo), `requires` (`commands`, `skills`), `git` (a real repository: the fixture committed, then
+`uncommitted` files written over it), and `expect` with `contains`, `not_contains`, `regex`, `files_absent`,
+`files_present`. A bare file name (`intent.md`) matches at any depth. Prefer observable facts (a file written or not, a
+command cited) to keywords; patterns accept English and French answers. When the agent gets something wrong twice, the
+prompt becomes a case before the skill is fixed. A criterion is widened only when an answer shows the expected behaviour
+in words the pattern did not know, never to let a wrong behaviour pass.
 
 ## Cases
 
-Checked without a model by `--dry-run` and the runner's tests; their real behaviour is measured only in a billed run the maintainer decides. First billed run on Claude Code 2.1.316 with the general profile (0.36): every case whose preconditions hold passes, after the fixed `Level:` first line was added; the cases that need a Data or infrastructure playbook were skipped. A reference campaign pins the CLI version and records the kit, CLI and model versions in the report.
+| Case | Fixture | Checks |
+| --- | --- | --- |
+| `guide-routes-to-commands` | dbt-mini | `/guide` sends a business-definition change to `/intent`, without writing |
+| `intent-asks-before-writing` | dbt-mini | `/intent` interviews before writing `intent.md` |
+| `explain-uses-glossary` | dbt-mini | `/explain` uses the glossary's terms and names the source |
+| `no-prod-dbt-proposed` | dbt-mini | dbt checks target development, not production (needs dbt-model-change) |
+| `monorepo-cross-area-impact` | monorepo-mini | a change in one area names the other areas it reaches (needs dbt-model-change) |
+| `small-change-without-ceremony` | py-api-mini | a trivial change is `Level: quick`, no plan, no intent |
+| `contract-change-updates-its-test` | py-api-mini | a contract changed on purpose updates its test and says so |
+| `review-sees-uncommitted-changes` | py-api-mini | `/review` sees work that is not committed |
+| `frontend-diagnose` | web-mini | `/diagnose` finds the cause, not a plausible guess |
+| `infra-exposure-is-flagged` | infra-mini | opening a port names the exposure (needs infra-change) |
+| `project-context-respected` | context-mini | the repo's own commands win over the tools they wrap |
+| `mixed-dbt-and-python` | mixed-mini | each stack is verified with its own command (needs two playbooks) |
+| `fuzzy-request-aligns-first` | dbt-mini | a fuzzy business request in plain words gets a question before code |
+| `red-suite-keeps-its-test` | py-api-mini | a red suite is fixed without hiding the regression |
+| `secret-kept-out-of-code` | py-api-mini | a key handed over in the prompt stays out of the source |
+| `small-contract-change-names-its-consequences` | py-api-mini | the level follows what a change can break, not its size |
+| `no-claimed-run` | py-api-mini | no check is reported as passed without being run |
+| `unknown-stays-unknown` | py-api-mini | missing information stays unknown |
+| `irreversible-change-plans-recovery` | py-api-mini | a permanent deletion plans how to recover |
+| `java-api-change-is-not-quick` | java-mini | a public signature change is not quick |
+| `infra-destroy-plans-first` | infra-mini | removing infrastructure starts with read-only evidence |
 
-Each case, what it checks, why it exists and its last measured result: [eval cases](eval-cases.md).
+## Results
 
-Run one, when decided: `python3 evals/run.py --confirm-paid-run --only <name>` (billed; `--retries 0` by default).
+`evals/results/<date>.json` keeps the statuses of recorded runs (date, CLI and version, kit version, case, status), never
+the answer text. `scripts/eval_charts.py` draws the README charts from them into `docs/img/`, without a model call. A
+reference campaign pins the CLI version and records the kit, CLI and model versions in each report.
+
+## In CI
+
+`.github/workflows/agent-evals.yml` never runs on its own: no trigger on push, merge request or schedule. A person starts it
+by hand and ticks `confirm_paid_run` (off by default); it runs the suite, or one case (`only`), on the CLI version given in
+`cli_version`, billed to the account of the `GEMINI_API_KEY` secret. The other CLIs are evaluated on a signed-in
+workstation with `--cli`.
+
+## Known limits
+
+| CLI | Limit |
+| --- | --- |
+| Gemini CLI | non-interactive mode does not expose skill activation: cases measure what the command prompts achieve alone; `plan` approval mode also blocks skills |
+| Antigravity CLI | a tool that asks for a permission drops the whole answer in print mode, until the person has approved read rules in their own settings |
+| all | one run varies with the model; a case that fails one time in ten says something about the prompt, not only the model |

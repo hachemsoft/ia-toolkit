@@ -1,5 +1,5 @@
 """Which copy of the kit runs: --version, another `ai-kit` command first on the PATH (an old pipx or pip install), the
-private environment's state, the kit folder's version, a newer version published in a clone, and menu wording."""
+private environment's state, the kit folder's version, a newer version published in a clone."""
 import contextlib
 import io
 import json
@@ -13,7 +13,6 @@ import unittest
 from unittest import mock
 
 from installer import cli
-from installer.wizard import menu_wording
 
 POSIX = os.name != 'nt'
 
@@ -138,15 +137,6 @@ class ReleaseCheckTests(unittest.TestCase):
             with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': str(clone)}), contextlib.redirect_stdout(io.StringIO()):
                 cli.release_check()
             self.assertFalse(ran.exists(), 'core.fsmonitor ran')
-
-
-class MenuWordingTests(unittest.TestCase):
-    def test_command_line_actions_become_menu_choices(self):
-        lines = menu_wording(['Next step: fix the points above, then run doctor again.', 'Install it, then run update.',
-                              'apply the fix shown above, then run doctor --live.'])
-        self.assertEqual(lines, ['Next step: fix the points above, then choose "Check the installation" again in this menu.',
-                                 'Install it, then choose "Update" in this menu.',
-                                 'apply the fix shown above, then choose the Advanced check in this menu.'])
 
 
 if __name__ == '__main__':

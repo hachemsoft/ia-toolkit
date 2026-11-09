@@ -1,7 +1,7 @@
 import contextlib, io, json, os, shutil, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from unittest import mock
-from installer import cli, settings, doctor as doctor_module
+from installer import cli, settings
 from installer.cli import doctor, detect_identity
 from installer.core import read_json, ROOT
 from v1_profiles import apply_as  # noqa: E402
@@ -27,28 +27,39 @@ class IdentityTests(unittest.TestCase):
   self.assertEqual(identity.get('source'),'os');self.assertNotIn('email',identity)
  def test_header_written_once(self):
   self.run_kit(user={'email':'first.last@example.com','name':'Zoé Martin','source':'option'})
-  u=self.home/'.gemini/30_USER.md';self.assertIn('Person: Zoé Martin <first.last@example.com>',u.read_text(encoding='utf-8'))
+  u=self.home/'.ai-kit/context/USER.md';self.assertIn('Person: Zoé Martin <first.last@example.com>',u.read_text(encoding='utf-8'))
   self.assertEqual(read_json(self.home/'.ai-kit/state.json')['user']['email'],'first.last@example.com')
   self.run_kit(user={'email':'other@example.com','source':'option'})
   self.assertIn('first.last@example.com',u.read_text(encoding='utf-8'));self.assertEqual(read_json(self.home/'.ai-kit/state.json')['user']['email'],'other@example.com')
  def test_no_identity_no_header(self):
-  self.run_kit();text=(self.home/'.gemini/30_USER.md').read_text(encoding='utf-8');self.assertNotIn('Person:',text);self.assertNotIn('{identity}',text)
+  self.run_kit();text=(self.home/'.ai-kit/context/USER.md').read_text(encoding='utf-8');self.assertNotIn('Person:',text);self.assertNotIn('{identity}',text)
+ def test_identity_asked_by_init_only(self):
+  # sync, team and rollback keep the recorded identity; only init asks again.
+  from types import SimpleNamespace
+  state={'user':{'email':'first.last@example.com','source':'input'}}
+  with mock.patch.object(cli,'interactive',return_value=True),mock.patch('builtins.input',side_effect=AssertionError('asked')):
+   self.assertIsNone(cli.resolve_identity(SimpleNamespace(user=None,action='sync'),self.home,state))
+   self.assertIsNone(cli.resolve_identity(SimpleNamespace(user=None,action='rollback'),self.home,state))
+  with mock.patch.object(cli,'interactive',return_value=True),mock.patch('builtins.input',return_value='') as asked:
+   cli.resolve_identity(SimpleNamespace(user=None,action='init'),self.home,state)
+  asked.assert_called_once()
  def test_invalid_email_refused(self):
   with self.assertRaises(cli.KitError):self.run_kit(user={'email':'not-an-email','source':'option'})
  def test_cli_user_option_non_interactive(self):
-  proc=subprocess.run([sys.executable,'-m','installer','setup','--profile','general','--user','first.last@example.com','--home',str(self.home),'--no-live'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8',stdin=subprocess.DEVNULL,env={**os.environ,'PYTHONIOENCODING':'utf-8'})
+  proc=subprocess.run([sys.executable,'-m','installer','init','--user','first.last@example.com','--home',str(self.home)],cwd=ROOT,capture_output=True,text=True,encoding='utf-8',stdin=subprocess.DEVNULL,env={**os.environ,'PYTHONIOENCODING':'utf-8'})
   self.assertEqual(proc.returncode,0,proc.stdout+proc.stderr);self.assertIn('Identity: first.last@example.com (source option)',proc.stdout)
   self.assertEqual(read_json(self.home/'.ai-kit/state.json')['user']['source'],'option')
- def test_doctor_domain_and_mismatch_warnings(self):
+ def test_doctor_mismatch_warning(self):
+  # 3.0: no allowed domains (an organization.toml setting, gone); the active account is still compared with the identity.
   self.run_kit(user={'email':'first.last@example.com','source':'option'})
   self.write('.gemini/google_accounts.json',json.dumps({'active':'personal@gmail.com','old':[]}))
   out=io.StringIO()
-  with mock.patch.object(doctor_module,'allowed_domains',return_value=['example.com']), contextlib.redirect_stdout(out):code=doctor(self.home)
-  text=out.getvalue();self.assertEqual(code,1);self.assertIn('[Check] Active Gemini account matches',text);self.assertIn('[Check] Active Gemini account in the allowed domains',text)
- def test_doctor_domain_ok(self):
+  with contextlib.redirect_stdout(out):code=doctor(self.home)
+  text=out.getvalue();self.assertEqual(code,1);self.assertIn('[Check] Active Gemini account matches',text);self.assertNotIn('allowed domains',text)
+ def test_doctor_match_ok(self):
   self.run_kit(user={'email':'first.last@example.com','source':'option'})
   self.write('.gemini/google_accounts.json',json.dumps({'active':'first.last@example.com','old':[]}))
   out=io.StringIO()
-  with mock.patch.object(doctor_module,'allowed_domains',return_value=['example.com']), contextlib.redirect_stdout(out):doctor(self.home)
-  self.assertIn('[OK] Active Gemini account matches',out.getvalue());self.assertIn('[OK] Active Gemini account in the allowed domains',out.getvalue())
+  with contextlib.redirect_stdout(out):doctor(self.home)
+  self.assertIn('[OK] Active Gemini account matches',out.getvalue())
 if __name__=='__main__':unittest.main()

@@ -1,6 +1,6 @@
 #!/bin/sh
 # AI Kit launcher for macOS and Linux: finds Python 3.11 or newer, then hands over to scripts/launcher.py, which installs the
-# kit in its private environment (~/.ai-kit/runtime) and opens the installer (the menu when no argument is given).
+# kit in its private environment (~/.ai-kit/runtime) and runs ai-kit (init when no action is given).
 # No sudo, no change to the system. The only change outside ~/.ai-kit: one marked block in your shell startup file for the
 # ai-kit command, if you chose it (removed by uninstall).
 set -eu
@@ -32,5 +32,5 @@ if [ -z "$KIT_PYTHON" ]; then
   exit 2
 fi
 # The current folder stays the user's: a relative path (--json, --home) resolves there, not in the kit.
-# -I: no foreign module from the current folder or PYTHONPATH. update in a git clone fetches the new version first (launcher.py).
+# -I: no foreign module from the current folder or PYTHONPATH.
 exec "$KIT_PYTHON" -I "$KIT_DIR/scripts/launcher.py" "$@"

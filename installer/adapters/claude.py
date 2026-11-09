@@ -2,7 +2,7 @@
 guardrails in ~/.claude/settings.json, MCP servers in ~/.claude.json, and the session transcripts for usage.
 
 Claude Code ships skills of its own (code-review) and people keep personal skills in ~/.claude/skills, often with the
-same names as the kit's: the kit's skills are installed with a prefix (skill_prefix in overrides.toml, ai-kit- by
+same names as the kit's: the kit's skills are installed with a prefix (skill_prefix in aikit.toml, ai-kit- by
 default) and the texts the kit installs name them that way. A command keeps its name unless a personal skill or command
 already has it; it is then installed with the same prefix and the person is told."""
 import json
@@ -16,8 +16,8 @@ from ..interface import DoctorContext, Plan, Status
 from ..core import (content_root, ROOT, USER_CONTEXT, KitError, digest, hook_command, cli_event, split_block, place_block, json_bytes, read_json, _ts, live_call, LIVE_PROMPT, DEFAULT_PREFIX, skill_prefix, rename_references, renamed_skill_file)
 
 CLAUDE_DIR = '.claude'
-# The marker text is an identifier, kept as written in 0.35 ("overrides.json" is now overrides.toml).
-CLAUDE_MD = ('<!-- ai-kit:start : block managed by the AI Kit; do not edit here (30_USER.md, overrides.json, then update) -->', '<!-- ai-kit:end -->')
+# The marker text is an identifier, kept as written in 0.35 ("overrides.json" is now aikit.toml).
+CLAUDE_MD = ('<!-- ai-kit:start : block managed by the AI Kit; do not edit here (USER.md, aikit.toml, then ai-kit sync --offline) -->', '<!-- ai-kit:end -->')
 # Skills Claude Code itself ships: a kit skill installed without a prefix must not take one of these names.
 BUNDLED_SKILLS = {'code-review', 'security-review', 'simplify', 'init', 'loop', 'schedule', 'claude-api', 'update-config',
                   'keybindings-help', 'fewer-permission-prompts', 'run', 'plugin-authoring', 'workflow-authoring'}
@@ -198,7 +198,7 @@ def finalize(p: Plan, active: bool = True) -> None:
     original = path.read_text(encoding='utf-8') if path.exists() else ''
     before, old_block, after = split_block(original, CLAUDE_MD, '~/.claude/CLAUDE.md')
     if old_block is not None and old_blocks.get(rel) != digest(old_block.encode('utf-8')):
-        raise KitError('Kit block edited by hand in ~/.claude/CLAUDE.md: move your changes outside the block, remove the block, then update.')
+        raise KitError('Kit block edited by hand in ~/.claude/CLAUDE.md: move your changes outside the block, remove the block, then ai-kit sync --offline.')
     outside = before.rstrip('\n')+('\n' if before.strip() and after.strip() else '')+after.lstrip('\n')
     block = block_text(p, p.adapter_data[NAME]['prefix'], p.adapter_data[NAME]['renamed']) if active else None
     if block is not None:
@@ -216,7 +216,7 @@ def finalize(p: Plan, active: bool = True) -> None:
         raise KitError('~/.claude/settings.json: hooks.'+' and hooks.'.join(events)+' must be lists; configuration left untouched.')
     mine = kit_hook_groups(hooks, events)
     if mine and old_blocks.get(rel) != digest(json_bytes(mine)):
-        raise KitError('Kit hook edited by hand in ~/.claude/settings.json (hooks.'+' or hooks.'.join(events)+'): put it back or remove it, then update.')
+        raise KitError('Kit hook edited by hand in ~/.claude/settings.json (hooks.'+' or hooks.'.join(events)+'): put it back or remove it, then ai-kit sync --offline.')
     new_groups = {event: [] for event in events}
     if active:
         for name, spec in p.hook_manifest.items():
@@ -250,7 +250,7 @@ def finalize(p: Plan, active: bool = True) -> None:
         raise KitError('~/.claude.json: mcpServers must be an object; configuration left untouched.')
     current = {name: servers[name] for name in previous if name in servers}
     if current and old_blocks.get(rel) != digest(json_bytes(current)):
-        raise KitError('Kit MCP server edited by hand in ~/.claude.json: put it back or remove it, then update.')
+        raise KitError('Kit MCP server edited by hand in ~/.claude.json: put it back or remove it, then ai-kit sync --offline.')
     wanted = {name: claude_server(name, server) for name, server in p.enabled_mcp.items()} if active else {}
     for name in wanted:
         if name in servers and name not in previous:
@@ -298,7 +298,7 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
         data = read_json(home/'.claude.json') if (home/'.claude.json').is_file() else {}
         missing = [n for n in kit_servers if n not in (data.get('mcpServers') or {})]
         status(not missing, 'MCP servers in ~/.claude.json'+(' (missing '+', '.join(missing)+': Claude Code may have rewritten the file while'
-               ' a session was open; close Claude Code, then update)' if missing else ''))
+               ' a session was open; close Claude Code, then ai-kit sync --offline)' if missing else ''))
     commands = sorted(rel.split('/')[2][:-3] for rel in state.get('files', {}) if rel.startswith(CLAUDE_DIR+'/commands/'))
     kit_skills = set((state.get('installed') or {}).get('skills', []))
     personal = sorted(c.name for c in (home/CLAUDE_DIR/'skills').iterdir() if c.is_dir() and c.name in kit_skills

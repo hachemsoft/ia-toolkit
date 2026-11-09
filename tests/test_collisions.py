@@ -9,6 +9,7 @@ from unittest import mock
 
 from installer import cli
 from installer.core import KitError, rename_references
+from personal import write_personal
 
 
 class Base(unittest.TestCase):
@@ -67,9 +68,7 @@ class GeminiTests(Base):
 
     def test_empty_prefix_refuses_a_collision(self):
         self.mine('.gemini/skills/tdd/SKILL.md')
-        overrides = self.home/'.ai-kit/overrides.toml'
-        overrides.parent.mkdir()
-        overrides.write_text('skill_prefix = ""\n', encoding='utf-8')
+        write_personal(self.home, {'skill_prefix': ''})
         with self.assertRaises(KitError):
             self.run_kit('gemini')
 

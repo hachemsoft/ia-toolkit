@@ -8,7 +8,7 @@ artifact: "spec.md"
 order: 20
 ---
 
-Activate the to-spec skill (if this skill is not installed here, follow the instructions below directly) for its synthesis method and keep the domain-modeling skill in mind. Two rules of this kit override to-spec: the interview already happened in /intent (do not interview again; see below for the decisions intent.md leaves open), and the output is a file, spec.md, never a ticket on the issue tracker (turning a spec into tickets is the to-tickets skill, on request). Do not ask the user to run setup-workflow.
+Activate the to-spec skill (if this skill is not installed here, follow the instructions below directly) for its synthesis method and keep the domain-modeling skill in mind. Two rules of this kit override to-spec: the interview already happened in /intent (do not interview again; see below for the decisions intent.md leaves open), and the output is a file, spec.md, never a ticket on the issue tracker (turning a spec into tickets is the to-tickets skill, on request). Do not ask the user to run ai-kit init-workflow.
 
 Stage: Design. Goal: spec.md that engineering can plan from, with areas of concern flagged.
 

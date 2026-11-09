@@ -2,7 +2,8 @@ import contextlib, io, json, os, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from installer.core import KitError, read_json, load_commands, command_skill_text, ROOT
 from installer.adapters.agy import AGY_PLUGIN
-from installer.toml_files import dump_toml
+from unittest import mock
+from personal import write_personal  # noqa: E402
 from v1_profiles import apply_as  # noqa: E402
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload,env=None):
@@ -14,7 +15,7 @@ class AgyAdapterTests(unittest.TestCase):
  def run_kit(self,role='data-analyst',target='both'):
   with contextlib.redirect_stdout(io.StringIO()):apply_as(role,self.home,False,None,target)
  def overrides(self,v):
-  p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
+  write_personal(self.home,v)
  def plugin(self):return self.home/AGY_PLUGIN
  def test_agy_settings_and_permissions_never_touched(self):
   st=self.home/'.gemini/antigravity-cli/settings.json';st.parent.mkdir(parents=True);before='{"permissions": {"allow": ["command(ls)"]}}';st.write_text(before,encoding='utf-8')
@@ -23,7 +24,7 @@ class AgyAdapterTests(unittest.TestCase):
  def test_plugin_generated(self):
   self.run_kit();p=self.plugin()
   self.assertEqual(read_json(p/'plugin.json')['name'],'ai-kit');rules=(p/'rules/AGENTS.md').read_text(encoding='utf-8')
-  for n in ('00_kit','10_company','20_team','30_user'):self.assertIn('@['+n+'](~/.ai-kit/context/'+n.upper()+'.md)',rules)
+  for n in ('00_kit','10_company','20_team','user'):self.assertIn('@['+n+'](~/.ai-kit/context/'+n.upper()+'.md)',rules)
   self.assertTrue((p/'agents/ai-kit-verifier.md').is_file());self.assertTrue((p/'agents/ai-kit-sql-reviewer.md').is_file())
   hooks=read_json(p/'hooks.json');self.assertEqual(hooks['ai-kit-dbt-prod-guard']['enabled'],False);self.assertEqual(hooks['ai-kit-dbt-prod-guard']['PreToolUse'][0]['matcher'],'run_command')
   self.assertFalse((p/'mcp_config.json').exists());self.assertIn('.gemini/config/plugins/ai-kit/plugin.json',read_json(self.home/'.ai-kit/state.json')['files'])
@@ -43,7 +44,9 @@ class AgyAdapterTests(unittest.TestCase):
  def test_switch_target_removes_plugin(self):
   self.run_kit();self.assertTrue(self.plugin().is_dir());self.run_kit(target='gemini');self.assertFalse((self.plugin()/'plugin.json').exists());self.assertFalse((self.home/'.gemini/skills/intent').exists())
  def test_hooks_enabled_and_mcp_in_plugin(self):
-  self.overrides({'hooks':{'dbt-prod-guard':True},'mcp':{'dbt':{'enabled':True,'server':{'command':'dbt-mcp'}}}});self.run_kit()
+  core={'defaults':{'mcp':{'dbt':{'server':{'command':'dbt-mcp'}}}}}  # the Core's mcp/servers.toml
+  self.overrides({'hooks':{'dbt-prod-guard':True},'mcp':{'dbt':True}})
+  with mock.patch('installer.plan.organization',return_value=core):self.run_kit()
   self.assertTrue(read_json(self.plugin()/'hooks.json')['ai-kit-dbt-prod-guard']['enabled']);self.assertIn('ai-kit-dbt',read_json(self.plugin()/'mcp_config.json')['mcpServers'])
  def test_modified_plugin_file_blocks(self):
   self.run_kit();(self.plugin()/'rules/AGENTS.md').write_text('mine',encoding='utf-8')

@@ -16,7 +16,7 @@ from unittest import mock
 from installer import cli, core
 from installer.adapters import claude
 from installer.core import ROOT, KitError, read_json
-from installer.toml_files import dump_toml
+from personal import write_personal  # noqa: E402
 from v1_profiles import apply_as  # noqa: E402
 
 H = ROOT/'runtime/hooks'
@@ -33,9 +33,15 @@ class Base(unittest.TestCase):
         self.addCleanup(patcher.stop)
 
     def overrides(self, value):
-        path = self.home/'.ai-kit/overrides.toml'
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(dump_toml(value), encoding='utf-8')
+        write_personal(self.home, value)
+
+    def core_servers(self, servers):
+        """The Core's MCP servers (mcp/servers.toml) for this test: each defined, turned on by the person in aikit.toml."""
+        org = {'defaults': {'mcp': {name: {'server': server} for name, server in servers.items()}}} if servers else {}
+        for target in ('installer.settings.organization', 'installer.plan.organization', 'installer.cli.organization', 'installer.doctor.organization'):
+            patcher = mock.patch(target, return_value=org)
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     def run_kit(self, target='claude', profile='general'):
         out = io.StringIO()
@@ -56,9 +62,9 @@ class InstallTests(Base):
         text = self.read('.claude/CLAUDE.md')
         self.assertTrue(text.startswith(claude.CLAUDE_MD[0]))
         self.assertIn('Always answer in French.', text)
-        for name in ('00_KIT.md', '10_COMPANY.md', '20_TEAM.md', '30_USER.md'):
+        for name in ('00_KIT.md', '10_COMPANY.md', '20_TEAM.md', 'USER.md'):
             self.assertRegex(text, r'(?m)^@.*/'+name+'$')
-        self.assertNotIn('Person:', text)  # 30_USER.md is imported, not copied
+        self.assertNotIn('Person:', text)  # USER.md is imported, not copied
         self.assertIn('AGENTS.md', text)
         self.run_kit()  # idempotent
         self.assertEqual(self.read('.claude/CLAUDE.md'), text)
@@ -170,9 +176,10 @@ class SettingsTests(Base):
     def test_mcp_servers_in_claude_json_translated_and_the_rest_kept(self):
         state = self.home/'.claude.json'
         state.write_text(json.dumps({'numStartups': 3, 'mcpServers': {'mine': {'type': 'stdio', 'command': 'x'}}}), encoding='utf-8')
-        self.overrides({'mcp': {'tool': {'server': {'command': 'npx', 'args': ['-y', 'tool'], 'env': {'TOKEN': '${TOOL_TOKEN}'}}},
-                                'docs': {'server': {'httpUrl': 'https://docs.example.org/mcp', 'headers': {'X': '1'}}},
-                                'events': {'server': {'url': 'https://events.example.org/sse'}}}})
+        self.core_servers({'tool': {'command': 'npx', 'args': ['-y', 'tool'], 'env': {'TOKEN': '${TOOL_TOKEN}'}},
+                           'docs': {'httpUrl': 'https://docs.example.org/mcp', 'headers': {'X': '1'}},
+                           'events': {'url': 'https://events.example.org/sse'}})
+        self.overrides({'mcp': {'tool': True, 'docs': True, 'events': True}})
         self.run_kit()
         data = read_json(state)
         self.assertEqual(data['numStartups'], 3)
@@ -181,20 +188,22 @@ class SettingsTests(Base):
         self.assertEqual(servers['ai-kit-tool'], {'type': 'stdio', 'command': 'npx', 'args': ['-y', 'tool'], 'env': {'TOKEN': '${TOOL_TOKEN}'}})
         self.assertEqual(servers['ai-kit-docs'], {'type': 'http', 'url': 'https://docs.example.org/mcp', 'headers': {'X': '1'}})
         self.assertEqual(servers['ai-kit-events'], {'type': 'sse', 'url': 'https://events.example.org/sse'})
-        self.overrides({'mcp': {'docs': {'server': {'httpUrl': 'https://docs.example.org/mcp', 'headers': {'X': '1'}}}}})
+        self.overrides({'mcp': {'docs': True}})
         self.run_kit()
         self.assertEqual(sorted(read_json(state)['mcpServers']), ['ai-kit-docs', 'mine'])
 
     def test_mcp_cwd_refused_and_no_file_created_without_servers(self):
         self.run_kit()
         self.assertFalse((self.home/'.claude.json').exists())
-        self.overrides({'mcp': {'tool': {'server': {'command': 'tool', 'cwd': '/srv'}}}})
+        self.core_servers({'tool': {'command': 'tool', 'cwd': '/srv'}})
+        self.overrides({'mcp': {'tool': True}})
         with self.assertRaises(KitError) as caught:
             self.run_kit()
         self.assertIn('cwd', str(caught.exception))
 
     def test_mcp_entry_edited_by_hand_stops_the_update(self):
-        self.overrides({'mcp': {'docs': {'server': {'httpUrl': 'https://docs.example.org/mcp'}}}})
+        self.core_servers({'docs': {'httpUrl': 'https://docs.example.org/mcp'}})
+        self.overrides({'mcp': {'docs': True}})
         self.run_kit()
         state = self.home/'.claude.json'
         data = read_json(state)
@@ -210,7 +219,8 @@ class RemovalTests(Base):
         (self.home/'.claude/CLAUDE.md').write_text('Mine.\n', encoding='utf-8')
         (self.home/'.claude/settings.json').write_text(json.dumps({'hooks': {'PreToolUse': [PERSONAL_HOOK]}}), encoding='utf-8')
         (self.home/'.claude.json').write_text(json.dumps({'mcpServers': {'mine': {'type': 'stdio', 'command': 'x'}}}), encoding='utf-8')
-        self.overrides({'mcp': {'docs': {'server': {'httpUrl': 'https://docs.example.org/mcp'}}}})
+        self.core_servers({'docs': {'httpUrl': 'https://docs.example.org/mcp'}})
+        self.overrides({'mcp': {'docs': True}})
         self.run_kit('claude')
         self.run_kit('gemini')
         self.assertEqual(self.read('.claude/CLAUDE.md'), 'Mine.\n')
@@ -281,7 +291,7 @@ class GuardrailPayloadTests(unittest.TestCase):
             self.assertTrue(self.denied(self.run_hook('dbt-prod-guard.py', {**base, 'tool_name': 'Bash', 'tool_input': {'command': 'dbt run --target prod'}}, home)))
             self.assertFalse(self.denied(self.run_hook('dbt-prod-guard.py', {**base, 'tool_name': 'Bash', 'tool_input': {'command': 'dbt run --target dev'}}, home)))
             for tool, key in (('Write', 'file_path'), ('Edit', 'file_path'), ('MultiEdit', 'file_path'), ('NotebookEdit', 'notebook_path')):
-                for target in ('.claude/settings.json', '.claude.json', '.ai-kit/overrides.toml'):
+                for target in ('.claude/settings.json', '.claude.json', '.ai-kit/aikit.toml'):
                     answer = self.run_hook('protected-paths.py', {**base, 'tool_name': tool, 'tool_input': {key: str(home/target)}}, home)
                     self.assertTrue(self.denied(answer), tool+' '+target)
             answer = self.run_hook('protected-paths.py', {**base, 'tool_name': 'Write', 'tool_input': {'file_path': str(home/'notes.md')}}, home)

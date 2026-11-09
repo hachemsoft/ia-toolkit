@@ -1,6 +1,6 @@
 """The kit's content as a Core repository in its V2 layout (V2 slice 8, docs/v2/resources.md): skills/<name>/ and agents/<name>.md
-flattened from their category folders, the commands, practices, profiles, templates and organization.toml, and the manifest
-aikit.toml with kind = "core". The engine reads both layouts; this one is what a Core repository holds.
+flattened from their category folders, the commands, context, templates, workflows, MCP servers, CHANGELOG.md and NEWS.md,
+and the manifest aikit.toml with kind = "core". The engine reads both layouts; this one is what a Core repository holds.
 
 Usage: python3 scripts/export_core.py <empty folder> [--git]
   --git  also makes it a Git repository with one commit and the tag v<VERSION>, ready to be pushed where the organization
@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 
 from installer.resolve import agent_catalog, skill_catalog  # noqa: E402
 
-COPIED = ('commands', 'context', 'templates')
+COPIED = ('commands', 'context', 'templates', 'workflows', 'mcp', 'CHANGELOG.md', 'NEWS.md')
 
 
 def export(dest):
@@ -26,6 +26,8 @@ def export(dest):
     dest.mkdir(parents=True, exist_ok=True)
     for name in COPIED:
         source = ROOT/name
+        if not source.exists():
+            continue
         (shutil.copytree if source.is_dir() else shutil.copy2)(source, dest/name)
     for skill, entry in skill_catalog(ROOT).items():
         if 'path' in entry:
@@ -38,8 +40,8 @@ def export(dest):
         shutil.copy2(ROOT/entry['path'], dest/'agents'/(agent+'.md'))
     version = (ROOT/'VERSION').read_text(encoding='utf-8').strip()
     (dest/'aikit.toml').write_text('#:schema https://github.com/hachemsoft/ia-toolkit/blob/main/schemas/source.schema.json\n'
-                                   'schema = 1\nname = "core"\nkind = "core"\nmin_engine = "3.0.0"\n', encoding='utf-8')
-    (dest/'README.md').write_text('# AI Kit Core\n\nThe content AI Kit installs: skills, agents, commands, practices. Exported from the kit '
+                                   'schema = 1\nname = "core"\nkind = "core"\nmin_engine = "4.0.0"\n', encoding='utf-8')
+    (dest/'README.md').write_text('# AI Kit Core\n\nThe content AI Kit installs: skills, agents, commands, context. Exported from the kit '
                                   + version+' by scripts/export_core.py. Check a change with `ai-kit validate --path .` before tagging '
                                   'a release vX.Y.Z; workstations install the highest stable tag with `ai-kit sync`.\n', encoding='utf-8')
     return version

@@ -76,7 +76,7 @@ class InstalledTests(unittest.TestCase):
     def state(self):
         return json.loads((self.home/'.ai-kit/state.json').read_text(encoding='utf-8'))
 
-    def test_state_records_versions_and_update_says_what_changed(self):
+    def test_state_records_versions_and_a_reapply_says_what_changed(self):
         self.run_kit()
         recorded = self.state()['installed']['versions']
         self.assertEqual(recorded['skills']['tdd'], versions.catalog_versions()['skills']['tdd'])
@@ -87,7 +87,7 @@ class InstalledTests(unittest.TestCase):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             cli.doctor_checks(self.home)
-        self.assertIn('skill tdd 0.9.0 → '+recorded['skills']['tdd']+'; run update', out.getvalue())
+        self.assertIn('skill tdd 0.9.0 → '+recorded['skills']['tdd']+'; run ai-kit sync --offline', out.getvalue())
         notices = self.run_kit()
         self.assertTrue(any('Updated: skill tdd 0.9.0 → ' in n for n in notices))
         self.assertFalse(any('Updated:' in n for n in self.run_kit()))  # nothing to say the next time

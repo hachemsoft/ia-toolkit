@@ -6,10 +6,10 @@ Standard library only, run with `python -I` (no current folder, no PYTHONPATH, n
 3. installs the kit package and its dependencies there: from the release ZIP's wheels/ folder only (no index, no download),
    or from a git clone (built by pip, dependencies from the package index pip is already configured for);
 4. runs the kit (python -m ai_kit) with that environment's Python, from the person's current folder;
-5. for update in a git clone, first fetches the new version with git, never over local changes.
+5. with no action given (a double-click), runs init. A new engine version comes as a new ZIP (or git pull in a clone).
 
 It never activates the environment for the person, never touches the global Python, and needs no administrator rights.
-The kit itself (installer/command.py) adds the `ai-kit` command to the person's own PATH when they chose it at setup. Messages are plain text: the interface libraries are not installed yet.
+The kit itself (installer/command.py) adds the `ai-kit` command to the person's own PATH when they chose it at init. Messages are plain text: the interface libraries are not installed yet.
 """
 import hashlib
 import json
@@ -64,7 +64,7 @@ def option(argv, name):
 
 def action_of(argv):
     """The action: the first argument that is not an option or an option's value."""
-    takes_value = {'--home', '--profile', '--user', '--team', '--target', '--since', '--json', '--min-sessions', '--min-prompts'}
+    takes_value = {'--home', '--user', '--target', '--command-on-path', '--url', '--from-bundle', '--out', '--path', '--since', '--json', '--min-sessions', '--min-prompts'}
     skip = False
     for arg in argv:
         if skip:
@@ -250,32 +250,6 @@ def ensure_runtime(runtime, kind):
     return python, True
 
 
-def git(*args):
-    # The clone's own config is not trusted (0.51.1): core.fsmonitor and core.hooksPath would run a program during update.
-    return subprocess.run(['git', '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath='+os.devnull, '-C', str(KIT_DIR), *args],
-                          capture_output=True, text=True, encoding='utf-8', errors='replace', stdin=subprocess.DEVNULL, timeout=300)
-
-
-def fetch_new_version():
-    """update in a git clone: fast-forward only, never over local changes, never a reset, stash or merge. (status, detail)."""
-    if not (KIT_DIR/'.git').exists():
-        return 'skipped', 'not a git clone'
-    if not shutil.which('git'):
-        return 'failed', 'git is not installed'
-    try:
-        if git('diff', '--quiet').returncode != 0 or git('diff', '--cached', '--quiet').returncode != 0:
-            return 'refused', 'the kit folder has local changes: nothing was fetched; commit them or set them aside yourself, then update again'
-        before = git('rev-parse', '--short', 'HEAD').stdout.strip()
-        pulled = git('pull', '--ff-only', '--quiet')
-    except (OSError, subprocess.SubprocessError) as exc:
-        return 'failed', str(exc)
-    if pulled.returncode != 0:
-        reason = (pulled.stderr or pulled.stdout).strip().splitlines()
-        return 'failed', (reason[-1] if reason else 'git pull --ff-only failed')+' (network, credentials or a diverging history; nothing was changed)'
-    after = git('rev-parse', '--short', 'HEAD').stdout.strip()
-    return 'ok', ('already the latest version ('+after+')' if before == after else before+' → '+after)
-
-
 def main(argv):
     try:
         check_python()
@@ -285,30 +259,15 @@ def main(argv):
         action = action_of(args)
         home = Path(option(args, '--home') or Path.home()).expanduser().resolve()
         runtime = home/'.ai-kit'/'runtime'
-        fetched = None
+        if not args or action is None:
+            args = ['init', *args]  # double-clicking the installer: a first installation, or a re-check of this one
         with Lock(runtime/'install.lock'):
-            if action == 'update' and kind == 'source':
-                say('Step 1/3: fetching the new version of the kit (git pull --ff-only)…')
-                fetched = fetch_new_version()
-                say('  '+{'ok': 'Fetched: ', 'skipped': 'Not fetched: ', 'refused': 'Not fetched: ', 'failed': 'Fetch failed: '}[fetched[0]]+fetched[1])
-                say('Step 2/3: kit package in the private environment…')
-            elif action == 'update':
-                say('Step 1/3: version of this folder: '+kit_version()+' (a newer version comes as a new ZIP: run its installer).')
-                say('Step 2/3: kit package in the private environment…')
             python, installed = ensure_runtime(runtime, kind)
             version = installed_version(python)
             if version != kit_version():
                 say('The kit folder holds version '+kit_version()+' but the private environment has '+str(version)+'.')
-            elif action == 'update':
-                say('  Kit package '+str(version)+(' installed.' if installed else ' already installed.'))
-            if action == 'update':
-                say('Step 3/3: applying the configuration…')
             code = subprocess.call([str(python), '-I', '-m', 'ai_kit', *args], env={**clean_env(), 'AI_KIT_LAUNCHER': '1',
                                    'AI_KIT_SOURCE': kind, 'AI_KIT_SOURCE_DIR': str(KIT_DIR)})
-        if fetched and fetched[0] in ('failed', 'refused'):
-            say('\nUpdate incomplete: the new version was not fetched ('+fetched[1]+'). '
-                + ('The configuration of version '+str(version)+' was reapplied.' if code == 0 else 'The configuration step failed too (see above).'))
-            return code or 1
         if action == 'uninstall' and remove_runtime and code == 0 and '--dry-run' not in args:
             # The kit has exited: its environment can be removed without deleting files in use.
             shutil.rmtree(runtime/'venv', ignore_errors=True)

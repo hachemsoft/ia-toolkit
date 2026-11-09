@@ -31,10 +31,10 @@ RULES = (
      'starts the agent without confirmations or sandbox'),
     ('guardrail-off', re.compile(r'\b(?:disable|turn\s+off|switch\s+off|bypass|deactivate)\s+(?:the\s+|a\s+|all\s+|every\s+)?'
                                  r'(?:kit\'?s?\s+)?(?:guardrails?|protected-paths|dbt-prod-guard|sandbox)\b', re.I),
-     'tells the agent to remove a guardrail; only the person turns one off, in overrides.toml'),
+     'tells the agent to remove a guardrail; only the person turns one off, in aikit.toml'),
     ('config-write', re.compile(r'\b(?:write|edit|modify|change|append|overwrite)\b[^\n]{0,40}(?:~|\$HOME|%USERPROFILE%)[/\\]'
                                 r'(?:\.claude[/\\]settings\.json|\.claude\.json|\.codex[/\\]config\.toml|\.gemini[/\\]settings\.json'
-                                r'|\.ai-kit[/\\](?:overrides\.toml|state\.json|hooks))', re.I),
+                                r'|\.ai-kit[/\\](?:aikit\.toml|lock\.toml|state\.json|hooks))', re.I),
      'tells the agent to change the kit\'s or a CLI\'s configuration (ADR 0006)'),
 )
 

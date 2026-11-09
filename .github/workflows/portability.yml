@@ -52,9 +52,9 @@ jobs:
       - name: Settings files follow their schemas
         run: |
           pip install check-jsonschema==0.29.4
-          check-jsonschema --check-metaschema schemas/overrides.schema.json schemas/organization.schema.json schemas/managed.schema.json schemas/aikit.schema.json schemas/source.schema.json
+          check-jsonschema --check-metaschema schemas/managed.schema.json schemas/aikit.schema.json schemas/source.schema.json
           check-jsonschema --schemafile schemas/source.schema.json aikit.toml examples/team-repo/aikit.toml
-          check-jsonschema --schemafile schemas/overrides.schema.json templates/user-overrides.toml
+          check-jsonschema --schemafile schemas/aikit.schema.json templates/user-aikit.toml
       - name: NEWS.md well formed
         run: python3 scripts/check_news.py
       - name: Skills, agents and commands carry no risky instruction, secret or undeclared script

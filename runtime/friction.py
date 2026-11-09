@@ -5,7 +5,7 @@ Usage: python3 ~/.ai-kit/bin/friction.py --category <command|skill|guardrail|rul
        python3 ~/.ai-kit/bin/friction.py --list [N]     the last N frictions (10)
        python3 ~/.ai-kit/bin/friction.py --sync         send to the tracker what was not sent
 The context (kit version, team, system) is added automatically. Nothing is sent, unless IT set a friction tracker
-(managed.toml [frictions.tracker], or organization.toml [friction_tracker] in an older Core, recorded by update in state.json): then a friction whose
+(managed.toml [frictions.tracker], recorded by the installation in state.json): then a friction whose
 source is in its `sources` (agent by default: --source agent when the agent logs on its own) is created as an issue
 through the person's own glab or gh, signed in by them; the kit holds no token. Any failure keeps the friction local.
 `ai-kit friction` runs this very file (installer/cli.py imports it): one implementation, --home for a trial home.
@@ -197,9 +197,9 @@ def send_line(status, detail):
     if status == 'sent':
         return 'Issue created: ' + detail
     if status == 'waiting':
-        return 'Not sent yet: your organization asks for your approval. Run ai-kit friction --sync in a terminal to send it.'
+        return 'Not sent yet: your organization asks for your approval. Run ai-kit friction --publish in a terminal to send it.'
     if status == 'failed':
-        return 'Issue not created (' + detail + '): the friction is kept locally; ai-kit friction --sync sends it later.'
+        return 'Issue not created (' + detail + '): the friction is kept locally; ai-kit friction --publish sends it later.'
     return ''
 
 def entries(home=None):
@@ -292,6 +292,24 @@ def sync(home=None):
             break
     return lines
 
+def analyze(home=None):
+    """The local frictions grouped by fingerprint, the most frequent first: what keeps getting in the way (ADR 0023). Local only."""
+    groups = {}
+    for entry in entries(home)[1]:
+        mark = entry.get('fingerprint') or fingerprint(entry)
+        group = groups.setdefault(mark, {'count': 0, 'first': entry.get('ts', ''), 'last': '', 'entry': entry})
+        group['count'] += 1
+        group['last'] = max(group['last'], entry.get('ts', ''))
+        group['first'] = min(group['first'], entry.get('ts', '')) or entry.get('ts', '')
+    if not groups:
+        return ['No friction logged here.']
+    lines = [str(len(groups))+' distinct friction(s), the most frequent first:']
+    for group in sorted(groups.values(), key=lambda g: (-g['count'], g['last'])):
+        e = group['entry']
+        lines.append('  '+str(group['count'])+'x ['+str(e.get('category'))+'] /'+str(e.get('command', 'none'))+': '+str(e.get('text', ''))
+                     + ' ('+group['first'][:10]+(' to '+group['last'][:10] if group['last'][:10] != group['first'][:10] else '')+')')
+    return lines
+
 def listing(home=None, count=10):
     """The last frictions, oldest first, one line each: id, date, category, command, sentence."""
     path, found = entries(home)
@@ -304,7 +322,7 @@ def listing(home=None, count=10):
                      + '  ' + str(entry.get('text', '')) + ('  -> ' + sent[entry['id']]['url'] if entry['id'] in sent else ''))
     pending = len(unsent(home))
     lines.append(str(len(found)) + ' friction' + ('s' if len(found) != 1 else '') + ' in ' + path
-                 + ('; ' + str(pending) + ' not sent to the tracker yet (--sync).' if pending else '; nothing is sent.' if not tracker(home) else '.'))
+                 + ('; ' + str(pending) + ' not sent to the tracker yet (ai-kit friction --publish).' if pending else '; nothing is sent.' if not tracker(home) else '.'))
     return lines
 
 def main(argv=None):
@@ -316,6 +334,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Log a friction, locally.')
     parser.add_argument('--category', choices=CATEGORIES, help='required to log a friction')
     parser.add_argument('--list', nargs='?', const=10, type=int, metavar='N', help='show the last N frictions (10) instead of logging one')
+    parser.add_argument('--analyze', action='store_true', help='group the local frictions by kind, the most frequent first (nothing is sent)')
     parser.add_argument('--sync', action='store_true', help='send to the tracker the frictions not sent yet, instead of logging one')
     parser.add_argument('--source', default='person', choices=SOURCES, help='agent when the agent logs on its own (auto mode); person otherwise')
     parser.add_argument('--home', help='home folder of the kit installation (default: yours)')
@@ -325,6 +344,9 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.list is not None:
         print('\n'.join(listing(args.home, args.list)))
+        return 0
+    if args.analyze:
+        print('\n'.join(analyze(args.home)))
         return 0
     if args.sync:
         lines = sync(args.home)

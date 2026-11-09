@@ -10,7 +10,7 @@ from .commit import commit_changes, KIT_MANAGED
 from .doctor import source_folder
 
 
-PERSONAL_KEPT = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/sources/', '.ai-kit/overrides.toml', '.ai-kit/overrides.json', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learning/', '.ai-kit/runtime/')
+PERSONAL_KEPT = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/sources/', '.ai-kit/backups/', '.ai-kit/frictions.jsonl', '.ai-kit/learning/', '.ai-kit/runtime/')
 
 
 def _nothing():
@@ -81,7 +81,7 @@ def plan_command(p, managed_write, choice):
         else:
             p.notices.append('[Info] Shell not recognised: add this line to your shell startup file to use the `ai-kit` command: '+line)
     if new:
-        p.notices.append('[Info] `ai-kit` command installed: open a new terminal to use it (ai-kit doctor, ai-kit update).')
+        p.notices.append('[Info] `ai-kit` command installed: open a new terminal to use it (ai-kit status, ai-kit doctor).')
     return entry, after
 
 
@@ -96,7 +96,7 @@ def remove_command(home, state, writes):
 
 def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
     """Removes what the kit installed and nothing else: the managed files it can recognise as unchanged, its blocks and
-    entries in the CLIs' settings, and its state. Kept: the personal context (30_USER.md), overrides.toml, the backups,
+    entries in the CLIs' settings, and its state. Kept: the personal context (USER.md), aikit.toml, the backups,
     frictions, the CLIs' folders and the person's own settings; a managed file modified by hand is kept and named.
     No network, no model. confirm(report) -> bool is asked before any change (interactive); returns an exit code."""
     home = home.resolve()
@@ -138,7 +138,7 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
         print('  Clean the kit entries in: '+line)
     for line in kept:
         print('[Check] '+line)
-    print('Kept: your personal context, overrides.toml, backups and frictions, the CLIs and their own settings.')
+    print('Kept: your personal context, aikit.toml, backups and frictions, the CLIs and their own settings.')
     if dry_run:
         print('Dry run: nothing changed.')
         return 0

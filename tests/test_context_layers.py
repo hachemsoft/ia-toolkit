@@ -13,15 +13,15 @@ class ContextLayerTests(unittest.TestCase):
   f=self.path(p);f.parent.mkdir(parents=True,exist_ok=True);f.write_text(text,encoding='utf-8');return f
  def test_fresh_install_layers(self):
   self.run_kit()
-  for name in ('00_KIT.md','10_COMPANY.md','20_TEAM.md','30_USER.md'):
+  for name in ('00_KIT.md','10_COMPANY.md','20_TEAM.md','USER.md'):
    self.assertTrue(self.path('.ai-kit/context/'+name).is_file(),name);self.assertTrue(self.path('.gemini/'+name).is_file(),name)  # the file, Gemini's copy
   self.assertNotIn('Profile:',self.path('.gemini/00_KIT.md').read_text(encoding='utf-8'))  # 2.2: no profiles in the context
   self.assertIn('Team practices',self.path('.gemini/20_TEAM.md').read_text(encoding='utf-8'))
   state=read_json(self.path('.ai-kit/state.json'));self.assertEqual(state['schema_version'],2);self.assertNotIn('context_hash',state)
-  self.assertIn('.gemini/00_KIT.md',state['files']);self.assertIn('.gemini/30_USER.md',state['files']);self.assertNotIn('.ai-kit/context/30_USER.md',state['files'])
+  self.assertIn('.gemini/00_KIT.md',state['files']);self.assertIn('.gemini/USER.md',state['files']);self.assertNotIn('.ai-kit/context/USER.md',state['files'])
   self.assertFalse(self.path('.gemini/GEMINI.md').exists());self.assertFalse(self.path('.ai-kit/preferences.md').exists())
  def test_user_layer_never_rewritten(self):
-  self.run_kit();u=self.path('.gemini/30_USER.md');u.write_text('Personal',encoding='utf-8');self.run_kit('data-developer');self.assertEqual(u.read_text(encoding='utf-8'),'Personal')
+  self.run_kit();u=self.path('.gemini/USER.md');u.write_text('Personal',encoding='utf-8');self.run_kit('data-developer');self.assertEqual(u.read_text(encoding='utf-8'),'Personal')
   doctor_out=io.StringIO()
   with contextlib.redirect_stdout(doctor_out):doctor(self.home)
   self.assertEqual([line for line in doctor_out.getvalue().splitlines() if line.startswith('[Check]') and 'PATH' not in line and 'approved in Codex' not in line],[],doctor_out.getvalue());self.assertIn('[OK] Personal context present',doctor_out.getvalue())
@@ -43,7 +43,7 @@ class ContextLayerTests(unittest.TestCase):
  def test_migration_from_legacy_block(self):
   self.legacy_state('old block');self.run_kit()
   self.assertEqual(self.path('.gemini/GEMINI.md').read_text(encoding='utf-8'),'My notes\n')
-  self.assertEqual(self.path('.gemini/30_USER.md').read_text(encoding='utf-8'),'# My preferences\n- English\n')
+  self.assertEqual(self.path('.gemini/USER.md').read_text(encoding='utf-8'),'# My preferences\n- English\n')
   self.assertFalse(self.path('.ai-kit/preferences.md').exists());self.assertTrue(self.path('.ai-kit/preferences.md.migrated').exists())
   self.assertEqual(read_json(self.path('.ai-kit/state.json'))['schema_version'],2)
   self.run_kit();self.assertEqual(self.path('.gemini/GEMINI.md').read_text(encoding='utf-8'),'My notes\n')
@@ -61,9 +61,9 @@ class ContextLayerTests(unittest.TestCase):
   self.run_kit();self.assertFalse(old.exists())
  def test_state_never_deletes_user_layer(self):
   self.run_kit();state_path=self.path('.ai-kit/state.json');state=read_json(state_path)
-  state['files']['.ai-kit/context/30_USER.md']=digest(self.path('.ai-kit/context/30_USER.md').read_bytes());state_path.write_text(json.dumps(state),encoding='utf-8')
+  state['files']['.ai-kit/context/USER.md']=digest(self.path('.ai-kit/context/USER.md').read_bytes());state_path.write_text(json.dumps(state),encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()
-  self.assertTrue(self.path('.ai-kit/context/30_USER.md').exists())
+  self.assertTrue(self.path('.ai-kit/context/USER.md').exists())
  def test_doctor_detects_missing_layer_and_legacy_block(self):
   self.run_kit();self.path('.gemini/10_COMPANY.md').unlink();self.write('.gemini/GEMINI.md',START+'\nx\n'+END+'\n')
   out=io.StringIO()
@@ -74,7 +74,7 @@ class ContextLayerTests(unittest.TestCase):
   with contextlib.redirect_stdout(out):doctor(self.home)
   text=out.getvalue();self.assertIn('[OK] context.fileName contains',text);self.assertNotIn('[Check] .gemini/',text)
  def test_kit_template_has_priority_rules(self):
-  text=(ROOT/'templates/kit-context.md').read_text(encoding='utf-8');self.assertIn('30_USER.md',text);self.assertIn('AGENTS.md',text);self.assertIn('CLAUDE.md',text);self.assertIn('extra_commands',text);self.assertIn('{frictions}',text);self.assertLess(len(text),3800)
+  text=(ROOT/'templates/kit-context.md').read_text(encoding='utf-8');self.assertIn('USER.md',text);self.assertIn('AGENTS.md',text);self.assertIn('CLAUDE.md',text);self.assertIn('extra_commands',text);self.assertIn('{frictions}',text);self.assertLess(len(text),3800)
 if __name__=='__main__':unittest.main()
 
 
@@ -106,7 +106,7 @@ class RuleLayerRestoreTests(unittest.TestCase):
 
     def test_personal_context_never_restored(self):
         self.run_kit()
-        user_file = self.home/'.gemini/30_USER.md'
+        user_file = self.home/'.gemini/USER.md'
         user_file.write_text('# Mine\n', encoding='utf-8')
         self.run_kit()
         self.assertEqual(user_file.read_text(encoding='utf-8'), '# Mine\n')

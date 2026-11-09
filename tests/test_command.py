@@ -1,6 +1,6 @@
 """The `ai-kit` command: a script in ~/.ai-kit/bin that runs the launcher of the kit folder, and that folder on the
-person's own PATH (user registry on Windows, a marked block in the shell startup file elsewhere). Chosen at setup, kept
-by update, removed by uninstall; nothing without a kit folder."""
+person's own PATH (user registry on Windows, a marked block in the shell startup file elsewhere). Chosen at init, kept
+by a re-apply, removed by uninstall; nothing without a kit folder."""
 import contextlib
 import io
 import os
@@ -189,40 +189,17 @@ class InstallTests(Base):
 
 
 class ChoiceTests(Base):
-    """The question at setup (only with a kit folder), the command-line option, and update keeping the choice."""
-    def test_wizard_asks_only_with_a_kit_folder_and_no_is_kept_by_update(self):
-        from installer import wizard
-        from installer.ui import PlainUI
-        def run(*answers):
-            answers = list(answers)
-            prompts = []
-            def ask(prompt):
-                prompts.append(prompt)
-                if not answers:
-                    raise EOFError()
-                return answers.pop(0)
-            with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(cli, 'detect_identity', return_value={}):
-                code = wizard.start(PlainUI(out=io.StringIO(), ask=ask), self.home)
-            return code, prompts
-        # CLIs, profile, email, the command (no), keep the profile, Install, no quick questions.
-        code, prompts = run('', '', 'a@example.org', 'n', '', '', 'n')
-        self.assertEqual(code, 0)
-        self.assertTrue(any('`ai-kit` command' in p for p in prompts), prompts)
-        self.assertFalse(self.shim().exists())
-        self.apply()  # update: the recorded answer stands
-        self.assertFalse(self.shim().exists())
-        with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': ''}):
-            code, prompts = run('', '', 'a@example.org', '', '', 'n')
-        self.assertEqual(code, 0)
-        self.assertFalse(any('`ai-kit` command' in p for p in prompts), prompts)
-
+    """AI Kit 3: no guided installer; the choice is init's option, yes the first time, and a re-apply keeps it."""
     def test_command_line_option(self):
         with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(cli, 'interactive', return_value=False):
-            self.assertEqual(cli.main(['setup', '--profile', 'general', '--user', 'a@example.org', '--home', str(self.home), '--command-on-path', 'no']), 0)
+            self.assertEqual(cli.main(['init', '--user', 'a@example.org', '--target', 'gemini', '--home', str(self.home), '--command-on-path', 'no']), 0)
             self.assertFalse(self.shim().exists())
-            self.assertEqual(cli.main(['update', '--home', str(self.home), '--command-on-path', 'yes']), 0)
+            self.assertFalse(read_json(self.home/'.ai-kit/state.json')['command']['chosen'])
+            self.assertEqual(cli.main(['sync', '--offline', '--home', str(self.home)]), 0)  # the recorded answer stands
+            self.assertFalse(self.shim().exists())
+            self.assertEqual(cli.main(['init', '--home', str(self.home), '--command-on-path', 'yes']), 0)
             self.assertTrue(self.shim().is_file())
-            self.assertEqual(cli.main(['update', '--home', str(self.home)]), 0)
+            self.assertEqual(cli.main(['init', '--home', str(self.home)]), 0)
             self.assertTrue(self.shim().is_file())
 
 

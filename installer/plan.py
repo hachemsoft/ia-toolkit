@@ -1,21 +1,20 @@
 """The steps of a neutral plan, before any adapter: the settings that apply, what is selected, the personal file, the
 practices, skills, agents and guardrails, and the old files to remove. apply (installer/cli.py) runs them in order."""
-import re
 
-from .core import content_root, is_guardrail, ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, adopt_user_copy
-from .toml_files import dump_toml, set_list, set_key, set_schema, set_section_key
+from .core import content_root, ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, adopt_user_copy
+from .toml_files import set_schema, set_section_key
 from .config import AIKIT_FILE
 from .adapters import ADAPTERS
 from .settings import (organization, team_settings, personal_settings, merge_settings, allowed_commands, resolve_skills,
-                       practice_file, RENAMED_SKILLS, PERSONAL_FILE, LEGACY_PERSONAL_FILE, CHOICE_KEYS, SCALAR_CHOICES)
+                       practice_file, CHOICE_KEYS, SCALAR_CHOICES)
 from .commit import KIT_MANAGED
 
 LIST_KEYS = ('extra_skills', 'disabled_skills', 'extra_agents', 'disabled_agents', 'extra_commands', 'disabled_commands')
 
 
 def effective_settings(kit, team, choices):
-    """Organization defaults, then the team's settings, then the person's own overrides on top (never replaced wholesale),
-    with the choices of this run. Returns (organization defaults, team layer, personal, merged overrides, choices)."""
+    """The Core's defaults, then the Team's settings, then the person's aikit.toml on top (never replaced wholesale),
+    with the choices of this run. Returns (Core defaults, team layer, personal, merged overrides, choices)."""
     org_defaults, team_layer, personal = organization().get('defaults', {}), team_settings(team), personal_settings(kit)
     choices = {k: (v if k in SCALAR_CHOICES else list(v)) for k, v in (choices or {}).items()}
     if set(choices) - set(CHOICE_KEYS) - set(SCALAR_CHOICES):
@@ -38,49 +37,24 @@ def resolve_selection(profile, overrides, catalog, manifest):
             if name not in command_names:
                 raise KitError(key+': unknown command '+name+'. Kit commands: '+', '.join(command_names))
     # A command added in one line (extra_commands) also installs its skills.
-    # Skills renamed in 0.26 (a skill no longer shares a command's name): an old name in overrides.toml still works.
-    for key in ('extra_skills', 'disabled_skills'):
-        renamed = [name for name in overrides.get(key, []) if name in RENAMED_SKILLS]
-        if renamed:
-            print('[Info] overrides.toml '+key+': '+', '.join(n+' is now '+RENAMED_SKILLS[n] for n in renamed)+'; update the name when convenient.')
-            overrides[key] = [RENAMED_SKILLS.get(name, name) for name in overrides[key]]
     extra_command_skills = [s for c in manifest if c['name'] in overrides.get('extra_commands', []) for s in c['skills']]
     selected = resolve_skills({**profile, 'skills': list(profile['skills']) + extra_command_skills}, overrides, catalog)
     return selected, allowed_commands(profile.get('commands'), overrides, command_names)
 
 
 def personal_file(kit, choices, deletes):
-    """The text of ~/.ai-kit/overrides.toml after this run: created once, migrated from overrides.json, or kept with only
-    the chosen lists changed. A migrated JSON file goes into deletes. Returns (path, bytes, notices)."""
-    # The schema is copied into ~/.ai-kit: the personal file never points to the extracted kit folder, which may be deleted.
-    schema_uri = (kit/'schemas'/'overrides.schema.json').as_uri()
-    personal_path, legacy_path, notices = kit/PERSONAL_FILE, kit/LEGACY_PERSONAL_FILE, []
-    if (kit/AIKIT_FILE).exists():
-        # 2.0: the person moved to aikit.toml; the choices go to its [user] section (frictions to [frictions] capture).
-        path, text = kit/AIKIT_FILE, (kit/AIKIT_FILE).read_text(encoding='utf-8-sig')
-        for key, values in choices.items():
-            text = set_section_key(text, 'frictions', 'capture', values, '~/.ai-kit/aikit.toml') if key == 'frictions' else set_section_key(text, 'user', key, list(values), '~/.ai-kit/aikit.toml')
-        return path, text.encode('utf-8'), notices
-    if personal_path.exists():
-        text = personal_path.read_text(encoding='utf-8-sig')
-        if re.search(r'(?m)^#:schema .*schemas/overrides\.schema\.json\s*$', text):
-            text = set_schema(text, schema_uri)  # an earlier version may have pointed it to the kit folder
-        if legacy_path.exists():
-            notices.append('[Check] ~/.ai-kit/overrides.json is no longer read: ~/.ai-kit/overrides.toml is. Move what you still '
-                           'need from the JSON file, then delete it.')
-    elif legacy_path.exists():
-        # 0.37: the same settings in TOML, the _ explanations as # comments; checked by reading it back before anything is written.
-        text = dump_toml(read_json(legacy_path), schema_uri)
-        deletes.append(legacy_path)
-        notices.append('[Info] ~/.ai-kit/overrides.json is now ~/.ai-kit/overrides.toml (0.37): the same settings, its _ explanations '
-                       'as # comments. The JSON file is in this update\'s backup.')
+    """The text of ~/.ai-kit/aikit.toml after this run: created once from the template, then only the chosen keys changed
+    ([user] lists, [frictions] capture), the person's other keys and comments kept. Returns (path, bytes, notices)."""
+    path = kit/AIKIT_FILE
+    if path.exists():
+        text = path.read_text(encoding='utf-8-sig')
     else:
-        # Created once, pointing to the schema so that editors complete and check the keys.
-        text = set_schema((ROOT/'templates/user-overrides.toml').read_text(encoding='utf-8'), schema_uri)
+        # Created once, pointing to the schema copied into ~/.ai-kit (never to a kit folder that may be deleted).
+        text = set_schema((ROOT/'templates/user-aikit.toml').read_text(encoding='utf-8'), (kit/'schemas'/'aikit.schema.json').as_uri())
     for key, values in choices.items():
-        # Only the chosen keys change; the person's other keys and comments stay.
-        text = set_key(text, key, values, '~/.ai-kit/overrides.toml') if key in SCALAR_CHOICES else set_list(text, key, values, '~/.ai-kit/overrides.toml')
-    return personal_path, text.encode('utf-8'), notices
+        text = (set_section_key(text, 'frictions', 'capture', values, '~/.ai-kit/aikit.toml') if key == 'frictions'
+                else set_section_key(text, 'user', key, list(values), '~/.ai-kit/aikit.toml'))
+    return path, text.encode('utf-8'), []
 
 
 def practice_layers(profile):
@@ -120,26 +94,17 @@ def select_agents(profile, overrides, agent_catalog, load_agent):
     return agents
 
 
-# 0.51: session-news renamed whats-new; a setting written with the old name keeps its effect (update says so).
-RENAMED_HOOKS = {'session-news': 'whats-new'}
-
-
 def guardrails(overrides, hooks_dir, managed_locked=(), managed_off=()):
-    """The guardrails to enable. A guardrail marked "default" in the manifest is on unless overrides.toml sets it to false;
-    one the organization locks stays on, whatever a team or a person writes (organization.toml locked_hooks).
+    """The guardrails to enable. A guardrail marked "default" in the manifest is on unless the person's aikit.toml sets it to
+    false; one IT locks (managed.toml hooks.locked) stays on, whatever a Team or a person writes.
     Returns (manifest, enabled guardrails, the locked ones a setting tried to turn off)."""
     hook_manifest = read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})
     wanted_hooks = overrides.get('hooks', {})
     if not isinstance(wanted_hooks, dict) or not all(isinstance(v, bool) for v in wanted_hooks.values()):
         raise KitError('hooks must be an object name → true/false.')
-    wanted_hooks = {RENAMED_HOOKS.get(n, n): v for n, v in wanted_hooks.items() if not (n in RENAMED_HOOKS and RENAMED_HOOKS[n] in wanted_hooks)}
     wanted_hooks = {**{n: True for n, spec in hook_manifest.items() if spec.get('default')}, **wanted_hooks}
-    locked = organization().get('locked_hooks', [])
-    if not isinstance(locked, list) or not all(isinstance(n, str) and n in hook_manifest and is_guardrail(hook_manifest[n]) for n in locked):
-        raise KitError('organization.toml: locked_hooks must list guardrails of the kit ('+', '.join(sorted(n for n, s in hook_manifest.items() if is_guardrail(s)))+').')
-    # managed.toml: hooks.locked adds to the organization's locks (a restriction); a guardrail IT turns off is no longer forced on
-    # by organization.toml, whose lock binds the team and the person, not IT (ADR 0015).
-    locked = [n for n in dict.fromkeys(list(locked) + list(managed_locked)) if n not in managed_off]
+    # IT's locks (managed.toml hooks.locked); a guardrail IT turns off is not locked (ADR 0015).
+    locked = [n for n in dict.fromkeys(managed_locked) if n not in managed_off]
     turned_off = [n for n in locked if wanted_hooks.get(n) is False]
     wanted_hooks.update({n: True for n in locked})
     enabled_hooks = {}
@@ -157,7 +122,7 @@ def guardrails(overrides, hooks_dir, managed_locked=(), managed_off=()):
 
 def remove_stale_files(p, files, user_file):
     """Files of the previous installation this one no longer writes go into p.deletes; a file edited by hand stops the
-    installation, except a 30_USER.md copy, adopted so that the person's edit is never lost."""
+    installation, except a USER.md copy, adopted so that the person's edit is never lost."""
     for rel, previous_hash in p.old_files.items():
         if rel in files:
             continue

@@ -20,7 +20,7 @@ def table(title, counter, unit='×'):
     lines += ['| `' + k + '` | ' + str(v) + ' |' for k, v in counter.most_common()]
     return '\n'.join(lines) if counter else '### ' + title + '\n\nNone.'
 
-# Where a fix usually goes, by friction category (support rule of docs/usage-review.md).
+# Where a fix usually goes, by friction category (support rule of docs/frictions.md).
 FIX_HINTS = {
     'command': 'fix the command prompt, and add an eval case that reproduces it',
     'skill': 'fix the skill or its description (when it fires), and add an eval case',

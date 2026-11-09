@@ -29,7 +29,7 @@ class Plan:
     kit_text: str
     practice_names: List[str]
     practice_texts: List[str]
-    context_dir: Path  # folder of the layers and 30_USER.md
+    context_dir: Path  # folder of the layers and USER.md
     user_file: Path
     user_context_text: str
     agents: List[Tuple[str, Dict[str, Any]]]  # (name, definition)
@@ -65,8 +65,6 @@ class Plan:
 class DoctorContext:
     context_names: List[str]  # managed context layers expected, in order (V2: computed by the engine, no profile)
     load_commands: Callable[[], List[Dict[str, Any]]]
-    allowed_domains: Callable[[], List[str]]
-    domain_allowed: Callable[[str, List[str]], bool]
 
 
 Status = Callable[[bool, str], None]
@@ -101,7 +99,7 @@ class Adapter(Protocol):
 
 @runtime_checkable
 class ContextHost(Protocol):
-    """The CLI only reads its context from its own folder: if it is active, it receives a copy of the layers and of 30_USER.md
+    """The CLI only reads its context from its own folder: if it is active, it receives a copy of the layers and of USER.md
     (context_dir: where an installation before 0.39 kept them)."""
     def context_dir(self, home: Path) -> Path: ...
     def installed_from_files(self, state: Dict[str, Any]) -> Dict[str, List[str]]: ...

@@ -1,7 +1,8 @@
 ---
-status: accepted
+status: superseded by 0015
 since: 0.24.0 and 0.28.0 (reconstructed from the CHANGELOG)
 ---
+> Superseded by ADR 0015 (and 0018): there is no `organization.toml`; IT's `managed.toml` wins on every key it sets, the Core defines its MCP servers in `mcp/servers.toml`, and teams are Team repositories.
 # One organization file at the root; defaults merged with the person's settings, never replaced
 
 `organization.toml` at the root of the kit repository holds what belongs to the organization: expected email domains, default settings, teams. Its defaults are always merged with the team's and the person's files (lists add up, objects combine, for a single value the person wins). Before, a personal file replaced the defaults wholesale, and a one-line personal change dropped the organization's guardrails. MCP servers are resolved from the three sources separately: the organization says how to reach a server, a profile says which ones are on, the person turns one on or off; a merged `"github": true` used to erase the server's definition.

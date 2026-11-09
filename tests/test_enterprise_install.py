@@ -1,5 +1,5 @@
 """Enterprise installation: release ZIP, thin launchers (Installer.cmd, bootstrap.sh), Python absent or unusable,
-paths with spaces and accents, a kit folder that can be deleted, a new version from another folder, 30_USER.md guidance,
+paths with spaces and accents, a kit folder that can be deleted, a new version from another folder, USER.md plain text,
 no system change, no secret kept, a network failure explained.
 
 With AI_KIT_RELEASE_ZIP=<path to the release ZIP>, the launcher tests run on the extracted ZIP (CI release job);
@@ -66,12 +66,12 @@ class LauncherTests(unittest.TestCase):
 
     def setup_kit(self, kit, *extra):
         self.needs_wheels()
-        proc = self.run_launcher(kit, 'setup', '--home', str(self.home), '--no-live', *extra)
+        proc = self.run_launcher(kit, 'init', '--home', str(self.home), *extra)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         return proc
 
     def test_setup_then_the_extracted_folder_can_be_deleted(self):
-        self.setup_kit(self.kit, '--profile', 'general', '--target', 'all', '--user', 'first.last@example.com')
+        self.setup_kit(self.kit, '--target', 'all', '--user', 'first.last@example.com')
         self.assertTrue((self.home/'.ai-kit/state.json').is_file())
         shutil.rmtree(self.base/'Kit IA été')
         # Nothing installed points back to the extracted folder (hooks, scripts and schema live in ~/.ai-kit), except the
@@ -86,19 +86,16 @@ class LauncherTests(unittest.TestCase):
                 if [m for m in markers if m in text]:
                     naming.append(path.relative_to(self.home).as_posix())
         self.assertEqual(sorted(naming), sorted(['.ai-kit/bin/'+('ai-kit.cmd' if os.name == 'nt' else 'ai-kit'), '.ai-kit/state.json']))
-        self.assertTrue((self.home/'.ai-kit/schemas/overrides.schema.json').is_file())
+        self.assertTrue((self.home/'.ai-kit/schemas/aikit.schema.json').is_file())
 
     def test_new_version_from_another_folder_keeps_personal_settings(self):
-        self.setup_kit(self.kit, '--profile', 'general', '--target', 'all', '--user', 'first.last@example.com')
-        user_file = self.home/'.gemini/30_USER.md'
+        self.setup_kit(self.kit, '--target', 'all', '--user', 'first.last@example.com')
+        user_file = self.home/'.ai-kit/context/USER.md'
         user_file.write_text(user_file.read_text(encoding='utf-8') + '\nMon rôle : ingénieure données, projet Été.\n', encoding='utf-8')
-        personal = self.home/'.ai-kit/overrides.json'
-        (self.home/'.ai-kit/overrides.toml').unlink()  # as before 0.37: a JSON file only
-        # As written by 0.26: the schema link pointed to the extracted folder.
-        old_link = (self.kit/'schemas'/'overrides.schema.json').as_uri()
-        personal.write_text('{\n  "$schema": "' + old_link + '",\n  "extra_skills": ["teach"],\n  "_mine": "kept"\n}\n', encoding='utf-8')
-        user_before = user_file.read_bytes()
-        # New version: another ZIP extracted elsewhere, the old folder deleted, setup again without any option.
+        personal = self.home/'.ai-kit/aikit.toml'
+        personal.write_text(personal.read_text(encoding='utf-8') + '# mine, kept\n\n[user]\nextra_skills = ["teach"]\n', encoding='utf-8')
+        user_before, personal_before = user_file.read_bytes(), personal.read_bytes()
+        # New version: another ZIP extracted elsewhere, the old folder deleted, init again without any option.
         new_kit = shutil.copytree(self.kit, self.base/'ai-kit 2')
         shutil.rmtree(self.base/'Kit IA été')
         self.setup_kit(new_kit)
@@ -108,11 +105,7 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual(user_file.read_bytes(), user_before)
         self.assertIn('Mon rôle : ingénieure données', (self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
         self.assertTrue((self.home/'.gemini/skills/teach/SKILL.md').is_file())
-        new_link = (self.home.resolve()/'.ai-kit'/'schemas'/'overrides.schema.json').as_uri()
-        # 0.37: converted to TOML, the schema link to the copy in ~/.ai-kit, the _ explanation as a comment; the JSON file is in the backup.
-        self.assertFalse(personal.exists())
-        self.assertEqual((self.home/'.ai-kit/overrides.toml').read_text(encoding='utf-8'),
-                         '#:schema ' + new_link + '\n# kept\nextra_skills = ["teach"]\n')
+        self.assertEqual(personal.read_bytes(), personal_before)  # aikit.toml is the person's: never rewritten, comments kept
 
     def python_free_path(self):
         """A PATH with the system tools the launcher needs, without any Python."""
@@ -125,7 +118,7 @@ class LauncherTests(unittest.TestCase):
         return str(tools)
 
     def test_python_absent_says_what_to_ask_it_support(self):
-        proc = self.run_launcher(self.kit, 'setup', '--home', str(self.home), env={**self.env, 'PATH': self.python_free_path()})
+        proc = self.run_launcher(self.kit, 'init', '--home', str(self.home), env={**self.env, 'PATH': self.python_free_path()})
         self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
         output = proc.stdout + proc.stderr
         self.assertIn('Python 3.11 or newer was not found', output)
@@ -139,7 +132,7 @@ class LauncherTests(unittest.TestCase):
             fake = Path(path)/'python3'
             fake.write_text('#!/bin/sh\nexit ' + str(code) + '\n', encoding='utf-8')
             fake.chmod(0o755)
-            proc = self.run_launcher(self.kit, 'setup', env={**self.env, 'PATH': path})
+            proc = self.run_launcher(self.kit, 'init', env={**self.env, 'PATH': path})
             self.assertEqual(proc.returncode, 2)
             self.assertIn(expected, proc.stderr)
 
@@ -219,66 +212,31 @@ class PersonalContextTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.file = Path(self.temp.name)/'30_USER.md'
+        self.file = Path(self.temp.name)/'USER.md'
         self.file.write_text('# My context\n', encoding='utf-8')
 
-    def step(self, answers, saved, notices=()):
-        """Runs the step with the editor replaced by a write of `saved` (what the person saves)."""
-        reapply = mock.Mock(return_value=list(notices))
-        def editor(*args, **kwargs):
-            if isinstance(saved, bytes):
-                self.file.write_bytes(saved)
-            return mock.Mock()
-        out = io.StringIO()
-        with mock.patch.object(cli, 'text_editor', return_value=('Editor', ['editor', str(self.file)])), \
-             mock.patch.object(cli.subprocess, 'Popen', side_effect=editor) as popen, \
-             mock.patch('builtins.input', side_effect=answers), contextlib.redirect_stdout(out):
-            cli.personal_context_step(self.file, reapply)
-        return out.getvalue(), reapply, popen
-
-    def test_edit_then_apply_then_new_session(self):
-        out, reapply, popen = self.step(['y', ''], '# My context\nData engineer, project Été.\n'.encode('utf-8'))
-        popen.assert_called_once()
-        reapply.assert_called_once()
-        self.assertIn('Start a new session of your CLI', out)
-
-    def test_a_refused_synchronisation_is_said_not_hidden(self):
-        refusal = '[Check] 30_USER.md not copied into ~/.codex/AGENTS.md: it seems to contain a secret (key, token or password).'
-        out, reapply, _ = self.step(['y', ''], b'# My context\n', notices=[refusal])
-        reapply.assert_called_once()
-        self.assertIn(refusal, out)
-        self.assertNotIn('Personal context applied', out)
-
-    def test_declined_leaves_everything_as_is(self):
-        out, reapply, popen = self.step([''], None)
-        popen.assert_not_called()
-        reapply.assert_not_called()
-        self.assertEqual(self.file.read_text(encoding='utf-8'), '# My context\n')
-        self.assertIn('run update', out)
-
-    def test_rich_text_is_not_applied(self):
-        out, reapply, _ = self.step(['y', ''], b'{\\rtf1\\ansi My context}')
-        reapply.assert_not_called()
-        self.assertIn('Make Plain Text', out)
-
     def test_editor_renamed_the_file(self):
-        self.file.rename(self.file.with_name('30_USER.md.txt'))
-        self.assertIn('30_USER.md.txt', cli.plain_text_problem(self.file))
+        self.file.rename(self.file.with_name('USER.md.txt'))
+        self.assertIn('USER.md.txt', cli.plain_text_problem(self.file))
 
-    def test_setup_without_a_terminal_never_asks(self):
-        # Windows: stdin redirected from NUL reports isatty(); the optional step must not turn a complete install into a failure.
+    def test_rich_text_is_named(self):
+        self.file.write_bytes(b'{\\rtf1\\ansi My context}')
+        self.assertIn('Make Plain Text', cli.plain_text_problem(self.file))
+
+    def test_init_at_a_terminal_with_user_asks_nothing(self):
+        # AI Kit 3: init installs without questions once --user is given, even at a terminal (no editor step any more).
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(cli.sys.stdin, 'isatty', return_value=True), \
              mock.patch.object(cli, 'text_editor', return_value=('Editor', ['editor'])), \
              mock.patch('builtins.input', side_effect=EOFError) as asked, contextlib.redirect_stdout(Console()):
-            code = cli.main(['setup', '--profile', 'general', '--home', tmp, '--no-live', '--user', 'a@example.org', '--target', 'gemini'])
+            code = cli.main(['init', '--home', tmp, '--user', 'a@example.org', '--target', 'gemini'])
         self.assertEqual(code, 0)
-        asked.assert_called_once()  # the question was asked, the end of input skipped it
+        asked.assert_not_called()
 
     def test_output_not_at_a_terminal_means_no_question(self):
         # The Windows case: stdin from NUL says "terminal", stdout is captured; no identity, profile or editor question.
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(cli.sys.stdin, 'isatty', return_value=True), \
              mock.patch('builtins.input', side_effect=EOFError) as asked, contextlib.redirect_stdout(io.StringIO()):
-            code = cli.main(['setup', '--profile', 'general', '--home', tmp, '--no-live', '--target', 'gemini'])
+            code = cli.main(['init', '--home', tmp, '--target', 'gemini'])
         self.assertEqual(code, 0)
         asked.assert_not_called()
 
@@ -321,11 +279,11 @@ class SecretsAndNetworkTests(unittest.TestCase):
             home = Path(tmp)
             with contextlib.redirect_stdout(io.StringIO()):
                 cli.apply('general', home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
-            (home/'.ai-kit/context/30_USER.md').write_text('My key: AIzaSyA1234567890abcdefghijklmnopqrstuv\n', encoding='utf-8')
+            (home/'.ai-kit/context/USER.md').write_text('My key: AIzaSyA1234567890abcdefghijklmnopqrstuv\n', encoding='utf-8')
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
                 cli.doctor(home)
-            self.assertIn('30_USER.md seems to contain a secret', out.getvalue())
+            self.assertIn('USER.md seems to contain a secret', out.getvalue())
             self.assertNotIn('AIzaSy', out.getvalue())
 
     def test_network_proxy_and_certificate_failures_explained(self):

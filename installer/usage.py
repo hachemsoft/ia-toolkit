@@ -8,17 +8,14 @@ from . import resolve
 from .core import (content_root, ROOT, KitError, read_json, json_bytes, load_commands, _ts, friction_id, fixed_frictions)
 from .adapters import ADAPTERS
 from .interface import ContextHost
-from .settings import LEGACY_KIT_DIR
 
 
 def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
-    """Usage report for the usage review (docs/usage-review.md): commands typed, skills activated, agents called, from the logs each CLI already writes."""
+    """Usage report for the usage review (docs/frictions.md): commands typed, skills activated, agents called, from the logs each CLI already writes."""
     from collections import Counter
     state = read_json(home/'.ai-kit/state.json')
-    if not state and (home/LEGACY_KIT_DIR).exists():
-        raise KitError('Old ~/'+LEGACY_KIT_DIR+' folder: run update, which renames it to ~/.ai-kit, then usage.')
     if not state:
-        raise KitError('Kit not installed: run setup.')
+        raise KitError('Kit not installed: run ai-kit init.')
     catalog = resolve.skill_catalog(content_root())
     installed = state.get('installed') or next(a for a in ADAPTERS if isinstance(a, ContextHost)).installed_from_files(state)
     installed_skills, installed_commands, installed_agents = (sorted(installed.get(k, [])) for k in ('skills', 'commands', 'agents'))
@@ -43,7 +40,7 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
         out = []
         for s in unused_skills:
             entry = catalog.get(s, {})
-            if entry.get('tier') == 'core' and s not in required_by_used and entry.get('category') in ('workflow','tool'):
+            if entry.get('default') and s not in required_by_used and entry.get('category') in ('workflow','tool'):
                 out.append(s)
         return out
     frictions, fixed_own = read_frictions(home, cutoff)
@@ -155,7 +152,7 @@ def read_frictions(home, cutoff):
             entry['id'] = entry.get('id') or friction_id(entry.get('ts'), entry.get('text'))  # lines written before ids existed
             own_ids.append(entry['id'])
             if _ts(entry.get('ts')) >= cutoff:
-                frictions.append({k: entry.get(k) for k in ('id', 'ts', 'category', 'command', 'text', 'cli', 'os', 'kit', 'profile', 'source') if entry.get(k) is not None})
+                frictions.append({k: entry.get(k) for k in ('id', 'ts', 'category', 'command', 'text', 'cli', 'os', 'kit', 'team', 'source') if entry.get(k) is not None})
     # Frictions of this person that a released version says it fixed: "(frictions: a1b2c3, …)" in the kit's CHANGELOG.
     changelog = ROOT/'CHANGELOG.md'
     fixed = fixed_frictions(changelog.read_text(encoding='utf-8')) if changelog.is_file() else {}
@@ -195,4 +192,4 @@ def print_report(report, c, not_observable, used_clis, observing, min_sessions, 
         print('Candidates to remove from the core (never activated, not required by a used command): '+', '.join(report['core_candidates_to_demote']))
     else:
         print('No core skill to remove over this window.')
-    print('Procedure: docs/usage-review.md. The logs read are local; nothing is sent.')
+    print('Procedure: docs/frictions.md. The logs read are local; nothing is sent.')

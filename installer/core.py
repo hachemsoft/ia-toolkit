@@ -13,8 +13,8 @@ from datetime import datetime
 # Kit content: next to the code in the repo or archive, under ai_kit/kit/ when the kit is installed as a package (pipx).
 _PACKAGE_DIR = Path(__file__).resolve().parent
 ROOT = _PACKAGE_DIR/'kit' if (_PACKAGE_DIR/'kit'/'VERSION').is_file() else _PACKAGE_DIR.parent
-# Two roots (V2, ADR 0013). ROOT is the engine's: its code, runtime/ (hooks, friction, news), schemas/, its own templates,
-# VERSION. The content (skills, agents, commands, practices, profiles, organization.toml, the kit context template) is read from
+# Two roots (V2, ADR 0013). ROOT is the engine's: its code, runtime/ (hooks, friction), schemas/, its own templates,
+# VERSION. The content (skills, agents, commands, context, mcp/servers.toml, the kit context template) is read from
 # content_root(): the package or the clone for now, a Core source extracted at a locked tag later.
 _CONTENT = [ROOT]
 
@@ -33,8 +33,8 @@ def content_from(path):
 START = '<!-- ai-toolkit:start -->'
 END = '<!-- ai-toolkit:end -->'
 KIT_CONTEXT = '00_KIT.md'
-USER_CONTEXT = '30_USER.md'
-CONTEXT_NAME = re.compile(r'[0-9]{2}_[A-Z0-9_]+\.md')
+USER_CONTEXT = 'USER.md'  # 3.0: the person's context (ADR 0024)
+CONTEXT_NAME = re.compile(r'(?:[0-9]{2}_[A-Z0-9_]+|USER)\.md')  # the layers and the person's USER.md
 EMAIL = re.compile(r'[^@\s]+@[^@\s]+\.[^@\s]+')
 # What looks like a secret, the redaction and the friction ids live in runtime/friction.py, the script /friction runs:
 # the kit package loads that very file (one implementation; in the installed package it is ai_kit/kit/runtime/friction.py).
@@ -49,17 +49,7 @@ def friction_module():
     return _MODULES['friction']
 
 
-def news_module():
-    """runtime/news.py as a module (ai-kit news), loaded once from the kit's own files."""
-    if 'news' not in _MODULES:
-        import importlib.util
-        spec = importlib.util.spec_from_file_location('ai_kit_news', ROOT/'runtime'/'news.py')
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        _MODULES['news'] = module
-    return _MODULES['news']
-
-_MODULES = {}  # runtime scripts loaded once: friction.py, news.py
+_MODULES = {}  # runtime scripts loaded once: friction.py
 SECRET = friction_module().SECRET
 redact = friction_module().redact
 friction_id = friction_module().friction_id
@@ -68,7 +58,7 @@ class KitError(Exception):
     pass
 
 def user_context_refusal(data):
-    """Why a 30_USER.md must not be copied elsewhere (secret, not plain UTF-8 text), or None. The value is never quoted."""
+    """Why a USER.md must not be copied elsewhere (secret, not plain UTF-8 text), or None. The value is never quoted."""
     if data.lstrip().startswith(b'{\\rtf'):
         return 'it was saved as rich text, not plain text'
     try:
@@ -127,7 +117,7 @@ def json_error(path, text, exc):
     line = lines[min(exc.lineno, len(lines)) - 1]
     return (str(path) + ', line ' + str(exc.lineno) + ', column ' + str(exc.colno) + ': ' + hint + '.\n'
             + '    ' + redact(line.rstrip()) + '\n    ' + ' ' * max(exc.colno - 1, 0) + '^\n'
-            + 'JSON allows no comments; keys starting with _ can hold explanations. A valid example: docs/customization.md.')
+            + 'JSON allows no comments; keys starting with _ can hold explanations. A valid example: docs/configuration.md.')
 
 def json_bytes(value):
     return (json.dumps(value, ensure_ascii=False, indent=2)+'\n').encode('utf-8')
@@ -179,7 +169,7 @@ def split_block(text, markers, label):
     if start not in text and end not in text:
         return text, None, ''
     if text.count(start) != 1 or text.count(end) != 1 or text.index(start) > text.index(end):
-        raise KitError('Kit markers damaged in '+label+': put the block back between the two ai-kit markers or remove it entirely, then update.')
+        raise KitError('Kit markers damaged in '+label+': put the block back between the two ai-kit markers or remove it entirely, then ai-kit sync --offline.')
     before, rest = text.split(start, 1)
     block, after = rest.split(end, 1)
     return before, start+block+end, after
@@ -199,7 +189,7 @@ def parse_frontmatter(text):
     return parse(text)
 
 def adopt_user_copy(p, copy, last):
-    """A copy of 30_USER.md the person edited by hand (before 0.39 it was the file to edit): when the file itself did not
+    """A copy of USER.md the person edited by hand (before 0.39 it was the file to edit): when the file itself did not
     change since it was copied, the edit becomes the file; otherwise the file wins and the person is told. True when the
     edit was taken."""
     data = p.writes[p.user_file] if p.user_file in p.writes else p.user_file.read_bytes() if p.user_file.exists() else b''

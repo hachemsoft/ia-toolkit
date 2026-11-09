@@ -9,7 +9,7 @@ import unittest
 from installer.cli import resolve_skills, ROOT
 from installer.resolve import skill_catalog
 from installer.core import KitError, read_json
-from installer.toml_files import dump_toml
+from personal import write_personal  # noqa: E402
 from v1_profiles import apply_as  # noqa: E402
 from installer.settings import core_selection  # noqa: E402
 
@@ -95,8 +95,7 @@ class InstallTests(unittest.TestCase):
         self.home = Path(temp.name)
 
     def install(self, overrides, profile='general'):
-        (self.home/'.ai-kit').mkdir(exist_ok=True)
-        (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
+        write_personal(self.home, overrides)
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             notices = apply_as(profile, self.home, False, None, 'gemini')
@@ -138,10 +137,6 @@ class InstallTests(unittest.TestCase):
         self.assertTrue(any('disabled_agents: unknown name verifierr' in n for n in notices), notices)
         with self.assertRaises(KitError):
             self.install({'extra_skills': ['nope']})
-
-    def test_renamed_skill_names_still_work(self):
-        skills, _ = self.install({'extra_skills': ['handoff']})
-        self.assertIn('handover', skills)
 
 
 if __name__ == '__main__':

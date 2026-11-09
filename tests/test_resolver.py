@@ -95,5 +95,19 @@ class ValidateTests(unittest.TestCase):
         self.assertTrue(any('must be its folder name' in line for line in problems(self.root, '2.0.0')))
 
 
+
+class WorkflowIndexTests(unittest.TestCase):
+    def test_workflow_indexes_are_current_and_cite_real_commands(self):
+        import subprocess
+        import sys
+        proc = subprocess.run([sys.executable, str(ROOT/'scripts/workflows.py')], capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+        from installer.core import load_commands
+        names = {c['name'] for c in load_commands()}
+        for path in (ROOT/'workflows').glob('*.md'):
+            for cited in re.findall(r'`/([a-z-]+)`', path.read_text(encoding='utf-8')):
+                self.assertIn(cited, names, path.name)
+
+
 if __name__ == '__main__':
     unittest.main()

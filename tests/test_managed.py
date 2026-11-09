@@ -1,3 +1,5 @@
+"""ai-kit managed-settings: the native files IT deploys. Guardrails = the manifest's default guardrails + managed.toml
+hooks.locked; the MCP lock = the servers the Core defines (mcp/servers.toml), minus what managed.toml refuses."""
 import contextlib
 import io
 import json
@@ -20,9 +22,14 @@ class ManagedSettingsTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def run_it(self, org=None, hooks_only=False, mcp_only=False):
-        with mock.patch.object(managed, 'organization', return_value=org or {}), contextlib.redirect_stdout(io.StringIO()):
-            return managed_settings(self.out, hooks_only, mcp_only)
+    def run_it(self, org=None, hooks_only=False, mcp_only=False, imposed=None):
+        """org: the Core's servers as settings.organization() gives them; imposed: the text of a managed.toml."""
+        managed_file = Path(self.tmp.name)/'managed.toml'
+        if imposed is not None:
+            managed_file.write_text(imposed, encoding='utf-8')
+        with mock.patch.object(managed, 'organization', return_value=org or {}), mock.patch('installer.config.ownership_problem', return_value=None), \
+                contextlib.redirect_stdout(io.StringIO()):
+            return managed_settings(self.out, hooks_only, mcp_only, managed_file=managed_file)
 
     def test_default_guardrails_and_denied_paths_for_claude(self):
         self.run_it()
@@ -32,8 +39,8 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertIn('protected-paths.py', commands[0])
         self.assertIn('Bash|PowerShell', settings['hooks']['PreToolUse'][0]['matcher'])
         deny = settings['permissions']['deny']
-        self.assertIn('Edit(~/.ai-kit/overrides.toml)', deny)
-        self.assertFalse(any('30_USER' in d or 'learning' in d for d in deny), '/me and /learn must keep writing')
+        self.assertIn('Edit(~/.ai-kit/aikit.toml)', deny)
+        self.assertFalse(any('USER.md' in d or 'learning' in d for d in deny), '/me and /learn must keep writing')
         self.assertNotIn('allowManagedHooksOnly', settings)
 
     def test_managed_toml_feeds_the_native_files(self):
@@ -50,7 +57,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertEqual(settings['allowedMcpServers'], [{'serverUrl': 'https://docs.example.org/mcp'}])  # db refused by IT
 
     def test_locked_guardrails_and_hooks_only(self):
-        self.run_it({'locked_hooks': ['protected-paths', 'dbt-prod-guard']}, hooks_only=True)
+        self.run_it(hooks_only=True, imposed='managed_schema = 1\n[hooks]\nlocked = ["protected-paths", "dbt-prod-guard"]\n')
         claude = json.loads((self.out/'claude-code/managed-settings.json').read_text(encoding='utf-8'))
         self.assertTrue(claude['allowManagedHooksOnly'])
         self.assertEqual(len(claude['hooks']['PreToolUse']), 2)
@@ -63,9 +70,9 @@ class ManagedSettingsTests(unittest.TestCase):
 
     def test_unknown_guardrail_and_non_empty_folder_refused(self):
         with self.assertRaises(KitError):
-            self.run_it({'locked_hooks': ['nope']})
+            self.run_it(imposed='managed_schema = 1\n[hooks]\nlocked = ["nope"]\n')
         with self.assertRaises(KitError):
-            self.run_it({'locked_hooks': ['whats-new']})  # a hook that is not a guardrail is nothing IT locks
+            self.run_it(imposed='managed_schema = 1\n[hooks]\nlocked = ["whats-new"]\n')  # a hook that is not a guardrail is nothing IT locks
         self.out.mkdir(exist_ok=True)
         (self.out/'x').write_text('keep', encoding='utf-8')
         with self.assertRaises(KitError):
@@ -73,8 +80,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertEqual((self.out/'x').read_text(encoding='utf-8'), 'keep')
 
     ORG = {'defaults': {'mcp': {'docs': {'server': {'httpUrl': 'https://docs-mcp.example.org/mcp'}},
-                                'github': {'server': {'command': 'docker', 'args': ['run', '-i', '--rm', 'ghcr.io/github/github-mcp-server:1.2.3']}}}},
-           'teams': {'payments': {'mcp': {'ledger': {'server': {'url': 'https://ledger.example.org/sse'}}}}}}
+                                'github': {'server': {'command': 'docker', 'args': ['run', '-i', '--rm', 'ghcr.io/github/github-mcp-server:1.2.3']}}}}}
 
     def test_no_mcp_lock_by_default(self):
         self.run_it(self.ORG)
@@ -83,16 +89,15 @@ class ManagedSettingsTests(unittest.TestCase):
             self.assertNotIn(key, claude)
         self.assertNotIn('mcp_servers', parse_toml((self.out/'codex/requirements.toml').read_text(encoding='utf-8')))
 
-    def test_mcp_allowlist_from_the_servers_the_organization_defines(self):
+    def test_mcp_allowlist_from_the_servers_the_core_defines(self):
         self.run_it(self.ORG, mcp_only=True)
         claude = json.loads((self.out/'claude-code/managed-settings.json').read_text(encoding='utf-8'))
         self.assertTrue(claude['allowManagedMcpServersOnly'])
         self.assertCountEqual(claude['allowedMcpServers'], [
             {'serverUrl': 'https://docs-mcp.example.org/mcp'},
-            {'serverCommand': ['docker', 'run', '-i', '--rm', 'ghcr.io/github/github-mcp-server:1.2.3']},
-            {'serverUrl': 'https://ledger.example.org/sse'}])
+            {'serverCommand': ['docker', 'run', '-i', '--rm', 'ghcr.io/github/github-mcp-server:1.2.3']}])
         codex = parse_toml((self.out/'codex/requirements.toml').read_text(encoding='utf-8'))['mcp_servers']
-        self.assertEqual(sorted(codex), ['ai-kit-docs', 'ai-kit-github', 'ai-kit-ledger'])  # the names the kit installs
+        self.assertEqual(sorted(codex), ['ai-kit-docs', 'ai-kit-github'])  # the names the kit installs
         self.assertEqual(codex['ai-kit-docs']['identity'], {'url': 'https://docs-mcp.example.org/mcp'})
         command = codex['ai-kit-github']['identity']['command']
         self.assertEqual(command['executable'], 'docker')

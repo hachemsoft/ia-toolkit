@@ -85,6 +85,14 @@ class FrictionUpkeepTests(unittest.TestCase):
         self.assertIn('1 friction(s) logged here wait for the person', context)
         self.assertIn('Never run it yourself', context)
 
+    def test_analyze_groups_the_same_friction(self):
+        self.log('The plan step is too long 1')
+        self.log('the plan step is too long 2')
+        self.log('Another problem')
+        lines = friction.analyze(str(self.home))
+        self.assertEqual(lines[0], '2 distinct friction(s), the most frequent first:')
+        self.assertTrue(lines[1].startswith('  2x [docs] /build: The plan step is too long 1'))
+
     def test_status_reports_the_waiting_frictions(self):
         self.log('waiting one')
         with contextlib.redirect_stdout(io.StringIO()) as out:
@@ -101,7 +109,7 @@ class UserEditTests(unittest.TestCase):
                 cli.apply('general', home, False, None, 'claude')
             with mock.patch('installer.cli.interactive', return_value=False), contextlib.redirect_stdout(io.StringIO()) as out:
                 self.assertEqual(cli.main(['user', 'edit', '--home', str(home)]), 0)
-            self.assertTrue(out.getvalue().strip().endswith('30_USER.md'))
+            self.assertTrue(out.getvalue().strip().endswith('USER.md'))
 
 
 if __name__ == '__main__':

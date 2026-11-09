@@ -1,8 +1,8 @@
 ---
-status: proposed
-since: unreleased (spec docs/sdlc/2026-11-01-session-news)
+status: superseded by 0025
+since: unreleased
 ---
-> 0.51: the hook is now named `whats-new` (it was `session-news`); the decision is unchanged.
+> Superseded: the `whats-new` hook reads only the local copies of `CHANGELOG.md` and `NEWS.md` in `~/.ai-kit/news/`, never the network; a newer Core is reported by `ai-kit status` from the last `sync` (ADR 0025).
 
 # A session-start hook may read the kit's own remote once a day, never write, never send
 

@@ -1,8 +1,8 @@
 """Is NEWS.md well formed? The whats-new hook skips a section it cannot read; this check refuses it before the merge.
 
 Usage: python3 scripts/check_news.py [path to NEWS.md]
-Each entry: `## <YYYY-MM-DD> <id> : <title>` (id: 3 to 32 of a-z, 0-9, -; unique), then optional lines `teams: x`
-(AI Kit 2 has no profiles: a profiles: line is refused), `teams: x` (teams of organization.toml or context/20-<team>.md), `until: YYYY-MM-DD`, then
+Each entry: `## <YYYY-MM-DD> <id> : <title>` (id: 3 to 32 of a-z, 0-9, -; unique), then optional lines
+`teams: x` (names of Team repositories; any other metadata such as profiles: is refused), `until: YYYY-MM-DD`, then
 the text. Exit code 1 with one line per problem, 0 otherwise. No network, no model call.
 """
 import importlib.util
@@ -13,7 +13,6 @@ from datetime import date
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 sys.path.insert(0, ROOT)
-from installer.settings import team_ids  # noqa: E402
 
 META_LINE = re.compile(r'^([a-z_]+):\s')
 
@@ -33,7 +32,7 @@ def valid_date(text):
         return False
 
 
-def problems(text, teams):
+def problems(text):
     hook = hook_module()
     found, seen = [], set()
     lines = text.splitlines()
@@ -67,9 +66,6 @@ def problems(text, teams):
             found.append(where+'invalid date '+entry['date'])
         if entry['until'] and not valid_date(entry['until']):
             found.append(where+'invalid until date '+entry['until'])
-        for team in entry['teams']:
-            if team not in teams:
-                found.append(where+'unknown team '+team+(' (teams: '+', '.join(teams)+')' if teams else ' (no team declared)'))
         if not entry['text']:
             found.append(where+'no text')
     return found
@@ -84,7 +80,7 @@ def main(argv=None):
     except OSError as exc:
         print('Cannot read '+path+': '+str(exc))
         return 1
-    found = problems(text, team_ids())
+    found = problems(text)
     for line in found:
         print(line)
     if found:

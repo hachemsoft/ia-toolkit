@@ -1,5 +1,5 @@
-"""2.0.0: the person's ~/.ai-kit/aikit.toml (overrides.toml read through an adapter until then), its migration, the content
-manifest's min_engine, and the three closed schemas kept in line with the loaders (docs/v2/config.md)."""
+"""The person's ~/.ai-kit/aikit.toml (3.0: the only settings file; overrides.toml is never read), the content manifest's
+min_engine, and the three closed schemas kept in line with the loaders (docs/v2/config.md)."""
 import contextlib
 import io
 import json
@@ -43,14 +43,11 @@ class LoaderTests(Base):
         self.assertEqual(personal_settings(self.kit), {'extra_skills': ['prototype'], 'skill_prefix': 'x-', 'hooks': {'dbt-prod-guard': True},
                                                        'mcp': {'docs': False, 'db': False}, 'frictions': 'off', 'share_frictions': False})
 
-    def test_aikit_wins_and_overrides_is_no_longer_read(self):
+    def test_overrides_toml_is_never_read(self):
         self.write('overrides.toml', {'extra_skills': ['prototype']})
+        self.assertEqual(personal_settings(self.kit), {})
         self.write('aikit.toml', {'schema': 1})
         self.assertEqual(personal_settings(self.kit), {})
-
-    def test_without_aikit_overrides_is_read_as_before(self):
-        self.write('overrides.toml', {'extra_skills': ['prototype']})
-        self.assertEqual(personal_settings(self.kit), {'extra_skills': ['prototype']})
 
     def test_wrong_type_or_schema_stops_and_unknown_key_warns(self):
         for data, message in (({'user': {}}, 'schema must be'), ({'schema': 2}, 'schema must be'), ({'schema': True}, 'schema must be'),
@@ -65,43 +62,8 @@ class LoaderTests(Base):
                                                                     '[Check] ~/.ai-kit/aikit.toml: unknown key user.theme, ignored.'])
 
 
-class MigrationTests(Base):
-    V1 = {'extra_skills': ['prototype'], 'disabled_commands': ['learn'], 'skill_prefix': 'kit-', 'hooks': {'dbt-prod-guard': True},
-          'mcp': {'docs': True, 'db': False, 'mine': {'server': {'httpUrl': 'https://mcp.example.org'}}}, 'frictions': 'auto',
-          'share_frictions': False, 'news': {'check_remote': False}}
-
-    def test_every_v1_key_has_a_destination_or_a_reason(self):
-        text, report = config.aikit_from_overrides(self.V1)
-        data = parse_toml(text)
-        self.assertEqual(data['user'], {'extra_skills': ['prototype'], 'disabled_commands': ['learn'], 'skill_prefix': 'kit-'})
-        self.assertEqual(data['mcp'], {'enabled': ['docs'], 'denied': ['db']})
-        self.assertEqual(data['frictions'], {'capture': 'auto', 'publication': 'disabled'})
-        self.assertIn('mcp.mine (your own server) not carried over: add it in your CLI; overrides.toml keeps it for AI Kit 0.52', report)
-        self.assertTrue(any(line.startswith('news not carried over') for line in report))
-        expected = {k: v for k, v in self.V1.items() if k not in ('news',)}
-        expected['mcp'] = {'docs': True, 'db': False}
-        self.assertEqual(config.to_overrides(data), expected)  # the same settings, except what the report names
-
-    def test_update_migrate_config_writes_aikit_keeps_overrides_and_installs_the_same(self):
-        quiet(cli.apply, 'general', self.home, False, None, 'claude', choices={'extra_skills': ['prototype']})
-        before = self.state()['installed']
-        overrides = (self.kit/'overrides.toml').read_bytes()
-        code, out = quiet(cli.main, ['update', '--migrate-config', '--home', str(self.home), '--target', 'claude'])
-        self.assertEqual(code, 0, out)
-        self.assertIn('extra_skills -> user.extra_skills', out)
-        self.assertEqual((self.kit/'overrides.toml').read_bytes(), overrides)  # kept for a return to 0.52
-        self.assertEqual(parse_toml((self.kit/'aikit.toml').read_text(encoding='utf-8'))['user'], {'extra_skills': ['prototype']})
-        self.assertTrue((self.kit/'schemas/aikit.schema.json').is_file())
-        self.assertEqual(self.state()['installed'], before)
-        code, out = quiet(cli.main, ['update', '--migrate-config', '--home', str(self.home), '--target', 'claude'])
-        self.assertIn('already exists', out)
-
-    def test_dry_run_writes_nothing(self):
-        self.write('overrides.toml', {'frictions': 'off'})
-        quiet(cli.migrate_config, self.home, True)
-        self.assertFalse((self.kit/'aikit.toml').exists())
-
-    def test_choices_go_to_aikit_once_migrated(self):
+class ChoicesTests(Base):
+    def test_choices_go_to_aikit_and_a_leftover_overrides_toml_is_left_alone(self):
         self.write('aikit.toml', '#:schema x\nschema = 1\n\n# my notes\n[user]\nextra_skills = ["prototype"]\n')
         self.write('overrides.toml', {'extra_skills': ['investigation']})
         quiet(cli.apply, 'general', self.home, False, None, 'claude', choices={'disabled_commands': ['learn'], 'extra_skills': ['prototype', 'teach']})

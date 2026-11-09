@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, amended: the commands are `init` and `sync` (ADR 0025); `sync` and `team use` read the Core and Team Git repositories (ADR 0016), the rest stays offline
 since: 0.34.0 (reconstructed from the CHANGELOG)
 ---
 # No model call and no network in setup, update, doctor, uninstall and the tests

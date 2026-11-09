@@ -1,18 +1,11 @@
-"""Resources described by their own files (V2 slice 3, docs/v2/resources.md): the skill and agent catalogs are rebuilt from the
-aikit-* metadata of each SKILL.md and agent file, found by convention, instead of being read from skills/catalog.json and
-agents/catalog.json (still present until slice 8; a test checks that both give the same catalog). Pure: reads files, no
+"""Resources described by their own files: the skill and agent catalogs are rebuilt from the
+aikit-* metadata of each SKILL.md and agent file, found by convention. Pure: reads files, no
 other side effect. Also checks what a catalog alone could not: a dependency that does not exist, a cycle."""
 from pathlib import Path
 
 from .core import KitError
 from .frontmatter import aikit_metadata, csv, parse
 
-# Former skill names, kept by the engine rather than by the sources: an old name in a person's settings still works.
-SKILL_ALIASES = {
-    'clarify-request': {'replaced_by': ['grilling'], 'description': 'Replaced in 0.2.0 by grilling.'},
-    'debug-systematically': {'replaced_by': ['diagnosing-bugs'], 'description': 'Replaced in 0.2.0 by diagnosing-bugs.'},
-    'verify-change': {'replaced_by': ['tdd', 'mr'], 'description': 'Replaced in 0.2.0 by tdd and mr.'},
-}
 SKILL_KEYS = (('version', 'version', str), ('origin', 'origin', str), ('license', 'license', str), ('summary', 'description', str),
               ('category', 'category', str), ('tier', 'tier', str), ('requires', 'requires', csv),
               ('needs-agents', 'needs_agents', lambda v: v == 'true'), ('protected', 'protected', lambda v: v == 'true'), ('owner', 'owner', str),
@@ -36,7 +29,7 @@ def entry_from(meta, keys, rel):
 
 
 def skill_catalog(root):
-    """{name: entry} like skills/catalog.json: every skills/**/SKILL.md, its folder name as identifier, plus the aliases."""
+    """{name: entry}: every skills/**/SKILL.md, its folder name as identifier."""
     root = Path(root)
     catalog = {}
     for path in sorted((root/'skills').rglob('SKILL.md'), key=lambda p: p.as_posix()):
@@ -49,14 +42,12 @@ def skill_catalog(root):
         catalog[name] = entry_from(meta, SKILL_KEYS, path.parent.relative_to(root).as_posix())
         if 'description' not in catalog[name] and isinstance(meta.get('description'), str):
             catalog[name]['description'] = meta['description']  # no aikit-summary: the skill's own description
-    for name, alias in SKILL_ALIASES.items():
-        catalog.setdefault(name, dict(alias))
     check_graph(catalog)
     return catalog
 
 
 def agent_catalog(root):
-    """{name: entry} like agents/catalog.json: every agents/**/<name>.md with a front matter name (README files are not agents)."""
+    """{name: entry}: every agents/**/<name>.md with a front matter name (README files are not agents)."""
     root = Path(root)
     catalog = {}
     for path in sorted((root/'agents').rglob('*.md'), key=lambda p: p.as_posix()):

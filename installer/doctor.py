@@ -2,7 +2,6 @@
 import contextlib
 import io
 import json
-from datetime import date
 import os
 from pathlib import Path
 import re
@@ -16,13 +15,13 @@ from .core import (_PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitError, read_json
 from . import versions
 from .adapters import ADAPTERS
 from .interface import DoctorContext, LiveCheck
-from .settings import core_selection, context_folder, LEGACY_KIT_DIR, LEGACY_PERSONAL_FILE, PERSONAL_FILE, RETIRED_KEYS, allowed_domains, domain_allowed, managed_context_names, merge_settings, organization, personal_settings, recorded_targets, resolve_mcp, retired_key_notice, setting_differences, team_settings, unknown_keys, version_changes
+from .settings import core_selection, context_folder, managed_context_names, merge_settings, organization, personal_settings, recorded_targets, resolve_mcp, setting_differences, team_settings, unknown_keys, version_changes
 
 
 # A known case each guardrail must block; doctor runs it to prove the guardrail works, not just that its file exists.
 GUARDRAIL_PROBES = {
     'dbt-prod-guard': lambda home: {'tool_name': 'run_shell_command', 'tool_input': {'command': 'dbt run --target prod'}, 'cwd': str(home)},
-    'protected-paths': lambda home: {'tool_name': 'write_file', 'tool_input': {'file_path': str(home/'.ai-kit'/'overrides.toml')}, 'cwd': str(home)},
+    'protected-paths': lambda home: {'tool_name': 'write_file', 'tool_input': {'file_path': str(home/'.ai-kit'/'aikit.toml')}, 'cwd': str(home)},
 }
 # whats-new on a /clear: answers {} and writes nothing (a startup probe would mark the real news as announced).
 HOOK_PROBES = {'whats-new': lambda home: {'source': 'clear', 'hook_event_name': 'SessionStart'}}
@@ -49,10 +48,10 @@ def guardrail_checks(home, state, status):
         kind = 'Guardrail' if hook.get('event') == 'BeforeTool' else 'Hook'
         interpreter, script = command_parts(hook['group']['hooks'][0]['command'])
         if not interpreter or not interpreter.is_file():
-            status(False, kind+' '+name+': Python not found ('+str(interpreter)+'); run update to point to the current Python')
+            status(False, kind+' '+name+': Python not found ('+str(interpreter)+'); run ai-kit sync --offline to point to the current Python')
             continue
         if not script.is_file():
-            status(False, kind+' '+name+': script missing ('+str(script)+'); run update')
+            status(False, kind+' '+name+': script missing ('+str(script)+'); run ai-kit sync --offline')
             continue
         probe = GUARDRAIL_PROBES.get(name) or HOOK_PROBES.get(name)
         if not probe:
@@ -129,7 +128,7 @@ def repo_skill_overrides(state, cwd):
 
 
 def plain_text_problem(path):
-    """Why 30_USER.md cannot be read as plain text (renamed, rich text, not UTF-8), or None."""
+    """Why USER.md cannot be read as plain text (renamed, rich text, not UTF-8), or None."""
     if not path.is_file():
         others = sorted(p.name for p in path.parent.glob(path.stem+'*') if p.name != path.name and p.suffix.lower() in ('.txt', '.rtf', '.rtfd'))
         return path.name+' is missing'+(' (saved as '+', '.join(others)+'?): give it back its name '+path.name if others else '')+'.'
@@ -155,7 +154,7 @@ def mcp_report(home, state):
     if servers:
         lines.append('Data connections (MCP): '+', '.join(servers)+' configured; connection not verified (check it with your CLI\'s MCP command).')
     if undefined or off:
-        missing = [n+' not provided by your organization yet' for n in undefined] + [n+' turned off (in your overrides.toml or by your team)' for n in off]
+        missing = [n+' not provided by your organization yet' for n in undefined] + [n+' turned off (in your aikit.toml or by your team)' for n in off]
         about = 'the SQL and dbt files' if {'bigquery', 'dbt'} & set(undefined + off) else 'the files'
         lines.append('Data connections (MCP): '+'; '.join(missing)+'. You can work on '+about+' of your repo with its usual tools;'
                      ' access to the data through MCP needs a connection provided by your company (platform team, docs/mcp.md).')
@@ -168,7 +167,7 @@ def print_summary(home, state, live=None, problems=()):
     print('\nSummary')
     if not state:
         print('  Kit configuration: not installed.')
-        print('Next step: run setup from the kit folder (docs/getting-started.md#run-the-kit).')
+        print('Next step: run ai-kit init from the kit folder (docs/getting-started.md#run-the-kit).')
         return
     commands = state.get('installed', {}).get('commands', [])
     print('  Kit configuration: installed (version '+str(state.get('version'))+', '+str(len(commands))+' commands'+(', team '+state['team'] if state.get('team') else '')+').')
@@ -176,7 +175,7 @@ def print_summary(home, state, live=None, problems=()):
     found = []
     for adapter in targeted:
         if not shutil.which(adapter.COMMAND):
-            print('  '+adapter.LABEL+': not found on this workstation; its configuration is prepared. Install it following your IT procedure, then run update.')
+            print('  '+adapter.LABEL+': not found on this workstation; its configuration is prepared. Install it following your IT procedure, then run ai-kit sync --offline.')
             continue
         found.append(adapter)
         result = (live or {}).get(adapter.NAME)
@@ -195,7 +194,7 @@ def print_summary(home, state, live=None, problems=()):
     elif any(r not in (0, None) for r in (live or {}).values()):
         step = 'apply the fix shown above, then run doctor --live.'
     elif not found:
-        step = 'install '+' or '.join(a.LABEL for a in targeted)+' following your IT procedure, then run update; meanwhile nothing else is needed.'
+        step = 'install '+' or '.join(a.LABEL for a in targeted)+' following your IT procedure, then run ai-kit sync --offline; meanwhile nothing else is needed.'
     else:
         names = ' or '.join('`'+a.COMMAND+'`' for a in found)
         step = 'open a terminal in your repo, start '+names+' and type /guide'+(' ($guide in Codex)' if any(a.NAME == 'codex' for a in found) else '')+'.'
@@ -305,39 +304,51 @@ def tracker_checks(home, state, status):
         status(signed, label+cli+(' signed in' if signed else ' not signed in: run '+cli+' auth login (a personal access token); frictions stay local meanwhile'))
     pending = len(friction.unsent(str(home), config))
     if pending:
-        print('[Info] '+str(pending)+' friction'+('s' if pending != 1 else '')+' not sent to the tracker yet: ai-kit friction --sync')
+        print('[Info] '+str(pending)+' friction'+('s' if pending != 1 else '')+' not sent to the tracker yet: ai-kit friction --publish')
 
 
 def news_checks(home, state, status):
-    """The whats-new hook: the kit folder it reads, the last remote read, what waits for the next session start."""
-    if 'whats-new' not in state.get('hooks', {}):
-        print('[Info] whats-new hook off (hooks.whats-new = false): nothing announced at session start.')
+    """What the session hook will announce (the copies in ~/.ai-kit/news): pending entries, no network."""
+    hook_path = home/'.ai-kit'/'hooks'/'whats-new.py'
+    if not hook_path.is_file():
         return
-    from .core import news_module
-    news = news_module()
-    hook = news.hook_module()
-    kit_dir = str(state.get('kit_dir') or '')
-    if not kit_dir:
-        print('[Info] Kit folder not recorded: whats-new announces the installed version only (run the installer from the kit folder, then update).')
-    else:
-        status(os.path.isdir(kit_dir), 'Kit folder present for whats-new: '+kit_dir+('' if os.path.isdir(kit_dir) else ' (moved or deleted: run the installer from its new place, then update)'))
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('ai_kit_whats_new', hook_path)
+    hook = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(hook)
     marker = read_json(home/'.ai-kit'/'news.json')
-    last = marker.get('last_check') if isinstance(marker.get('last_check'), dict) else {}
-    if (state.get('news') or {}).get('check_remote') is False:
-        print('[Info] Kit remote not read by whats-new (news.check_remote = false): a newer version is not proposed.')
-    elif last:
-        print('[Info] Kit remote last read by whats-new: '+str(last.get('date'))+', '+str(last.get('result'))+(' ('+last['detail']+')' if last.get('detail') else '')
-              + (', remote version '+last['remote_version'] if last.get('remote_version') else ''))
-    else:
-        print('[Info] Kit remote not read yet by whats-new (once a day at session start; ai-kit news --check reads it now).')
-    if marker.get('declined_version'):
-        print('[Info] Version '+str(marker['declined_version'])+' declined (ai-kit news --later): the next one will be proposed.')
-    if hook and kit_dir and os.path.isdir(kit_dir):
-        today = date.today().isoformat()
-        waiting = [e for e in hook.parse_news(hook.file_text(os.path.join(kit_dir, 'NEWS.md')))
-                   if e['id'] not in (marker.get('announced_news') or []) and hook.aimed_at(e, str(state.get('profile') or ''), str(state.get('team') or ''), today)]
-        if waiting:
-            print('[Info] '+str(len(waiting))+' announcement'+('s' if len(waiting) != 1 else '')+' waiting for the next session start: '+', '.join(e['id'] for e in waiting))
+    items, _ = hook.whats_new(state, marker, str(home/'.ai-kit'/'news'), __import__('datetime').date.today().isoformat())
+    print('[Info] Session start: '+(str(len(items))+' item(s) to announce' if items else 'nothing new to announce'))
+
+
+GIT_MINIMUM = (2, 29)  # sync and team use: fetch --no-write-fetch-head
+
+
+def git_version():
+    """(major, minor) of the git on the PATH, or None when there is none or it cannot be read."""
+    import shutil
+    import subprocess
+    if not shutil.which('git'):
+        return None
+    try:
+        out = subprocess.run(['git', '--version'], capture_output=True, text=True, timeout=10).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    m = re.search(r'(\d+)\.(\d+)', out)
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def git_check(home, state, status):
+    """Git is needed by sync, team use and rollback (Core and Team sources); 2.29 or newer."""
+    version = git_version()
+    needed = bool((state or {}).get('lock')) or (home/'.ai-kit/lock.toml').is_file()
+    if version is None:
+        if needed:
+            status(False, 'Git not found: sync, team use and rollback need it (2.29 or newer, from IT)')
+        else:
+            print('[Info] Git not found: only needed for a Core or Team source (sync, team use)')
+        return
+    status(version >= GIT_MINIMUM, 'Git '+'.'.join(map(str, version))+(' (2.29 or newer needed for sync and team use)' if version < GIT_MINIMUM else ''))
 
 
 def runtime_checks(home, status):
@@ -408,10 +419,9 @@ def doctor_checks(home, cwd=None, problems=None):
     except ManagedConfigError as exc:
         status(False, str(exc))
     runtime_checks(home, status)
-    if (home/LEGACY_KIT_DIR).exists():
-        status(False,'Old ~/'+LEGACY_KIT_DIR+' folder present: run update, which renames it to ~/.ai-kit')
+    git_check(home, read_json(home/'.ai-kit/state.json'), status)
     state = read_json(home/'.ai-kit/state.json')
-    status(bool(state),'Kit installation; run setup if missing.')
+    status(bool(state),'Kit installation; run ai-kit init if missing.')
     hints = []
     if state:
         print('Version '+state['version']+(' | team '+state['team'] if state.get('team') else ''))
@@ -452,8 +462,7 @@ def doctor_checks(home, cwd=None, problems=None):
         print('Recorded identity: '+(identity.get('email') or identity.get('name') or 'none')+(' (source '+identity['source']+')' if identity.get('source') else ''))
         profile = core_selection()
         profile = {**profile, 'practices': state.get('practices') or profile['practices']}  # with the person's team
-        ctx = DoctorContext(context_names=managed_context_names(profile), load_commands=load_commands,
-                                    allowed_domains=allowed_domains, domain_allowed=domain_allowed)
+        ctx = DoctorContext(context_names=managed_context_names(profile), load_commands=load_commands)
         context = state.get('context_dir', '.gemini')
         user_file = home/context/USER_CONTEXT
         status(user_file.is_file(),'Personal context present: '+context+'/'+USER_CONTEXT)
@@ -462,51 +471,41 @@ def doctor_checks(home, cwd=None, problems=None):
             status(not problem, problem or USER_CONTEXT+' is plain UTF-8 text')
             if not problem and SECRET.search(user_file.read_text(encoding='utf-8')):
                 status(False, USER_CONTEXT+' seems to contain a secret (key, token or password): remove it, the agent reads this file')
-        # 2.0: aikit.toml, when present, is the person's file; overrides.toml is kept for a return to 0.52 but no longer read.
         from .config import AIKIT_FILE, load_aikit
-        if (home/'.ai-kit'/AIKIT_FILE).is_file():
+        personal_path = home/'.ai-kit'/AIKIT_FILE
+        if personal_path.is_file():
             try:
-                for warning in load_aikit(home/'.ai-kit'/AIKIT_FILE)[1]:
+                for warning in load_aikit(personal_path)[1]:
                     status(False, warning.replace('[Check] ', ''))
             except KitError as exc:
                 status(False, str(exc))
-            if (home/'.ai-kit'/PERSONAL_FILE).is_file():
-                print('[Info] ~/.ai-kit/'+PERSONAL_FILE+' is kept for AI Kit 0.52 and no longer read: your settings are in ~/.ai-kit/'+AIKIT_FILE+'.')
-        else:
-            print('[Info] Your settings are in ~/.ai-kit/'+PERSONAL_FILE+'; ai-kit update --migrate-config moves them to aikit.toml (AI Kit 2).')
-        for personal_file in (home/'.ai-kit'/AIKIT_FILE, home/'.ai-kit'/PERSONAL_FILE, home/'.ai-kit'/LEGACY_PERSONAL_FILE):
-            if personal_file.is_file() and SECRET.search(personal_file.read_text(encoding='utf-8', errors='replace')):
-                status(False, '~/.ai-kit/'+personal_file.name+' seems to contain a secret: write ${VARIABLE} instead and define it in your environment (docs/mcp.md)')
+            if SECRET.search(personal_path.read_text(encoding='utf-8', errors='replace')):
+                status(False, '~/.ai-kit/'+AIKIT_FILE+' seems to contain a secret: write ${VARIABLE} instead and define it in your environment (docs/mcp.md)')
         for rel,expected in state.get('files',{}).items():
             path = inside(home,rel)
             status(path.is_file() and digest(path.read_bytes())==expected,rel)
         guardrail_checks(home, state, status)
         folder_version = kit_version()
         status(state.get('version') == folder_version, 'Configuration applied by version '+str(state.get('version'))+', the kit running is '+folder_version
-               + ('' if state.get('version') == folder_version else ': run update'))
+               + ('' if state.get('version') == folder_version else ': run ai-kit sync --offline'))
         recorded = (state.get('installed') or {}).get('versions')
         if recorded:
             behind = version_changes(recorded, {kind: {n: v for n, v in names.items() if n in recorded.get(kind, {})}
                                                 for kind, names in versions.catalog_versions().items()})
-            status(not behind, 'Skills and agents at the versions of this kit' + (': '+', '.join(behind)+'; run update' if behind else ''))
+            status(not behind, 'Skills and agents at the versions of this kit' + (': '+', '.join(behind)+'; run ai-kit sync --offline' if behind else ''))
         org_defaults = organization().get('defaults', {})
         team_layer = team_settings(state.get('team'))
         personal = personal_settings(home/'.ai-kit')
-        layers = [('~/.ai-kit/overrides.toml', personal), ('organization.toml defaults', org_defaults)]
-        layers += [('organization.toml teams.'+state['team'], team_layer)] if state.get('team') else []
+        layers = [('~/.ai-kit/aikit.toml', personal)] + ([('Team '+state['team']+' [defaults]', team_layer)] if state.get('team') else [])
         for label, settings in layers:
-            for key in RETIRED_KEYS:
-                if key in settings:
-                    print(retired_key_notice(key).replace('overrides.toml', label, 1))
             unknown = unknown_keys(settings)
-            status(not unknown, label+': only known keys'+(' (unknown: '+', '.join(unknown)+'; a typo? keys are listed in schemas/overrides.schema.json)' if unknown else ''))
+            status(not unknown, label+': only known keys'+(' (unknown: '+', '.join(unknown)+'; a typo?)' if unknown else ''))
         shared = merge_settings(org_defaults, team_layer)
         changed = setting_differences({k: v for k, v in shared.items() if k != 'mcp'}, merge_settings(shared, personal))
         if changed:
-            print('[Info] Your overrides.toml changes organization or team defaults: '+', '.join(changed))
+            print('[Info] Your aikit.toml changes the Core or Team defaults: '+', '.join(changed))
         if state.get('team'):
-            sources = [s for s, present in (('context/20-'+state['team']+'.md', (context_folder()/('20-'+state['team']+'.md')).is_file()),
-                                            ('organization.toml teams.'+state['team'], bool(team_layer))) if present]
+            sources = [s for s, present in (('context', (context_folder()/('20-'+state['team']+'.md')).is_file()), ('[defaults]', bool(team_layer))) if present]
             print('[Info] Team: '+state['team']+' ('+(', '.join(sources) or 'nothing of its own yet')+')')
         root, overrides = repo_skill_overrides(state, cwd or os.getcwd())
         if overrides:
@@ -558,7 +557,7 @@ def release_check():
     def key(version):
         return tuple(int(x) for x in re.findall(r'\d+', version)[:3])
     if tags and key(tags[0]) > key(current):
-        print('[Info] AI Kit '+tags[0].lstrip('v')+' is published (this folder: '+current+'): run update, which fetches it.')
+        print('[Info] AI Kit '+tags[0].lstrip('v')+' is published (this folder: '+current+'): get its ZIP, or git pull this clone, then run its installer.')
 
 
 def live_checks(home, results=None):
