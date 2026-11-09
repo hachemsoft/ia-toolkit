@@ -12,7 +12,7 @@ The path is fixed: no environment variable moves it. The workstation is administ
 
 ## Rules
 
-- Every key present wins over `organization.toml`, the team and the person's `overrides.toml`, whatever its value: `false` and `[]` are values.
+- Every key present wins over the Core, the Team and the person's `overrides.toml` (and an older `organization.toml`), whatever its value: `false` and `[]` are values.
 - A key absent locks nothing.
 - `hooks.locked` and `mcp.denied` are restrictions: they add to the organization's, and nobody else lifts them.
 - A person who refused to share their frictions (`share_frictions = false`) keeps them local even when IT sets the publication mode.
@@ -47,7 +47,7 @@ revoked = []                    # commit SHAs never activated
 allowed = ["https://gitlab.example.org/ai-toolkit/"]   # Team repositories accepted (URL prefixes)
 allow_unknown = true            # false: only the Teams already known
 
-[frictions.tracker]              # where frictions go (before 2.2: organization.toml [friction_tracker])
+[frictions.tracker]              # where frictions go (before 3.0: organization.toml [friction_tracker])
 kind = "gitlab"                   # gitlab | github
 project = "tools/ai-kit"          # group/project on the host
 host = "gitlab.example.org"

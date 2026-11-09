@@ -41,7 +41,7 @@ Whatever the repo declares, the guardrail blocks the agent's usual writes to the
 Not a guardrail: a hook on the start of a session (`SessionStart`, new session or resume) that puts in the agent's context, once, what is new, so that the agent says it in its first reply, one line per item, details on request:
 
 - the CHANGELOG section of the version just installed (the kit folder's `CHANGELOG.md`);
-- the entries of the kit repository's [`NEWS.md`](../NEWS.md) aimed at this profile and team (a new skill, a training, a tip; an organization writes its own in its copy of the repository);
+- the entries of the kit repository's [`NEWS.md`](../NEWS.md) aimed at this team (a new skill, a training, a tip; an organization writes its own in its copy of the repository);
 - a newer kit version on the repository's `origin/main`. The agent proposes it; on a yes it tells you to run `ai-kit update` in a terminal and says what will change; on a no it runs `ai-kit news --later` and the version is not proposed again (the next one will be). The hook never runs the update, nor does the agent ([ADR 0012](adr/0012-a-session-hook-may-read-the-kit-remote-never-write-never-send.md)).
 
 **No remote text reaches the agent's context** (since 2.1): the remote `VERSION`, accepted only as `X.Y.Z`, is the only thing taken from the remote read; the `NEWS.md` entries come from the installed kit only. Git runs in the clone without its `core.fsmonitor` or hooks (0.51.1). Set `check_remote = false` to skip the read entirely. A release ZIP has no remote read.
@@ -50,7 +50,7 @@ The remote read happens at most once a day, only when the kit folder (`state.jso
 
 Settings, in `overrides.toml` or the organization's `defaults`: `[hooks] whats-new = false` turns the hook off; `[news] check_remote = false` keeps it local (no fetch, no version proposed). In a terminal: `ai-kit news --list` (what was announced, last read), `ai-kit news --check` (read the remote now, the same read as the hook's; the agent may run it when you ask), `ai-kit news --later`. Codex asks to trust the hook as it does for the guardrails, and asks again when its command changes after an update; Gemini CLI warns once about a changed hook: answer once, never bypass it. Each CLI's page says where the hook is declared and in which form the script answers it ([matrix](cli/matrice.md)).
 
-Writing an announcement: one section of `NEWS.md`, `## <YYYY-MM-DD> <id> : <title>`, optional `profiles:`, `teams:`, `until:` lines, then the text; `python3 scripts/check_news.py` refuses a malformed file and the CI runs it. An entry is shown once per person; `until` keeps it from people who install later.
+Writing an announcement: one section of `NEWS.md`, `## <YYYY-MM-DD> <id> : <title>`, optional `teams:` and `until:` lines, then the text; `python3 scripts/check_news.py` refuses a malformed file and the CI runs it. An entry is shown once per person; `until` keeps it from people who install later.
 
 ## Checking that guardrails run
 
@@ -68,18 +68,18 @@ Five different facts, never merged: the guardrail is **present** (its Python and
 
 ## Rules IT can enforce
 
-The kit installs per person, so a person (and an agent with shell access) can change what it wrote: nothing the kit installs is a lock. For rules that must hold whatever happens, IT deploys the managed settings of each CLI (MDM, Group Policy or the vendor's admin console); the CLI applies them above the person's settings. `organization.toml` `locked_hooks` keeps a guardrail on against a team's or a person's settings: it is a default, and a person who edits the kit folder lifts it.
+The kit installs per person, so a person (and an agent with shell access) can change what it wrote: nothing the kit installs is a lock. For rules that must hold whatever happens, IT deploys the managed settings of each CLI (MDM, Group Policy or the vendor's admin console); the CLI applies them above the person's settings. `managed.toml` `hooks.locked` keeps a guardrail on against a team's or a person's settings ([managed](managed.md)); it configures AI Kit, it does not lock the workstation. An `organization.toml` `locked_hooks` in an organization's own Core copy is still read, as a default a person who edits the kit folder lifts.
 
 | What the generated files hold | Does it hold on the workstation? |
 | --- | --- |
 | Keys the CLI enforces: sandbox and approvals on Codex, YOLO mode off on Gemini CLI, the MCP allowlist, Claude Code's `Edit` deny on write tools | Yes once deployed, as far as the vendor enforces them; `Edit` deny does not cover shell commands |
 | The guardrails as managed hooks | **Not as a lock.** They call a script and a Python under `$HOME`, which the person and a shell-capable agent can change, and a hook that cannot start blocks nothing. **On Windows the generated command points to `venv/bin/python`, which does not exist there: do not deploy these hooks on Windows** |
 
-The kit writes these files for you, from `organization.toml`: `managed-settings --out <empty folder>`, with a `README.txt` saying where each one goes. The guardrails are those of `locked_hooks`, or the ones on by default when it is empty. Nothing is installed: IT reviews and deploys them.
+The kit writes these files for you: `managed-settings --out <empty folder>`, with a `README.txt` saying where each one goes. The guardrails are those of `managed.toml` `hooks.locked` (and of an older `organization.toml` `locked_hooks`), or the ones on by default when none is locked. Nothing is installed: IT reviews and deploys them.
 
 | File written | What it holds |
 | --- | --- |
-| `claude-code/managed-settings.json` | edits to the kit's and Claude Code's configuration denied; the guardrails as managed hooks; with `--managed-hooks-only`, hooks from any other source ignored; with `--managed-mcp-only`, only the MCP servers `organization.toml` defines (`allowedMcpServers` and `allowManagedMcpServersOnly`) |
+| `claude-code/managed-settings.json` | edits to the kit's and Claude Code's configuration denied; the guardrails as managed hooks; with `--managed-hooks-only`, hooks from any other source ignored; with `--managed-mcp-only`, only the MCP servers the Core defines (`allowedMcpServers` and `allowManagedMcpServersOnly`) |
 | `gemini-cli/settings.json` (system settings) | the guardrails; YOLO mode off |
 | `codex/requirements.toml` | sandbox and approvals kept on: the agent writes only inside its repo; with `--managed-mcp-only`, an `mcp_servers` allowlist of the same servers, by name and identity |
 
@@ -92,7 +92,7 @@ The kit writes these files for you, from `organization.toml`: `managed-settings 
 
 Check the exact keys against your CLI's version: they change with each release.
 
-**Lock the MCP servers.** `managed-settings --out <empty folder> --managed-mcp-only` allows only the servers `organization.toml` defines, in its defaults and its teams: a remote server by its URL, a local one by its exact command and arguments, never by its name alone. A person's own server (`[mcp.mine]`) is then refused. If `organization.toml` defines none, every MCP server is blocked, and the command says so. A server whose URL or arguments use `${VARIABLE}` may not match once expanded: try one workstation first.
+**Lock the MCP servers.** `managed-settings --out <empty folder> --managed-mcp-only` allows only the servers the Core defines in `mcp/servers.toml` (and those of an older `organization.toml`, defaults and teams): a remote server by its URL, a local one by its exact command and arguments, never by its name alone. A person's own server (`[mcp.mine]`) is then refused. If none is defined, every MCP server is blocked, and the command says so. A server whose URL or arguments use `${VARIABLE}` may not match once expanded: try one workstation first.
 
 | CLI | What the MCP lock writes |
 | --- | --- |

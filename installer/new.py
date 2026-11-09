@@ -1,4 +1,4 @@
-"""ai-kit new: creates a skill, an agent or a command in a clone of the kit (AI Kit 2 has no profiles), with its metadata (aikit-*), its version,
+"""ai-kit new: creates a skill, an agent or a command in a clone of the kit (AI Kit 3 has no profiles), with its metadata (aikit-*), its version,
 its checks, then a branch and a merge request after two answers. No model call; the only network is the push and the merge
 request the person accepts. Skills and agents always go under contrib/: moving one to internal/ is a maintainer's act."""
 import argparse
@@ -241,7 +241,7 @@ def verify(kind, changes, run, undo):
     steps = [[python, 'runtime/check_skills.py', *own]] if own else []
     steps += [[python, 'scripts/versions.py', '--update']]
     steps += [] if WINDOWS else [[python, 'tests/snapshot.py', '--update']]
-    steps += [[python, 'scripts/profile_table.py', '--write']]
+    steps += [[python, 'scripts/selection_table.py', '--write']]
     steps += [[python, '-m', 'unittest', 'discover', '-s', 'tests', '-p', module+'.py'] for module in TARGET_TESTS]
     for command in steps:
         shown = ' '.join(c if c != python else 'python' for c in command)

@@ -13,7 +13,7 @@ from datetime import date
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 sys.path.insert(0, ROOT)
-from installer.settings import profile_ids, team_ids  # noqa: E402
+from installer.settings import team_ids  # noqa: E402
 
 META_LINE = re.compile(r'^([a-z_]+):\s')
 
@@ -33,7 +33,7 @@ def valid_date(text):
         return False
 
 
-def problems(text, profiles, teams):
+def problems(text, teams):
     hook = hook_module()
     found, seen = [], set()
     lines = text.splitlines()
@@ -46,7 +46,7 @@ def problems(text, profiles, teams):
                 if not following.strip():
                     break
                 key = META_LINE.match(following)
-                if key and key.group(1) not in ('profiles', 'teams', 'until'):
+                if key and key.group(1) not in ('teams', 'until'):
                     found.append('line '+str(number)+': unknown metadata "'+key.group(1)+'" (profiles, teams, until)')
                 elif not key:
                     break
@@ -67,9 +67,6 @@ def problems(text, profiles, teams):
             found.append(where+'invalid date '+entry['date'])
         if entry['until'] and not valid_date(entry['until']):
             found.append(where+'invalid until date '+entry['until'])
-        for profile in entry['profiles']:
-            if profile not in profiles:
-                found.append(where+'unknown profile '+profile+' (profiles: '+', '.join(profiles)+')')
         for team in entry['teams']:
             if team not in teams:
                 found.append(where+'unknown team '+team+(' (teams: '+', '.join(teams)+')' if teams else ' (no team declared)'))
@@ -87,7 +84,7 @@ def main(argv=None):
     except OSError as exc:
         print('Cannot read '+path+': '+str(exc))
         return 1
-    found = problems(text, profile_ids(), team_ids())
+    found = problems(text, team_ids())
     for line in found:
         print(line)
     if found:

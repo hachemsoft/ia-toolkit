@@ -21,7 +21,7 @@ One set of rules, methods and anti-error guardrails for the agent CLIs you choos
 
    Without git, or without access to a Python package index: download `ai-kit-<version>.zip` from the [Releases](https://github.com/hachemsoft/ia-toolkit/releases) page, extract it and run the same launcher; it installs everything from the ZIP, with no download.
 
-   A short guided screen asks which CLIs you use and the profile closest to your job (**General** if in doubt), shows what will change, then installs.
+   A short guided screen asks which CLIs you use, lets you adjust the optional resources (or keep the default), shows what will change, then installs.
 2. **Use**: open a terminal in your repo, start your CLI and ask in plain words. Type `/me` once: a short interview that tells the agent how to work with you.
 
    | You say | Shortcut |
@@ -38,22 +38,19 @@ You need Python 3.11 or later (AI Kit 2.0; on Python 3.9 or 3.10, stay on AI Kit
 
 **Update**: `ai-kit update` in a terminal (the installer adds the `ai-kit` command to your own PATH, unless you said no: then `Installer.cmd update`, Mac `sh scripts/bootstrap.sh update`, from the cloned folder) fetches the new version, reinstalls and reapplies; your choices and files are kept. Never `pip install` the kit next to it: that makes a second copy `update` does not touch. From a ZIP: extract the new ZIP and run its installer. **Uninstall**: run the installer and choose **Uninstall**; only what the kit installed goes.
 
-## Profiles
+## What gets installed
 
-| Profile | For | Adds to the base |
+| | For | What |
 | --- | --- | --- |
-| **General** | any development role | — (workflow, tools, code review) |
-| **Java Developer** | Maven or Gradle, Spring, JUnit | `java-change` playbook, security review |
-| **DevOps** | Terraform, Kubernetes, Helm, CI/CD | `infra-change` playbook, infrastructure and security reviews |
-| **Architect** | architecture decisions, design | `architecture-decision` playbook (ADR), architecture review |
-| **Data Analyst** | SQL, dbt, BigQuery, KPIs | SQL, dbt, BigQuery and KPI playbooks, SQL and dbt reviews |
-| **Data Developer** | the same, plus Python and JavaScript | the same, plus `python-js-change` and code review |
+| **Core default** | everyone | the workflow commands, the tools, code review and the general agents |
+| **Optional** | turned on by a Team or by you | domain playbooks (SQL and dbt, Java, infrastructure, architecture, Python and JavaScript) and their review agents, more commands |
+| **Team** | the members of one team | a Git repository of its own: its optional resources turned on, its own skills and agents, its context ([Teams](docs/core-source.md#teams)) |
 
-A profile is a starting point: the installer adds or removes a playbook, a command or an agent without editing any file.
+The full list: [getting started](docs/getting-started.md#3-work-one-command-per-step). The installer adds or removes a playbook, a command or an agent without editing any file. Since AI Kit 3.0 there are no profiles: an installation made with one keeps everything it had.
 
 ## What it is
 
-- **Layered context**: company practices, team practices and your preferences, read before each repo's own `AGENTS.md`; the organization decides its layer in `organization.toml`.
+- **Layered context**: company practices, team practices and your preferences, read before each repo's own `AGENTS.md`; the organization writes its layer in its Core, each team in its Team repository.
 - **A workflow**: one command per step (`/intent`, `/spec`, `/build`, `/test`, `/review`, `/ship`, `/diagnose`), with ceremony matched to the stakes; the agent states the level on its first line. See [workflow](docs/workflow.md).
 - **Domain playbooks and review agents** that the model can activate when the task calls for them, without guarantee; yours are added the same way ([extending](docs/extending.md)).
 - **Anti-error guardrails**, not a security barrier: on by default, a refusal when an agent writes to the configuration of the kit and of the CLIs in a form they recognise, active on Codex once you approve them; off by default, a refusal of dbt commands on production ([guardrails](docs/hooks.md)).

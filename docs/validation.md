@@ -9,11 +9,11 @@ The kit targets people working on Windows or macOS with a standard account: no a
 | Download | `ai-kit-<version>.zip`, from the Releases page of the kit repository | the same |
 | Extract | right-click the ZIP, **Extract All** | double-click the ZIP |
 | Install | double-click `Installer.cmd` in the extracted folder | open **Terminal**, type `sh ` (with a space), drag the `scripts/bootstrap.sh` file of the extracted folder into the window, press Enter |
-| Choices | the guided screens: your CLIs, your profile, optional adjustments, a review of the changes, then Install | the same |
+| Choices | the guided screens: your CLIs, optional adjustments, a review of the changes, then Install | the same |
 | `30_USER.md` | three quick questions at the end of the first setup fill it; **Open my personal context** in the menu opens it in Notepad | the same, in the default text editor (TextEdit unless you chose another) |
 | Use | start a new session of your CLI | the same |
 
-Update: download and extract the new ZIP, then run the installer the same way. CLIs, profile, team, choices, `overrides.toml` and `30_USER.md` are kept. Keep the kit folder: the `ai-kit` command runs its launcher (since 0.46); nothing else installed points to it. Uninstall: run the installer and choose **Uninstall**.
+Update: download and extract the new ZIP, then run the installer the same way. CLIs, team, choices, `overrides.toml` and `30_USER.md` are kept. Keep the kit folder: the `ai-kit` command runs its launcher (since 0.46); nothing else installed points to it. Uninstall: run the installer and choose **Uninstall**.
 
 **No double-click launcher on macOS.** A file extracted from a ZIP downloaded with a browser carries the quarantine attribute. Gatekeeper refuses an unsigned script (`spctl --assess` answers "rejected, no usable signature"), and a script cannot be notarized on its own. Getting past this would mean changing a security decision ("Open Anyway"), which the kit never asks for. `sh scripts/bootstrap.sh` reads the file instead of opening it as an application, so quarantine does not apply and there is nothing to authorise. The terminal path is therefore the reliable one.
 
@@ -53,7 +53,7 @@ To do on a Windows and a macOS workstation, with a **standard account**, for eac
 | # | Criterion | How | Expected |
 | --- | --- | --- | --- |
 | 1 | Standard account | install from the ZIP | no administrator prompt (UAC, macOS password) at any time |
-| 2 | Install and update without elevation | install version N, then N+1 from a new ZIP extracted elsewhere; delete the first folder | profile, team, `overrides.toml`, `30_USER.md` kept; `doctor` green |
+| 2 | Install and update without elevation | install version N, then N+1 from a new ZIP extracted elsewhere; delete the first folder | choices, team, `overrides.toml`, `30_USER.md` kept; `doctor` green |
 | 3 | Spaces and accents | extract to `Documents\Kit IA été` (Windows), `Documents/Kit IA été` (macOS) | install OK |
 | 4 | Compatible Python present | the company Python | install OK |
 | 5 | Python absent | a workstation or session without Python | message "What to ask IT support", nothing written |

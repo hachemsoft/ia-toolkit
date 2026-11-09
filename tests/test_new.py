@@ -271,7 +271,7 @@ class NewTests(unittest.TestCase):
         self.assertIn('skills/contrib/demo', run[0])
         self.assertIn('scripts/versions.py --update', run[1])
         self.assertIn('tests/snapshot.py --update', run[2])
-        self.assertTrue([c for c in run if 'profile_table' in c])  # 2.2: the selection table lists skills too
+        self.assertTrue([c for c in run if 'selection_table' in c])  # 2.2: the selection table lists skills too
         for module in ('test_skills_catalog', 'test_skill_dependencies', 'test_commands', 'test_consistency', 'test_evals_runner',
                        'test_versions', 'test_evals_and_playbooks', 'test_invariants', 'test_snapshot'):
             self.assertTrue([c for c in run if 'unittest' in c and module+'.py' in c], module)
@@ -454,7 +454,7 @@ class NewTests(unittest.TestCase):
     def test_a_command_refreshes_the_table_and_commits_it(self):
         # A command is in the selection table of docs/getting-started.md: the table changes.
         self.new('command', '--name', 'demo-cmd', '--skill', 'tdd', '--yes', '--no-mr')
-        self.assertTrue([c for c in self.commands_run() if 'scripts/profile_table.py --write' in c])
+        self.assertTrue([c for c in self.commands_run() if 'scripts/selection_table.py --write' in c])
         self.assertIn('docs/getting-started.md', new.shared_files('command'))
 
     def test_a_command_is_refused_on_a_domain_playbook(self):

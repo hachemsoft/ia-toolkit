@@ -1,5 +1,5 @@
 # Team practices — proposed baseline, to validate
-These practices apply to everyone; each repo refines them in its `AGENTS.md`.
+The default team layer: the active Team's own context replaces it (ai-kit team use). Each repo refines it in its `AGENTS.md`.
 - Read the repo's instructions and conventions before modifying anything.
 - Keep architecture, commands, reference data, indicators and decisions (ADRs) in the owning repo.
 - Reuse existing tools and abstractions; keep changes proportionate to the need.

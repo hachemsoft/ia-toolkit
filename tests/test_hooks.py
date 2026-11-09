@@ -288,7 +288,7 @@ class SessionNewsTests(unittest.TestCase):
   self.assertEqual(self.marker().get('announced_versions'),['0.47.0']);self.assertEqual(self.hook({'conversationId':'c2'}),{})
  def test_news_entries_targeted_expired_seen_and_malformed(self):
   self.marker(announced_versions=['0.47.0'])
-  (self.kit/'NEWS.md').write_text('# News\n\n## 2026-11-02 welcome : A channel for news\n\nFirst global entry.\n\n## 2026-11-02 analysts-only : For analysts\nprofiles: data-analyst\n\nNot for us.\n\n## 2026-01-01 expired : Old training\nuntil: 2026-01-31\n\nGone.\n\n## 2026-11-02 team-news : Team session\nteams: data-platform, other\n\nFor our team.\n\n## no id here\n\nIgnored.\n',encoding='utf-8')
+  (self.kit/'NEWS.md').write_text('# News\n\n## 2026-11-02 welcome : A channel for news\n\nFirst global entry.\n\n## 2026-11-02 analysts-only : For analysts\nteams: analysts\n\nNot for us.\n\n## 2026-01-01 expired : Old training\nuntil: 2026-01-31\n\nGone.\n\n## 2026-11-02 team-news : Team session\nteams: data-platform, other\n\nFor our team.\n\n## no id here\n\nIgnored.\n',encoding='utf-8')
   c=self.context(self.hook());self.assertIn('A channel for news',c);self.assertIn('First global entry.',c);self.assertIn('Team session',c)
   for absent in ('For analysts','Old training','no id here','Ignored.'):self.assertNotIn(absent,c)
   self.assertEqual(sorted(self.marker()['announced_news']),['team-news','welcome']);self.assertEqual(self.hook(),{})

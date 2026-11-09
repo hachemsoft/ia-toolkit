@@ -4,17 +4,19 @@ A skill describes a procedure. An agent receives a bounded mission in a separate
 
 > `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
 
-| Agent | Default profiles | Mission |
+| Agent | Installed | Mission |
 | --- | --- | --- |
-| `ai-kit-repo-investigator` | all | Understand the repo's flows and dependencies |
-| `ai-kit-verifier` | all | Run the checks declared by the repo and report, without fixing |
-| `ai-kit-doubter` | all except Data Analyst (with `/review full`) | Read-only adversarial review: doubt every claim of the change, look for evidence or a counter-example |
-| `ai-kit-code-reviewer` | General, Java Developer, Architect, Data Developer | Code review: contracts, exceptions, compatibility and regressions |
-| `ai-kit-security-reviewer` | Java Developer, DevOps | Secrets, injections, access control, permissions and exposure, dependencies |
-| `ai-kit-infra-reviewer` | DevOps | Blast radius of an infrastructure or pipeline change: deletions, permissions, versions, rollback |
-| `ai-kit-architecture-reviewer` | Architect | Architecture proposal or ADR: options, criteria, consequences, consistency with existing decisions |
-| `ai-kit-sql-reviewer` | Data Analyst, Data Developer | Grain, joins, aggregations, dates and NULL |
-| `ai-kit-dbt-reviewer` | Data Analyst, Data Developer | dbt models, incremental logic, tests and documentation |
+| `ai-kit-repo-investigator` | Core default | Understand the repo's flows and dependencies |
+| `ai-kit-verifier` | Core default | Run the checks declared by the repo and report, without fixing |
+| `ai-kit-doubter` | Core default (with `/review full`) | Read-only adversarial review: doubt every claim of the change, look for evidence or a counter-example |
+| `ai-kit-code-reviewer` | Core default | Code review: contracts, exceptions, compatibility and regressions |
+| `ai-kit-security-reviewer` | optional | Secrets, injections, access control, permissions and exposure, dependencies |
+| `ai-kit-infra-reviewer` | optional | Blast radius of an infrastructure or pipeline change: deletions, permissions, versions, rollback |
+| `ai-kit-architecture-reviewer` | optional | Architecture proposal or ADR: options, criteria, consequences, consistency with existing decisions |
+| `ai-kit-sql-reviewer` | optional | Grain, joins, aggregations, dates and NULL |
+| `ai-kit-dbt-reviewer` | optional | dbt models, incremental logic, tests and documentation |
+
+An optional agent is turned on by a Team (`extra_agents` in its `aikit.toml` `[defaults]`, see [Teams](core-source.md#teams)) or by you (`extra_agents` in `~/.ai-kit/overrides.toml`).
 
 ## Usage
 
@@ -56,14 +58,13 @@ Future access to an MCP server must use explicitly allowed tools and be validate
 
 ## Layout
 
-- Each agent describes itself in its front matter (`metadata`: `aikit-version`, `aikit-origin`), read by AI Kit and never written into a CLI's agent file.
-- `agents/internal/<category>/<name>.md`: role and instructions, independent of any CLI; `agents/contrib/<name>.md` for an agent contributed by someone in the organization, in no profile, enabled with `extra_agents` ([rules](../agents/contrib/README.md)).
+- Each agent describes itself in its front matter (`metadata`: `aikit-version`, `aikit-origin`, `aikit-default`: `"true"` when the Core installs it for everyone), read by AI Kit and never written into a CLI's agent file.
+- `agents/internal/<category>/<name>.md`: role and instructions, independent of any CLI; `agents/contrib/<name>.md` for an agent contributed by someone in the organization, never in the default selection, enabled with `extra_agents` ([rules](../agents/contrib/README.md)).
 - A version per agent (`aikit-version`), raised at every change and recorded in `versions.lock.json` (see [extending](extending.md#for-the-organization-in-the-kit)).
 - `agents/defaults.json`: default tools and settings, shared by all CLIs.
-- `profiles/*.toml`: agents selected per role.
 - Output: one file per agent, in the format and location each CLI reads ([matrix](cli/matrice.md)).
 
-The installer generates the files, records them in its state, protects local modifications and removes old untouched outputs when the profile changes.
+The installer generates the files, records them in its state, protects local modifications and removes old untouched outputs when the selection changes.
 
 Customization in `~/.ai-kit/overrides.toml`: add `extra_agents` and `disabled_agents` as lists of catalog names (without the ai-kit prefix). Keep the file's other keys.
 

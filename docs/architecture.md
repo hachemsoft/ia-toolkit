@@ -7,8 +7,8 @@ How the installer works, what it guarantees and where it depends on things it do
 ```
 launcher (scripts/launcher.py)          the private venv ~/.ai-kit/runtime, the kit package from the ZIP's wheels
   └─ installer (installer/cli.py: main)
-       ├─ settings (installer/settings.py): organization.toml defaults → team → ~/.ai-kit/overrides.toml
-       ├─ resolution (installer/plan.py): profile + settings → skills (with their dependencies), commands, agents, guardrails, MCP servers
+       ├─ settings (installer/settings.py): Core defaults → Team → ~/.ai-kit/overrides.toml; managed.toml on top
+       ├─ resolution (installer/plan.py): Core default selection + settings → skills (with their dependencies), commands, agents, guardrails, MCP servers
        ├─ plan: a Plan (installer/interface.py) holding every file to write, with nothing specific to a CLI
        ├─ adapters (installer/adapters/*.py): each chosen CLI adds its own writes to the plan, in its format
        ├─ checks: nothing written yet; a file edited by hand, a link, a refused value stops everything here

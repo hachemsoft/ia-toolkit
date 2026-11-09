@@ -10,7 +10,7 @@ You need Python 3.11 or later (on Python 3.9 or 3.10, stay on AI Kit 0.52), git,
 2. Run the installer:
    - **Windows**: double-click `Installer.cmd` in the kit folder.
    - **Mac**: open **Terminal**, type `sh ` (with a space), drag `scripts/bootstrap.sh` from the kit folder into the window, press Enter.
-3. Answer the guided screen (arrows move, Space ticks, Enter confirms, Ctrl+C leaves without changing anything): which CLIs you use, your **profile** (**General** if in doubt; also Java Developer, DevOps, Architect, Data Analyst, Data Developer), your work email. Keep what the profile proposes; you can adjust later. Review, then **Install**.
+3. Answer the guided screen (arrows move, Space ticks, Enter confirms, Ctrl+C leaves without changing anything): which CLIs you use, your choices (keep the Core default if in doubt; a domain playbook such as SQL and dbt, Java or infrastructure is optional), your work email. You can adjust later; if your team has a Team repository, `ai-kit team use <name> --url <URL>` turns on what it needs ([Teams](core-source.md#teams)). Review, then **Install**.
 4. Three quick questions fill your personal context: the language and length of the answers, how much the agent does on its own, your role in one line.
 
 The installer never calls the model, so the summary says "connection not verified". Signing in and choosing the model are done in your CLI, as your IT procedure says.
@@ -42,7 +42,7 @@ Folders starting with a dot are hidden: paste the path into the Explorer address
 
 ### New version
 
-Run `ai-kit update` (or `update` from the kit folder, table above): it fetches the new version (`git pull --ff-only`), reinstalls the kit in its private environment and reapplies your configuration, in three reported steps. Your CLIs, profile, choices and files are kept. No `git pull` or `pip install` by hand. From a ZIP: extract the new ZIP and run its installer, as the first time; the old folder can be deleted.
+Run `ai-kit update` (or `update` from the kit folder, table above): it fetches the new version (`git pull --ff-only`), reinstalls the kit in its private environment and reapplies your configuration, in three reported steps. Your CLIs, choices and files are kept; an installation made with a profile (before 3.0) keeps everything it had, written as personal lines in `overrides.toml`. No `git pull` or `pip install` by hand. From a ZIP: extract the new ZIP and run its installer, as the first time; the old folder can be deleted.
 
 ## 2. First session (five minutes)
 
@@ -71,14 +71,14 @@ Plain sentences are the normal way in: "explain how this area works", "the job f
 
 The agent matches the ceremony to the stakes and says so on its first line: `Level: quick` (a small change, done and checked), `standard` (a short alignment, then test-first) or `full` (intent, spec, plan, your acceptance before code).
 
-What is installed (AI Kit 2 has no profiles: the Core installs its default selection; a Team turns on more for its members, and you add or remove a resource with `extra_*` or `disabled_*`):
+What is installed (since AI Kit 3.0 there are no profiles: the Core installs its default selection; a Team turns on more for its members, and you add or remove a resource with `extra_*` or `disabled_*`):
 
-<!-- profile-table:start -->
+<!-- selection-table:start -->
 | | Commands | Skills | Agents |
 | --- | --- | --- | --- |
 | **Core default** (installed for everyone) | `/intent` `/spec` `/build` `/test` `/review` `/ship` `/diagnose` `/me` `/guide` `/friction` `/learn` `/explain` `/retro` `/research` | analysis code-review diagnosing-bugs domain-modeling grill-with-docs grilling implement init-project-context investigation mr retrospective routing setup-workflow tdd teach to-spec wait-what writing-for-agents zoom-out | doubter repo-investigator verifier code-reviewer |
 | **Optional** (a Team's `[defaults]`, or `extra_*`) | `/design` `/map` `/triage` `/ask` `/handoff` `/wizard` `/audit` | bigquery-cost-review bigquery-query-review dbt-model-change incremental-replay kpi-definition perimeter-brief sql-review architecture-decision codebase-design grill-me handover implement-spec improve-codebase-architecture manual-steps prototype ticket-sorting to-questionnaire to-tickets wayfinder workflow-guide write-a-skill writing-great-skills java-change python-js-change infra-change | dbt-reviewer sql-reviewer architecture-reviewer security-reviewer infra-reviewer |
-<!-- profile-table:end -->
+<!-- selection-table:end -->
 
 The domain playbooks your Team turns on (SQL and dbt, Java, infrastructure…) activate on their own when the task calls for them. Every command and tool: [workflow](workflow.md) and [tools](tools.md).
 

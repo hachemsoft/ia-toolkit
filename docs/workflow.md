@@ -31,7 +31,7 @@ A quick change gets none of this: it is done and checked. The methods of a domai
 
 ## The steps
 
-The installed commands depend on the profile: see the [profile table](getting-started.md#3-work-one-command-per-step). A missing command is added with one line, `extra_commands` in `~/.ai-kit/overrides.toml`, then `update`.
+The Core installs a default set of commands for everyone, and a Team can turn on more: see [what is installed](getting-started.md#3-work-one-command-per-step). A missing command is added with one line, `extra_commands` in `~/.ai-kit/overrides.toml`, then `update`.
 
 | Step | Command | Artifact | What the command does |
 | --- | --- | --- | --- |
@@ -65,12 +65,12 @@ Domain skills, activated by the model when the task calls for them and chained b
 | `bigquery-query-review` | `/build`, `/diagnose` | preserved semantics, partitions, execution plan |
 | `bigquery-cost-review` | `/build`, `/diagnose` | bytes, slots, frequency, monthly cost, budget before execution |
 | `perimeter-brief` | `/learn` | HTML sheet for an area, quiz, candidate glossary terms |
-| `python-js-change` | `/build` (Data Developer) | repo conventions, TDD, interface before implementation |
-| `java-change` | `/build` (Java Developer) | repo and Maven or Gradle build conventions, JUnit, public contracts |
-| `infra-change` | `/build`, `/diagnose` (DevOps) | blast radius, read-only evidence (plan, diff), never an apply or a deployment, rollback |
-| `architecture-decision` | `/spec` (Architect) | compared options, criteria, consequences, reversibility, ADR |
+| `python-js-change` | `/build` | repo conventions, TDD, interface before implementation |
+| `java-change` | `/build` | repo and Maven or Gradle build conventions, JUnit, public contracts |
+| `infra-change` | `/build`, `/diagnose` | blast radius, read-only evidence (plan, diff), never an apply or a deployment, rollback |
+| `architecture-decision` | `/spec` | compared options, criteria, consequences, reversibility, ADR |
 
-The Data playbooks are in both Data profiles; `python-js-change`, `java-change`, `infra-change` and `architecture-decision` are each in the profile shown. A playbook from another profile is added with `extra_skills` in `overrides.toml`.
+Every domain playbook is optional: a Team turns on those its members need (`extra_skills` in its `aikit.toml` `[defaults]`, see [Teams](core-source.md#teams)), and you add one with `extra_skills` in `overrides.toml`.
 
 Each playbook ends with a "Rationalizations and rebuttals" table: the reasons an agent gives to skip a step, and the reply it gets. When the agent finds a new rationalization, it goes into the table.
 

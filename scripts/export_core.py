@@ -38,7 +38,7 @@ def export(dest):
         shutil.copy2(ROOT/entry['path'], dest/'agents'/(agent+'.md'))
     version = (ROOT/'VERSION').read_text(encoding='utf-8').strip()
     (dest/'aikit.toml').write_text('#:schema https://github.com/hachemsoft/ia-toolkit/blob/main/schemas/source.schema.json\n'
-                                   'schema = 1\nname = "core"\nkind = "core"\nmin_engine = "2.1.0"\n', encoding='utf-8')
+                                   'schema = 1\nname = "core"\nkind = "core"\nmin_engine = "3.0.0"\n', encoding='utf-8')
     (dest/'README.md').write_text('# AI Kit Core\n\nThe content AI Kit installs: skills, agents, commands, practices. Exported from the kit '
                                   + version+' by scripts/export_core.py. Check a change with `ai-kit validate --path .` before tagging '
                                   'a release vX.Y.Z; workstations install the highest stable tag with `ai-kit sync`.\n', encoding='utf-8')

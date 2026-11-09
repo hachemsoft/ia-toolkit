@@ -8,19 +8,19 @@ An MCP server gives the agent access to a tool or to data: a documentation site,
 
 | File | Who writes it | What it says | Example |
 | --- | --- | --- | --- |
-| `organization.toml` (kit repository) | the platform team, by merge request | **how** to reach each approved server | `docs = { server = { httpUrl = "https://…" } }` under `[defaults.mcp]` |
-| `profiles/<profile>.toml` (kit repository) | the kit maintainers | **which** servers are on for that job | `mcp = ["github"]` |
-| `organization.toml`, under `teams.<team>` | the team, by merge request | **the team's exceptions**, same formats as yours | `mcp = { github = true }` |
+| `mcp/servers.toml` (Core repository) | the platform team, by merge request | **how** to reach each approved server | `httpUrl = "https://…"` under `[servers.docs]` |
+| `aikit.toml` `[defaults]` of a Team repository | the team, by merge request | **which** servers are on for its members, same formats as yours | `mcp = { github = true }` |
 | `~/.ai-kit/overrides.toml` (your workstation) | you | **your exceptions**: turn one on or off, or add your own | `mcp = { docs = false, github = true }` |
+| `managed.toml` (IT) | IT | **refusals** nobody lifts | `denied = ["legacy-db"]` under `[mcp]` ([managed](managed.md)) |
 
-A server is installed when it is **defined** (in `organization.toml` or in your file) **and on** (through your profile, through `enabled = true` in `organization.toml`, through your team, or through your file). Order: organization, profile, team, you; your file has the last word. Teams: [customization](customization.md#teams). After any change: `update`, then restart the CLI.
+A server is installed when it is **defined** (in `mcp/servers.toml` or in your file) **and on** (through `enabled = true` in `mcp/servers.toml`, through your Team, or through your file), and IT does not refuse it. Order: Core, Team, you; your file has the last word, except for what IT refuses in `managed.toml`. Teams: [Core and Team sources](core-source.md#teams). An `organization.toml` in an organization's own Core copy (before 3.0) is still read: its `[defaults.mcp]` servers and its `teams` count as above, and `ai-kit validate` says where they go now. After any change: `update`, then restart the CLI.
 
 ## For the platform team: define the approved servers
 
-In `organization.toml`, under `defaults`, describe each server once. A server listed here is off, except for the profiles that list it:
+In the Core's `mcp/servers.toml`, describe each server once, one `[servers.<name>]` table each. A server listed here is off, except for the Teams and people who turn it on:
 
 ```toml
-[defaults.mcp.github.server]
+[servers.github]
 command = "docker"
 args = [
   "run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
@@ -28,28 +28,29 @@ args = [
 ]
 env = { GITHUB_PERSONAL_ACCESS_TOKEN = "${GITHUB_PERSONAL_ACCESS_TOKEN}" }
 
-[defaults.mcp.docs]
+[servers.docs]
 enabled = true
-server = { httpUrl = "https://docs-mcp.example.org/mcp" }
+httpUrl = "https://docs-mcp.example.org/mcp"
 ```
 
-- `enabled = true` (here `docs`) turns a server on for **every** profile.
-- `server` has a single transport. Use `httpUrl` (streamable HTTP) or `url` (SSE), always `https://`, for a remote server. Use `command`, with `args` and `env`, for a local server. Do not use `cwd`: not every CLI has it, and the kit refuses it there; give the full path in `command`.
-- **Never write a secret.** Write `${VARIABLE}`, and each person defines the variable in their environment. `doctor` flags a key or token written in plain text in `~/.ai-kit/overrides.toml`; nothing checks `organization.toml`, so review it in the merge request.
+- `enabled = true` (here `docs`) turns a server on for **everyone**.
+- A server has a single transport. Use `httpUrl` (streamable HTTP) or `url` (SSE), always `https://`, for a remote server. Use `command`, with `args` and `env`, for a local server. Do not use `cwd`: not every CLI has it, and the kit refuses it there; give the full path in `command`.
+- **Never write a secret.** Write `${VARIABLE}`, and each person defines the variable in their environment. `doctor` flags a key or token written in plain text in `~/.ai-kit/overrides.toml`; nothing checks `mcp/servers.toml`, so review it in the merge request.
 - Pin image and package versions (`:1.2.3`, not `:latest`): a new version should arrive by your choice, not by itself.
 - A local server needs its executable on the workstation (`docker`, a language runtime…), installed by the IT procedure. The kit does not install it. Prefer a remote server when one exists: nothing to install on the workstations.
 - `trust: true` is refused: the CLI must keep asking before a server's tools act.
 - To make this list the only one allowed on the workstations, IT deploys the managed settings generated with `managed-settings --managed-mcp-only` ([guardrails](hooks.md#rules-it-can-enforce)). Without them, a person can still add a server of their own.
 
-## For the kit maintainers: choose per profile
+## For a Team: turn servers on
 
-In `profiles/<profile>.toml`, the list of servers that job needs:
+In the Team repository's `aikit.toml`, under `[defaults]`, the servers its members need:
 
 ```toml
-mcp = ["github"]
+[defaults]
+mcp = { github = true }
 ```
 
-These are names only. The address and the authentication depend on the organization, not on the job. A name that `organization.toml` does not define installs nothing, and `doctor` reports it as "chosen but not defined in organization.toml". In the public kit, `data-analyst` lists `bigquery` and `dbt`, and `data-developer` lists `bigquery`. No server is defined, so nothing is installed until the organization defines them.
+These are names only. The address and the authentication depend on the organization, not on the team. A name that the Core does not define installs nothing, and `doctor` reports it as chosen but not defined. No server is defined in the public kit, so nothing is installed until the organization defines them. An installation made with a profile (before 3.0) keeps the servers its profile turned on, as `[mcp] <name> = true` lines in `overrides.toml`.
 
 ## For each person: your exceptions and your own servers
 
@@ -57,8 +58,8 @@ In `~/.ai-kit/overrides.toml`, under `mcp`, one line per exception:
 
 | You want | You write |
 | --- | --- |
-| a server of the organization that your profile does not turn on | `github = true` under `[mcp]` |
-| to turn off a server your profile turns on | `docs = false` under `[mcp]` |
+| a server the Core defines that is not on for you | `github = true` under `[mcp]` |
+| to turn off a server that is on for you | `docs = false` under `[mcp]` |
 | your own server, for every installed CLI | `[mcp.mine]` then `server = { command = "my-mcp", env = { TOKEN = "${MY_TOKEN}" } }` |
 | to keep your server's definition but turn it off for now | `enabled = false` under `[mcp.mine]`, next to its `server` |
 
@@ -79,7 +80,7 @@ Then `update`, and restart the CLI (some CLIs must be closed before an update th
 
 ## Removing
 
-Remove the name from the profile or from `organization.toml`, or write `<name> = false` under `[mcp]` in your file, then `update`. Only the `ai-kit-<name>` server is removed; the others stay. If a managed server was edited by hand in a CLI's settings, `update` stops and asks you to choose: move the change to `overrides.toml`, or restore the server.
+Remove the name from the Team's `[defaults]` or from `mcp/servers.toml`, or write `<name> = false` under `[mcp]` in your file, then `update`. Only the `ai-kit-<name>` server is removed; the others stay. If a managed server was edited by hand in a CLI's settings, `update` stops and asks you to choose: move the change to `overrides.toml`, or restore the server.
 
 ## BigQuery and dbt
 

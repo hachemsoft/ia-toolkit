@@ -4,8 +4,8 @@
 Usage: python3 ~/.ai-kit/bin/friction.py --category <command|skill|guardrail|rule|docs|tool|auth|other> [--command <name>] [--cli gemini|agy|codex|claude] --text "<one sentence>"
        python3 ~/.ai-kit/bin/friction.py --list [N]     the last N frictions (10)
        python3 ~/.ai-kit/bin/friction.py --sync         send to the tracker what was not sent
-The context (kit version, profile, system) is added automatically. Nothing is sent, unless the organization set a
-friction tracker (organization.toml [friction_tracker], recorded by update in state.json): then a friction whose
+The context (kit version, team, system) is added automatically. Nothing is sent, unless IT set a friction tracker
+(managed.toml [frictions.tracker], or organization.toml [friction_tracker] in an older Core, recorded by update in state.json): then a friction whose
 source is in its `sources` (agent by default: --source agent when the agent logs on its own) is created as an issue
 through the person's own glab or gh, signed in by them; the kit holds no token. Any failure keeps the friction local.
 `ai-kit friction` runs this very file (installer/cli.py imports it): one implementation, --home for a trial home.

@@ -1,4 +1,4 @@
-"""The six V1 profiles, frozen (AI Kit 2 has no profiles, ADR 0018). Tests that described a job by its profile now give
+"""The six V1 profiles, frozen (AI Kit 3 has no profiles, ADR 0018). Tests that described a job by its profile now give
 the same resources as personal choices, the way the migration carries them over: what the Core default lacks becomes
 extra_skills, extra_agents and extra_commands."""
 import json

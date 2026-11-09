@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 3.0.0
+
+The V2 structure, complete. **Breaking**: no more profiles (`--profile <job>` is refused; `general` is still accepted), the installed package holds only the engine (the release ZIP ships the Core as `core/ai-kit-core.bundle`), `organization.toml` leaves the Core, and `practices/` is `context/`. An installation made with a profile keeps everything it had (its resources become personal lines, commented, at the next update); an organization's own Core with `organization.toml` or `practices/` is still read. This Core needs AI Kit 3.0 or newer (`min_engine`): an older engine refuses it and changes nothing. Git 2.29 or newer.
 
 - MCP policy (V2 slice 6): a server's keys are a closed list (`command`, `args`, `env`, `cwd`, `httpUrl`, `url`, `headers`, `required`), and a shell as the command or a `-c` script is reported; both are warnings in this release and will be refused in a later one. IT can allow only exact server identities (`managed.toml` `mcp.allowed_stdio`, `mcp.allowed_http`: the hash of the command, args, env templates and folder, or of the URL and headers; `ai-kit status --verbose` shows them), and `mcp.denied` now matches a name, a URL prefix or an executable. A server refused by IT and marked `required = true` stops the installation; an optional one is removed with a notice; `required` is never written into a CLI.
 - `managed-settings` also applies `managed.toml`: its locked guardrails and its MCP refusals go into the files IT deploys.

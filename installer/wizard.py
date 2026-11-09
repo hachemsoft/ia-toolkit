@@ -108,7 +108,7 @@ def customize(ui, home, profile_id):
                                                       ('adjust', 'Adjust playbooks, tools, commands and agents')], 'keep')
     if keep == 'keep':
         return None
-    profile = cli.load_profile(profile_id)
+    profile = cli.core_selection()
     catalog = resolve.skill_catalog(content_root())
     agent_catalog = resolve.agent_catalog(content_root())
     manifest = load_commands()
