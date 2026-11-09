@@ -26,15 +26,6 @@ def practice_file(practice_id):
     return source, source.stem[:2]+'_'+practice_id.upper().replace('-','_')+'.md'
 
 
-def profile_menu():
-    """2.2: no profiles (ADR 0018); kept empty for the callers of the V1 API."""
-    return []
-
-
-def profile_ids():
-    return []
-
-
 CORE_SELECTION = 'core'  # 2.2: no profiles; state.json records this instead of a profile name
 
 
@@ -63,11 +54,6 @@ def carried_over(state, selection, overrides, catalog, agent_names, command_name
                                   'extra_agents', 'disabled_agents', set(agent_names)),
              'extra_commands': kept(installed.get('commands', []), selection['commands'], 'extra_commands', 'disabled_commands', set(command_names))}
     return {k: v for k, v in found.items() if v}
-
-
-def load_profile(profile_id):
-    """2.2: no profiles; every id gives the Core default selection (kept for the callers of the V1 API)."""
-    return core_selection()
 
 
 def managed_context_names(profile):

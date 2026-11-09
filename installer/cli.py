@@ -16,7 +16,7 @@ from .core import (content_root, STATE_SCHEMA, check_state_schema, _PACKAGE_DIR,
                    safe_id, load_commands, load_agent, redact, user_context_refusal)
 from .adapters import ADAPTERS
 from .interface import ContextHost, Plan
-from .settings import (CORE_SELECTION, core_selection, carried_over, practice_file, profile_menu, profile_ids, load_profile, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, organization, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, allowed_domains, domain_allowed, team_ids, profile_practices, RENAMED_SKILLS, resolve_skills, skill_note, RETIRED_KEYS, retired_key_notice, unknown_names, allowed_commands, selected_commands, LEGACY_KIT_DIR, recorded_targets, version_changes, PERSONAL_FILE, LEGACY_PERSONAL_FILE, personal_settings, CHOICE_KEYS, friction_tracker)  # noqa: F401 (re-exported)
+from .settings import (CORE_SELECTION, core_selection, carried_over, practice_file, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, organization, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, allowed_domains, domain_allowed, team_ids, profile_practices, RENAMED_SKILLS, resolve_skills, skill_note, RETIRED_KEYS, retired_key_notice, unknown_names, allowed_commands, selected_commands, LEGACY_KIT_DIR, recorded_targets, version_changes, PERSONAL_FILE, LEGACY_PERSONAL_FILE, personal_settings, CHOICE_KEYS, friction_tracker)  # noqa: F401 (re-exported)
 from .console import styled_output
 from .commit import (BACKUPS_KEPT, prune_backups, commit_changes, atomic_write, KIT_MANAGED, managed_roots, prune_empty_dirs)  # noqa: F401 (re-exported)
 from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKILL_DIRS, repo_root, repo_skill_overrides, mcp_report, print_summary, doctor, kit_version, source_folder, version_line, SCRIPT_INTERPRETER, kit_commands_on_path, runtime_checks, doctor_checks, release_check, live_checks, plain_text_problem)  # noqa: F401 (re-exported)
@@ -247,7 +247,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     personal_path, personal_bytes, personal_notices = personal_file(kit, choices, deletes)
     if carried:
         from datetime import date
-        origin = '# carried over from profile '+str(state.get('profile'))+' on '+date.today().isoformat()+' (AI Kit 2 has no profiles; remove a name to stop installing it)'
+        origin = '# carried over from profile '+str(state.get('profile'))+' on '+date.today().isoformat()+' (AI Kit 3 has no profiles; remove a name to stop installing it)'
         text = personal_bytes.decode('utf-8')
         for name in carried.get('mcp', []):
             text = (set_section_key(text, 'mcp', name, True, personal_path.name) if personal_path.name == PERSONAL_FILE
@@ -255,7 +255,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         for key in [k for k in carried if k != 'mcp']:
             text = re.sub(r'(?m)^(?=[ \t]*'+key+r'[ \t]*=)', origin.replace('\\', r'\\')+'\n', text, count=1) if origin not in text else text
         personal_bytes = text.encode('utf-8')
-        personal_notices.append('[Info] AI Kit 2 has no profiles: what your profile '+str(state.get('profile'))+' installed and the Core does not give by default is kept as personal lines in ~/.ai-kit/'
+        personal_notices.append('[Info] AI Kit 3 has no profiles: what your profile '+str(state.get('profile'))+' installed and the Core does not give by default is kept as personal lines in ~/.ai-kit/'
                                 + personal_path.name+': '+'; '.join(k.replace('extra_', '')+' '+', '.join(v) for k, v in carried.items())+'.')
     writes[personal_path] = personal_bytes
     identity = dict(user) if user else dict(state.get('user', {}))
@@ -642,12 +642,12 @@ def command_main(argv):
     parser.add_argument('--json',type=Path,help='usage: write the report to this file')
     parser.add_argument('--min-sessions',type=int,default=10,help='usage: minimum sessions before recommending (default 10)')
     parser.add_argument('--min-prompts',type=int,default=50,help='usage: minimum prompts before recommending (default 50)')
-    parser.add_argument('--profile',help='AI Kit 2 has no profiles: general is accepted (the Core default selection), any other is refused')
+    parser.add_argument('--profile',help='AI Kit 3 has no profiles: general is accepted (the Core default selection), any other is refused')
     parser.add_argument('--user',help='Work email to record, without interactive confirmation')
     parser.add_argument('--home',type=Path,default=Path.home(),help='Alternative home folder for an isolated trial')
     parser.add_argument('--dry-run',action='store_true',help='Show the plan without writing')
     parser.add_argument('--command-on-path',choices=['yes','no'],help='setup: add the ai-kit command to your terminal (your own PATH only; removed by uninstall); default yes on a first installation, then the recorded choice')
-    parser.add_argument('--team',help='setup: your team, when it has its own context (context/20-<team>.md) or tools (teams in organization.toml); kept for update; none to leave it')
+    parser.add_argument('--team',help='setup: a team of an older Core (context/20-<team>.md, or teams in its organization.toml); a Team repository: ai-kit team use instead; kept for update; none to leave it')
     parser.add_argument('--target',choices=list(TARGETS),help='default: the CLIs chosen at the last installation (auto on the first one); auto: the CLIs present on the machine (Gemini if none); gemini, agy, codex, claude: that CLI only; both: Gemini and agy; all: every supported CLI')
     parser.add_argument('--live',action='store_true',help='doctor: make a real call to the model and diagnose (may be billed by your provider)')
     parser.add_argument('--no-live',action='store_true',help='accepted for compatibility: setup and update never call the model')
@@ -663,7 +663,7 @@ def command_main(argv):
     if args.rest and args.action not in ('team', 'user'):
         parser.error('unexpected argument: '+' '.join(args.rest))
     if args.profile and args.profile != 'general':
-        parser.error('AI Kit 2 has no profiles (ADR 0018): the Core installs its default selection, a Team turns on more '
+        parser.error('AI Kit 3 has no profiles (ADR 0018): the Core installs its default selection, a Team turns on more '
                      '(ai-kit team use <name>), and you add a resource with extra_skills, extra_agents or extra_commands.')
     if args.from_bundle and args.action != 'sync':
         parser.error('--from-bundle goes with sync: ai-kit sync --from-bundle <file>')
@@ -683,7 +683,7 @@ def command_main(argv):
                 if not interactive():
                     # No terminal to ask in: never wait for an answer that cannot come.
                     raise KitError('no terminal to ask your choices in: give them as options, for example '
-                                   'setup --profile general --user <email> (profiles: '+', '.join(profile_ids())+').')
+                                   'setup --user <email>.')
                 from .wizard import start
                 from .ui import make_ui
                 return start(make_ui(args.plain), home, setup=args.action == 'setup')
@@ -741,10 +741,9 @@ def command_main(argv):
                 identity = state['user']
             role = args.profile or state.get('profile')
             if not role:
-                if args.action == 'init':
-                    role = 'general'  # V2: the Core default; a Team brings the rest (profiles go with the migration)
-                else:
-                    raise KitError('Kit not installed: run setup.' if args.action in ('update', 'sync', 'rollback', 'team') else 'Specify --profile among: '+', '.join(profile_ids())+'.')
+                if args.action in ('update', 'sync', 'rollback', 'team'):
+                    raise KitError('Kit not installed: run setup.')
+                role = 'general'  # 3.0: no profiles; the Core default selection, then a Team and the person's choices
             team = args.team or state.get('team')
             # V2 slice 2: the content is the locked Core when one is synced; sync and rollback change it (lock.toml in the same transaction).
             from .sync import activation

@@ -29,7 +29,7 @@ FETCH_TIMEOUT = 5
 CONTEXT_LIMIT = 8000
 SOURCES = ('startup', 'resume')
 HEADING = re.compile(r'^## (\d{4}-\d{2}-\d{2}) ([a-z0-9-]{3,32}) : (.+?)\s*$')
-META = re.compile(r'^(profiles|teams|until):\s*(.*?)\s*$')
+META = re.compile(r'^(teams|until):\s*(.*?)\s*$')
 INSTRUCTION = ('[ai-kit] New since the last session. In your first reply, say it in one line per item below, in the '
                "person's language; give details only if asked. Never run `ai-kit update` yourself.")
 UPDATE_INSTRUCTION = ('Propose the update. If the person says yes, tell them to run `ai-kit update` in a terminal and say '
@@ -85,13 +85,13 @@ def changelog_section(text, version):
 
 
 def parse_news(text):
-    """NEWS.md -> entries: {'date', 'id', 'title', 'profiles', 'teams', 'until', 'text'}; a section without a valid
+    """NEWS.md -> entries: {'date', 'id', 'title', 'teams', 'until', 'text'}; a section without a valid
     heading is skipped (`check_news.py` refuses it in CI). Metadata: `key: value` lines right after the heading."""
     entries, current, in_meta = [], None, False
     for line in text.splitlines():
         heading = HEADING.match(line)
         if heading:
-            current = {'date': heading.group(1), 'id': heading.group(2), 'title': heading.group(3), 'profiles': [], 'teams': [], 'until': '', 'lines': []}
+            current = {'date': heading.group(1), 'id': heading.group(2), 'title': heading.group(3), 'teams': [], 'until': '', 'lines': []}
             entries.append(current)
             in_meta = True
             continue
@@ -117,8 +117,6 @@ def parse_news(text):
 
 def aimed_at(entry, profile, team, today):
     if entry['until'] and entry['until'] < today:
-        return False
-    if entry['profiles'] and profile not in entry['profiles']:
         return False
     if entry['teams'] and team not in entry['teams']:
         return False

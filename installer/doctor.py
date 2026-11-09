@@ -16,7 +16,7 @@ from .core import (_PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitError, read_json
 from . import versions
 from .adapters import ADAPTERS
 from .interface import DoctorContext, LiveCheck
-from .settings import context_folder, LEGACY_KIT_DIR, LEGACY_PERSONAL_FILE, PERSONAL_FILE, RETIRED_KEYS, allowed_domains, domain_allowed, load_profile, managed_context_names, merge_settings, organization, personal_settings, recorded_targets, resolve_mcp, retired_key_notice, setting_differences, team_settings, unknown_keys, version_changes
+from .settings import core_selection, context_folder, LEGACY_KIT_DIR, LEGACY_PERSONAL_FILE, PERSONAL_FILE, RETIRED_KEYS, allowed_domains, domain_allowed, managed_context_names, merge_settings, organization, personal_settings, recorded_targets, resolve_mcp, retired_key_notice, setting_differences, team_settings, unknown_keys, version_changes
 
 
 # A known case each guardrail must block; doctor runs it to prove the guardrail works, not just that its file exists.
@@ -146,7 +146,7 @@ def plain_text_problem(path):
 def mcp_report(home, state):
     """MCP lines of the summaries, from the installer's own resolution: configured, chosen but not provided by the
     organization, or turned off. Never claims a connection: the kit does not call MCP servers."""
-    profile = load_profile(state['profile'])
+    profile = core_selection()
     mine, team = personal_settings(home/'.ai-kit').get('mcp', {}), team_settings(state.get('team')).get('mcp', {})
     servers, undefined = resolve_mcp(organization().get('defaults', {}).get('mcp', {}), profile.get('mcp', []), mine, team)
     # 2.2: no profile chooses servers; a server the person or the team turned off is said so.
@@ -450,7 +450,7 @@ def doctor_checks(home, cwd=None, problems=None):
         news_checks(home, state, status)
         identity = state.get('user', {})
         print('Recorded identity: '+(identity.get('email') or identity.get('name') or 'none')+(' (source '+identity['source']+')' if identity.get('source') else ''))
-        profile = load_profile(state['profile'])
+        profile = core_selection()
         profile = {**profile, 'practices': state.get('practices') or profile['practices']}  # with the person's team
         ctx = DoctorContext(context_names=managed_context_names(profile), load_commands=load_commands,
                                     allowed_domains=allowed_domains, domain_allowed=domain_allowed)
@@ -532,7 +532,7 @@ def doctor_checks(home, cwd=None, problems=None):
                           'If something stops working, the checks above and usage say what; log it with /friction.')
         try:
             servers, undefined = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))
-            print('[Info] MCP servers: '+(', '.join(servers) or 'none')+(' | chosen but not defined in organization.toml: '+', '.join(undefined) if undefined else ''))
+            print('[Info] MCP servers: '+(', '.join(servers) or 'none')+(' | chosen but not defined (mcp/servers.toml, your Team): '+', '.join(undefined) if undefined else ''))
         except KitError as exc:
             status(False, str(exc))
     print('Local diagnosis only: authentication, MCP connection and IAM rights not tested; doctor --live makes a real call to the model, which your provider may bill.')

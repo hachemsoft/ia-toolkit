@@ -1,6 +1,6 @@
 # Core and Team sources from Git
 
-Since AI Kit 2, the kit's content (skills, agents, commands, practices, profiles) can come from a Core Git repository at a
+Since AI Kit 2, the kit's content (skills, agents, commands, context) can come from a Core Git repository at a
 stable tag instead of the copy shipped with the kit. Without a Core source, nothing changes.
 
 ## Setting the source
@@ -22,7 +22,7 @@ min_engine = "2.0.0"   # optional: an older AI Kit refuses this content
 ## Creating the Core repository
 
 `python3 scripts/export_core.py <empty folder> --git` (in a clone of the kit) writes the kit's content in the Core layout
-(`skills/<name>/`, `agents/<name>.md`, commands, practices, the manifest) as a Git repository with one commit and the tag
+(`skills/<name>/`, `agents/<name>.md`, commands, `context/`, the manifest) as a Git repository with one commit and the tag
 `v<version>`. Nothing is pushed: add the remote your organization chose, push `main` and the tag, protect the tags, then
 set `enterprise.core` (IT) or `[core] repo` to its URL. `ai-kit validate --path <folder>` checks a Core or a Team
 repository before each tag; a starting point for a Team is in `examples/team-repo/`.

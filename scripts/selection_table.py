@@ -1,8 +1,8 @@
 """Selection table (2.2: no profiles): what the Core installs by default and what a Team or a person can turn on, inserted in
 docs/getting-started.md between two markers.
 
-Usage: python3 scripts/profile_table.py           prints the table
-       python3 scripts/profile_table.py --write   rewrites it in the page
+Usage: python3 scripts/selection_table.py           prints the table
+       python3 scripts/selection_table.py --write   rewrites it in the page
 A test checks that the page is up to date.
 """
 import pathlib
@@ -15,7 +15,7 @@ from installer.core import load_commands  # noqa: E402
 from installer.resolve import agent_catalog, skill_catalog  # noqa: E402
 
 PAGE = ROOT/'docs/getting-started.md'
-START, END = '<!-- profile-table:start -->', '<!-- profile-table:end -->'
+START, END = '<!-- selection-table:start -->', '<!-- selection-table:end -->'
 WORKFLOW = ('intent', 'spec', 'build', 'test', 'review', 'ship', 'diagnose')
 
 

@@ -7,6 +7,10 @@ then the text. Without `teams`, an entry goes to everyone. An organization write
 copy of this repository; the public repository keeps only generic ones. `python3 scripts/check_news.py` checks the file
 (the CI runs it). How it reaches people: [docs/hooks.md](docs/hooks.md#whats-new).
 
+## 2026-11-09 ai-kit-3-0 : AI Kit 3.0: no more profiles
+
+The kit now installs the same base for everyone; your team turns on more (`ai-kit team use <name>`), and you add or remove a resource with `extra_*` or `disabled_*`. What your profile installed is kept: you will find it in your personal settings, marked "carried over from profile". `ai-kit status` shows what is active.
+
 ## 2026-11-08 ai-kit-2-1 : AI Kit 2.1: Core and Teams from Git
 
 Your organization can now publish the kit content as a Core Git repository and Team repositories: `ai-kit sync`, `ai-kit team use <name>`, `ai-kit rollback`, `ai-kit status`. Without them, nothing changes.

@@ -37,7 +37,7 @@ class PortabilityTests(unittest.TestCase):
         self.assertEqual(names[:6], ['00_KIT.md','10_COMPANY.md','20_TEAM.md','30_USER.md','GEMINI.md','AGENTS.md'])
         # 2.2: another profile is refused with the way to get its resources; a resource is added one by one.
         refused = self.run_cli('setup', '--profile', 'data-developer', code=2)
-        self.assertIn('AI Kit 2 has no profiles', refused.stderr)
+        self.assertIn('AI Kit 3 has no profiles', refused.stderr)
         p = subprocess.run([sys.executable,'-m','installer','doctor','--home',str(self.home)],
                            cwd=ROOT,capture_output=True,text=True,encoding='utf-8',
                            env={**os.environ,'PYTHONIOENCODING':'utf-8'})

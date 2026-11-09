@@ -62,7 +62,7 @@ class NewsCommandTests(unittest.TestCase):
     def test_doctor_reports_the_hook_state(self):
         kit = self.home/'kit-folder'
         kit.mkdir()
-        (kit/'NEWS.md').write_text('# News\n\n## 2026-11-02 hello : Hello\n\nText.\n\n## 2026-11-02 analysts : Not us\nprofiles: data-analyst\n\nText.\n', encoding='utf-8')
+        (kit/'NEWS.md').write_text('# News\n\n## 2026-11-02 hello : Hello\n\nText.\n\n## 2026-11-02 analysts : Not us\nteams: analysts\n\nText.\n', encoding='utf-8')
         with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': str(kit)}):
             self.run_kit('update')
         code, out = self.run_kit('doctor')
@@ -89,10 +89,10 @@ class NewsFileCheckTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location('check_news', ROOT/'scripts/check_news.py')
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        return module.problems(text, ['general', 'data-analyst'], ['data'])
+        return module.problems(text, ['data'])  # 3.0: no profiles to target
 
     def test_good_file_and_the_repository_one(self):
-        self.assertEqual(self.check('# News\n\nIntro.\n\n## 2026-11-02 hello : Hello\nprofiles: data-analyst\nteams: data\nuntil: 2026-12-31\n\nText.\n'), [])
+        self.assertEqual(self.check('# News\n\nIntro.\n\n## 2026-11-02 hello : Hello\nteams: data\nuntil: 2026-12-31\n\nText.\n'), [])
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             code = __import__('subprocess').run([__import__('sys').executable, str(ROOT/'scripts/check_news.py')], capture_output=True, text=True, encoding='utf-8').returncode
@@ -104,8 +104,8 @@ class NewsFileCheckTests(unittest.TestCase):
         self.assertEqual(self.check('## 2026-11-02 okay : Ok\n\nowner: me is text, not metadata.\n'), [])
 
     def test_bad_file_names_each_problem(self):
-        found = self.check('## no id here\n\n## 2026-13-01 bad-date : X\n\nT.\n\n## 2026-11-02 twice : A\n\nT.\n\n## 2026-11-02 twice : B\nprofiles: nope\nteams: sales\nuntil: soon\nowner: me\n\nT.\n\n## 2026-11-02 empty : Nothing\n')
-        for expected in ('line 1: a heading must be', 'invalid date 2026-13-01', 'twice: id used twice', 'unknown profile nope', 'unknown team sales', 'invalid until date soon', 'unknown metadata "owner"', 'empty: no text'):
+        found = self.check('## no id here\n\n## 2026-13-01 bad-date : X\n\nT.\n\n## 2026-11-02 twice : A\n\nT.\n\n## 2026-11-02 twice : B\nteams: sales\nuntil: soon\nprofiles: nope\nowner: me\n\nT.\n\n## 2026-11-02 empty : Nothing\n')
+        for expected in ('line 1: a heading must be', 'invalid date 2026-13-01', 'twice: id used twice', 'unknown metadata "profiles"', 'unknown team sales', 'invalid until date soon', 'unknown metadata "owner"', 'empty: no text'):
             self.assertTrue(any(expected in f for f in found), (expected, found))
 
 if __name__ == '__main__':

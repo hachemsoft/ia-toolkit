@@ -1,17 +1,17 @@
 # Evolving the kit
 
 1. Edit the general practices in context/. The numeric prefix of the file (`10-company.md`) sets its position in the agent context. Keep business facts in the projects.
-2. Add a skill with a unique name, a short SKILL.md with its `aikit-*` metadata ([extending](extending.md)): under `skills/contrib/` with a named owner when it is a team proposal, under `skills/internal/` when the kit maintainers take it on. The full procedure (catalog, profiles, command, eval case) is in [add or replace a skill](extending.md).
-3. Select the skills in the profiles. Do not install the whole catalog by default.
+2. Add a skill with a unique name, a short SKILL.md with its `aikit-*` metadata ([extending](extending.md)): under `skills/contrib/` with a named owner when it is a team proposal, under `skills/internal/` when the kit maintainers take it on. The full procedure (metadata, default selection, command, eval case) is in [add or replace a skill](extending.md).
+3. Mark `aikit-default: "true"` only on what everyone needs; a domain playbook stays optional, for a Team or a person to turn on. Do not install the whole catalog by default.
 4. For skills taken from an upstream repository, copy the folders as is into skills/internal/common/, remove files specific to other tools, keep the licence text (skills/LICENSE-UPSTREAM-MIT) and run the tests again; no automatic download.
 5. Add an MCP server only after validating the server, the transport, the authentication and its Windows/Mac prerequisites. Do not commit secrets.
 6. Raise the version of every skill or agent you changed, in its front matter (`aikit-version`), then `python3 scripts/versions.py --update`; the tests refuse a change under the same version. Run the tests, do a trial with --home in a temporary folder, then, when a skill, a command or a practice changes, check the eval cases with `python3 evals/run.py --dry-run`; a real run (`--confirm-paid-run`) is billed and decided by the maintainer. When the agent gets it wrong, add the failing prompt as an eval case before fixing the skill.
 7. Then validate on a real Mac and a standard Windows workstation without admin rights, then in each supported CLI, signed in.
 8. Release: see [Release](#release) below.
 
-Commands are written once in `commands/<name>.md` ([pivot format](format.md)). The content depends on no CLI: templates in `templates/` (including `kit-context.md`, which becomes `00_KIT.md`), agents and their default settings in `agents/`, profiles in `profiles/`, the organization's decisions (allowed email domains, defaults, teams) in `organization.toml` at the root, scripts installed and run on the workstation (guardrails, frictions) in `runtime/`. Only data specific to one CLI lives with its code (`installer/adapters/gemini_defaults.json`). The code follows the same split: `installer/core.py` for the shared building blocks, `installer/cli.py` for orchestration (a neutral plan of what to install), and one module per CLI in `installer/adapters/` (`gemini.py`, `agy.py`, `codex.py`, `claude.py`), all with the same interface, described in `installer/interface.py`: the neutral plan (`Plan`), the `doctor` context and the adapter contract (`Adapter`, plus two optional capabilities, `ContextHost` and `LiveCheck`). `cli.py` names no CLI: it talks only to this interface, and a test checks that each adapter follows it. The snapshot test (`tests/snapshot.py`) guarantees that a code change alters no installed file unless the reference is rewritten on purpose; the [CLI matrix](cli/matrice.md) says what each one produces; the Antigravity output (plugin, command skills) is part of it. One more CLI is one more adapter module: see [add a CLI](#add-a-cli).
+Commands are written once in `commands/<name>.md` ([pivot format](format.md)). The content depends on no CLI: templates in `templates/` (including `kit-context.md`, which becomes `00_KIT.md`), agents and their default settings in `agents/`, the company and default team layers of the context in `context/`, the MCP servers in `mcp/servers.toml` (`[servers.<name>]`), scripts installed and run on the workstation (guardrails, frictions) in `runtime/`. Only data specific to one CLI lives with its code (`installer/adapters/gemini_defaults.json`). The code follows the same split: `installer/core.py` for the shared building blocks, `installer/cli.py` for orchestration (a neutral plan of what to install), and one module per CLI in `installer/adapters/` (`gemini.py`, `agy.py`, `codex.py`, `claude.py`), all with the same interface, described in `installer/interface.py`: the neutral plan (`Plan`), the `doctor` context and the adapter contract (`Adapter`, plus two optional capabilities, `ContextHost` and `LiveCheck`). `cli.py` names no CLI: it talks only to this interface, and a test checks that each adapter follows it. The snapshot test (`tests/snapshot.py`) guarantees that a code change alters no installed file unless the reference is rewritten on purpose; the [CLI matrix](cli/matrice.md) says what each one produces; the Antigravity output (plugin, command skills) is part of it. One more CLI is one more adapter module: see [add a CLI](#add-a-cli).
 
-Acceptance criteria: installation without mandatory editing, `30_USER.md` preserved, profile change, non-destructive conflicts, skill discovery and connection of configured MCP servers.
+Acceptance criteria: installation without mandatory editing, `30_USER.md` preserved, change of choices or of Team, non-destructive conflicts, skill discovery and connection of configured MCP servers.
 
 When a version fixes reported frictions, the `CHANGELOG` says so in one line, with their ids (`(frictions: a1b2c3, d4e5f6)`): `usage` then tells each person which of theirs were fixed.
 
@@ -27,7 +27,7 @@ What an agent reads is reviewed like code, at three levels. None of them blocks 
 
 | Check | Where it runs | What it does |
 | --- | --- | --- |
-| `CODEOWNERS` at the root | on the merge request, GitHub or GitLab | names who approves a change to `skills/`, `agents/`, `commands/`, `templates/`, `runtime/`, `organization.toml` and `context/`; the public file names nobody, an organization's copy uncomments its lines and requires the code owners' review on the default branch |
+| `CODEOWNERS` at the root | on the merge request, GitHub or GitLab | names who approves a change to `skills/`, `agents/`, `commands/`, `templates/`, `runtime/`, `mcp/` and `context/`; the public file names nobody, an organization's copy uncomments its lines and requires the code owners' review on the default branch |
 | `python3 runtime/check_skills.py` | in CI (`portability.yml`, `.gitlab-ci.yml`), in `tests/test_check_skills.py`, and locally | refuses a download piped into a shell, an instruction to drop previous instructions, a permission bypass, an instruction to turn a guardrail off or to change the kit's or a CLI's configuration, a secret, and a script or binary not declared in its `KIT_ALLOWED` list |
 | `doctor` | on the workstation, when the person runs it | lists the skills in the home folder that the kit did not install and shows what the same check finds in them, as `[Info] To review`, never as a failure |
 
@@ -35,21 +35,11 @@ A new script in a skill is reviewed, then added to `KIT_ALLOWED` in `runtime/che
 
 `.gitlab-ci.yml` runs the same model-free checks as the GitHub workflow for an organization's GitLab copy, on Linux runners: the tests on Python 3.11, 3.12, 3.13 and 3.14, ruff, the schemas, `NEWS.md`, the skills check, and the release ZIP as an artifact. The macOS and Windows jobs and the publication of the release stay on GitHub.
 
-## Add a team
+## Add a Team
 
-1. `context/20-<team>.md`: the team's practices, short and checkable.
-2. Give the team its setup command (`setup --profile <profile> --team <team>`), or let `setup` ask.
-3. Nothing to change in the profiles: a team adds its layer to any profile.
+A team is a Git repository of its own, not a change to the kit: its `aikit.toml` `[defaults]` turns on optional resources (`extra_skills`, `extra_agents`, `extra_commands`), it adds its own skills and agents, and its `context/*.md` becomes the team layer of the context. Start from `examples/team-repo/`, check it with `ai-kit validate --path <folder>`, tag a release, and give the team `ai-kit team use <name> --url <URL>`: see [Teams](core-source.md#teams).
 
-## Add a profile
-
-`ai-kit new profile`, from a clone of the kit, does steps 1, 3 and 4, then a branch and a merge request after two confirmations ([create a component](extending.md#create-a-component-with-ai-kit-new)). The steps by hand:
-
-1. `profiles/<id>.toml`: `practices`, `skills` (start from `general.toml`, then add the domain playbook), `agents`, `mcp` (names of servers defined in `organization.toml`, see [MCP](mcp.md)), and `commands` only to restrict the list (otherwise all those whose skills are installed).
-2. The domain playbook, if there is one: [add a skill](extending.md#for-the-organization-in-the-kit), category `domain`. Do not wire it into the commands: they stay neutral and send to "the installed playbook matching the files or the task". Give the playbook a `## In the kit commands` section saying what it changes in each step it concerns (`/build`, `/diagnose`, `/review`, `/test`…); a test checks that no command names a domain.
-3. In the same file, `label` (shown in the `setup` menu) and `order` (its position): the menu is built from the `profiles/` folder, no code to change.
-4. The tests: nothing to declare, a new profile is picked up by the tests and the snapshot automatically; run `python3 tests/snapshot.py --update`, and refresh the profile table: `python3 scripts/profile_table.py --write`.
-5. The profile in the README (profile table).
+A domain playbook a team needs goes in the Core as an optional skill ([add a skill](extending.md#for-the-organization-in-the-kit), category `domain`), or in the Team repository. Do not wire it into the commands: they stay neutral and send to "the installed playbook matching the files or the task". Give the playbook a `## In the kit commands` section saying what it changes in each step it concerns (`/build`, `/diagnose`, `/review`, `/test`…); a test checks that no command names a domain.
 
 ## Add a CLI
 

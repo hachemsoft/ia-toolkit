@@ -20,20 +20,20 @@ Nobody activates the environment, runs pip or needs administrator rights. `~/.ai
 
 **Update in a git clone**, three steps, each reported: 1. fetch, `git pull --ff-only`, refused when the kit folder has local changes (nothing is overwritten, stashed, reset or merged); 2. reinstall the package in the private environment; 3. apply the configuration. If the fetch fails or is refused, the configuration of the current folder is reapplied and the command ends with "Update incomplete" and a non-zero code. The versions of the folder and of the environment are shown when they differ. With a ZIP, a new version is a new ZIP: run its installer.
 
-**Modes.** In a terminal without options: the guided installer (Rich and Questionary), or its menu once the kit is installed. `--plain` or `AI_KIT_PLAIN=1`: plain numbered questions, no colours (also used automatically without the libraries, for example `python -m installer` from a clone). Without a terminal, nothing is asked: a missing choice is an error that names the option, never a question waiting for an answer. At a terminal, `setup --profile <id>` still asks to confirm the detected identity (unless `--user` is given) and offers to open `30_USER.md`; `update`, `doctor` and `usage` never ask. `update`, `doctor` and `usage` colour their lines by prefix (`[OK]` green, `[Check]` yellow, `[Info]` cyan, `Error:` red, headings bold) without changing a character of the text. `NO_COLOR` is respected; output redirected to a file or a CI log carries no colour codes; a terminal that cannot show Unicode gets ASCII marks. Nothing is applied before the review screen's **Install**; Ctrl+C during the writes puts every file back. A closed terminal, a killed process or a power cut during the writes does not: the next `update` can then refuse the partial files as edited by hand.
+**Modes.** In a terminal without options: the guided installer (Rich and Questionary), or its menu once the kit is installed. `--plain` or `AI_KIT_PLAIN=1`: plain numbered questions, no colours (also used automatically without the libraries, for example `python -m installer` from a clone). Without a terminal, nothing is asked: a missing choice is an error that names the option, never a question waiting for an answer. At a terminal, `setup --profile general` (deprecated, still accepted) skips the guided screen but still asks to confirm the detected identity (unless `--user` is given) and offers to open `30_USER.md`; `update`, `doctor` and `usage` never ask. `update`, `doctor` and `usage` colour their lines by prefix (`[OK]` green, `[Check]` yellow, `[Info]` cyan, `Error:` red, headings bold) without changing a character of the text. `NO_COLOR` is respected; output redirected to a file or a CI log carries no colour codes; a terminal that cannot show Unicode gets ASCII marks. Nothing is applied before the review screen's **Install**; Ctrl+C during the writes puts every file back. A closed terminal, a killed process or a power cut during the writes does not: the next `update` can then refuse the partial files as edited by hand.
 
 ## What it does
 
 - Does not configure authentication or the model: they belong to each CLI and to your IT procedure. See [customization](customization.md#authentication-and-model).
 - Detects a declarative identity (active CLI account, git, OS session), asks you to confirm it and writes it at the top of `30_USER.md` when it creates the file. See [identity](identity.md).
-- Stores profile, identity, overrides, fingerprints and backups in `~/.ai-kit`.
+- Stores your choices, team, identity, overrides, fingerprints and backups in `~/.ai-kit`.
 - Refuses to overwrite managed skills, agents, commands or MCP entries that were edited by hand; restores a rule layer (`00`, `10`, `20`) edited by hand and keeps your copy in `~/.ai-kit/backups/`.
 - Keeps your own skills and commands: when one has the name of a kit skill or command, the kit's is installed as `<skill_prefix><name>` (`ai-kit-` by default) and the installer says which.
-- Removes old managed files on a profile or version change if they are intact.
+- Removes old managed files on a change of choices, Team or version if they are intact.
 - Prevalidates conflicts, backs up, then writes the files; attempts a restore on a write error.
 - Touches no project repository, starts no MCP server, calls no model. Downloads nothing from a ZIP; from a git clone, only what pip fetches from the configured package index.
 - Changes nothing on the system: no administrator rights, no machine registry key, no system PATH, no execution policy, no Gatekeeper or quarantine setting. The one change outside the home folder's kit files, when the person chose the `ai-kit` command: their own user PATH (registry key `HKCU\Environment`) or one marked block in their shell startup file, both removed by `uninstall`. Calls no model: only `doctor --live`, on request, makes a real call to the model. From a ZIP it needs no network; from a clone, pip needs the package index and `update` needs git's remote.
-- Since 2.2 the package holds only the engine; the release ZIP ships the content as a Core, `core/ai-kit-core.bundle` (a git bundle of the kit's repository at the version's tag). The first installation activates it without network and records it in `~/.ai-kit/lock.toml` and the source cache `~/.ai-kit/sources/`; later, `ai-kit sync` moves to the highest stable tag of the Core repository (this kit's repository unless IT sets `enterprise.core`, see [Core and Team sources](core-source.md)). Run from a clone, the kit reads the clone's own content, as before.
+- Since 3.0 the package holds only the engine; the release ZIP ships the content as a Core, `core/ai-kit-core.bundle` (a git bundle of the kit's repository at the version's tag). The first installation activates it without network and records it in `~/.ai-kit/lock.toml` and the source cache `~/.ai-kit/sources/`; later, `ai-kit sync` moves to the highest stable tag of the Core repository (this kit's repository unless IT sets `enterprise.core`, see [Core and Team sources](core-source.md)). Run from a clone, the kit reads the clone's own content, as before.
 - Installs nothing that points back to the kit folder, except the `ai-kit` command, which runs its launcher: the package lives in `~/.ai-kit/runtime`, the Core in `~/.ai-kit/sources/`, the guardrails, the friction script and the `overrides.toml` schema are copied to `~/.ai-kit`, and the guardrails run with the private environment's Python. Keep the kit folder (the clone, or the extracted ZIP): `ai-kit` and the installer run from it. If it moves, run the installer from its new place: the command is rewritten; if it is deleted, the agents keep working and `doctor` says the command is dead.
 - Keeps the CLIs you chose: `update` never adds or removes one because a folder exists or disappears. Removing a CLI from your choice removes what the kit had put there and keeps your own settings.
 
@@ -45,7 +45,7 @@ The context layers and `30_USER.md` are in `~/.ai-kit/context/`, whatever the CL
 
 | Action | Mac and Linux (Terminal) | Windows (Command Prompt) |
 | --- | --- | --- |
-| Install / change profile | `sh scripts/bootstrap.sh` | double-click `Installer.cmd`, or `Installer.cmd setup` |
+| Install / change your choices | `sh scripts/bootstrap.sh` | double-click `Installer.cmd`, or `Installer.cmd setup` |
 | New version, or reapply this one (after editing `overrides.toml`): in a git clone, fetches the new version first | `sh scripts/bootstrap.sh update` | `Installer.cmd update` |
 | New version from a ZIP | extract the new ZIP and run its installer | the same |
 | The same actions from any folder, once installed with the `ai-kit` command (a new terminal after the installation) | `ai-kit update`, `ai-kit doctor`, `ai-kit usage` | the same |
@@ -53,20 +53,20 @@ The context layers and `30_USER.md` are in `~/.ai-kit/context/`, whatever the CL
 | Uninstall (`--dry-run` to see the list, `--yes` for automation, `--remove-runtime` for the private environment too; `update` afterwards reinstalls with the same choices) | `sh scripts/bootstrap.sh uninstall` | `Installer.cmd uninstall` |
 | Check the connection (real call to the model, may be billed) | `sh scripts/bootstrap.sh doctor --live` | `Installer.cmd doctor --live` |
 | Usage review | `sh scripts/bootstrap.sh usage` | `Installer.cmd usage` |
-| For contributors, from a git clone of the kit: create a skill, an agent, a command or a profile ([create a component](extending.md#create-a-component-with-ai-kit-new)) | `sh scripts/bootstrap.sh new skill` | `Installer.cmd new skill` |
+| For contributors, from a git clone of the kit: create a skill, an agent or a command ([create a component](extending.md#create-a-component-with-ai-kit-new)) | `sh scripts/bootstrap.sh new skill` | `Installer.cmd new skill` |
 | For IT: the managed settings, and what they really enforce ([guardrails](hooks.md#rules-it-can-enforce)) | `sh scripts/bootstrap.sh managed-settings --out <empty folder>` | `Installer.cmd managed-settings --out <empty folder>` |
 
 Windows: to get a Command Prompt in the kit folder, type `cmd` in the Explorer address bar and press Enter. The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) look for Python 3.11 or newer, then hand over to `scripts/launcher.py` (above); without a usable Python they say what to ask IT. They need neither PowerShell nor administrator rights.
 
 To run `doctor` for a repo (it then also lists the repo skills named like kit skills), start it from the repo folder with the launcher's full path: Windows, `"<kit folder>\Installer.cmd" doctor`; Mac, `sh <kit folder>/scripts/bootstrap.sh doctor`.
 
-Options for `setup` and `update`: `--profile <id>`, `--user <email>`, `--team <team>`, `--target auto|gemini|agy|codex|claude|both|all` (without it: the CLIs chosen last time; see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--plain`. `AI_KIT_NO_PAUSE=1` keeps `Installer.cmd` from waiting for a key when it is started without arguments by a script. Non-interactive example: `sh scripts/bootstrap.sh setup --profile general --user first.last@company.com`. If a company policy blocks a launcher, IT decides: the launcher is equivalent to `python -I scripts/launcher.py` (Windows: `python -I scripts\launcher.py`) followed by the action, run from the kit folder. Never change the policy yourself.
+Options for `setup` and `update`: `--user <email>`, `--team <team>`, `--target auto|gemini|agy|codex|claude|both|all` (without it: the CLIs chosen last time; see [getting started](getting-started.md)), `--home <folder>`, `--dry-run`, `--plain`. `AI_KIT_NO_PAUSE=1` keeps `Installer.cmd` from waiting for a key when it is started without arguments by a script. `--profile general` is still accepted (deprecated); any other `--profile` value is refused with an explanation, since 3.0 has no profiles. Non-interactive example: `sh scripts/bootstrap.sh setup --user first.last@company.com`. If a company policy blocks a launcher, IT decides: the launcher is equivalent to `python -I scripts/launcher.py` (Windows: `python -I scripts\launcher.py`) followed by the action, run from the kit folder. Never change the policy yourself.
 
 ## Try it without touching your account
 
 ```sh
-sh scripts/bootstrap.sh setup --profile data-analyst --home ./sandbox-user --dry-run
-sh scripts/bootstrap.sh setup --profile data-analyst --home ./sandbox-user
+sh scripts/bootstrap.sh setup --home ./sandbox-user --dry-run
+sh scripts/bootstrap.sh setup --home ./sandbox-user
 sh scripts/bootstrap.sh doctor --home ./sandbox-user
 ```
 
@@ -74,7 +74,7 @@ On Windows, replace `sh scripts/bootstrap.sh` with `Installer.cmd`. The private 
 
 ## MCP
 
-No server is defined in the public kit: endpoints, transports and authentication belong to the organization. `organization.toml` defines the approved servers, each profile lists those it turns on, and each person adjusts or adds their own in `overrides.toml`. See [MCP configuration](mcp.md).
+No server is defined in the public kit: endpoints, transports and authentication belong to the organization. The Core defines the approved servers in `mcp/servers.toml`, a Team or the person turns them on, and each person adjusts or adds their own in `overrides.toml`. See [MCP configuration](mcp.md).
 
 ## Uninstall
 

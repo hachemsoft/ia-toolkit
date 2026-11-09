@@ -4,7 +4,7 @@ A page for people moving from Gemini CLI to agy.
 
 ## What does not change
 
-- **Commands**: those of your profile ([profile table](../getting-started.md#3-work-one-command-per-step)) and your `extra_commands` stay the same. Same names, same artifacts (`docs/sdlc/<date>-<slug>/intent.md`, `spec.md`, `plan.md`).
+- **Commands**: those of the Core default selection ([what is installed](../getting-started.md#3-work-one-command-per-step)), your Team's and your `extra_commands` stay the same. Same names, same artifacts (`docs/sdlc/<date>-<slug>/intent.md`, `spec.md`, `plan.md`).
 - **Your file**: `~/.ai-kit/context/30_USER.md`. agy reads it there; Gemini reads a copy refreshed by `update`.
 - **Repositories**: `AGENTS.md`, `GLOSSARY.md`, `REVIEW.md`, `.agents/skills/`. Nothing to migrate.
 - **Guardrails and usage review**: same settings in `~/.ai-kit/overrides.toml`.

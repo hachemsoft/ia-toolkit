@@ -16,19 +16,19 @@ A plugin `~/.gemini/config/plugins/ai-kit/`, validated by `agy plugin validate` 
 | --- | --- |
 | `plugin.json` | name, description, kit version |
 | `rules/AGENTS.md` | always-on rules that include the four layers by path (`@[00_kit](~/.ai-kit/context/00_KIT.md)`, …, `@[30_user](~/.ai-kit/context/30_USER.md)`): a single source, no copy |
-| `agents/ai-kit-*.md` | the same agents as Gemini, those of the profile; visible in agy |
+| `agents/ai-kit-*.md` | the same agents as Gemini, those installed; visible in agy |
 | `hooks.json` | the two guardrails and the `whats-new` hook, `enabled` following `overrides.toml`; the scripts understand the agy payload (`toolCall.args.CommandLine`). `SessionStart` takes a flat list of commands and the script answers in agy's own contract, documented in the CLI's built-in hooks reference: `{"injectSteps": [{"systemMessage": {"systemMessage": "…"}}]}`, a message persisted in the conversation and read by the model (the Gemini form, `additionalContext`, is ignored by agy: checked on 1.4.12). The script recognises agy by the `conversationId` of its input |
 | `mcp_config.json` | the MCP servers enabled in `overrides.toml`, when there are any |
 
-And **command skills** in the plugin (`~/.gemini/config/plugins/ai-kit/skills/`): agy has no command files, but every skill is a `/<name>` command. For each profile command, the kit generates a skill of the same name whose body is the command prompt. They live in the plugin, not in the shared `~/.gemini/skills/`, because Gemini CLI turns every skill it finds there into a `/command` and would show each kit command twice.
+And **command skills** in the plugin (`~/.gemini/config/plugins/ai-kit/skills/`): agy has no command files, but every skill is a `/<name>` command. For each installed command, the kit generates a skill of the same name whose body is the command prompt. They live in the plugin, not in the shared `~/.gemini/skills/`, because Gemini CLI turns every skill it finds there into a `/command` and would show each kit command twice.
 
 After installation, restart agy: it discovers a new plugin only at startup.
 
 ## Verified on agy 1.4.7 (agent tools and logs read again on 1.4.12)
 
-- `agy plugin validate` passes; `agy plugin list` shows `ai-kit` with the profile agents (6 for Data Developer, 4 for Data Analyst), 1 rule, 2 hooks.
+- `agy plugin validate` passes; `agy plugin list` shows `ai-kit` with the installed agents (6 and 4 in the two selections tried), 1 rule, 2 hooks.
 - In print mode, agy quotes word for word the "Priority between layers" section of `00_KIT.md`: path includes work.
-- agy lists the profile's `ai-kit-*` agents.
+- agy lists the installed `ai-kit-*` agents.
 - `/guide` and `/intent` work through the command skills; `/guide` routes to `/diagnose` for a dbt model that duplicates rows.
 
 ## Protected configuration

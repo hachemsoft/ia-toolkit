@@ -4,27 +4,20 @@
 
 > `update`, `setup` and `doctor` on this page: run them from the kit folder, as shown in [getting started › Run the kit](getting-started.md#run-the-kit) (`Installer.cmd update` on Windows, `sh scripts/bootstrap.sh update` on Mac).
 
-**Without editing any file.** The usual choices (CLIs, profile, domain playbooks, optional tools, commands, review agents) are made in the installer: run it again and choose **Change my choices**. It writes the corresponding lists of `overrides.toml` (`extra_skills`, `disabled_skills`, `extra_commands`, `disabled_commands`, `extra_agents`, `disabled_agents`) only when you confirm **Install**, and keeps your other keys and your `#` comments. The file stays the single place for these choices: what you edit by hand and what the installer writes are the same lists, the last one written wins. The rest of this page is for what the installer does not ask (MCP servers, guardrails, `skill_prefix`, `frictions`) and for organizations. A name that the kit does not know in `disabled_skills` or `disabled_agents` is reported at the next update (a typo has no effect). `skill_prefix` (`"ai-kit-"` by default) is the name given to a kit skill or command when one of yours already has its name, on every CLI; one CLI gives it to every kit skill: see [Claude Code](cli/claude-code.md#the-prefix).
+**Without editing any file.** The usual choices (CLIs, domain playbooks, optional tools, commands, review agents) are made in the installer: run it again and choose **Change my choices**. It writes the corresponding lists of `overrides.toml` (`extra_skills`, `disabled_skills`, `extra_commands`, `disabled_commands`, `extra_agents`, `disabled_agents`) only when you confirm **Install**, and keeps your other keys and your `#` comments. The file stays the single place for these choices: what you edit by hand and what the installer writes are the same lists, the last one written wins. The rest of this page is for what the installer does not ask (MCP servers, guardrails, `skill_prefix`, `frictions`) and for organizations. A name that the kit does not know in `disabled_skills` or `disabled_agents` is reported at the next update (a typo has no effect). `skill_prefix` (`"ai-kit-"` by default) is the name given to a kit skill or command when one of yours already has its name, on every CLI; one CLI gives it to every kit skill: see [Claude Code](cli/claude-code.md#the-prefix).
 
 ## Organization, team and person
 
-Settings are combined at every `setup`, `update` and `sync`, in this order, each on top of the previous one: the **Core** (its default selection and its defaults), the active **Team**, **you**; then **IT** (`managed.toml`) wins over all of them for the keys it sets. AI Kit 2 has no profiles: a Team turns on what a job needs, and you add or remove a resource with `extra_*` and `disabled_*`.
+Settings are combined at every `setup`, `update` and `sync`, in this order, each on top of the previous one: the **Core** (its default selection and its defaults), the active **Team**, **you**; then **IT** (`managed.toml`) wins over all of them for the keys it sets. Since AI Kit 3.0 there are no profiles: a Team turns on what a job needs, and you add or remove a resource with `extra_*` and `disabled_*`.
 
 - **The Core** is the kit's content: this repository, or the organization's own Core repository ([Core and Team sources](core-source.md)). Its `mcp/servers.toml` defines the MCP servers; `context/10-company.md` holds the company practices.
 - **A Team** is a repository of its own: its `[defaults]`, `context/`, skills and agents ([Teams](core-source.md#teams)).
-- **`organization.toml`** (before 2.2, at the root of the kit repository) is still read when an organization's copy of the Core has one; `ai-kit validate` says where each of its keys goes now: `locked_hooks` to `managed.toml` `hooks.locked`, `friction_tracker` to `managed.toml` `[frictions.tracker]`, the MCP servers to `mcp/servers.toml`, each team to a Team repository.
+- **`organization.toml`** (before 3.0, at the root of the kit repository) is still read when an organization's copy of the Core has one; `ai-kit validate` says where each of its keys goes now: `locked_hooks` to `managed.toml` `hooks.locked`, `friction_tracker` to `managed.toml` `[frictions.tracker]`, the MCP servers to `mcp/servers.toml`, each team to a Team repository.
 - **`~/.ai-kit/overrides.toml`** belongs to the person. It is applied on top: lists add up, objects combine, the person's value wins for a single value. It never replaces the organization or team settings wholesale; `doctor` lists the values a person changed.
 
-```toml
-allowed_domains = ["company.com"]
+The settings files are TOML and have a JSON Schema in `schemas/`, named on their first line (`#:schema …`): an editor with TOML support that reads that line (VS Code with Even Better TOML, for example) completes the keys, shows each key's description and flags a typo or a wrong value as you type. The Core's `aikit.toml` points to its schema (an older `organization.toml` too); the personal file points to the copy in `~/.ai-kit/schemas/` (`setup` updates that line, and changes nothing else in the file). `doctor` also reports an unknown key (usually a typo), and the CI checks the shipped files against the schemas.
 
-[defaults]
-extra_agents = ["security-reviewer"]
-```
-
-Both files are TOML and have a JSON Schema in `schemas/`, named on their first line (`#:schema …`): an editor with TOML support that reads that line (VS Code with Even Better TOML, for example) completes the keys, shows each key's description and flags a typo or a wrong value as you type. `organization.toml` points to its schema; the personal file points to the copy in `~/.ai-kit/schemas/` (`setup` updates that line, and changes nothing else in the file). `doctor` also reports an unknown key (usually a typo), and the CI checks the shipped files against the schemas.
-
-**How a change of `organization.toml` reaches you**: with the next version of the kit: `update` in a clone (it fetches it), or a new ZIP then its installer. Where your own files are, on Mac and Windows: [getting started](getting-started.md#where-your-files-are).
+**How a change of the Core or of your Team reaches you**: at the next `ai-kit sync` (a new stable tag), or with the next version of the kit: `update` in a clone (it fetches it), or a new ZIP then its installer. Where your own files are, on Mac and Windows: [getting started](getting-started.md#where-your-files-are).
 
 ### Who decides what, and what the kit cannot enforce
 
@@ -32,37 +25,41 @@ Both files are TOML and have a JSON Schema in `schemas/`, named on their first l
 | --- | --- | --- |
 | IT | `managed.toml` ([managed](managed.md)) | what nobody else can change: guardrails, MCP refusals, Core and Team origins, friction tracker |
 | the Core | its repository: skills, agents, commands with `aikit-default`, `context/10-company.md`, `mcp/servers.toml` | the default selection for everyone, the company practices, the MCP servers ([Core and Team sources](core-source.md)) |
-| the team | its Team repository (`[defaults]`, `context/`, its skills and agents); before 2.2, `organization.toml` `teams.<team>` and `context/20-<team>.md` | its tools and its practices, on top of the Core |
+| the team | its Team repository (`[defaults]`, `context/`, its skills and agents); before 3.0, `organization.toml` `teams.<team>` and `context/20-<team>.md` | its tools and its practices, on top of the Core |
 | you | `~/.ai-kit/overrides.toml`, `30_USER.md` | your additions and exceptions, your preferences |
 | the repo | `AGENTS.md`, `.agents/skills/`, `.ai-kit/protected-paths` | how to work in that repo |
 
-Since 2.0.0, IT can impose some settings with `managed.toml` ([managed](managed.md)); they win over everything below. Otherwise the kit configures; it does not lock. Your `overrides.toml` has the last word, so you can turn off a guardrail or an MCP server that the organization turned on, and `doctor` shows it ("Your overrides.toml changes organization or team defaults"). What must be guaranteed is enforced outside the kit: IAM rights and data access, managed CLI settings pushed by IT, CODEOWNERS on repos. The practices in `10` and `20` are instructions to the agent, followed by default, not a technical barrier.
+Since 2.0.0, IT can impose some settings with `managed.toml` ([managed](managed.md)); they win over everything below. Otherwise the kit configures; it does not lock. Except for what `managed.toml` sets, your `overrides.toml` has the last word, so you can turn off a guardrail or an MCP server that the Core or your Team turned on, and `doctor` shows it ("Your overrides.toml changes organization or team defaults"). What must be guaranteed is enforced outside the kit: IAM rights and data access, managed CLI settings pushed by IT, CODEOWNERS on repos. The practices in `10` and `20` are instructions to the agent, followed by default, not a technical barrier.
 
 TOML in four rules: one `key = value` per line, texts in double quotes, lists in `[ ]`, and `#` starts a comment, kept by the kit. A `[section]` groups the keys under it: `[hooks]` then `whats-new = false`; `[mcp.github.server]` is the `server` of the `github` entry of `mcp`. A mistake in either file is reported with its line, its column, the line itself and the usual cause (a text without quotes, a key written twice, a list not closed, a backslash in a Windows path). Before 0.37 the personal file was `overrides.json`: the next `setup` or `update` turns it into `overrides.toml` with the same settings, its `_` explanations as comments, and keeps the JSON file in its backup.
 
 ## Teams
 
-Profiles describe a job; teams describe who you work with. A person has one profile and, optionally, one team; the two are independent. A team can bring two things, both in the kit repository and both optional.
+A team describes who you work with. A person has, optionally, one active Team. A Team is a Git repository of its own, outside the kit ([Teams](core-source.md#teams), a starting point in `examples/team-repo/`), and brings three things, all optional:
 
-**Its context: `context/20-<team>.md`.** The team's rules in plain text: ticket tracker, branch names, review and deployment habits. The kit installs it as `20_<TEAM>.md` instead of the shared `20_TEAM.md`, whatever the profile.
-
-**Its tools: `teams` in `organization.toml`.** The same keys and formats as `overrides.toml`: skills, commands, agents, guardrails, MCP servers.
+- **Its tools**: `[defaults]` in its `aikit.toml`, the same keys and formats as `overrides.toml` (`extra_skills`, `extra_agents`, `extra_commands`, `mcp`…), to turn on optional Core resources.
+- **Its own skills and agents**: `skills/<name>/SKILL.md` and `agents/<name>.md`.
+- **Its context**: `context/*.md`, the team's rules in plain text (ticket tracker, branch names, review and deployment habits). It becomes the team layer, instead of the Core's `context/20-team.md`.
 
 ```toml
-[defaults.mcp.docs]
-server = { httpUrl = "https://docs-mcp.example.org/mcp" }
+# aikit.toml of a Team repository
+schema = 1
+name = "payments"
+kind = "team"
 
-[teams.payments]
+[defaults]
 extra_skills = ["prototype"]
 extra_commands = ["ask"]
 mcp = { docs = true }
 ```
 
-Order: organization defaults, then the team, then the person's `overrides.toml`, which keeps the last word (`docs = false`, `disabled_skills = ["prototype"]`). For MCP servers, the team uses the person's formats: `true` or `false` for a server the organization defines, a `server` table for one of its own (`[teams.<team>.mcp.<name>.server]`) ([MCP](mcp.md)).
+Order: the Core, then the Team, then the person's `overrides.toml`, which keeps the last word (`docs = false`, `disabled_skills = ["prototype"]`). For MCP servers, the Team uses the person's formats: `true` or `false` for a server the Core defines ([MCP](mcp.md)).
 
-**Choosing the team.** `setup` lists the teams (those with a practices file or settings) and asks; or `setup --team <team>`. The team is kept for `update`. The usual way: IT gives each team its ready-made command, for example `sh scripts/bootstrap.sh setup --profile java-developer --team payments`. To change team, run `setup --team <other>`. `doctor` shows the team and where its content comes from.
+**Choosing the Team.** `ai-kit team use <name> --url <URL>` adds and activates it; `ai-kit team use none` leaves it; `ai-kit team list` shows the known Teams. The Team is kept for `update` and updated by `sync`. `doctor` and `ai-kit status` show the Team and where its content comes from.
 
-**Adding a team** is one merge request on the kit repository: the practices file, the `teams` entry, or both. Protect them with a CODEOWNERS line so that the team reviews its own changes.
+**Adding a team** is a new Team repository, not a change to the kit: copy `examples/team-repo/`, check it with `ai-kit validate --path <folder>`, tag a release `vX.Y.Z`, and give the team its `ai-kit team use` command. Protect its tags and its default branch so that the team reviews its own changes.
+
+An organization's own Core copy that still has `context/20-<team>.md` files or `teams` in an `organization.toml` (before 3.0) is read as before: `setup` asks for the team, or `setup --team <team>`.
 
 ## Context layers
 
@@ -70,9 +67,9 @@ The kit installs short files that the agent loads in all your projects, in this 
 
 | File | Owner | Content |
 | --- | --- | --- |
-| `00_KIT.md` | kit | profile, priority rule between layers |
+| `00_KIT.md` | kit | installed commands and playbooks, priority rule between layers |
 | `10_COMPANY.md` | kit | company practices |
-| `20_TEAM.md`, or `20_<TEAM>.md` for a team with its own practices | kit (the team's file in the kit repository) | team practices |
+| `20_TEAM.md`, or the active Team's context | kit (the Core's `context/20-team.md`, or the Team repository's `context/`) | team practices |
 | `30_USER.md` | you | your role, your domains (level and interest), how you want answers, how to work with you, by situation |
 
 The kit files are generated output. The rule layers (`00`, `10`, `20`) are restored by the next `update` if edited by hand, with the edited copy kept in `~/.ai-kit/backups/` and a `[Check]` line saying so; `doctor` reports the edit until then. A rule change goes through the kit repository. Everything specific to you goes in `30_USER.md`. `setup` creates it once; after that only you, or `/me` with your agreement, change it. A change takes effect the next time the CLI starts; a CLI that keeps a copy needs `update` first ([matrix](cli/matrice.md)), so the simple rule is: edit, `update`, new session.
@@ -86,8 +83,8 @@ One file, short, made of instructions the agent can act on. What the studies of 
 - **Short and specific.** Agents follow fewer instructions as they pile up, and general advice changes nothing: write only what the agent cannot guess and what changes an answer, at most twenty lines, the most important first.
 - **Describe yourself, not a role for the agent.** "You are an expert" does not make answers more accurate; your level per domain does change how deep they go. Level and interest are separate: "Python: expert, skip the basics", "C4 diagrams in Mermaid: not an expert but passionate, go deeper".
 - **By situation** when you want another tone somewhere: "Reviews: simpler and more teaching, one finding at a time."
-- **Form, never conclusions.** A profile makes assistants agree with the person more easily. The file always keeps the line asking the agent to say plainly when your idea is risky or wrong, and it holds no opinion about tools.
-- **Interviewed rather than written alone.** People state their preferences better when asked than when facing a blank page: that is what `/me` does, two rounds of questions with options and a recommendation, the facts it can read (operating system, repo languages, profile) never asked.
+- **Form, never conclusions.** A personal context makes assistants agree with the person more easily. The file always keeps the line asking the agent to say plainly when your idea is risky or wrong, and it holds no opinion about tools.
+- **Interviewed rather than written alone.** People state their preferences better when asked than when facing a blank page: that is what `/me` does, two rounds of questions with options and a recommendation, the facts it can read (operating system, repo languages) never asked.
 
 ## Report format
 
@@ -112,9 +109,9 @@ Each repo provides its own `AGENTS.md`, read after the global layers. To redefin
 
 ## Commands, skills, agents and MCP
 
-`~/.ai-kit/overrides.toml`: selection of commands, skills, agents and MCP servers (the MCP rule, organization, profile and person, is on its own page: [MCP](mcp.md)). Keep the TOML valid. The names to choose from: commands in the [profile table](getting-started.md#3-work-one-command-per-step) and [tools](tools.md), skills in the [skills reference](skills-reference.md), agents in [agents](agents.md).
+`~/.ai-kit/overrides.toml`: selection of commands, skills, agents and MCP servers (the MCP rule, Core, Team and person, is on its own page: [MCP](mcp.md)). Keep the TOML valid. The names to choose from: commands in [what is installed](getting-started.md#3-work-one-command-per-step) and [tools](tools.md), skills in the [skills reference](skills-reference.md), agents in [agents](agents.md).
 
-**Commands.** `extra_commands` adds commands to the profile's, with their skills; `disabled_commands` removes some. An analyst who wants `/spec` and `/explain`, and no `/learn`:
+**Commands.** `extra_commands` adds commands to the Core default selection and your Team's, with their skills; `disabled_commands` removes some. An analyst who wants `/spec` and `/explain`, and no `/learn`:
 
 ```toml
 extra_commands = ["spec", "explain"]
@@ -136,7 +133,7 @@ A project skill named like a kit skill behaves differently per CLI ([matrix](cli
 
 ## Full `overrides.toml` example
 
-A General-profile developer who wants `/ask` and `/handoff`, prototyping, no `/retro`, the security review agent, no news at session start and the GitHub MCP server of the organization:
+A developer who wants `/ask` and `/handoff`, prototyping, no `/retro`, the security review agent, no news at session start and the GitHub MCP server the Core defines:
 
 ```toml
 extra_commands = ["ask", "handoff"]
@@ -165,7 +162,7 @@ AI Kit 2 reads your settings from `~/.ai-kit/aikit.toml` when it exists. `ai-kit
 schema = 1
 
 [user]
-extra_skills = ["prototype"]        # added to your profile
+extra_skills = ["prototype"]        # added to the Core default and your Team's
 disabled_commands = ["learn"]       # removed
 skill_prefix = "ai-kit-"
 
@@ -202,7 +199,7 @@ Two deterministic hooks, set in `overrides.toml` under `[hooks]`: `protected-pat
 
 ## News at session start
 
-The `whats-new` hook (on by default, `[hooks] whats-new = false` turns it off) tells the agent once what is new: the installed version, the entries of the repository's `NEWS.md`, a newer version available. `[news] check_remote = false` keeps it local: no daily read of the kit's remote, no version proposed. Both keys accept an organization default in `defaults`. An organization announces a skill or a training by adding a section to the `NEWS.md` of its copy of the repository, optionally aimed at `profiles` or `teams`: see [whats-new](hooks.md#whats-new).
+The `whats-new` hook (on by default, `[hooks] whats-new = false` turns it off) tells the agent once what is new: the installed version, the entries of the repository's `NEWS.md`, a newer version available. `[news] check_remote = false` keeps it local: no daily read of the kit's remote, no version proposed. Both keys accept an organization default in `defaults`. An organization announces a skill or a training by adding a section to the `NEWS.md` of its copy of the repository, optionally aimed at `teams`: see [whats-new](hooks.md#whats-new).
 
 ## Identity
 

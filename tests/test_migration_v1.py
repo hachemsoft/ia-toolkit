@@ -54,7 +54,7 @@ class MigrationTests(unittest.TestCase):
         self.assertIn('sql-review', mine['extra_skills'])
         self.assertNotIn('tdd', mine['extra_skills'])  # a Core default is not carried
         self.assertIn('sql-reviewer', mine['extra_agents'])
-        self.assertTrue(any('AI Kit 2 has no profiles' in n and 'sql-review' in n for n in notices), notices)
+        self.assertTrue(any('AI Kit 3 has no profiles' in n and 'sql-review' in n for n in notices), notices)
 
     def test_a_second_update_carries_nothing_more(self):
         self.v1_installation('data-developer')
