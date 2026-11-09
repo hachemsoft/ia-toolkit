@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-kit"
-version = "4.0.1"
+version = "4.0.2"
 description = "AI Kit: layered context, a six-step workflow, domain playbooks and review agents for Gemini CLI, Antigravity CLI, Codex CLI and Claude Code, on Mac and Windows."
 readme = "README.md"
 requires-python = ">=3.11"

@@ -1,6 +1,7 @@
 """V2 slice 8: the kit's content exported as a Core repository in its V2 layout installs the same files; the Team example and
 the exported Core pass ai-kit validate; a Team holding commands does not; sync --from-bundle installs the Core offline,
 recorded under the configured URL. No network: the configured URL is never reached."""
+import json
 import contextlib
 import io
 import os
@@ -23,7 +24,12 @@ VERSION = (ROOT/'VERSION').read_text(encoding='utf-8').strip()
 
 def files_of(home):
     # The home folder is written into some files (paths): compared without it.
-    return {p.relative_to(home).as_posix(): p.read_bytes().replace(str(home).encode(), b'~').replace(home.as_uri().encode(), b'~').replace(home.as_posix().encode(), b'~') for p in sorted(home.rglob('*'))
+    forms = [json.dumps(str(home))[1:-1], str(home), home.as_uri(), home.as_posix()]  # JSON-escaped first (Windows backslashes)
+    def neutral(data):
+        for form in forms:
+            data = data.replace(form.encode(), b'~')
+        return data
+    return {p.relative_to(home).as_posix(): neutral(p.read_bytes()) for p in sorted(home.rglob('*'))
             if p.is_file() and not p.relative_to(home).as_posix().startswith(('.ai-kit/state.json', '.ai-kit/backups/'))}
 
 

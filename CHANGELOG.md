@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.0.2
+
+- The 4.0.1 release was not published: on Windows, a test that compares two installations did not ignore the home folder as written inside JSON settings (escaped backslashes). Only the test changes; the kit is the same as 4.0.1.
+
 ## 4.0.1
 
 - The 4.0.0 release was not published: on Windows, each installation rewrote `~/.ai-kit/aikit.toml` and turned its Windows line endings into Unix ones. The file is now left byte for byte as you wrote it unless the run records a choice, and its line endings are kept when it does. A test that compares two installations now also ignores the home folder written with forward slashes.
