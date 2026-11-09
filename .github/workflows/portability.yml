@@ -19,6 +19,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0  # 3.0: the launcher tests build a ZIP whose Core bundle needs the whole history
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python }}
@@ -50,8 +52,8 @@ jobs:
       - name: Settings files follow their schemas
         run: |
           pip install check-jsonschema==0.29.4
-          check-jsonschema --check-metaschema schemas/overrides.schema.json schemas/organization.schema.json
-          check-jsonschema --schemafile schemas/organization.schema.json organization.toml
+          check-jsonschema --check-metaschema schemas/overrides.schema.json schemas/organization.schema.json schemas/managed.schema.json schemas/aikit.schema.json schemas/source.schema.json
+          check-jsonschema --schemafile schemas/source.schema.json aikit.toml examples/team-repo/aikit.toml
           check-jsonschema --schemafile schemas/overrides.schema.json templates/user-overrides.toml
       - name: NEWS.md well formed
         run: python3 scripts/check_news.py
@@ -84,6 +86,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0  # 3.0: the launcher tests build a ZIP whose Core bundle needs the whole history
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python }}

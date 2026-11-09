@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.1
+
+- The 3.0.0 release was not published: in CI, the tests that build a release ZIP ran on a shallow clone, whose Core bundle missed objects. The test jobs now fetch the whole history, `scripts/build_release.py` refuses a shallow clone with a clear message, and the schema check covers the new schemas and manifests (organization.toml left the Core). No change to the kit itself.
+
 ## 3.0.0
 
 The V2 structure, complete. **Breaking**: no more profiles (`--profile <job>` is refused; `general` is still accepted), the installed package holds only the engine (the release ZIP ships the Core as `core/ai-kit-core.bundle`), `organization.toml` leaves the Core, and `practices/` is `context/`. An installation made with a profile keeps everything it had (its resources become personal lines, commented, at the next update); an organization's own Core with `organization.toml` or `practices/` is still read. This Core needs AI Kit 3.0 or newer (`min_engine`): an older engine refuses it and changes nothing. Git 2.29 or newer.

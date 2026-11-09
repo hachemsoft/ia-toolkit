@@ -82,6 +82,8 @@ def core_bundle(version, worktree, dest, clone):
     the fly in a clone (uncommitted changes of a --worktree build are not in it). Needs the full history (no shallow clone)."""
     tag = 'v'+version
     env = {**os.environ, 'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_CONFIG_NOSYSTEM': '1'}
+    if run(['git', '-C', str(ROOT), 'rev-parse', '--is-shallow-repository'], env=env).strip() == 'true':
+        raise SystemExit('This clone is shallow: the Core bundle would miss objects. Fetch the whole history first (git fetch --unshallow, or fetch-depth: 0 in CI).')
     def commit_of(ref):
         proc = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', '-q', '--verify', ref+'^{commit}'], capture_output=True, text=True)
         return proc.stdout.strip() if proc.returncode == 0 else None
