@@ -11,12 +11,12 @@ import shutil
 import subprocess
 import sys
 
-from .core import (content_root, _PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitError, read_json, digest,
+from .core import (_PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitError, read_json, digest,
                    inside, load_commands, run_timed)
 from . import versions
 from .adapters import ADAPTERS
 from .interface import DoctorContext, LiveCheck
-from .settings import LEGACY_KIT_DIR, LEGACY_PERSONAL_FILE, PERSONAL_FILE, RETIRED_KEYS, allowed_domains, domain_allowed, load_profile, managed_context_names, merge_settings, organization, personal_settings, recorded_targets, resolve_mcp, retired_key_notice, setting_differences, team_settings, unknown_keys, version_changes
+from .settings import context_folder, LEGACY_KIT_DIR, LEGACY_PERSONAL_FILE, PERSONAL_FILE, RETIRED_KEYS, allowed_domains, domain_allowed, load_profile, managed_context_names, merge_settings, organization, personal_settings, recorded_targets, resolve_mcp, retired_key_notice, setting_differences, team_settings, unknown_keys, version_changes
 
 
 # A known case each guardrail must block; doctor runs it to prove the guardrail works, not just that its file exists.
@@ -505,7 +505,7 @@ def doctor_checks(home, cwd=None, problems=None):
         if changed:
             print('[Info] Your overrides.toml changes organization or team defaults: '+', '.join(changed))
         if state.get('team'):
-            sources = [s for s, present in (('practices/20-'+state['team']+'.md', (content_root()/'practices'/('20-'+state['team']+'.md')).is_file()),
+            sources = [s for s, present in (('context/20-'+state['team']+'.md', (context_folder()/('20-'+state['team']+'.md')).is_file()),
                                             ('organization.toml teams.'+state['team'], bool(team_layer))) if present]
             print('[Info] Team: '+state['team']+' ('+(', '.join(sources) or 'nothing of its own yet')+')')
         root, overrides = repo_skill_overrides(state, cwd or os.getcwd())

@@ -113,7 +113,7 @@ class RepoFilesTests(unittest.TestCase):
         for path in (root/'profiles').glob('*.toml'):
             profile = read_toml(path)
             self.assertEqual(profile['id'], path.stem)
-            self.assertEqual(set(profile) - {'id', 'label', 'order', 'practices', 'skills', 'mcp', 'agents', 'commands'}, set(), path.name)
+            self.assertEqual(set(profile) - {'id', 'label', 'order', 'context', 'skills', 'mcp', 'agents', 'commands'}, set(), path.name)
 
 
 if __name__ == '__main__':

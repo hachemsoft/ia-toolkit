@@ -17,7 +17,7 @@ from installer import cli, sources, sync
 from installer.core import ROOT, KitError
 from installer.toml_files import dump_toml, read_toml
 
-CONTENT = ('skills', 'agents', 'commands', 'practices', 'organization.toml', 'templates')
+CONTENT = ('skills', 'agents', 'commands', 'context', 'organization.toml', 'templates')
 GIT_ENV = {**os.environ, 'GIT_CONFIG_NOSYSTEM': '1', 'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_AUTHOR_NAME': 't', 'GIT_AUTHOR_EMAIL': 't@example.org',
            'GIT_COMMITTER_NAME': 't', 'GIT_COMMITTER_EMAIL': 't@example.org'}
 HAS_GIT = shutil.which('git') is not None

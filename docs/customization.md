@@ -29,8 +29,8 @@ Both files are TOML and have a JSON Schema in `schemas/`, named on their first l
 
 | Who | Where | Decides |
 | --- | --- | --- |
-| the organization | `organization.toml` (`allowed_domains`, `defaults`), `practices/10-company.md` | defaults for everyone: guardrails, approved MCP servers, skills and commands, company practices |
-| the team | `organization.toml` (`teams.<team>`), `practices/20-<team>.md` | its tools and its practices, on top of the organization |
+| the organization | `organization.toml` (`allowed_domains`, `defaults`), `context/10-company.md` | defaults for everyone: guardrails, approved MCP servers, skills and commands, company practices |
+| the team | `organization.toml` (`teams.<team>`), `context/20-<team>.md` | its tools and its practices, on top of the organization |
 | the profile | `profiles/<profile>.toml` | the skills, commands, agents and MCP servers of a job |
 | you | `~/.ai-kit/overrides.toml`, `30_USER.md` | your additions and exceptions, your preferences |
 | the repo | `AGENTS.md`, `.agents/skills/`, `.ai-kit/protected-paths` | how to work in that repo |
@@ -43,7 +43,7 @@ TOML in four rules: one `key = value` per line, texts in double quotes, lists in
 
 Profiles describe a job; teams describe who you work with. A person has one profile and, optionally, one team; the two are independent. A team can bring two things, both in the kit repository and both optional.
 
-**Its context: `practices/20-<team>.md`.** The team's rules in plain text: ticket tracker, branch names, review and deployment habits. The kit installs it as `20_<TEAM>.md` instead of the shared `20_TEAM.md`, whatever the profile.
+**Its context: `context/20-<team>.md`.** The team's rules in plain text: ticket tracker, branch names, review and deployment habits. The kit installs it as `20_<TEAM>.md` instead of the shared `20_TEAM.md`, whatever the profile.
 
 **Its tools: `teams` in `organization.toml`.** The same keys and formats as `overrides.toml`: skills, commands, agents, guardrails, MCP servers.
 

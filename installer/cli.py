@@ -647,7 +647,7 @@ def command_main(argv):
     parser.add_argument('--home',type=Path,default=Path.home(),help='Alternative home folder for an isolated trial')
     parser.add_argument('--dry-run',action='store_true',help='Show the plan without writing')
     parser.add_argument('--command-on-path',choices=['yes','no'],help='setup: add the ai-kit command to your terminal (your own PATH only; removed by uninstall); default yes on a first installation, then the recorded choice')
-    parser.add_argument('--team',help='setup: your team, when it has its own practices (practices/20-<team>.md) or tools (teams in organization.toml); kept for update; none to leave it')
+    parser.add_argument('--team',help='setup: your team, when it has its own context (context/20-<team>.md) or tools (teams in organization.toml); kept for update; none to leave it')
     parser.add_argument('--target',choices=list(TARGETS),help='default: the CLIs chosen at the last installation (auto on the first one); auto: the CLIs present on the machine (Gemini if none); gemini, agy, codex, claude: that CLI only; both: Gemini and agy; all: every supported CLI')
     parser.add_argument('--live',action='store_true',help='doctor: make a real call to the model and diagnose (may be billed by your provider)')
     parser.add_argument('--no-live',action='store_true',help='accepted for compatibility: setup and update never call the model')

@@ -438,7 +438,7 @@ class NewTests(unittest.TestCase):
 
     def test_an_unrelated_change_the_digests_read_stops_before_writing(self):
         # The lock and the snapshot read the whole tree: they would record this edit, and the commit would not carry it.
-        for rel in ('commands/build.md', 'practices/20-team.md', 'installer/new.py', 'agents/defaults.json'):
+        for rel in ('commands/build.md', 'context/20-team.md', 'installer/new.py', 'agents/defaults.json'):
             with self.subTest(rel=rel):
                 saved = (self.repo/rel).read_bytes()
                 (self.repo/rel).write_bytes(saved+b'\n')

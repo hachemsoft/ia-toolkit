@@ -22,6 +22,6 @@ class PackagingTests(unittest.TestCase):
   read=set(re.findall(r"ROOT ?/ ?'([A-Za-z][\w.-]*)",code))-{'.git','versions.lock.json','tests','docs'}
   packaged=set(re.findall(r'^"([\w.-]+)" = "ai_kit/kit/',self.text,re.M))
   self.assertTrue(read<=packaged,read-packaged);self.assertIn('VERSION',packaged)
-  self.assertFalse(packaged&{'skills','agents','commands','practices','profiles','organization.toml','aikit.toml'})
+  self.assertFalse(packaged&{'skills','agents','commands','context','profiles','organization.toml','aikit.toml'})
   for d in packaged:self.assertTrue((ROOT/d).exists(),d)
 if __name__=='__main__':unittest.main()

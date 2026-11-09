@@ -68,7 +68,7 @@ class OrganizationTests(unittest.TestCase):
         self.assertIn('Your overrides.toml changes organization or team defaults: hooks.dbt-prod-guard', out.getvalue())
 
     def test_team_selects_its_practices_whatever_the_profile(self):
-        team_file = ROOT/'practices/20-kit-test-team.md'
+        team_file = ROOT/'context/20-kit-test-team.md'
         team_file.write_text('# Test team practices\n- Rule of the test team.\n', encoding='utf-8')
         self.addCleanup(team_file.unlink)
         state = self.install('java-developer', team='kit-test-team')
@@ -79,7 +79,7 @@ class OrganizationTests(unittest.TestCase):
         self.assertEqual(self.install('java-developer')['team'], 'kit-test-team')
 
     def test_team_none_leaves_the_team(self):
-        team_file = ROOT/'practices/20-kit-test-team.md'
+        team_file = ROOT/'context/20-kit-test-team.md'
         team_file.write_text('# Test team practices\n', encoding='utf-8')
         self.addCleanup(team_file.unlink)
         self.install('general', team='kit-test-team')
@@ -188,7 +188,7 @@ class TeamToolsTests(unittest.TestCase):
         self.assertTrue((self.home/'.gemini/commands/ask.toml').is_file())
         self.assertIn('dbt-prod-guard', state['hooks'])
         self.assertEqual(list(state['mcp']), ['ai-kit-dbt'])
-        # No practices/20-data-platform.md: the shared team practices stay, the team is kept for update.
+        # No context/20-data-platform.md: the shared team practices stay, the team is kept for update.
         self.assertEqual(state['team'], 'data-platform')
         self.assertIn('team', state['practices'])
         self.assertIn('[Info] Team: data-platform (organization.toml teams.data-platform)', out)

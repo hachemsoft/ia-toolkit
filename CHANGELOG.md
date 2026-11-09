@@ -17,6 +17,7 @@
 - **No more profiles** (V2 slice 9, ADR 0018): the Core installs its default selection for everyone (each skill, agent and command says it with `aikit-default`, or `default: false` for a command); a Team turns on more, and a person adds or removes a resource with `extra_*` and `disabled_*`. `--profile general` is still accepted, any other profile is refused with how to get its resources; the guided installer no longer asks for a profile; `ai-kit new profile` is gone; the context and the summaries no longer name a profile; a friction records the team instead.
 - An installation made with a profile keeps everything it had: at its next update, what the Core default does not give is written as personal lines (`extra_skills`, `extra_agents`, `extra_commands`, and `[mcp] <name> = true` for the servers the profile turned on), with a comment `# carried over from profile <name> on <date>`, once; the person is told. Nothing expires on its own.
 - `docs/getting-started.md` shows what the Core installs by default and what is optional, instead of the profile table.
+- `practices/` is now `context/` (the company and team layers of the context); a Core that still has `practices/` is read the same way.
 
 ## 2.1.1
 

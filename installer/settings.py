@@ -10,10 +10,16 @@ from .toml_files import read_toml
 from .adapters import ADAPTERS
 
 
+def context_folder(root=None):
+    """The content's context layers: context/ (2.2), or practices/ in a Core from before (read the same way)."""
+    root = root or content_root()
+    return root/'context' if (root/'context').is_dir() or not (root/'practices').is_dir() else root/'practices'
+
+
 def practice_file(practice_id):
     """Source file of a practice and name of the context file it produces."""
     safe_id(practice_id)
-    matches = sorted((content_root()/'practices').glob('[0-9][0-9]-'+practice_id+'.md'))
+    matches = sorted(context_folder().glob('[0-9][0-9]-'+practice_id+'.md'))
     if len(matches) != 1:
         raise KitError('Practice not found or ambiguous: ' + practice_id)
     source = matches[0]
@@ -285,9 +291,9 @@ def domain_allowed(email, domains):
 
 
 def team_ids():
-    """Teams: those with their own practices (practices/20-<team>.md, besides the shared 20-team.md) or their own settings
+    """Teams: those with their own practices (context/20-<team>.md, besides the shared 20-team.md) or their own settings
     (teams in organization.toml): context, tools, or both."""
-    files = {p.stem[3:] for p in (content_root()/'practices').glob('20-*.md') if p.stem != '20-team'}
+    files = {p.stem[3:] for p in context_folder().glob('20-*.md') if p.stem != '20-team'}
     v2 = {p.stem for p in (content_root()/'teams').glob('*.toml')} if (content_root()/'teams').is_dir() else set()
     return sorted(files | set(organization().get('teams', {})) | v2)
 
@@ -295,8 +301,8 @@ def team_ids():
 def profile_practices(profile, team):
     """The profile's practices, with the shared team practice replaced by the person's team when it has its own file."""
     if team and team not in team_ids():
-        raise KitError('Unknown team: '+team+'. Teams: '+(', '.join(team_ids()) or 'none (practices/20-<team>.md or teams in organization.toml)'))
-    own = team and (content_root()/'practices'/('20-'+team+'.md')).is_file()
+        raise KitError('Unknown team: '+team+'. Teams: '+(', '.join(team_ids()) or 'none (context/20-<team>.md or teams in organization.toml)'))
+    own = team and (context_folder()/('20-'+team+'.md')).is_file()
     return [team if p == 'team' and own else p for p in profile['practices']]
 
 

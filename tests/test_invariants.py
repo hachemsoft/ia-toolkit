@@ -102,7 +102,7 @@ class InvariantTests(unittest.TestCase):
     def test_merge_request_wording(self):
         """The agent follows the repo's convention, merge request or pull request: what it reads (commands, practices,
         templates) never names one without the other. 0.34: before, pull requests could not be named at all (an MR-only team)."""
-        files = [p for d in ('commands', 'practices', 'templates') for p in (ROOT/d).rglob('*.md')]
+        files = [p for d in ('commands', 'context', 'templates') for p in (ROOT/d).rglob('*.md')]
         for path in files:
             for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
                 if 'merge request' in line:

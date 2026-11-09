@@ -11,7 +11,7 @@ import unittest
 from installer.cli import apply
 from installer.core import ROOT, KitError, content_from, content_root
 
-CONTENT = ('skills', 'agents', 'commands', 'practices', 'organization.toml', 'templates', 'aikit.toml')
+CONTENT = ('skills', 'agents', 'commands', 'context', 'organization.toml', 'templates', 'aikit.toml')
 
 
 class ContentRootTests(unittest.TestCase):

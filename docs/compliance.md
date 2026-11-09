@@ -20,7 +20,7 @@ A coding assistant does not, in principle, fall under the AI Act's high-risk use
 
 | Topic | What the kit does | Where to check |
 | --- | --- | --- |
-| Human oversight | the person starts each command; the agent commits, pushes, deploys or runs an infrastructure `apply` only with their approval; ceremony matches the stakes (spec, full review) | `practices/`, `commands/`, [workflow](workflow.md) |
+| Human oversight | the person starts each command; the agent commits, pushes, deploys or runs an infrastructure `apply` only with their approval; ceremony matches the stakes (spec, full review) | `context/`, `commands/`, [workflow](workflow.md) |
 | Anti-error guardrails, not a security barrier | `protected-paths`, on by default: refuses the usual writes to the configuration of the kit and of the CLIs, from write tools and shell commands; refuses writes under protected paths declared by the repository from write tools only, not from shell commands. `dbt-prod-guard`, off by default, turned on by the organization or a team: refuses a dbt command on a production target. Limits: [guardrails](hooks.md#limits) | `runtime/hooks/`, [guardrails](hooks.md) |
 | Review | read-only review agents (code, security, infrastructure, architecture, SQL, dbt) and a doubter agent for high-stakes changes | `agents/`, [agents](agents.md) |
 | Permissions | no mode that skips confirmations; the kit never writes CLI permissions or Codex guardrail approvals | test `test_invariants.py` |
@@ -50,7 +50,7 @@ A coding assistant does not, in principle, fall under the AI Act's high-risk use
 
 1. Choose the CLIs and the model provider contracts, and check what they provide for data (retention, training, location).
 2. Classify data and repositories: those an agent can read, those that require a full review, those that are excluded.
-3. Validate the company and team practices (`practices/`), offered as a baseline.
+3. Validate the company and team practices (`context/`), offered as a baseline.
 4. Enable the useful guardrails and declare the protected paths of each repository.
 5. Train staff ("Getting started" path, pilot), then track usage with the [usage review](usage-review.md).
 6. If a log of actions or a proof of review is required, get it from the CLI or the platform (provider audit logs, mandatory merge request (MR) review); the kit does not provide it.
