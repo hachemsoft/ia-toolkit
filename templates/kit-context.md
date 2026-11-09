@@ -19,7 +19,7 @@ Tests: never weaken, skip or delete one to hide a regression; for a contract cha
 
 ## Commands
 Plain sentences work; commands are shortcuts. `/guide` helps choose.
-Only these are installed; add one with `extra_commands` in `~/.ai-kit/aikit.toml`, then `update`.
+Only these are installed; add one with `extra_commands` in `~/.ai-kit/aikit.toml`, then `ai-kit sync --offline`.
 {commands}
 
 ## Domain playbooks

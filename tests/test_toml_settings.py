@@ -1,9 +1,7 @@
-"""0.37: the settings people write are TOML. The person's overrides.json becomes overrides.toml at the next update (same
-values, _ explanations as comments, the JSON file in the backup); the installer changes only the lists chosen, never the
-person's comments; a mistake is reported with its line and a plain hint."""
+"""The settings people write are TOML: ~/.ai-kit/aikit.toml (AI Kit 3), created once from the commented template; the
+installer changes only the lists chosen, never the person's comments; a mistake is reported with its line and a plain hint."""
 import contextlib
 import io
-import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -31,56 +29,28 @@ class Base(unittest.TestCase):
         return notices, out.getvalue()
 
 
-class MigrationTests(Base):
-    LEGACY = {'$schema': 'file:///old/kit/schemas/overrides.schema.json', '_doc': 'My settings.\nSecond line.',
-              'extra_commands': ['ask'], 'hooks': {'dbt-prod-guard': True}, '_why': 'asked by the team',
-              'mcp': {'github': {'server': {'command': 'docker', 'args': ['run', '-i'], 'env': {'TOKEN': '${TOKEN}'}}}}}
-
-    def test_overrides_json_becomes_toml_with_the_same_settings(self):
-        self.kit.mkdir()
-        (self.kit/'overrides.json').write_text(json.dumps(self.LEGACY), encoding='utf-8')
-        notices, _ = self.run_kit()
-        self.assertFalse((self.kit/'overrides.json').exists())
-        text = (self.kit/'overrides.toml').read_text(encoding='utf-8')
-        self.assertTrue(text.startswith('#:schema ' + (self.kit.resolve()/'schemas'/'overrides.schema.json').as_uri()))
-        self.assertIn('# My settings.\n# Second line.', text)
-        self.assertIn('# asked by the team', text)
-        self.assertIn('env = { TOKEN = "${TOKEN}" }', text)
-        self.assertEqual(read_toml(self.kit/'overrides.toml'),
-                         {k: v for k, v in self.LEGACY.items() if not k.startswith(('_', '$'))})
-        self.assertTrue(any('is now ~/.ai-kit/overrides.toml' in n for n in notices))
-        backups = list((self.kit/'backups').rglob('overrides.json'))
-        self.assertEqual(json.loads(backups[0].read_text(encoding='utf-8')), self.LEGACY)
-        self.assertIn('ask', json.loads((self.kit/'state.json').read_text(encoding='utf-8'))['installed']['commands'])
-
-    def test_both_files_the_toml_wins_and_the_json_is_named(self):
-        self.kit.mkdir()
-        (self.kit/'overrides.json').write_text(json.dumps({'extra_commands': ['ask']}), encoding='utf-8')
-        (self.kit/'overrides.toml').write_text('extra_commands = []\n', encoding='utf-8')
-        notices, _ = self.run_kit()
-        self.assertTrue((self.kit/'overrides.json').exists())
-        self.assertTrue(any('overrides.json is no longer read' in n for n in notices))
-        self.assertNotIn('ask', json.loads((self.kit/'state.json').read_text(encoding='utf-8'))['installed']['commands'])
-
+class NewFileTests(Base):
     def test_new_file_from_the_commented_template(self):
         self.run_kit()
-        text = (self.kit/'overrides.toml').read_text(encoding='utf-8')
-        self.assertIn('# [mcp.github.server]', text)
-        self.assertEqual(read_toml(self.kit/'overrides.toml'), {})
+        text = (self.kit/'aikit.toml').read_text(encoding='utf-8')
+        self.assertTrue(text.startswith('#:schema ' + (self.kit.resolve()/'schemas'/'aikit.schema.json').as_uri()))
+        self.assertTrue((self.kit/'schemas/aikit.schema.json').is_file())
+        self.assertIn('# [mcp]', text)
+        self.assertEqual(read_toml(self.kit/'aikit.toml'), {'schema': 1})
 
 
 class ChoicesTests(Base):
     def test_only_the_chosen_lists_change_and_comments_stay(self):
         self.kit.mkdir()
-        mine = '# my notes\nextra_commands = [\n  "ask",  # for the data team\n]\n\n[hooks]\ndbt-prod-guard = true  # keep\n'
-        (self.kit/'overrides.toml').write_text(mine, encoding='utf-8')
+        mine = 'schema = 1\n# my notes\n\n[user]\nextra_commands = [\n  "ask",  # for the data team\n]\n\n[hooks]\ndbt-prod-guard = true  # keep\n'
+        (self.kit/'aikit.toml').write_text(mine, encoding='utf-8')
         self.run_kit(choices={'extra_commands': ['ask', 'handoff'], 'disabled_commands': ['retro']})
-        text = (self.kit/'overrides.toml').read_text(encoding='utf-8')
+        text = (self.kit/'aikit.toml').read_text(encoding='utf-8')
         self.assertIn('# my notes', text)
         self.assertIn('dbt-prod-guard = true  # keep', text)
-        self.assertEqual(read_toml(self.kit/'overrides.toml'),
-                         {'extra_commands': ['ask', 'handoff'], 'disabled_commands': ['retro'], 'hooks': {'dbt-prod-guard': True}})
-        self.assertLess(text.index('disabled_commands'), text.index('[hooks]'))  # a new list goes before the first section
+        self.assertEqual(read_toml(self.kit/'aikit.toml'),
+                         {'schema': 1, 'user': {'extra_commands': ['ask', 'handoff'], 'disabled_commands': ['retro']}, 'hooks': {'dbt-prod-guard': True}})
+        self.assertLess(text.index('disabled_commands'), text.index('[hooks]'))  # a new list goes in its own section [user]
 
     def test_set_list_never_changes_another_value(self):
         text = 'a = ["x # not a comment", "]"]  # c\nb = 1\n'
@@ -91,11 +61,11 @@ class ChoicesTests(Base):
 class ErrorTests(Base):
     def test_a_mistake_is_reported_with_its_line_and_a_hint(self):
         self.kit.mkdir()
-        (self.kit/'overrides.toml').write_text('extra_commands = ["ask"]\nskill_prefix = kit-\n', encoding='utf-8')
+        (self.kit/'aikit.toml').write_text('schema = 1\n[user]\nskill_prefix = kit-\n', encoding='utf-8')
         with self.assertRaises(KitError) as ctx:
             self.run_kit()
         message = str(ctx.exception)
-        self.assertIn('line 2', message)
+        self.assertIn('line 3', message)
         self.assertIn('a text must be in double quotes', message)
         self.assertIn('skill_prefix = kit-', message)
 

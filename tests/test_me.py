@@ -21,7 +21,7 @@ class Base(unittest.TestCase):
         self.addCleanup(patcher.stop)
         with contextlib.redirect_stdout(io.StringIO()):
             cli.apply('general', self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini')
-        self.user_file = self.home/'.ai-kit/context/30_USER.md'
+        self.user_file = self.home/'.ai-kit/context/USER.md'
 
 
 class QuickContextTests(Base):
@@ -65,7 +65,7 @@ class MeCommandTests(unittest.TestCase):
         for needle in ('Facts first, never asked', 'twelve words at most', 'a concrete example after a dash', 'at most four',
                        'question tool', 'A topic you love to dig into, even as a beginner?', 'Reviews simpler, more teaching',
                        'By situation', 'no opinion about tools', 'At most 20 lines', 'before and after', 'With their agreement only',
-                       'run update first'):
+                       'run ai-kit sync --offline first'):
             self.assertIn(needle, prompt)
 
 

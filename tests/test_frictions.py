@@ -63,12 +63,12 @@ class FrictionSignalTests(unittest.TestCase):
  def test_friction_mode_option(self):
   kit=lambda:(self.home/'.gemini/00_KIT.md').read_text(encoding='utf-8')
   self.assertIn('Offer in one line to log a `/friction`',kit())
-  ov=self.home/'.ai-kit/overrides.toml'
+  ov=self.home/'.ai-kit/aikit.toml'
   for mode,needle,absent in (('auto','Log the friction yourself, without asking','Offer in one line'),('off',None,'## Frictions')):
-   d=read_toml(ov);d['frictions']=mode;ov.write_text(dump_toml(d),encoding='utf-8')
+   d=read_toml(ov);d['frictions']={'capture':mode};ov.write_text(dump_toml(d),encoding='utf-8')
    with contextlib.redirect_stdout(io.StringIO()):apply_as('data-analyst',self.home,False,None,'gemini')
    (self.assertIn(needle,kit()) if needle else None);self.assertNotIn(absent,kit())
-  d=read_toml(ov);d['frictions']='always';ov.write_text(dump_toml(d),encoding='utf-8')
+  d=read_toml(ov);d['frictions']={'capture':'always'};ov.write_text(dump_toml(d),encoding='utf-8')
   from installer.core import KitError
   with self.assertRaises(KitError),contextlib.redirect_stdout(io.StringIO()):apply_as('data-analyst',self.home,False,None,'gemini')
  def test_aggregate_groups_and_flags_two_or_more(self):

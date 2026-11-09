@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from installer.toml_files import dump_toml  # noqa: E402
+from personal import write_personal  # noqa: E402
 from v1_profiles import PROFILES, apply_as  # noqa: E402
 
 GOLDEN = ROOT / 'tests' / 'golden' / 'install-snapshot.json'
@@ -28,8 +28,7 @@ def capture(profile, target, overrides=None):
     with tempfile.TemporaryDirectory() as tmp:
         home = Path(tmp)
         if overrides is not None:
-            (home / '.ai-kit').mkdir()
-            (home / '.ai-kit' / 'overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
+            write_personal(home, overrides)  # ~/.ai-kit/aikit.toml (AI Kit 3)
         with contextlib.redirect_stdout(io.StringIO()):
             apply_as(profile, home, False, IDENTITY, target)
         out = {}

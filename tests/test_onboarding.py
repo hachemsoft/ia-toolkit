@@ -1,4 +1,4 @@
-"""What a person sees at the end of setup and at the top of doctor: what is ready, what is missing, the next step.
+"""What a person sees at the end of init and at the top of doctor: what is ready, what is missing, the next step.
 CLIs are simulated (shutil.which); no call to a model or an MCP server."""
 import contextlib
 import io
@@ -10,7 +10,7 @@ from unittest import mock
 
 from installer import cli, doctor as doctor_module
 from installer.core import read_json
-from installer.toml_files import dump_toml
+from personal import write_personal
 from v1_profiles import apply_as  # noqa: E402
 
 FALSE_SUCCESS = re.compile(r'(?i)\b(connected|authenticated|signed in|ready to use)\b')
@@ -29,10 +29,10 @@ class SummaryTests(unittest.TestCase):
 
     def install(self, profile='data-analyst', target='all', overrides=None, org=None):
         if overrides is not None:
-            (self.home/'.ai-kit').mkdir(parents=True, exist_ok=True)
-            (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
-        self.org = org or {}
-        with mock.patch.object(doctor_module, 'organization', return_value=self.org), contextlib.redirect_stdout(io.StringIO()):
+            write_personal(self.home, overrides)
+        self.org = org or {}  # the Core's mcp/servers.toml, as settings.organization() gives it
+        with mock.patch.object(doctor_module, 'organization', return_value=self.org), mock.patch('installer.plan.organization', return_value=self.org), \
+             contextlib.redirect_stdout(io.StringIO()):
             apply_as(profile, self.home, False, {'email': 'a@example.org', 'source': 'test'}, target)
         return read_json(self.home/'.ai-kit/state.json')
 
@@ -90,7 +90,7 @@ class SummaryTests(unittest.TestCase):
         self.install(overrides={'mcp': {'bigquery': True, 'dbt': False}}, org=org)
         out = self.summary(found('gemini'))
         self.assertIn('bigquery configured; connection not verified', out)
-        self.assertIn('dbt turned off (in your overrides.toml or by your team)', out)
+        self.assertIn('dbt turned off (in your aikit.toml or by your team)', out)
         self.assertNotRegex(out, FALSE_SUCCESS)
 
     def test_problems_come_first_in_the_next_step(self):
@@ -112,8 +112,8 @@ class SetupAndDoctorOutputTests(unittest.TestCase):
             code = cli.main(list(args)+['--home', self.home])
         return code, out.getvalue()
 
-    def test_setup_ends_with_the_summary_and_keeps_its_exit_code(self):
-        code, out = self.run_main('setup', '--profile', 'general', '--no-live', '--user', 'a@example.org', '--target', 'gemini')
+    def test_init_ends_with_the_summary_and_keeps_its_exit_code(self):
+        code, out = self.run_main('init', '--user', 'a@example.org', '--target', 'gemini')
         self.assertEqual(code, 0)
         self.assertLess(out.index('Kit configuration installed.'), out.index('Summary'))
         self.assertIn('Gemini CLI: not found on this workstation', out)
@@ -122,7 +122,7 @@ class SetupAndDoctorOutputTests(unittest.TestCase):
         self.assertNotRegex(out, FALSE_SUCCESS)
 
     def test_doctor_summary_before_details(self):
-        self.run_main('setup', '--profile', 'general', '--no-live', '--user', 'a@example.org', '--target', 'gemini')
+        self.run_main('init', '--user', 'a@example.org', '--target', 'gemini')
         code, out = self.run_main('doctor', which=found('gemini'))
         self.assertEqual(code, 0)
         self.assertLess(out.index('Summary'), out.index('Next step:'))
@@ -131,7 +131,7 @@ class SetupAndDoctorOutputTests(unittest.TestCase):
         self.assertEqual(out.count('[OK] Python 3.11 minimum'), 1)  # each check runs once
 
     def test_doctor_reports_a_problem_in_the_summary_and_exit_code(self):
-        self.run_main('setup', '--profile', 'general', '--no-live', '--user', 'a@example.org', '--target', 'gemini')
+        self.run_main('init', '--user', 'a@example.org', '--target', 'gemini')
         Path(self.home, '.gemini/00_KIT.md').write_text('edited', encoding='utf-8')
         code, out = self.run_main('doctor', which=found('gemini'))
         self.assertEqual(code, 1)
@@ -159,8 +159,7 @@ class AnalystReviewTests(unittest.TestCase):
 
     def install(self, overrides=None):
         if overrides is not None:
-            (self.home/'.ai-kit').mkdir(parents=True, exist_ok=True)
-            (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
+            write_personal(self.home, overrides)
         with contextlib.redirect_stdout(io.StringIO()):
             apply_as('data-analyst', self.home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
         return read_json(self.home/'.ai-kit/state.json')['installed']['commands']

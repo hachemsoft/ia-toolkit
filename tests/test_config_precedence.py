@@ -10,9 +10,10 @@ from unittest import mock
 
 from installer import cli, config
 from installer.toml_files import dump_toml
+from personal import write_personal
 
 GUARDRAILS = ('protected-paths', 'dbt-prod-guard')
-TRACKER = {'friction_tracker': {'kind': 'gitlab', 'project': 'tools/feedback', 'host': 'gitlab.example.org'}}
+TRACKER = {'kind': 'gitlab', 'project': 'tools/feedback', 'host': 'gitlab.example.org'}
 
 
 class Base(unittest.TestCase):
@@ -30,8 +31,7 @@ class Base(unittest.TestCase):
         self.managed.write_text(dump_toml(data) if isinstance(data, dict) else data, encoding='utf-8')
 
     def personal(self, data):
-        (self.home/'.ai-kit').mkdir(exist_ok=True)
-        (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(data), encoding='utf-8')
+        write_personal(self.home, data)
 
     def apply(self, **kwargs):
         with contextlib.redirect_stdout(io.StringIO()):
@@ -83,7 +83,7 @@ class SchemaTests(Base):
             self.apply()
         self.assertEqual({p: p.read_bytes() for p in self.home.rglob('*') if p.is_file()}, before)
         with mock.patch('installer.config.managed_path', return_value=self.managed), contextlib.redirect_stderr(io.StringIO()):
-            self.assertEqual(cli.main(['update', '--home', str(self.home), '--target', 'claude']), 3)
+            self.assertEqual(cli.main(['init', '--home', str(self.home), '--target', 'claude']), 3)
 
     def test_the_administered_path_is_fixed_not_taken_from_the_environment(self):
         with mock.patch.dict('os.environ', {'ProgramData': '/tmp/elsewhere', 'AI_KIT_MANAGED': '/tmp/x'}):
@@ -92,11 +92,10 @@ class SchemaTests(Base):
 
 
 class PrecedenceTests(Base):
-    def test_a_managed_false_wins_over_the_person_and_over_organization_locks(self):
+    def test_a_managed_false_wins_over_the_person(self):
         self.personal({'hooks': {'protected-paths': True}})
         self.write_managed({'managed_schema': 1, 'hooks': {'protected-paths': False}})
-        with mock.patch('installer.plan.organization', return_value={'locked_hooks': ['protected-paths']}):
-            notices = self.apply()
+        notices = self.apply()
         self.assertNotIn('protected-paths', self.state()['hooks'])
         self.assertTrue(any('ignored: IT sets it to false' in n for n in notices))
 
@@ -118,31 +117,34 @@ class PrecedenceTests(Base):
         self.apply()
         self.assertNotIn('## Frictions', (self.home/'.ai-kit/context/00_KIT.md').read_text(encoding='utf-8'))  # off: no section
 
+    def core_servers(self, servers):
+        """The Core's mcp/servers.toml, every server enabled for everyone."""
+        mcp = {name: {'server': server, 'enabled': True} for name, server in servers.items()}
+        return mock.patch('installer.plan.organization', return_value={'defaults': {'mcp': mcp}})
+
     def test_mcp_denied_and_stdio_refused(self):
-        servers = {'mcp': {'docs': {'server': {'httpUrl': 'https://mcp.example.org/docs'}}, 'local': {'server': {'command': 'my-mcp'}},
-                           'other': {'server': {'httpUrl': 'https://mcp.example.org/o'}}}}
-        self.personal(servers)
         self.write_managed({'managed_schema': 1, 'mcp': {'denied': ['other'], 'allow_stdio': False}})
-        notices = self.apply()
+        with self.core_servers({'docs': {'httpUrl': 'https://mcp.example.org/docs'}, 'local': {'command': 'my-mcp'},
+                                'other': {'httpUrl': 'https://mcp.example.org/o'}}):
+            notices = self.apply()
         self.assertEqual(sorted(self.state()['mcp']), ['ai-kit-docs'])
         self.assertTrue(any('refused by IT (managed.toml mcp.denied)' in n for n in notices))
         self.assertTrue(any('mcp.allow_stdio = false' in n for n in notices))
 
     def test_an_empty_denied_list_is_a_value_not_an_error(self):
-        self.personal({'mcp': {'docs': {'server': {'httpUrl': 'https://mcp.example.org/docs'}}}})
         self.write_managed({'managed_schema': 1, 'mcp': {'denied': []}})
-        self.apply()
+        with self.core_servers({'docs': {'httpUrl': 'https://mcp.example.org/docs'}}):
+            self.apply()
         self.assertEqual(sorted(self.state()['mcp']), ['ai-kit-docs'])
 
 
 class FrictionPublicationTests(Base):
     def tracker_state(self, managed=None, personal=None):
-        if managed is not None:
-            self.write_managed({'managed_schema': 1, 'frictions': managed})
+        """IT sets the tracker in managed.toml [frictions.tracker], with these other frictions keys."""
+        self.write_managed({'managed_schema': 1, 'frictions': {**(managed or {}), 'tracker': TRACKER}})
         if personal is not None:
             self.personal(personal)
-        with mock.patch('installer.cli.org_defaults_root', return_value=TRACKER):
-            self.apply()
+        self.apply()
         return self.state().get('friction_tracker')
 
     def test_approval_is_the_default(self):

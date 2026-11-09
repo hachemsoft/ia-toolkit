@@ -64,7 +64,7 @@ def toml_value(value):
         return '['+', '.join(toml_value(v) for v in value)+']'
     return json.dumps(str(value), ensure_ascii=False)
 
-USER_COPY = '<!-- Copy of USER.md, refreshed by update. -->'
+USER_COPY = '<!-- Copy of USER.md, refreshed by ai-kit sync. -->'
 
 def copied_user_text(block):
     """The copy of USER.md inside a kit block of ~/.codex/AGENTS.md, or ''."""

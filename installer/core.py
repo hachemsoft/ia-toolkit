@@ -34,7 +34,7 @@ START = '<!-- ai-toolkit:start -->'
 END = '<!-- ai-toolkit:end -->'
 KIT_CONTEXT = '00_KIT.md'
 USER_CONTEXT = 'USER.md'  # 3.0: the person's context (ADR 0024)
-CONTEXT_NAME = re.compile(r'[0-9]{2}_[A-Z0-9_]+\.md')
+CONTEXT_NAME = re.compile(r'(?:[0-9]{2}_[A-Z0-9_]+|USER)\.md')  # the layers and the person's USER.md
 EMAIL = re.compile(r'[^@\s]+@[^@\s]+\.[^@\s]+')
 # What looks like a secret, the redaction and the friction ids live in runtime/friction.py, the script /friction runs:
 # the kit package loads that very file (one implementation; in the installed package it is ai_kit/kit/runtime/friction.py).

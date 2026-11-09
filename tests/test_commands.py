@@ -3,7 +3,7 @@ from pathlib import Path
 from installer.cli import doctor, selected_commands
 from installer.resolve import skill_catalog
 from installer.core import load_commands, KitError, read_json, ROOT
-from installer.toml_files import dump_toml
+from personal import write_personal  # noqa: E402
 from v1_profiles import apply_as  # noqa: E402
 from v1_profiles import PROFILES  # noqa: E402
 class CommandTests(unittest.TestCase):
@@ -12,7 +12,7 @@ class CommandTests(unittest.TestCase):
  def run_kit(self,role='data-analyst'):
   with contextlib.redirect_stdout(io.StringIO()):apply_as(role,self.home)
  def overrides(self,v):
-  p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
+  write_personal(self.home,v)
  def cmd(self,name):return self.home/'.gemini/commands'/(name+'.toml')
  def test_manifest_consistent(self):
   catalog=skill_catalog(ROOT);names=set()

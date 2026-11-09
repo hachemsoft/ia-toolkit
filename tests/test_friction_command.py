@@ -1,5 +1,5 @@
 """`ai-kit friction`: the same script as /friction (runtime/friction.py, one source), callable from the terminal with
---home, a --list of the last frictions, and --mode to change the frictions setting of overrides.toml and reapply."""
+--home, a --list of the last frictions; how the agent captures them is frictions.capture in aikit.toml (--mode is gone)."""
 import contextlib
 import io
 import json
@@ -13,7 +13,7 @@ from unittest import mock
 
 from installer import cli, core
 from installer.core import ROOT
-from installer.toml_files import read_toml
+from personal import write_personal
 
 
 class FrictionCommandTests(unittest.TestCase):
@@ -24,7 +24,7 @@ class FrictionCommandTests(unittest.TestCase):
         for patcher in (mock.patch('shutil.which', return_value=None), mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': ''})):
             patcher.start()
             self.addCleanup(patcher.stop)
-        self.run_kit('setup', '--profile', 'general', '--user', 'a@example.org', '--target', 'gemini')
+        self.run_kit('init', '--user', 'a@example.org', '--target', 'gemini')
 
     def run_kit(self, *args):
         out = io.StringIO()
@@ -70,36 +70,22 @@ class FrictionCommandTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn('No friction logged', out)
 
-    def test_mode_shows_then_changes_the_setting_and_reapplies(self):
-        code, out = self.run_kit('friction', '--mode')
-        self.assertEqual(code, 0, out)
-        self.assertIn('Frictions mode: propose', out)
-        self.assertRegex(out, r"kit default|organization's defaults")  # the kit's organization.toml sets propose
+    def test_capture_setting_of_aikit_toml_changes_the_rule(self):
         kit_text = lambda: (self.home/'.gemini/00_KIT.md').read_text(encoding='utf-8')
-        self.assertIn('Offer in one line', kit_text())
-        code, out = self.run_kit('friction', '--mode', 'auto', '--yes')
+        self.assertIn('Offer in one line', kit_text())  # propose: the default
+        write_personal(self.home, {'frictions': 'auto'})
+        code, out = self.run_kit('init')
         self.assertEqual(code, 0, out)
-        self.assertEqual(read_toml(self.home/'.ai-kit/overrides.toml')['frictions'], 'auto')
         self.assertIn('Log the friction yourself, without asking', kit_text())
-        self.assertIn('Frictions mode: auto', out)
-        code, out = self.run_kit('friction', '--mode')
-        self.assertIn('Frictions mode: auto (your overrides.toml)', out)
-        code, out = self.run_kit('friction', '--mode', 'off', '--yes')
+        write_personal(self.home, {'frictions': 'off'})
+        self.assertEqual(self.run_kit('init')[0], 0)
         self.assertNotIn('## Frictions', kit_text())
-        code, out = self.run_kit('friction', '--mode', 'always')
-        self.assertEqual(code, 2)
-        self.assertIn('propose, auto or off', out)
-        # The other keys and comments of overrides.toml are kept.
-        text = (self.home/'.ai-kit/overrides.toml').read_text(encoding='utf-8')
-        self.assertIn('#:schema', text)
-        self.assertEqual(text.count('frictions ='), 1)
-
-    def test_auto_asks_in_a_terminal(self):
-        out = io.StringIO()
-        with contextlib.redirect_stdout(out), mock.patch.object(cli, 'interactive', return_value=True), mock.patch('builtins.input', return_value='n'):
-            code = cli.main(['friction', '--mode', 'auto', '--home', str(self.home), '--plain'])
+        (self.home/'.ai-kit/aikit.toml').write_text('schema = 1\n[frictions]\ncapture = "always"\n', encoding='utf-8')
+        code, out = self.run_kit('init')
         self.assertEqual(code, 1)
-        self.assertNotIn('frictions', read_toml(self.home/'.ai-kit/overrides.toml'))
+        self.assertIn('propose, auto, off', out)
+        code, out = self.run_kit('friction', '--mode', 'auto')
+        self.assertEqual(code, 2)  # --mode is gone: the script refuses an unknown option
 
     def test_one_implementation_for_the_secret_filter_and_the_ids(self):
         friction = core.friction_module()

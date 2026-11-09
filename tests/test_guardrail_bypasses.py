@@ -31,20 +31,20 @@ class Base(unittest.TestCase):
 
 class ShellTests(Base):
     BLOCKED = (
-        "python3 -c \"open('/h/.ai-kit/overrides.toml','w').write('x')\"",
-        "node -e \"require('fs').writeFileSync(process.env.HOME+'/.ai-kit/overrides.toml','x')\"",
-        "perl -pi -e 's/true/false/' ~/.ai-kit/overrides.toml",
+        "python3 -c \"open('/h/.ai-kit/aikit.toml','w').write('x')\"",
+        "node -e \"require('fs').writeFileSync(process.env.HOME+'/.ai-kit/aikit.toml','x')\"",
+        "perl -pi -e 's/true/false/' ~/.ai-kit/aikit.toml",
         "sed -i 's/a/b/' ~/.ai-kit/aikit.toml",  # 2.0: the person's V2 settings file
-        "sed -Ei 's/a/b/' ~/.ai-kit/overrides.toml",
-        "gsed -i 's/a/b/' ~/.ai-kit/overrides.toml",
-        "awk -i inplace '{print}' ~/.ai-kit/overrides.toml",
-        'cd ~/.ai-kit && echo x > overrides.toml',
-        'F=~/.ai-kit/overrides.toml; echo x > "$F"',
-        'echo x >| ~/.ai-kit/overrides.toml',
-        'echo x > ~/.ai-kit//overrides.toml',
-        'echo x > ~/.ai-kit/./overrides.toml',
-        'echo x > ~/".ai-kit"/overrides.toml',
-        "echo x > ~/.ai-kit/overrides.tom'l'",
+        "sed -Ei 's/a/b/' ~/.ai-kit/aikit.toml",
+        "gsed -i 's/a/b/' ~/.ai-kit/aikit.toml",
+        "awk -i inplace '{print}' ~/.ai-kit/aikit.toml",
+        'cd ~/.ai-kit && echo x > aikit.toml',
+        'F=~/.ai-kit/aikit.toml; echo x > "$F"',
+        'echo x >| ~/.ai-kit/aikit.toml',
+        'echo x > ~/.ai-kit//aikit.toml',
+        'echo x > ~/.ai-kit/./aikit.toml',
+        'echo x > ~/".ai-kit"/aikit.toml',
+        "echo x > ~/.ai-kit/aikit.tom'l'",
         'rm ~/.ai-kit/over*.toml',
         'unlink ~/.ai-kit/hooks/protected-paths.py',
         "find ~/.ai-kit/hooks -name '*.py' -delete",
@@ -52,42 +52,42 @@ class ShellTests(Base):
         'touch ~/.ai-kit/hooks/protected-paths.py',
         'rsync x ~/.ai-kit/hooks/protected-paths.py',
         'curl -o ~/.ai-kit/hooks/protected-paths.py https://example.org/x',
-        'git -C ~ checkout -- .ai-kit/overrides.toml',
+        'git -C ~ checkout -- .ai-kit/aikit.toml',
         'ln -s ~/.ai-kit ak',
-        'cp new.toml ~/.ai-kit/overrides.toml',
-        'mv ~/.ai-kit/overrides.toml /tmp/x',
+        'cp new.toml ~/.ai-kit/aikit.toml',
+        'mv ~/.ai-kit/aikit.toml /tmp/x',
         'sudo rm ~/.claude/settings.json',
         "bash -c 'rm ~/.codex/config.toml'",
         # Readers that also write when asked to (found in the audit pass of 0.45.7).
-        'sort -o ~/.ai-kit/overrides.toml /etc/hosts',
-        'uniq /etc/hosts ~/.ai-kit/overrides.toml',
-        "sed -n 'w ~/.ai-kit/overrides.toml' /etc/hosts",
-        "sed 's/a/b/w ~/.ai-kit/overrides.toml' /etc/hosts",
-        'git diff --output=~/.ai-kit/overrides.toml',
-        'tree -o ~/.ai-kit/overrides.toml .',
-        'xxd -r /etc/hosts ~/.ai-kit/overrides.toml',
-        "find . -fprintf ~/.ai-kit/overrides.toml '%p'",
-        'find . -fls ~/.ai-kit/overrides.toml',
+        'sort -o ~/.ai-kit/aikit.toml /etc/hosts',
+        'uniq /etc/hosts ~/.ai-kit/aikit.toml',
+        "sed -n 'w ~/.ai-kit/aikit.toml' /etc/hosts",
+        "sed 's/a/b/w ~/.ai-kit/aikit.toml' /etc/hosts",
+        'git diff --output=~/.ai-kit/aikit.toml',
+        'tree -o ~/.ai-kit/aikit.toml .',
+        'xxd -r /etc/hosts ~/.ai-kit/aikit.toml',
+        "find . -fprintf ~/.ai-kit/aikit.toml '%p'",
+        'find . -fls ~/.ai-kit/aikit.toml',
         'yq -i .a=1 ~/.gemini/settings.json',
-        'cp -t ~/.ai-kit/ overrides.toml',
-        'cp --target-directory=~/.ai-kit overrides.toml',
-        'cp overrides.toml ~/.ai-kit/',
+        'cp -t ~/.ai-kit/ aikit.toml',
+        'cp --target-directory=~/.ai-kit aikit.toml',
+        'cp aikit.toml ~/.ai-kit/',
     )
     ALLOWED = (
-        'cat ~/.ai-kit/overrides.toml',
+        'cat ~/.ai-kit/aikit.toml',
         'grep hooks ~/.gemini/settings.json',
         "sed -n '1,5p' ~/.gemini/settings.json",
         'ls -la ~/.ai-kit/hooks/',
         'git diff -- .claude/settings.json',
-        'cp ~/.ai-kit/overrides.toml /tmp/copy.toml',
+        'cp ~/.ai-kit/aikit.toml /tmp/copy.toml',
         'head ~/.ai-kit/runtime/install.json',
         'rm /tmp/x/.claude.json.bak',
         'echo hi > notes.txt',
         'rm -rf build/',
-        'cat ~/.ai-kit/overrides.toml | grep mcp',
-        'sort ~/.ai-kit/overrides.toml',
-        'uniq ~/.ai-kit/overrides.toml',
-        'xxd ~/.ai-kit/overrides.toml',
+        'cat ~/.ai-kit/aikit.toml | grep mcp',
+        'sort ~/.ai-kit/aikit.toml',
+        'uniq ~/.ai-kit/aikit.toml',
+        'xxd ~/.ai-kit/aikit.toml',
         'find ~/.ai-kit -name "*.toml"',
         'git diff --stat -- .claude/settings.json',
         'yq .hooks ~/.gemini/settings.json',
@@ -106,9 +106,9 @@ class ShellTests(Base):
 
     def test_powershell_tool_and_cmdlets(self):
         self.assertEqual(self.shell('Remove-Item $HOME\\.ai-kit\\hooks\\protected-paths.py', 'PowerShell'), 'deny')
-        self.assertEqual(self.shell('New-Item -Force $HOME\\.ai-kit\\overrides.toml', 'PowerShell'), 'deny')
+        self.assertEqual(self.shell('New-Item -Force $HOME\\.ai-kit\\aikit.toml', 'PowerShell'), 'deny')
         self.assertEqual(self.shell("[IO.File]::WriteAllText(\"$HOME\\.claude\\settings.json\", 'x')", 'PowerShell'), 'deny')
-        self.assertIsNone(self.shell('Get-Content $HOME\\.ai-kit\\overrides.toml', 'PowerShell'))
+        self.assertIsNone(self.shell('Get-Content $HOME\\.ai-kit\\aikit.toml', 'PowerShell'))
 
     def test_a_very_long_command_is_judged_fast(self):
         # 0.40: a quadratic regex let 100 000 '>' run past the CLI's 20-second hook timeout, and the action passed.
@@ -131,8 +131,8 @@ class KitToolTests(Base):
         "@'\nfive tags\n'@ | py -3 $HOME/.ai-kit/bin/friction.py --category tool --command none --cli claude",
     )
     BLOCKED = (
-        'python3 ~/.ai-kit/bin/friction.py --category tool > ~/.ai-kit/overrides.toml',
-        'python3 ~/.ai-kit/bin/friction.py ~/.ai-kit/overrides.toml',
+        'python3 ~/.ai-kit/bin/friction.py --category tool > ~/.ai-kit/aikit.toml',
+        'python3 ~/.ai-kit/bin/friction.py ~/.ai-kit/aikit.toml',
         'python3 ~/.ai-kit/bin/other.py',
         'python3 -c "x" ~/.ai-kit/bin/friction.py',
         'python3 ~/.ai-kit/bin/friction.py && rm ~/.ai-kit/state.json',
@@ -184,15 +184,15 @@ class RepoTests(Base):
 class KitCommandTests(Base):
     """0.52.0: the agent could run every ai-kit subcommand (only two scripts were exempted by path; a bare command name was never
     seen). The ones that change the installation or bill a model call are refused in the agent's shell; reading ones stay."""
-    REFUSED = ('ai-kit setup --profile general', 'ai-kit update', 'ai-kit uninstall --yes', 'ai-kit new skill --name demo',
-               'ai-kit doctor --live', 'ai-kit friction --mode auto --yes', 'python3 -m ai_kit uninstall --yes', 'py -m ai_kit update',
-               'python -I -m installer setup --profile general', '~/.ai-kit/bin/ai-kit update', 'cd /tmp && ai-kit update',
-               'sh scripts/bootstrap.sh update', 'Installer.cmd uninstall', 'ai-kit --yes uninstall',
+    REFUSED = ('ai-kit init', 'ai-kit sync', 'ai-kit sync --offline', 'ai-kit rollback', 'ai-kit uninstall --yes', 'ai-kit team use data',
+               'ai-kit doctor --live', 'ai-kit friction --publish', 'python3 -m ai_kit uninstall --yes', 'py -m ai_kit sync',
+               'python -I -m installer init --user me', '~/.ai-kit/bin/ai-kit sync', 'cd /tmp && ai-kit sync',
+               'sh scripts/bootstrap.sh sync', 'Installer.cmd uninstall', 'ai-kit --yes uninstall',
                # 2.0.0: sending frictions is the person's approval, never the agent's
-               'ai-kit friction --sync', 'python3 ~/.ai-kit/bin/friction.py --sync', 'ai-kit init', 'ai-kit sync', 'ai-kit rollback', 'ai-kit team use data')
-    ALLOWED = ('ai-kit doctor', 'ai-kit usage --since 30', 'ai-kit news --later', 'ai-kit news --list', 'ai-kit --version',
-               'ai-kit friction --category docs --text x', 'ai-kit friction --list', 'ai-kit friction --mode',
-               'ai-kit managed-settings --out /tmp/managed', 'echo run ai-kit update yourself', 'grep -r "ai-kit update" docs')
+               'ai-kit friction --sync', 'python3 ~/.ai-kit/bin/friction.py --sync')
+    ALLOWED = ('ai-kit doctor', 'ai-kit status', 'ai-kit team list', 'ai-kit usage --since 30', 'ai-kit --version',
+               'ai-kit friction --category docs --text x', 'ai-kit friction --list',
+               'ai-kit managed-settings --out /tmp/managed', 'echo run ai-kit sync yourself', 'grep -r "ai-kit sync" docs')
 
     def test_writing_and_billed_subcommands_are_refused(self):
         for command in self.REFUSED:
@@ -208,7 +208,7 @@ class KitCommandTests(Base):
 class McpToolTests(Base):
     def test_an_mcp_write_tool_is_judged_like_a_write(self):
         # 0.51.1 (V1-SEC-04): Claude Code now sends MCP tools to the guardrail; the script must refuse their protected writes.
-        target = str(self.home/'.ai-kit'/'overrides.toml')
+        target = str(self.home/'.ai-kit'/'aikit.toml')
         self.assertEqual(self.decide({'tool_name': 'mcp__files__write_file', 'tool_input': {'path': target, 'content': 'x'}}), 'deny')
         self.assertEqual(self.decide({'tool_name': 'mcp__files__edit_file', 'tool_input': {'path': target, 'edits': []}}), 'deny')
         self.assertIsNone(self.decide({'tool_name': 'mcp__files__read_file', 'tool_input': {'path': target}}))

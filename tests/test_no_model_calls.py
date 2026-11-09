@@ -1,4 +1,4 @@
-"""No standard path calls a model: setup, update, doctor and uninstall run with stand-in CLIs on the PATH that record any call.
+"""No standard path calls a model: init, sync --offline, doctor and uninstall run with stand-in CLIs on the PATH that record any call.
 Only doctor --live may reach a CLI, and AI_KIT_NO_LIVE=1 refuses it."""
 import contextlib
 import io
@@ -48,21 +48,18 @@ class NoModelCallTests(unittest.TestCase):
     def calls(self):
         return self.log.read_text(encoding='utf-8').splitlines() if self.log.exists() else []
 
-    def test_setup_and_update_never_call_a_cli(self):
-        code, out = self.run_main('setup', '--profile', 'general', '--user', 'a@example.org', '--target', 'all')
+    def test_init_and_sync_never_call_a_cli(self):
+        code, out = self.run_main('init', '--user', 'a@example.org', '--target', 'all')
         self.assertEqual(code, 0, out)
-        code, out = self.run_main('update')
+        code, out = self.run_main('sync', '--offline')
         self.assertEqual(code, 0, out)
+        code, again = self.run_main('init')
+        self.assertEqual(code, 0, again)
         self.assertEqual(self.calls(), [])
-        self.assertIn('connection not verified', out)
-
-    def test_no_live_still_accepted(self):
-        code, out = self.run_main('setup', '--profile', 'general', '--user', 'a@example.org', '--target', 'gemini', '--no-live')
-        self.assertEqual(code, 0, out)
-        self.assertEqual(self.calls(), [])
+        self.assertIn('connection not verified', out+again)
 
     def test_local_doctor_calls_no_model(self):
-        self.run_main('setup', '--profile', 'general', '--user', 'a@example.org', '--target', 'all')
+        self.run_main('init', '--user', 'a@example.org', '--target', 'all')
         self.run_main('doctor')
         # agy plugin validate checks the plugin files locally, and <cli> --version only prints the version (0.45.6: doctor
         # says when a CLI is newer than the one the kit was checked on); nothing else may run.
@@ -72,18 +69,22 @@ class NoModelCallTests(unittest.TestCase):
                          ['agy --version', 'claude --version', 'codex --version', 'gemini --version'])
 
     def test_live_refused_when_no_live_is_set(self):
-        self.run_main('setup', '--profile', 'general', '--user', 'a@example.org', '--target', 'gemini')
+        self.run_main('init', '--user', 'a@example.org', '--target', 'gemini')
         with mock.patch.dict(os.environ, {'AI_KIT_NO_LIVE': '1'}):
-            code, out = self.run_main('doctor', '--live')
-        self.assertEqual(code, 2)
+            code, out = self.run_main('doctor', '--live', '--yes')
+        self.assertEqual(code, 1)  # refused (KitError)
         self.assertIn('AI_KIT_NO_LIVE', out)
+        with mock.patch.object(cli, 'interactive', return_value=False):
+            code, out = self.run_main('doctor', '--live')
+        self.assertEqual(code, 2)  # without a terminal, --yes is required (usage)
+        self.assertIn('--yes', out)
         self.assertEqual(self.calls(), [])
 
     @unittest.skipIf(sys.platform == 'win32', 'the stand-in is a .cmd file, run through cmd')
     def test_live_is_the_only_path_that_reaches_the_cli(self):
-        self.run_main('setup', '--profile', 'general', '--user', 'a@example.org', '--target', 'gemini')
-        with mock.patch.object(cli, 'release_check'):  # no git fetch from a test
-            code, out = self.run_main('doctor', '--live')
+        self.run_main('init', '--user', 'a@example.org', '--target', 'gemini')
+        with mock.patch('installer.doctor.release_check'):  # no git fetch from a test
+            code, out = self.run_main('doctor', '--live', '--yes')
         self.assertEqual(code, 1)
         self.assertIn('may bill', out)
         self.assertTrue(any(c.startswith('gemini ') for c in self.calls()))

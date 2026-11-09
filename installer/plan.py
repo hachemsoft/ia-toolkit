@@ -13,8 +13,8 @@ LIST_KEYS = ('extra_skills', 'disabled_skills', 'extra_agents', 'disabled_agents
 
 
 def effective_settings(kit, team, choices):
-    """Organization defaults, then the team's settings, then the person's own overrides on top (never replaced wholesale),
-    with the choices of this run. Returns (organization defaults, team layer, personal, merged overrides, choices)."""
+    """The Core's defaults, then the Team's settings, then the person's aikit.toml on top (never replaced wholesale),
+    with the choices of this run. Returns (Core defaults, team layer, personal, merged overrides, choices)."""
     org_defaults, team_layer, personal = organization().get('defaults', {}), team_settings(team), personal_settings(kit)
     choices = {k: (v if k in SCALAR_CHOICES else list(v)) for k, v in (choices or {}).items()}
     if set(choices) - set(CHOICE_KEYS) - set(SCALAR_CHOICES):
@@ -94,7 +94,6 @@ def select_agents(profile, overrides, agent_catalog, load_agent):
     return agents
 
 
-# 0.51: session-news renamed whats-new; a setting written with the old name keeps its effect (update says so).
 def guardrails(overrides, hooks_dir, managed_locked=(), managed_off=()):
     """The guardrails to enable. A guardrail marked "default" in the manifest is on unless the person's aikit.toml sets it to
     false; one IT locks (managed.toml hooks.locked) stays on, whatever a Team or a person writes.

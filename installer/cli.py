@@ -283,7 +283,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         # approval (default): nothing is sent on its own; the person sends from a terminal (ai-kit friction --sync). D5, ADR 0023.
         tracker = None if publication(managed) == 'disabled' else {**tracker, 'publication': publication(managed)}
     if ((managed or {}).get('frictions') or {}).get('tracker') and tracker is None:
-        p.notices.append('[Info] Frictions stay local: share_frictions = false in your aikit.toml (your organization set a friction tracker).')
+        p.notices.append('[Info] Frictions stay local: frictions.publication = "disabled" in your aikit.toml (your organization set a friction tracker).')
     new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'frictions_retention':(managed or {}).get('frictions', {}).get('retention_days', 30),**({'mcp_approvals':mcp_approvals} if mcp_approvals else {}),**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
                  'installed':{'sources':resource_sources(selected, catalog, agents, agent_catalog, core_synced(kit, extra_writes)),'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}

@@ -205,7 +205,7 @@ def main():
                 waiting = friction_upkeep(kit, state)
                 if waiting:
                     items.append(str(waiting)+' friction(s) logged here wait for the person\'s approval before they reach the team\'s tracker: '
-                                 'they send them from a terminal with ai-kit friction --sync. Never run it yourself.')
+                                 'they send them from a terminal with ai-kit friction --publish. Never run it yourself.')
                 if items:
                     output = answer(payload, context_text(items))
     except Exception:

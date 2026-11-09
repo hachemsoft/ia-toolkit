@@ -197,9 +197,9 @@ def send_line(status, detail):
     if status == 'sent':
         return 'Issue created: ' + detail
     if status == 'waiting':
-        return 'Not sent yet: your organization asks for your approval. Run ai-kit friction --sync in a terminal to send it.'
+        return 'Not sent yet: your organization asks for your approval. Run ai-kit friction --publish in a terminal to send it.'
     if status == 'failed':
-        return 'Issue not created (' + detail + '): the friction is kept locally; ai-kit friction --sync sends it later.'
+        return 'Issue not created (' + detail + '): the friction is kept locally; ai-kit friction --publish sends it later.'
     return ''
 
 def entries(home=None):

@@ -10,9 +10,9 @@ Input: {{args}} (optional: what to change, for example "simpler answers in revie
 
 Goal: a USER.md that changes how you answer this person, at most 20 lines. Interview them; never guess.
 
-Where it is: ~/.ai-kit/context/USER.md (before 0.39: ~/.gemini/USER.md). Read it first: it is theirs; keep what they wrote unless they change it.
+Where it is: ~/.ai-kit/context/USER.md. Read it first: it is theirs; keep what they wrote unless they change it.
 
-1. Facts first, never asked, only these: the current file, git config user.name, OS and shell, CLIs on the PATH, the repo's languages, profile and team in the kit context. Say in two lines what you found and how many questions remain.
+1. Facts first, never asked, only these: the current file, git config user.name, OS and shell, CLIs on the PATH, the repo's languages, the team in the kit context. Say in two lines what you found and how many questions remain.
 
 2. Ask, as simply as possible. Every question:
    - is short (twelve words at most), in everyday words, in their language: never "autonomy", "verbosity" or "persona";

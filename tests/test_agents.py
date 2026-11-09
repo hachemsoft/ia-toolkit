@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from installer.core import KitError, read_json, ROOT
 from installer.toml_files import dump_toml
+from personal import write_personal  # noqa: E402
 from v1_profiles import apply_as  # noqa: E402
 class AgentTests(unittest.TestCase):
  def setUp(self):
@@ -14,12 +15,12 @@ class AgentTests(unittest.TestCase):
   with contextlib.redirect_stdout(io.StringIO()):apply_as(role,self.home)
  def agent(self,name):return self.home/'.gemini/agents'/('ai-kit-'+name+'.md')
  def overrides(self,v):
-  p=self.home/'.ai-kit/overrides.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml(v),encoding='utf-8')
+  write_personal(self.home,v)
  def test_analyst_selection(self):
   self.run_kit();self.assertTrue(self.agent('repo-investigator').exists());self.assertTrue(self.agent('sql-reviewer').exists());self.assertTrue(self.agent('dbt-reviewer').exists());self.assertTrue(self.agent('code-reviewer').exists())  # 2.2: a Core default for everyone
  def test_agents_inherit_the_session_model(self):
-  # 0.36: the kit no longer chooses models; "models" in overrides.json is ignored (and reported), every agent inherits.
-  self.overrides({'models':{'fast':'gemini-2.5-flash','deep':'gemini-2.5-pro'}});self.run_kit('data-developer')
+  # 0.36: the kit no longer chooses models; a "models" table in aikit.toml is an unknown key, ignored (and reported), every agent inherits.
+  p=self.home/'.ai-kit/aikit.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml({'schema':1,'models':{'fast':'gemini-2.5-flash','deep':'gemini-2.5-pro'}}),encoding='utf-8');self.run_kit('data-developer')
   for name in ('verifier','doubter','sql-reviewer'):self.assertNotIn('model:',self.agent(name).read_text(encoding='utf-8'))
  def test_developer_and_switch(self):
   self.run_kit();self.assertTrue(self.agent('doubter').exists());self.assertFalse(self.agent('infra-reviewer').exists());self.run_kit('data-developer');self.assertTrue(self.agent('code-reviewer').exists());self.assertTrue(self.agent('sql-reviewer').exists());self.assertTrue(self.agent('doubter').exists());self.assertTrue(self.agent('repo-investigator').exists())

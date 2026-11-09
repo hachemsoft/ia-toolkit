@@ -1,5 +1,5 @@
-"""Frictions as issues of the organization's GitLab or GitHub project: the organization names the tracker, update
-records it in state.json, the /friction script creates the issue through the person's own glab or gh (never a token in
+"""Frictions as issues of the organization's GitLab or GitHub project: IT names the tracker (managed.toml
+[frictions.tracker]), init records it in state.json, the /friction script creates the issue through the person's own glab or gh (never a token in
 the kit), keeps the friction local on any failure, and --sync sends what is left. A person can opt out."""
 import contextlib
 import io
@@ -12,10 +12,12 @@ import tempfile
 import unittest
 from unittest import mock
 
-from installer import cli, settings
+from installer import cli
 from installer.core import ROOT, friction_module, read_json
+from installer.toml_files import dump_toml
 
-ORG = {'allowed_domains': [], 'defaults': {}, 'friction_tracker': {'kind': 'gitlab', 'project': 'tools/ai-kit', 'labels': ['friction', 'kit']}}
+# managed.toml (IT): the tracker, and auto publication (approval is the default, D5, ADR 0023, tested in test_config_precedence).
+MANAGED = {'managed_schema': 1, 'frictions': {'publication': 'auto', 'tracker': {'kind': 'gitlab', 'project': 'tools/ai-kit', 'labels': ['friction', 'kit']}}}
 
 FAKE = '''import json, os, sys
 log = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calls.jsonl')
@@ -40,17 +42,23 @@ class Base(unittest.TestCase):
         self.home.mkdir()
         self.bin = self.base/'bin'
         self.bin.mkdir()
-        self.org = json.loads(json.dumps(ORG))
-        real = settings.read_toml
+        self.managed = self.base/'managed.toml'
+        self.org = json.loads(json.dumps(MANAGED))
+        self.write_managed()
         for patcher in (mock.patch('shutil.which', side_effect=lambda name, path=None: self.fake_which(name, path)),
                         mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': '', 'PATH': str(self.bin)+os.pathsep+os.environ.get('PATH', '')}),
-                        mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: self.org if Path(p).name == 'organization.toml' else real(p, d)),
-                        # 2.0.0: approval is the default (D5, ADR 0023, tested in test_config_precedence); these tests cover the auto mode.
-                        mock.patch('installer.cli.publication', return_value='auto')):
+                        mock.patch('installer.config.managed_path', return_value=self.managed),
+                        mock.patch('installer.config.ownership_problem', return_value=None)):
             patcher.start()
             self.addCleanup(patcher.stop)
         self.install_fake('glab')
-        self.run_kit('setup', '--profile', 'general', '--user', 'a@example.org', '--target', 'gemini')
+        self.run_kit('init', '--user', 'a@example.org', '--target', 'gemini')
+
+    def tracker(self):
+        return self.org['frictions'].get('tracker')
+
+    def write_managed(self):
+        self.managed.write_text(dump_toml(self.org), encoding='utf-8')
 
     def fake_which(self, name, path=None):
         candidate = self.bin/(name+('.cmd' if os.name == 'nt' else ''))
@@ -91,21 +99,23 @@ class TrackerTests(Base):
     def test_update_records_the_tracker_and_the_person_can_opt_out(self):
         recorded = read_json(self.home/'.ai-kit/state.json')['friction_tracker']
         self.assertEqual(recorded, {'kind': 'gitlab', 'project': 'tools/ai-kit', 'host': '', 'labels': ['friction', 'kit'], 'sources': ['agent'], 'publication': 'auto'})  # 2.0.0: publication recorded
-        overrides = self.home/'.ai-kit/overrides.toml'
-        overrides.write_text(overrides.read_text(encoding='utf-8')+'\nshare_frictions = false\n', encoding='utf-8')
-        code, out = self.run_kit('update')
+        personal = self.home/'.ai-kit/aikit.toml'
+        personal.write_text(personal.read_text(encoding='utf-8')+'\n[frictions]\npublication = "disabled"\n', encoding='utf-8')
+        code, out = self.run_kit('init')
         self.assertEqual(code, 0, out)
         self.assertNotIn('friction_tracker', read_json(self.home/'.ai-kit/state.json'))
-        self.assertIn('share_frictions = false', out)  # update says the frictions stay local
-        del self.org['friction_tracker']
-        overrides.write_text(overrides.read_text(encoding='utf-8').replace('share_frictions = false', ''), encoding='utf-8')
-        self.run_kit('update')
+        self.assertIn('Frictions stay local', out)  # init says the frictions stay local
+        del self.org['frictions']['tracker']
+        self.write_managed()
+        personal.write_text(personal.read_text(encoding='utf-8').replace('publication = "disabled"', ''), encoding='utf-8')
+        self.run_kit('init')
         self.assertNotIn('friction_tracker', read_json(self.home/'.ai-kit/state.json'))
 
     def test_approval_keeps_the_friction_until_the_person_sends_it(self):
-        # 2.0.0 default (D5, ADR 0023): nothing leaves on its own; ai-kit friction --sync, run by the person, sends it.
-        with mock.patch('installer.cli.publication', return_value='approval'):
-            code, out = self.run_kit('update')
+        # 2.0.0 default (D5, ADR 0023): nothing leaves on its own; ai-kit friction --publish, run by the person, sends it.
+        del self.org['frictions']['publication']
+        self.write_managed()
+        code, out = self.run_kit('init')
         self.assertEqual(code, 0, out)
         self.assertEqual(read_json(self.home/'.ai-kit/state.json')['friction_tracker']['publication'], 'approval')
         proc = self.script('--category', 'docs', '--command', '/build', '--cli', 'gemini', '--source', 'agent')
@@ -128,7 +138,7 @@ class TrackerTests(Base):
         self.assertTrue(any(a.startswith('--description=The plan step is too long') for a in call))
         # The whole command, in process: a Windows .cmd wrapper cannot receive an argument holding a newline (cmd.exe
         # truncates the line there), while a real glab.exe or gh.exe does; so the body and the labels are checked here.
-        command = friction_module().issue_command(self.org['friction_tracker'], entry, 'glab')
+        command = friction_module().issue_command(self.tracker(), entry, 'glab')
         body = next(a for a in command if a.startswith('--description='))
         self.assertIn('The plan step is too long', body)
         self.assertIn('(frictions: '+entry['id']+')', body)
@@ -144,16 +154,16 @@ class TrackerTests(Base):
         code, out = self.run_kit('friction', '--list')
         self.assertIn('issues/1', out)
 
-    def test_a_failing_cli_keeps_the_friction_local_and_sync_sends_it_later(self):
+    def test_a_failing_cli_keeps_the_friction_local_and_publish_sends_it_later(self):
         (self.bin/'fail').write_text('', encoding='utf-8')
         proc = self.script('--category', 'rule', '--cli', 'claude', '--source', 'agent')
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn('kept locally', proc.stdout)
         self.assertIn('not signed in', proc.stdout)
-        self.assertIn('--sync', proc.stdout)
+        self.assertIn('ai-kit friction --publish', proc.stdout)
         self.assertEqual(self.sent(), {})
         (self.bin/'fail').unlink()
-        code, out = self.run_kit('friction', '--sync')
+        code, out = self.run_kit('friction', '--publish')
         self.assertEqual(code, 0, out)
         self.assertIn('Issue created', out)
         self.assertEqual(len(self.sent()), 1)
@@ -161,15 +171,16 @@ class TrackerTests(Base):
         self.assertIn('Nothing to send', proc.stdout)
 
     def test_github_uses_gh_with_its_own_flags_and_a_host(self):
-        self.org['friction_tracker'] = {'kind': 'github', 'project': 'acme/ai-kit', 'host': 'github.acme.org', 'sources': ['agent', 'person']}
+        self.org['frictions']['tracker'] = {'kind': 'github', 'project': 'acme/ai-kit', 'host': 'github.acme.org', 'sources': ['agent', 'person']}
+        self.write_managed()
         self.install_fake('gh')
-        self.run_kit('update')
+        self.run_kit('init')
         proc = self.script('--category', 'skill', '--cli', 'codex')
         self.assertEqual(proc.returncode, 0, proc.stderr)
         call = self.calls()[-1]
         self.assertEqual(call[:3], ['issue', 'create', '--repo=github.acme.org/acme/ai-kit'])
         self.assertTrue(any(a.startswith('--body=') for a in call))
-        command = friction_module().issue_command(self.org['friction_tracker'], self.lines()[-1], 'gh')  # see above: in process
+        command = friction_module().issue_command(self.tracker(), self.lines()[-1], 'gh')  # see above: in process
         self.assertTrue(any(a.startswith('--body=') and '(frictions: ' in a for a in command))
         self.assertIn('--label=friction', command)
 
@@ -184,7 +195,7 @@ class TrackerTests(Base):
         with contextlib.redirect_stdout(out):
             cli.doctor(self.home)
         self.assertIn('[Check] Friction tracker: gitlab tools/ai-kit, glab not signed in', out.getvalue())
-        self.assertIn('[Info] 1 friction not sent to the tracker yet: ai-kit friction --sync', out.getvalue())
+        self.assertIn('[Info] 1 friction not sent to the tracker yet: ai-kit friction --publish', out.getvalue())
         (self.bin/('glab'+('.cmd' if os.name == 'nt' else ''))).unlink()
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
@@ -194,10 +205,13 @@ class TrackerTests(Base):
     def test_bad_tracker_settings_are_refused(self):
         for bad in ({'kind': 'jira', 'project': 'a/b'}, {'kind': 'gitlab'}, {'kind': 'gitlab', 'project': 'https://x/y'},
                     {'kind': 'gitlab', 'project': 'a/b', 'sources': ['bot']}, {'kind': 'gitlab', 'project': 'a/b', 'host': 'http://h'}):
-            self.org['friction_tracker'] = bad
-            code, out = self.run_kit('update')
-            self.assertEqual(code, 2, bad)
-            self.assertIn('friction_tracker', out)
+            self.org['frictions']['tracker'] = bad
+            self.write_managed()
+            before = (self.home/'.ai-kit/state.json').read_bytes()
+            code, out = self.run_kit('init')
+            self.assertEqual(code, 3, bad)  # managed.toml unusable (ADR 0015): nothing changed
+            self.assertIn('managed.toml: frictions.tracker', out)
+            self.assertEqual((self.home/'.ai-kit/state.json').read_bytes(), before)
 
 
 class TextsTests(unittest.TestCase):
@@ -205,9 +219,8 @@ class TextsTests(unittest.TestCase):
         self.assertIn('--source agent', (ROOT/'commands/friction.md').read_text(encoding='utf-8'))
         self.assertIn('--source agent', cli.friction_rule('auto'))
         self.assertNotIn('--source agent', cli.friction_rule('propose'))
-        self.assertIn('friction_tracker', read_json(ROOT/'schemas/organization.schema.json')['properties'])
-        self.assertIn('share_frictions', read_json(ROOT/'schemas/overrides.schema.json')['properties'])
-        # 2.2: the Core has no organization.toml; IT sets the tracker in managed.toml [frictions.tracker].
+        self.assertIn('publication', read_json(ROOT/'schemas/aikit.schema.json')['properties']['frictions']['properties'])
+        # 3.0: no organization.toml; IT sets the tracker in managed.toml [frictions.tracker].
         self.assertIn('tracker', read_json(ROOT/'schemas/managed.schema.json')['properties']['frictions']['properties'])
         self.assertIn('[frictions.tracker]', (ROOT/'docs/managed.md').read_text(encoding='utf-8'))
 

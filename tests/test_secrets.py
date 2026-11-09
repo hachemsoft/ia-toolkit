@@ -1,4 +1,4 @@
-"""0.41: the secret detector (refused 30_USER.md, doctor on overrides.toml, redacted frictions and messages) catches the
+"""0.41: the secret detector (refused USER.md, doctor on aikit.toml, redacted frictions and messages) catches the
 common forms the 0.40 audit found missing, and not ordinary settings."""
 import unittest
 
@@ -61,17 +61,17 @@ class LockedHookTests(unittest.TestCase):
         import contextlib, io, json, tempfile
         from pathlib import Path
         from unittest import mock
-        from installer import cli, settings
+        from installer import cli
         from installer.toml_files import dump_toml
-        with tempfile.TemporaryDirectory() as tmp, mock.patch('shutil.which', return_value=None):
-            home = Path(tmp)
-            (home/'.ai-kit').mkdir()
-            (home/'.ai-kit/overrides.toml').write_text(dump_toml({'hooks': {'protected-paths': False}}), encoding='utf-8')
-            real = settings.read_toml
-            org = {'locked_hooks': ['protected-paths'], 'defaults': {}}
-            with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: org if Path(p).name == 'organization.toml' else real(p, d)), \
-                    contextlib.redirect_stdout(io.StringIO()):
-                notices = cli.apply('general', home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini')
+        from personal import write_personal
+        with tempfile.TemporaryDirectory() as tmp, mock.patch('shutil.which', return_value=None), \
+                mock.patch('installer.config.ownership_problem', return_value=None):  # a temp file cannot be root-owned
+            home = Path(tmp)/'home'
+            write_personal(home, {'hooks': {'protected-paths': False}})
+            managed = Path(tmp)/'managed.toml'
+            managed.write_text(dump_toml({'managed_schema': 1, 'hooks': {'locked': ['protected-paths']}}), encoding='utf-8')
+            with contextlib.redirect_stdout(io.StringIO()):
+                notices = cli.apply('general', home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini', managed_file=managed)
             self.assertIn('protected-paths', json.loads((home/'.ai-kit/state.json').read_text(encoding='utf-8'))['hooks'])
             self.assertTrue(any('stays on' in n for n in notices))
 

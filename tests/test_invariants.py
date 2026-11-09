@@ -15,9 +15,8 @@ from installer.adapters import ADAPTERS, agy, codex, gemini
 from installer.resolve import skill_catalog
 from installer.cli import apply, prune_empty_dirs
 from installer.interface import Adapter, ContextHost, LiveCheck
-from installer.adapters.codex import CODEX_TOML
-from installer.core import KitError, ROOT, digest, split_block
-from installer.toml_files import dump_toml, read_toml
+from installer.core import ROOT
+from personal import write_personal
 from v1_profiles import apply_as  # noqa: E402
 from installer.settings import core_selection  # noqa: E402
 
@@ -27,8 +26,7 @@ CONFIG_FILES = ('settings.json', 'config.toml', 'hooks.json', 'plugin.json', 'mc
 
 def install(home, target='all', overrides=None):
     if overrides is not None:
-        (home/'.ai-kit').mkdir(parents=True, exist_ok=True)
-        (home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
+        write_personal(home, overrides)
     with contextlib.redirect_stdout(io.StringIO()):
         apply_as('data-developer', home, False, IDENTITY, target)
 
@@ -162,40 +160,6 @@ class InvariantTests(unittest.TestCase):
                 if anchor and target.suffix == '.md':
                     headings = {slug(h) for h in re.findall(r'^#+ (.+)$', target.read_text(encoding='utf-8'), re.M)}
                     self.assertIn(anchor, headings, f'{page.relative_to(ROOT)} → {link}')
-
-    def test_legacy_kit_dir_migrated(self):
-        """An installation from before 0.19 (~/.ai-toolkit) is renamed to ~/.ai-kit on the first update, without losing anything."""
-        install(self.home, overrides={'hooks': {'dbt-prod-guard': True}})
-        kit = self.home/'.ai-kit'
-        # Simulate the old installation: folder renamed, state prefixes and declaration paths using .ai-toolkit.
-        state = json.loads((kit/'state.json').read_text(encoding='utf-8'))
-        for rel in ('.gemini/settings.json', '.codex/config.toml', '.gemini/config/plugins/ai-kit/hooks.json'):
-            path = self.home/rel
-            path.write_bytes(path.read_bytes().replace(b'.ai-kit', b'.ai-toolkit'))
-            if rel in state['files']:
-                state['files'][rel] = digest(path.read_bytes())
-        _, block, _ = split_block((self.home/'.codex/config.toml').read_text(encoding='utf-8'), CODEX_TOML, 'config.toml')
-        state['blocks']['.codex/config.toml'] = digest(block.encode('utf-8'))
-        # Every kit folder path recorded in the state (files, guardrail declarations) carries the old name.
-        (kit/'state.json').write_text(json.dumps(state).replace('.ai-kit', '.ai-toolkit'), encoding='utf-8')
-        os.replace(kit, self.home/'.ai-toolkit')
-        with contextlib.redirect_stdout(io.StringIO()):
-            apply_as('data-developer', self.home, True, IDENTITY, 'all')  # --dry-run: renames nothing
-        self.assertTrue((self.home/'.ai-toolkit').is_dir())
-        install(self.home, overrides=None)
-        self.assertFalse((self.home/'.ai-toolkit').exists())
-        self.assertEqual(read_toml(kit/'overrides.toml')['hooks'], {'dbt-prod-guard': True})  # kept (2.2: plus the role's lines)
-        state = json.loads((kit/'state.json').read_text(encoding='utf-8'))
-        self.assertFalse([rel for rel in state['files'] if rel.startswith('.ai-toolkit/')])
-        for rel in ('.gemini/settings.json', '.codex/config.toml', '.gemini/config/plugins/ai-kit/hooks.json'):
-            self.assertNotIn('.ai-toolkit', (self.home/rel).read_text(encoding='utf-8'), rel)
-        self.assertTrue((kit/'hooks/dbt-prod-guard.py').is_file())
-
-    def test_both_kit_dirs_refused(self):
-        install(self.home)
-        (self.home/'.ai-toolkit').mkdir()
-        with self.assertRaises(KitError):
-            install(self.home)
 
     def test_files_always_opened_with_an_encoding(self):
         """On Windows, a file read or written without an encoding uses cp1252: always pass encoding='utf-8'."""

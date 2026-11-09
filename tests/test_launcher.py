@@ -1,6 +1,6 @@
 """The launcher (scripts/launcher.py): private environment, release ZIP installed with no index, git clone installed with
 the pip configuration it finds, no foreign module imported, one run at a time, an interrupted or failed run detected,
-nothing configured when the package does not install, update that never overwrites local changes."""
+nothing configured when the package does not install, init when no action is given."""
 import importlib.util
 import json
 import os
@@ -72,7 +72,7 @@ class LauncherRunTests(unittest.TestCase):
         return proc.returncode, proc.stdout+proc.stderr
 
     def setup_args(self, target='gemini'):
-        return ('setup', '--profile', 'general', '--user', 'a@example.org', '--target', target, '--home', self.home_arg)
+        return ('init', '--user', 'a@example.org', '--target', target, '--home', self.home_arg)
 
     def extracted_zip(self):
         kit = self.base/'Kit IA été (v1)'
@@ -108,10 +108,10 @@ class LauncherRunTests(unittest.TestCase):
     def test_second_run_reuses_the_environment(self):
         kit = self.extracted_zip()
         self.assertEqual(self.run_kit(kit, *self.setup_args())[0], 0)
-        code, out = self.run_kit(kit, 'update', '--home', self.home_arg, env=self.env(**NO_NETWORK))
+        code, out = self.run_kit(kit, '--home', self.home_arg, env=self.env(**NO_NETWORK))  # no action: init
         self.assertEqual(code, 0, out)
         self.assertNotIn('Installing the kit', out)
-        self.assertIn('already installed', out)
+        self.assertIn('Kit configuration already up to date', out)
 
     def test_clone_installs_with_the_configured_index_and_no_editable(self):
         kit = self.repo_copy()
@@ -148,14 +148,6 @@ class LauncherRunTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn('did not finish', out)
 
-    def test_zip_update_shows_its_three_steps(self):
-        kit = self.extracted_zip()
-        self.assertEqual(self.run_kit(kit, *self.setup_args())[0], 0)
-        code, out = self.run_kit(kit, 'update', '--home', self.home_arg)
-        self.assertEqual(code, 0, out)
-        for step in ('Step 1/3', 'Step 2/3', 'Step 3/3'):
-            self.assertIn(step, out)
-
     def test_uninstall_with_runtime_removal_after_the_kit_has_exited(self):
         kit = self.extracted_zip()
         self.assertEqual(self.run_kit(kit, *self.setup_args())[0], 0)
@@ -166,7 +158,7 @@ class LauncherRunTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertFalse((self.home/'.ai-kit/state.json').exists())
         self.assertFalse((self.home/'.ai-kit/runtime/venv').exists())
-        self.assertTrue((self.home/'.ai-kit/context/30_USER.md').exists())
+        self.assertTrue((self.home/'.ai-kit/context/USER.md').exists())
         self.assertIn('Kit runtime removed', out)
 
     def test_a_second_run_waits_for_the_first(self):
@@ -183,94 +175,6 @@ class LauncherRunTests(unittest.TestCase):
         self.assertFalse(lock.exists())
 
 
-@unittest.skipUnless(wheelhouse.AVAILABLE and shutil.which('git'), wheelhouse.WHY+' or no git')
-class GitUpdateTests(unittest.TestCase):
-    """update in a clone: explicit fetch, fast-forward only, never over local changes, never a false success."""
-    def setUp(self):
-        temp = tempfile.TemporaryDirectory()
-        self.addCleanup(temp.cleanup)
-        self.base = Path(temp.name)
-        self.origin = Path(shutil.copytree(ROOT, self.base/'origin', ignore=shutil.ignore_patterns(
-            '.git', '__pycache__', 'dist', 'build', '.debug', '.codegraph', '.claude', '.ai-kit')))
-        self.git(self.origin, 'init', '--quiet', '--initial-branch=main')
-        self.git(self.origin, 'add', '-A')
-        self.git(self.origin, 'commit', '--quiet', '-m', 'v1')
-        self.clone = self.base/'clone'
-        self.git(self.base, 'clone', '--quiet', str(self.origin), str(self.clone))
-        self.home = self.base/'home'
-
-    def git(self, cwd, *args):
-        subprocess.run(['git', '-c', 'user.name=t', '-c', 'user.email=t@example.org', *args], cwd=cwd, check=True, capture_output=True)
-
-    def update(self):
-        env = {k: v for k, v in os.environ.items() if not k.startswith('PIP_')}
-        env.update({'AI_KIT_NO_LIVE': '1', **wheelhouse.pip_env()})
-        command = [str(self.clone/'Installer.cmd')] if WINDOWS else ['sh', str(self.clone/'scripts'/'bootstrap.sh')]
-        proc = subprocess.run(command+['update', '--home', str(self.home)], capture_output=True, text=True, encoding='utf-8',
-                              errors='replace', env=env, stdin=subprocess.DEVNULL)
-        return proc.returncode, proc.stdout+proc.stderr
-
-    def setup_kit(self):
-        env = {k: v for k, v in os.environ.items() if not k.startswith('PIP_')}
-        env.update({'AI_KIT_NO_LIVE': '1', **wheelhouse.pip_env()})
-        command = [str(self.clone/'Installer.cmd')] if WINDOWS else ['sh', str(self.clone/'scripts'/'bootstrap.sh')]
-        proc = subprocess.run(command+['setup', '--profile', 'general', '--user', 'a@example.org', '--target', 'gemini', '--home', str(self.home)],
-                              capture_output=True, text=True, encoding='utf-8', errors='replace', env=env, stdin=subprocess.DEVNULL)
-        self.assertEqual(proc.returncode, 0, proc.stdout+proc.stderr)
-
-    def test_update_fetches_reinstalls_and_applies(self):
-        self.setup_kit()
-        (self.origin/'VERSION').write_text('9.9.9\n', encoding='utf-8')
-        pyproject = (self.origin/'pyproject.toml').read_text(encoding='utf-8')
-        (self.origin/'pyproject.toml').write_text(pyproject.replace('version = "', 'version = "9.9.9" #', 1), encoding='utf-8')
-        self.git(self.origin, 'commit', '--quiet', '-am', 'v2')
-        code, out = self.update()
-        self.assertEqual(code, 0, out)
-        self.assertIn('Step 1/3', out)
-        self.assertIn('Fetched:', out)
-        self.assertIn('Kit package 9.9.9 installed', out)
-        self.assertEqual(json.loads((self.home/'.ai-kit/state.json').read_text(encoding='utf-8'))['version'], '9.9.9')
-
-    def test_local_changes_are_never_overwritten_and_the_update_is_reported_incomplete(self):
-        self.setup_kit()
-        (self.origin/'README.md').write_text('upstream change\n', encoding='utf-8')
-        self.git(self.origin, 'commit', '--quiet', '-am', 'v2')
-        mine = self.clone/'README.md'
-        mine.write_text('my local change\n', encoding='utf-8')
-        code, out = self.update()
-        self.assertEqual(code, 1, out)
-        self.assertIn('local changes', out)
-        self.assertIn('Update incomplete', out)
-        self.assertEqual(mine.read_text(encoding='utf-8'), 'my local change\n')
-
-    @unittest.skipIf(WINDOWS, 'shell scripts stand in for the trapped commands')
-    def test_a_trapped_clone_config_runs_nothing(self):
-        """0.51.1 (V1-SEC-01): update runs git in the clone; its .git/config must not run a program (core.fsmonitor, core.hooksPath)."""
-        self.setup_kit()
-        hooks = self.base/'trap-hooks'
-        hooks.mkdir()
-        for script, target in ((self.base/'fsmonitor.sh', self.base/'fsmonitor-ran'), (hooks/'post-merge', self.base/'hook-ran'),
-                               (hooks/'reference-transaction', self.base/'hook-ran')):
-            script.write_text('#!/bin/sh\ntouch '+str(target)+'\n', encoding='utf-8')
-            script.chmod(0o755)
-        self.git(self.clone, 'config', 'core.fsmonitor', str(self.base/'fsmonitor.sh'))
-        self.git(self.clone, 'config', 'core.hooksPath', str(hooks))
-        (self.origin/'README.md').write_text('upstream change\n', encoding='utf-8')
-        self.git(self.origin, 'commit', '--quiet', '-am', 'v2')
-        code, out = self.update()
-        self.assertEqual(code, 0, out)
-        self.assertFalse((self.base/'fsmonitor-ran').exists(), 'core.fsmonitor ran')
-        self.assertFalse((self.base/'hook-ran').exists(), 'a hook of core.hooksPath ran')
-
-    def test_fetch_failure_is_not_a_success(self):
-        self.setup_kit()
-        self.git(self.clone, 'remote', 'set-url', 'origin', str(self.base/'gone'))  # the remote is unreachable: like no network
-        code, out = self.update()
-        self.assertEqual(code, 1, out)
-        self.assertIn('Fetch failed', out)
-        self.assertIn('Update incomplete', out)
-
-
 class LauncherUnitTests(unittest.TestCase):
     def test_missing_venv_support_explains_the_it_prerequisite(self):
         with mock.patch.dict(sys.modules, {'ensurepip': None}):
@@ -280,9 +184,9 @@ class LauncherUnitTests(unittest.TestCase):
         self.assertIn('What to ask IT support', str(caught.exception))
 
     def test_action_and_home_are_read_without_parsing_the_rest(self):
-        argv = ['--home', 'update', 'setup', '--profile', 'general']
-        self.assertEqual(launcher.action_of(argv), 'setup')
-        self.assertEqual(launcher.option(argv, '--home'), 'update')
+        argv = ['--home', 'sync', 'init', '--user', 'a@example.org', '--target', 'gemini']
+        self.assertEqual(launcher.action_of(argv), 'init')
+        self.assertEqual(launcher.option(argv, '--home'), 'sync')
         self.assertEqual(launcher.option(['--home=x'], '--home'), 'x')
         self.assertIsNone(launcher.action_of(['--dry-run']))
 

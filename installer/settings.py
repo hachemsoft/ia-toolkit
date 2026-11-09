@@ -139,24 +139,25 @@ TRACKER_SOURCES = ('agent', 'person', 'doctor')
 def friction_tracker(personal, managed=None):
     """managed.toml [frictions.tracker], validated, with its defaults, or None: no tracker, or the person wrote
     share_frictions = false. What the /friction script reads from state.json (runtime/friction.py)."""
+    from .config import ManagedConfigError  # an unusable managed.toml is exit code 3 (ADR 0015)
     config = ((managed or {}).get('frictions') or {}).get('tracker')
     if config is None:
         return None
     if not isinstance(config, dict):
-        raise KitError('managed.toml: frictions.tracker must be a table ([frictions.tracker]).')
+        raise ManagedConfigError('managed.toml: frictions.tracker must be a table ([frictions.tracker]).')
     kind, project, host = config.get('kind'), config.get('project'), config.get('host', '')
     if kind not in TRACKER_KINDS:
-        raise KitError('managed.toml: frictions.tracker.kind must be gitlab or github.')
+        raise ManagedConfigError('managed.toml: frictions.tracker.kind must be gitlab or github.')
     if not isinstance(project, str) or not re.fullmatch(r'[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)+', project):
-        raise KitError('managed.toml: frictions.tracker.project must be the project path on the host (group/project), without URL.')
+        raise ManagedConfigError('managed.toml: frictions.tracker.project must be the project path on the host (group/project), without URL.')
     if not isinstance(host, str) or (host and not re.fullmatch(r'[a-z0-9.-]+(:[0-9]+)?', host)):
-        raise KitError('managed.toml: frictions.tracker.host must be a host name (gitlab.example.org), without scheme or path.')
+        raise ManagedConfigError('managed.toml: frictions.tracker.host must be a host name (gitlab.example.org), without scheme or path.')
     labels = config.get('labels', ['friction'])
     if not isinstance(labels, list) or not all(isinstance(label, str) and re.fullmatch(r'[^,\s][^,]{0,49}', label) for label in labels):
-        raise KitError('managed.toml: frictions.tracker.labels must be a list of label names.')
+        raise ManagedConfigError('managed.toml: frictions.tracker.labels must be a list of label names.')
     sources = config.get('sources', ['agent'])
     if not isinstance(sources, list) or not sources or any(source not in TRACKER_SOURCES for source in sources):
-        raise KitError('managed.toml: frictions.tracker.sources must list agent, person or doctor.')
+        raise ManagedConfigError('managed.toml: frictions.tracker.sources must list agent, person or doctor.')
     share = personal.get('share_frictions', True)
     if not isinstance(share, bool):
         raise KitError('aikit.toml: frictions.publication must be approval or disabled.')

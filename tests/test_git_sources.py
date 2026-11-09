@@ -116,6 +116,53 @@ class SyncTests(Base):
         self.assertIn('Marker v1.0.0.', (home/'.claude/skills/ai-kit-tdd/SKILL.md').read_text(encoding='utf-8'))
         self.assertEqual(json.loads((home/'.ai-kit/state.json').read_text(encoding='utf-8'))['profile'], 'core')  # 2.2: no profiles
 
+    def test_sync_from_the_command_line_and_offline(self):
+        # ADR 0025: sync takes the highest tag; without network it fails and changes nothing; sync --offline re-applies.
+        self.run_action('sync')
+        self.release('v1.1.0', 'Marker v1.1.0.', push=True)
+        base = ['--home', str(self.home), '--target', 'claude']
+        with mock.patch('installer.config.managed_path', return_value=self.managed), contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(cli.main(['sync', *base]), 0)
+        self.assertIn('Marker v1.1.0.', self.installed())
+        remove_repository(self.bare)
+        with mock.patch('installer.config.managed_path', return_value=self.managed), contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(cli.main(['sync', *base]), 1)
+            self.assertEqual(cli.main(['sync', '--offline', *base]), 0)
+        self.assertIn('Error:', err.getvalue())
+        self.assertIn('Marker v1.1.0.', self.installed())
+
+    def test_status_says_a_newer_core_was_seen(self):
+        self.run_action('sync')
+        (self.work/'aikit.toml').write_text('schema = 1\nname = "core"\nmin_engine = "99.0.0"\n', encoding='utf-8')
+        self.release('v1.2.0', 'Marker v1.2.0.', push=True)
+        with self.assertRaises(KitError):
+            self.run_action('sync')  # refused, but the tag was seen
+        from installer.status import status
+        with mock.patch('installer.config.managed_path', return_value=self.managed), contextlib.redirect_stdout(io.StringIO()) as out:
+            status(self.home)
+        self.assertIn('A newer version was seen at the last sync: Core v1.2.0', out.getvalue())
+
+    @unittest.skipUnless(shutil.which('ssh-keygen'), 'ssh-keygen not installed')
+    def test_signed_tags_when_it_lists_signers(self):
+        key = self.base/'release-key'
+        subprocess.run(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-f', str(key)], check=True)
+        public = (self.base/'release-key.pub').read_text(encoding='utf-8').strip()
+        skill = self.work/'skills/internal/common/tdd/SKILL.md'
+        skill.write_text(skill.read_text(encoding='utf-8')+'\nSigned release.\n', encoding='utf-8')
+        run_git('commit', '-q', '-am', 'signed', cwd=self.work)
+        run_git('-c', 'gpg.format=ssh', '-c', 'user.signingkey='+str(key)+'.pub', 'tag', '-s', 'v1.1.0', '-m', 'v1.1.0', cwd=self.work)
+        run_git('push', '-q', str(self.bare), 'main', 'v1.1.0', cwd=self.work)
+        self.managed.write_text(dump_toml({'managed_schema': 1, 'enterprise': {'core': self.url}, 'git': {'signers': [public]}}), encoding='utf-8')
+        self.run_action('sync', confirm=False)
+        self.assertIn('Signed release.', self.installed())
+        self.release('v1.2.0', 'Marker v1.2.0.', push=True)  # not signed
+        with self.assertRaises(sources.SourceError) as caught:
+            self.run_action('sync', confirm=False)
+        self.assertIn('not signed by a key IT lists', str(caught.exception))
+        self.assertIn('Signed release.', self.installed())
+
     def test_a_branch_is_never_followed(self):
         self.run_action('sync')
         skill = self.work/'skills/internal/common/tdd/SKILL.md'

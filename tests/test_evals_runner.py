@@ -166,10 +166,10 @@ class RunnerTests(unittest.TestCase):
                 self.assertIsInstance(case['expect'].get(kind, []), list, case['name'])
 
     def test_unmet_precondition_skips_without_calling(self):
-        self.case(requires={'profile': 'data-analyst', 'commands': ['intent']})
+        self.case(requires={'skills': ['sql-review'], 'commands': ['intent']})  # an optional skill not installed
         code, out = self.run_cases('--stand-in', str(self.stand_in))
         self.assertIn('[SKIP]', out)
-        self.assertIn('profile data-analyst', out)
+        self.assertIn('sql-review', out)
         self.assertEqual(self.calls(), [])
         self.assertEqual(code, 2)
 

@@ -152,7 +152,7 @@ def read_frictions(home, cutoff):
             entry['id'] = entry.get('id') or friction_id(entry.get('ts'), entry.get('text'))  # lines written before ids existed
             own_ids.append(entry['id'])
             if _ts(entry.get('ts')) >= cutoff:
-                frictions.append({k: entry.get(k) for k in ('id', 'ts', 'category', 'command', 'text', 'cli', 'os', 'kit', 'profile', 'source') if entry.get(k) is not None})
+                frictions.append({k: entry.get(k) for k in ('id', 'ts', 'category', 'command', 'text', 'cli', 'os', 'kit', 'team', 'source') if entry.get(k) is not None})
     # Frictions of this person that a released version says it fixed: "(frictions: a1b2c3, …)" in the kit's CHANGELOG.
     changelog = ROOT/'CHANGELOG.md'
     fixed = fixed_frictions(changelog.read_text(encoding='utf-8')) if changelog.is_file() else {}

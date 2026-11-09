@@ -304,7 +304,7 @@ def tracker_checks(home, state, status):
         status(signed, label+cli+(' signed in' if signed else ' not signed in: run '+cli+' auth login (a personal access token); frictions stay local meanwhile'))
     pending = len(friction.unsent(str(home), config))
     if pending:
-        print('[Info] '+str(pending)+' friction'+('s' if pending != 1 else '')+' not sent to the tracker yet: ai-kit friction --sync')
+        print('[Info] '+str(pending)+' friction'+('s' if pending != 1 else '')+' not sent to the tracker yet: ai-kit friction --publish')
 
 
 def news_checks(home, state, status):
@@ -557,7 +557,7 @@ def release_check():
     def key(version):
         return tuple(int(x) for x in re.findall(r'\d+', version)[:3])
     if tags and key(tags[0]) > key(current):
-        print('[Info] AI Kit '+tags[0].lstrip('v')+' is published (this folder: '+current+'): run ai-kit sync --offline, which fetches it.')
+        print('[Info] AI Kit '+tags[0].lstrip('v')+' is published (this folder: '+current+'): get its ZIP, or git pull this clone, then run its installer.')
 
 
 def live_checks(home, results=None):

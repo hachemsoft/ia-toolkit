@@ -1,20 +1,20 @@
-"""organization.json: organization defaults merged with each person's overrides, team as its own dimension, update that pulls."""
+"""The settings layers (AI Kit 3, no organization.toml): the Core's MCP servers (mcp/servers.toml), a Team's [defaults], the
+person's aikit.toml on top (lists add up, objects combine, the person wins), the team as its own dimension."""
 import contextlib
 import io
 import os
 import re
-import shutil
-import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
 from installer import cli, settings
-from installer.cli import apply, doctor, merge_settings, setting_differences
-import wheelhouse
+from installer.cli import doctor, merge_settings, setting_differences
+from installer.config import load_aikit, to_overrides
 from installer.core import KitError, ROOT, read_json
-from installer.toml_files import dump_toml, parse_toml, read_toml
+from installer.toml_files import read_toml
+from personal import write_personal
 from v1_profiles import apply_as  # noqa: E402
 
 IDENTITY = {'email': 'first.last@example.com', 'source': 'test'}
@@ -26,11 +26,11 @@ class OrganizationTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.home = Path(self.temp.name)
 
-    def organization(self, org):
-        """Run with this organization.toml instead of the kit's."""
+    def team(self, name, defaults):
+        """Run with this Team [defaults] (teams/<name>.toml of the content the Team is overlaid on)."""
         real = settings.read_toml
         def patched(path, default=None):
-            return org if Path(path).name == 'organization.toml' else real(path, default)
+            return defaults if Path(path).name == name+'.toml' and Path(path).parent.name == 'teams' else real(path, default)
         return mock.patch.object(settings, 'read_toml', side_effect=patched)
 
     def install(self, profile='general', team=None):
@@ -39,8 +39,7 @@ class OrganizationTests(unittest.TestCase):
         return read_json(self.home/'.ai-kit/state.json')
 
     def personal(self, overrides):
-        (self.home/'.ai-kit').mkdir(parents=True, exist_ok=True)
-        (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(overrides), encoding='utf-8')
+        write_personal(self.home, overrides)
 
     def test_merge_adds_lists_combines_objects_person_wins(self):
         org = {'extra_skills': ['a'], 'hooks': {'dbt-prod-guard': True}, 'model': 'm1', '_doc': 'x'}
@@ -49,23 +48,23 @@ class OrganizationTests(unittest.TestCase):
                          {'extra_skills': ['a', 'b'], 'hooks': {'dbt-prod-guard': True, 'protected-paths': False}, 'model': 'm2'})
         self.assertEqual(setting_differences(org, merge_settings(org, person)), ['model'])
 
-    def test_organization_defaults_survive_a_personal_file(self):
-        # The defect this release fixes: a personal overrides.json used to replace the organization defaults wholesale.
+    def test_team_defaults_survive_a_personal_file(self):
+        # A personal file never replaces the layers below it wholesale.
         self.personal({'extra_skills': ['teach']})
-        with self.organization({'defaults': {'hooks': {'dbt-prod-guard': True}}}):
-            state = self.install()
+        with self.team('data-platform', {'hooks': {'dbt-prod-guard': True}}):
+            state = self.install(team='data-platform')
         self.assertIn('dbt-prod-guard', state['hooks'])
         self.assertIn('protected-paths', state['hooks'])
 
-    def test_person_can_turn_off_an_organization_default(self):
+    def test_person_can_turn_off_a_team_default(self):
         self.personal({'hooks': {'dbt-prod-guard': False}})
-        with self.organization({'defaults': {'hooks': {'dbt-prod-guard': True}}}):
-            state = self.install()
+        with self.team('data-platform', {'hooks': {'dbt-prod-guard': True}}):
+            state = self.install(team='data-platform')
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
                 doctor(self.home)
         self.assertNotIn('dbt-prod-guard', state['hooks'])
-        self.assertIn('Your overrides.toml changes organization or team defaults: hooks.dbt-prod-guard', out.getvalue())
+        self.assertIn('Your aikit.toml changes the Core or Team defaults: hooks.dbt-prod-guard', out.getvalue())
 
     def test_team_selects_its_practices_whatever_the_profile(self):
         team_file = ROOT/'context/20-kit-test-team.md'
@@ -87,10 +86,6 @@ class OrganizationTests(unittest.TestCase):
         self.assertIsNone(state['team'])
         self.assertTrue((self.home/'.gemini/20_TEAM.md').is_file())
         self.assertFalse((self.home/'.gemini/20_KIT_TEST_TEAM.md').exists())
-
-    def test_unknown_team_refused(self):
-        with self.assertRaises(KitError):
-            self.install(team='no-such-team')
 
     def test_json_error_says_where_and_what(self):
         bad = self.home/'overrides.json'
@@ -116,58 +111,65 @@ class OrganizationTests(unittest.TestCase):
             first = str(ctx.exception).splitlines()[0]
             self.assertTrue(any(h in first for h in plain), text + ' -> ' + first)
 
-    def test_schema_lists_exactly_the_keys_the_installer_reads(self):
-        import re
+    def test_the_installer_reads_exactly_the_keys_aikit_toml_gives(self):
         code = ''.join(f.read_text(encoding='utf-8') for f in (ROOT/'installer').rglob('*.py'))
         read = set(re.findall(r"(?:overrides|personal)(?:\.get\(|\[)'([a-z_]+)'", code))
-        schema = read_json(ROOT/'schemas/overrides.schema.json')
-        declared = {k for k in schema['properties'] if not k.startswith('$')}
-        self.assertEqual(read, declared)
-        # The hooks of the manifest, plus the old names still read (0.51: session-news is now whats-new).
-        from installer.plan import RENAMED_HOOKS
-        self.assertEqual(set(schema['properties']['hooks']['properties']), set(read_json(ROOT/'runtime/hooks/hooks.json')['hooks']) | set(RENAMED_HOOKS))
+        lists = ('extra_skills', 'disabled_skills', 'extra_commands', 'disabled_commands', 'extra_agents', 'disabled_agents')
+        full = {'schema': 1, 'user': {**{k: ['x'] for k in lists}, 'skill_prefix': 'ai-kit-'}, 'hooks': {'dbt-prod-guard': True},
+                'mcp': {'enabled': ['docs']}, 'frictions': {'capture': 'off', 'publication': 'disabled'}}
+        self.assertEqual(read, set(to_overrides(full)))
+        self.assertEqual(cli.unknown_keys(to_overrides(full)), [])
 
     def test_shipped_files_follow_the_schemas(self):
         self.assertFalse((ROOT/'organization.toml').exists())  # 2.2: not in the Core (managed.toml, mcp/servers.toml, Team repos)
-        template = (ROOT/'templates/user-overrides.toml').read_text(encoding='utf-8')
+        template = (ROOT/'templates/user-aikit.toml').read_text(encoding='utf-8')
         self.assertTrue((ROOT/'templates'/re.search(r'(?m)^#:schema (.+)$', template).group(1).strip()).is_file())
-        self.assertEqual(read_toml(ROOT/'templates/user-overrides.toml'), {})  # comments only: nothing set for the person
-        # Every example of the template, uncommented, is a valid setting.
+        self.assertEqual(read_toml(ROOT/'templates/user-aikit.toml'), {'schema': 1})  # nothing set for the person
+        # Every example of the template, uncommented, is a valid setting without a warning.
         examples = '\n'.join(line[2:] for line in template.splitlines() if line.startswith('# ') and ('=' in line or line.startswith('# [')))
-        self.assertEqual(cli.unknown_keys(parse_toml(examples)), [])
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'aikit.toml'
+            path.write_text('schema = 1\n'+examples+'\n', encoding='utf-8')
+            data, warnings = load_aikit(path)
+        self.assertEqual(warnings, [])
+        self.assertTrue(data.get('user') and data.get('hooks') and data.get('mcp') and data.get('frictions') and data.get('core'), data)
 
     def test_personal_file_points_to_the_schema_and_typos_are_reported(self):
         self.install()
-        uri = re.search(r'(?m)^#:schema (.+)$', (self.home/'.ai-kit/overrides.toml').read_text(encoding='utf-8')).group(1).strip()
+        uri = re.search(r'(?m)^#:schema (.+)$', (self.home/'.ai-kit/aikit.toml').read_text(encoding='utf-8')).group(1).strip()
         from urllib.parse import urlparse, unquote
         target = Path(unquote(urlparse(uri).path.lstrip('/') if os.name == 'nt' else unquote(urlparse(uri).path)))
         self.assertTrue(target.is_file(), uri)
-        self.personal({'extra_skill': ['teach']})
+        (self.home/'.ai-kit/aikit.toml').write_text('schema = 1\n[user]\nextra_skill = ["teach"]\n', encoding='utf-8')
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             doctor(self.home)
-        self.assertIn('unknown: extra_skill', out.getvalue())
+        self.assertIn('unknown key user.extra_skill', out.getvalue())
         self.assertEqual(merge_settings({}, {'$schema': 'x', 'model': 'm'}), {'model': 'm'})
 
 class TeamToolsTests(unittest.TestCase):
-    """A team in organization.json brings its tools (same keys as overrides.json), between the organization and the person."""
-    ORG = {'defaults': {'extra_skills': ['teach'], 'mcp': {'dbt': {'server': {'command': 'dbt-mcp'}},
-                                                          'github': {'server': {'command': 'gh-mcp'}}}},
-           'teams': {'data-platform': {'extra_skills': ['prototype'], 'extra_commands': ['ask'], 'mcp': {'dbt': True},
-                                       'hooks': {'dbt-prod-guard': True}}}}
+    """A Team's [defaults] brings its tools (same keys as aikit.toml), between the Core and the person; the Core's
+    mcp/servers.toml says how to reach each server."""
+    SERVERS = {'servers': {'dbt': {'command': 'dbt-mcp'}, 'github': {'command': 'gh-mcp'}}}
+    TEAM = {'extra_skills': ['prototype'], 'extra_commands': ['ask'], 'mcp': {'dbt': True}, 'hooks': {'dbt-prod-guard': True}}
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.home = Path(self.temp.name)
 
+    def layers(self, path, default=None, real=settings.read_toml):
+        path = Path(path)
+        if path.name == 'servers.toml' and path.parent.name == 'mcp':
+            return self.SERVERS
+        if path.name == 'data-platform.toml' and path.parent.name == 'teams':
+            return self.TEAM
+        return real(path, default)
+
     def install(self, team=None, personal=None, profile='general'):
         if personal is not None:
-            (self.home/'.ai-kit').mkdir(parents=True, exist_ok=True)
-            (self.home/'.ai-kit/overrides.toml').write_text(dump_toml(personal), encoding='utf-8')
-        real = settings.read_toml
-        with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.toml' else real(p, d)), \
-             contextlib.redirect_stdout(io.StringIO()):
+            write_personal(self.home, personal)
+        with mock.patch.object(settings, 'read_toml', side_effect=self.layers), contextlib.redirect_stdout(io.StringIO()):
             apply_as(profile, self.home, False, IDENTITY, 'gemini', team)
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
@@ -177,16 +179,15 @@ class TeamToolsTests(unittest.TestCase):
     def test_team_brings_skills_commands_guardrails_and_mcp(self):
         state, out = self.install('data-platform')
         skills = self.home/'.gemini/skills'
-        self.assertTrue((skills/'teach').is_dir())       # organization
         self.assertTrue((skills/'prototype').is_dir())   # team
         self.assertTrue((self.home/'.gemini/commands/ask.toml').is_file())
         self.assertIn('dbt-prod-guard', state['hooks'])
         self.assertEqual(list(state['mcp']), ['ai-kit-dbt'])
-        # No context/20-data-platform.md: the shared team practices stay, the team is kept for update.
+        # No context/20-data-platform.md: the shared team practices stay, the team is kept for the next run.
         self.assertEqual(state['team'], 'data-platform')
         self.assertIn('team', state['practices'])
-        self.assertIn('[Info] Team: data-platform (organization.toml teams.data-platform)', out)
-        self.assertIn('organization.toml teams.data-platform: only known keys', out)
+        self.assertIn('[Info] Team: data-platform ([defaults])', out)
+        self.assertIn('Team data-platform [defaults]: only known keys', out)
 
     def test_without_the_team_nothing_of_it(self):
         state, _ = self.install()
@@ -198,16 +199,9 @@ class TeamToolsTests(unittest.TestCase):
         self.assertEqual(list(state['mcp']), ['ai-kit-github'])
         self.assertFalse((self.home/'.gemini/skills/prototype').exists())
 
-    def test_team_listed_at_setup_and_unknown_team_refused(self):
-        real = settings.read_toml
-        with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: self.ORG if Path(p).name == 'organization.toml' else real(p, d)):
-            self.assertIn('data-platform', cli.team_ids())
-            with self.assertRaises(KitError):
-                apply('general', self.home, False, IDENTITY, 'gemini', 'no-such-team')
-
 
 class McpTests(unittest.TestCase):
-    """organization.json says how to reach a server, the profile which ones are on, overrides.json the person's exceptions."""
+    """mcp/servers.toml says how to reach a server (enabled = true: for everyone), the Team and the person turn one on or off."""
     ORG = {'bigquery': {'server': {'httpUrl': 'https://bq.example.org/mcp'}},
            'dbt': {'server': {'command': 'dbt-mcp'}},
            'github': {'server': {'command': 'docker', 'args': ['run', '-i', '--rm', 'ghcr.io/github/github-mcp-server:1.0.0']}},
@@ -216,7 +210,7 @@ class McpTests(unittest.TestCase):
     def resolve(self, profile, personal=None):
         return cli.resolve_mcp(self.ORG, profile, personal or {})
 
-    def test_the_profile_chooses_among_the_organization_servers(self):
+    def test_a_selection_chooses_among_the_core_servers(self):
         servers, undefined = self.resolve(['bigquery', 'dbt'])
         self.assertEqual(sorted(servers), ['bigquery', 'dbt', 'docs'])  # docs: "enabled": true, for every profile
         self.assertEqual(undefined, [])
@@ -225,16 +219,6 @@ class McpTests(unittest.TestCase):
         servers, _ = self.resolve(['bigquery', 'dbt'], {'dbt': False, 'github': True, 'docs': False})
         self.assertEqual(sorted(servers), ['bigquery', 'github'])
         self.assertEqual(servers['github']['command'], 'docker')  # "github": true keeps the organization's definition
-
-    def test_the_person_adds_a_server_of_their_own(self):
-        servers, _ = self.resolve([], {'mine': {'server': {'command': 'my-mcp', 'env': {'TOKEN': '${MY_TOKEN}'}}}})
-        self.assertEqual(servers['mine']['command'], 'my-mcp')
-        servers, _ = self.resolve([], {'mine': {'enabled': False, 'server': {'command': 'my-mcp'}}})
-        self.assertNotIn('mine', servers)
-
-    def test_older_personal_format_still_works(self):
-        servers, _ = self.resolve([], {'dbt': {'enabled': True}, 'old': {'enabled': True, 'server': {'command': 'x'}}})
-        self.assertEqual(sorted(servers), ['dbt', 'docs', 'old'])
 
     def test_a_name_without_definition_is_reported_not_installed(self):
         servers, undefined = cli.resolve_mcp({}, ['bigquery'], {'github': True})
@@ -246,15 +230,14 @@ class McpTests(unittest.TestCase):
             with self.assertRaises(KitError):
                 cli.resolve_mcp(org, profile, personal)
 
-    def test_installed_from_the_three_files(self):
+    def test_installed_from_the_core_servers_and_aikit_toml(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
-            (home/'.ai-kit').mkdir()
-            # 2.2: no profile turns bigquery on; the person does (what the migration writes for a V1 data profile).
-            (home/'.ai-kit/overrides.toml').write_text(dump_toml({'mcp': {'bigquery': True, 'dbt': False, 'github': True}}), encoding='utf-8')
+            # 2.2: no profile turns bigquery on; the person does.
+            write_personal(home, {'mcp': {'bigquery': True, 'dbt': False, 'github': True}})
             real = settings.read_toml
-            org = {'defaults': {'mcp': self.ORG}}
-            with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: org if Path(p).name == 'organization.toml' else real(p, d)), \
+            servers = {'servers': {n: {**{k: v for k, v in e.items() if k != 'server'}, **e['server']} for n, e in self.ORG.items()}}
+            with mock.patch.object(settings, 'read_toml', side_effect=lambda p, d=None: servers if Path(p).name == 'servers.toml' else real(p, d)), \
                  contextlib.redirect_stdout(io.StringIO()):
                 apply_as('data-analyst', home, False, IDENTITY, 'gemini')
                 out = io.StringIO()
@@ -263,54 +246,7 @@ class McpTests(unittest.TestCase):
             installed = read_json(home/'.gemini/settings.json')['mcpServers']
             self.assertEqual(sorted(installed), ['ai-kit-bigquery', 'ai-kit-docs', 'ai-kit-github'])
             self.assertIn('[Info] MCP servers: bigquery, docs, github', out.getvalue())
-            self.assertNotIn('changes organization defaults', out.getvalue())
-
-
-@unittest.skipIf(os.name == 'nt' or not shutil.which('git') or not wheelhouse.AVAILABLE, 'POSIX launcher, git and a local wheelhouse required')
-class UpdatePullsTests(unittest.TestCase):
-    def git(self, *args, cwd):
-        subprocess.run(['git', *args], cwd=cwd, check=True, capture_output=True)
-
-    def test_update_fetches_the_new_version_and_respects_local_changes(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp)
-            # A fresh repository built from the current files: independent of how CI checked the kit out
-            # (a tag gives a detached HEAD with a single commit, which cannot be pushed as is).
-            dev = base/'dev'
-            files = subprocess.run(['git', 'ls-files', '--cached', '--others', '--exclude-standard'], cwd=ROOT, capture_output=True, text=True, check=True).stdout.splitlines()
-            for rel in files:
-                if (ROOT/rel).is_file():
-                    (dev/rel).parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(ROOT/rel, dev/rel)
-            self.git('init', '--quiet', '-b', 'main', cwd=dev)
-            self.git('config', 'user.email', 'test@example.org', cwd=dev)
-            self.git('config', 'user.name', 'Test', cwd=dev)
-            self.git('add', '-A', cwd=dev)
-            self.git('commit', '--quiet', '-m', 'kit', cwd=dev)
-            self.git('init', '--quiet', '--bare', '-b', 'main', str(base/'remote.git'), cwd=base)
-            self.git('remote', 'add', 'origin', str(base/'remote.git'), cwd=dev)
-            self.git('push', '--quiet', 'origin', 'main', cwd=dev)
-            self.git('clone', '--quiet', str(base/'remote.git'), str(base/'kit'), cwd=base)
-            (base/'dev/NEW_FILE.md').write_text('new\n', encoding='utf-8')
-            self.git('add', 'NEW_FILE.md', cwd=base/'dev')
-            self.git('commit', '--quiet', '-m', 'new', cwd=base/'dev')
-            self.git('push', '--quiet', 'origin', 'main', cwd=base/'dev')
-            home = base/'home'
-            env = {**{k: v for k, v in os.environ.items() if not k.startswith('PIP_')}, **wheelhouse.pip_env()}
-            run = lambda action, *extra: subprocess.run(['sh', str(base/'kit/scripts/bootstrap.sh'), action, *extra, '--home', str(home), '--no-live'],
-                                                        capture_output=True, text=True, encoding='utf-8', cwd=base, env=env)
-            self.assertEqual(run('setup', '--profile', 'general', '--user', 'a@example.org').returncode, 0)
-            proc = run('update')
-            self.assertEqual(proc.returncode, 0, proc.stdout+proc.stderr)
-            self.assertTrue((base/'kit/NEW_FILE.md').is_file())
-            # A local change in the kit folder: no pull, the configuration is reapplied, and the update is reported
-            # incomplete (0.34: before, it ended with code 0 as if the new version had been fetched).
-            (base/'kit/README.md').write_text('changed\n', encoding='utf-8')
-            proc = run('update')
-            self.assertEqual(proc.returncode, 1, proc.stdout+proc.stderr)
-            self.assertIn('local changes', proc.stdout)
-            self.assertIn('Update incomplete', proc.stdout)
-            self.assertEqual((base/'kit/README.md').read_text(encoding='utf-8'), 'changed\n')
+            self.assertNotIn('changes the Core or Team defaults', out.getvalue())
 
 
 if __name__ == '__main__':

@@ -17,27 +17,27 @@ class PortabilityTests(unittest.TestCase):
         self.home = self.base / 'User café'
 
     def run_cli(self, *args, code=0):
-        proc = subprocess.run([sys.executable, '-m', 'installer', *args, '--home', str(self.home), '--no-live'],
+        proc = subprocess.run([sys.executable, '-m', 'installer', *args, '--home', str(self.home)],
                               cwd=ROOT, capture_output=True, text=True, encoding='utf-8',
                               env={**os.environ, 'PYTHONIOENCODING':'utf-8'})
         self.assertEqual(proc.returncode, code, proc.stdout + proc.stderr)
         return proc
 
     def test_native_cli_lifecycle_in_unicode_path(self):
-        self.run_cli('setup', '--profile', 'general')
+        self.run_cli('init', '--target', 'gemini')
         state = self.home / '.ai-kit/state.json'
         self.assertEqual(json.loads(state.read_text(encoding='utf-8'))['profile'], 'core')  # 2.2: no profiles, the Core default
-        prefs = self.home / '.gemini/30_USER.md'
+        prefs = self.home / '.gemini/USER.md'
         self.assertTrue(prefs.exists())
         prefs.write_text('Answer concisely. Personal preference.', encoding='utf-8')
-        self.run_cli('update')
+        self.run_cli('init')  # installed: checks and re-applies
         self.assertIn('Personal preference', prefs.read_text(encoding='utf-8'))
         self.assertTrue((self.home / '.gemini/00_KIT.md').exists())
         names = json.loads((self.home / '.gemini/settings.json').read_text(encoding='utf-8'))['context']['fileName']
-        self.assertEqual(names[:6], ['00_KIT.md','10_COMPANY.md','20_TEAM.md','30_USER.md','GEMINI.md','AGENTS.md'])
-        # 2.2: another profile is refused with the way to get its resources; a resource is added one by one.
-        refused = self.run_cli('setup', '--profile', 'data-developer', code=2)
-        self.assertIn('AI Kit 3 has no profiles', refused.stderr)
+        self.assertEqual(names[:6], ['00_KIT.md','10_COMPANY.md','20_TEAM.md','USER.md','GEMINI.md','AGENTS.md'])
+        # 3.0: no profiles, and no --profile option any more (a usage error).
+        refused = self.run_cli('init', '--profile', 'data-developer', code=2)
+        self.assertIn('--profile', refused.stderr)
         p = subprocess.run([sys.executable,'-m','installer','doctor','--home',str(self.home)],
                            cwd=ROOT,capture_output=True,text=True,encoding='utf-8',
                            env={**os.environ,'PYTHONIOENCODING':'utf-8'})
@@ -45,14 +45,15 @@ class PortabilityTests(unittest.TestCase):
         self.assertIn('Local diagnosis only',p.stdout)
 
     def test_native_cli_dry_run(self):
-        self.run_cli('setup','--profile','general','--dry-run')
+        self.run_cli('init','--target','gemini','--dry-run')
         self.assertFalse(self.home.exists())
 
     def test_native_error_code_and_no_overwrite(self):
         cfg = self.home / '.gemini/settings.json'
         cfg.parent.mkdir(parents=True)
         cfg.write_text('{invalid',encoding='utf-8')
-        self.run_cli('setup','--profile','general',code=2)
+        proc = self.run_cli('init','--target','gemini',code=1)  # refused, nothing changed
+        self.assertIn('settings.json', proc.stderr)
         self.assertEqual(cfg.read_text(encoding='utf-8'),'{invalid')
 
     def test_python_sources_support_311_syntax(self):
@@ -62,8 +63,8 @@ class PortabilityTests(unittest.TestCase):
 
     @unittest.skipIf(os.name == 'nt', 'Shell launcher on Unix only')
     def test_native_shell_launcher_from_outside_repo(self):
-        proc = subprocess.run(['sh', str(ROOT/'scripts/bootstrap.sh'), 'setup',
-                               '--profile','general','--home',str(self.home),'--no-live'],
+        proc = subprocess.run(['sh', str(ROOT/'scripts/bootstrap.sh'), 'init',
+                               '--home',str(self.home),'--target','gemini'],
                               cwd=self.base,capture_output=True,text=True,encoding='utf-8')
         self.assertEqual(proc.returncode,0,proc.stdout+proc.stderr)
         self.assertTrue((self.home/'.ai-kit/state.json').exists())

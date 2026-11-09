@@ -27,7 +27,7 @@ class UninstallTests(unittest.TestCase):
         (self.home/'.codex/AGENTS.md').write_text('# My Codex notes\n', encoding='utf-8')
         (self.home/'.codex/config.toml').write_text('model = "my-model"\n', encoding='utf-8')
         self.quiet(cli.apply, 'general', self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'all')
-        (self.home/'.ai-kit/context/30_USER.md').write_text('My preferences\n', encoding='utf-8')
+        (self.home/'.ai-kit/context/USER.md').write_text('My preferences\n', encoding='utf-8')
         self.quiet(cli.apply, 'general', self.home, False, None)  # the copies follow
 
     def quiet(self, function, *args, **kwargs):
@@ -53,10 +53,10 @@ class UninstallTests(unittest.TestCase):
         self.assertFalse([n for n in settings['context']['fileName'] if n[:2] in ('00', '10', '20')])
         self.assertEqual((self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'), '# My Codex notes\n')
         self.assertEqual((self.home/'.codex/config.toml').read_text(encoding='utf-8'), 'model = "my-model"\n')
-        # Kept: the personal context, overrides.toml, the backups; the CLIs' folders are never removed. Gemini's copy goes.
-        self.assertEqual((self.home/'.ai-kit/context/30_USER.md').read_text(encoding='utf-8'), 'My preferences\n')
-        self.assertFalse((self.home/'.gemini/30_USER.md').exists())
-        self.assertTrue((self.home/'.ai-kit/overrides.toml').is_file())
+        # Kept: the personal context, aikit.toml, the backups; the CLIs' folders are never removed. Gemini's copy goes.
+        self.assertEqual((self.home/'.ai-kit/context/USER.md').read_text(encoding='utf-8'), 'My preferences\n')
+        self.assertFalse((self.home/'.gemini/USER.md').exists())
+        self.assertTrue((self.home/'.ai-kit/aikit.toml').is_file())
         self.assertTrue(any((self.home/'.ai-kit/backups').iterdir()))
         self.assertTrue((self.home/'.gemini').is_dir() and (self.home/'.codex').is_dir())
         self.assertIn('Backup of every removed or cleaned file', self.out)
@@ -91,30 +91,18 @@ class UninstallTests(unittest.TestCase):
             self.assertEqual(cli.main(['uninstall', '--yes', '--home', str(self.home)]), 0)
         self.assertFalse((self.home/'.ai-kit/state.json').exists())
 
-    def test_update_after_uninstall_reinstalls_the_last_choices(self):
-        with contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(cli.main(['uninstall', '--yes', '--home', str(self.home)]), 0)
-        out = io.StringIO()
-        with contextlib.redirect_stdout(out), mock.patch.object(cli, 'interactive', return_value=False):
-            self.assertEqual(cli.main(['update', '--home', str(self.home)]), 0)
-        self.assertIn('choices of your last installation', out.getvalue())
-        state = read_json(self.home/'.ai-kit/state.json')
-        self.assertEqual(state['profile'], 'core')  # 2.2: no profiles
-        self.assertEqual(state['targets'], ['gemini', 'agy', 'codex', 'claude'])
-        self.assertEqual(state['user']['email'], 'a@example.org')
-
-    def test_update_without_any_installation_still_says_to_run_setup(self):
+    def test_sync_without_any_installation_says_to_run_init(self):
         empty = self.home/'empty'
         empty.mkdir()
         err = io.StringIO()
         with contextlib.redirect_stderr(err), contextlib.redirect_stdout(err):
-            self.assertNotEqual(cli.main(['update', '--home', str(empty)]), 0)
-        self.assertIn('run setup', err.getvalue())
+            self.assertEqual(cli.main(['sync', '--home', str(empty)]), 1)
+        self.assertIn('Kit not installed: run ai-kit init.', err.getvalue())
 
     def test_reinstall_after_uninstall_reuses_the_personal_context(self):
         self.quiet(cli.uninstall, self.home)
         self.quiet(cli.apply, 'general', self.home, False, None, 'gemini')
-        self.assertEqual((self.home/'.gemini/30_USER.md').read_text(encoding='utf-8'), 'My preferences\n')
+        self.assertEqual((self.home/'.gemini/USER.md').read_text(encoding='utf-8'), 'My preferences\n')
         self.quiet(cli.doctor_checks, self.home)
         self.assertFalse([line for line in self.out.splitlines() if line.startswith('[Check] .')], self.out)
 
