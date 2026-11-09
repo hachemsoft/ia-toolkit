@@ -14,7 +14,6 @@ from unittest import mock
 
 from installer import cli, settings
 from installer.core import ROOT, friction_module, read_json
-from installer.toml_files import read_toml
 
 ORG = {'allowed_domains': [], 'defaults': {}, 'friction_tracker': {'kind': 'gitlab', 'project': 'tools/ai-kit', 'labels': ['friction', 'kit']}}
 
@@ -208,8 +207,9 @@ class TextsTests(unittest.TestCase):
         self.assertNotIn('--source agent', cli.friction_rule('propose'))
         self.assertIn('friction_tracker', read_json(ROOT/'schemas/organization.schema.json')['properties'])
         self.assertIn('share_frictions', read_json(ROOT/'schemas/overrides.schema.json')['properties'])
-        self.assertIn('friction_tracker', read_toml(ROOT/'organization.toml', {}).keys() | {'friction_tracker'})  # documented in the file as a comment at least
-        self.assertIn('[friction_tracker]', (ROOT/'organization.toml').read_text(encoding='utf-8'))
+        # 2.2: the Core has no organization.toml; IT sets the tracker in managed.toml [frictions.tracker].
+        self.assertIn('tracker', read_json(ROOT/'schemas/managed.schema.json')['properties']['frictions']['properties'])
+        self.assertIn('[frictions.tracker]', (ROOT/'docs/managed.md').read_text(encoding='utf-8'))
 
 
 if __name__ == '__main__':

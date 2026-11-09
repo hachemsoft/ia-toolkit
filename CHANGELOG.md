@@ -18,6 +18,7 @@
 - An installation made with a profile keeps everything it had: at its next update, what the Core default does not give is written as personal lines (`extra_skills`, `extra_agents`, `extra_commands`, and `[mcp] <name> = true` for the servers the profile turned on), with a comment `# carried over from profile <name> on <date>`, once; the person is told. Nothing expires on its own.
 - `docs/getting-started.md` shows what the Core installs by default and what is optional, instead of the profile table.
 - `practices/` is now `context/` (the company and team layers of the context); a Core that still has `practices/` is read the same way.
+- `organization.toml` leaves the Core: IT sets the friction tracker in `managed.toml` `[frictions.tracker]` (and the locked guardrails in `hooks.locked`), the Core defines its MCP servers in `mcp/servers.toml`, each team is a Team repository. An `organization.toml` still present in an organization's copy of the Core is read as before, and `ai-kit validate` says where each key goes. `SECURITY.md` now covers `managed.toml`, Git sources and MCP validation.
 
 ## 2.1.1
 

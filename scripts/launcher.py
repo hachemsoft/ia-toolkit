@@ -23,7 +23,7 @@ import time
 KIT_DIR = Path(__file__).resolve().parents[1]
 MINIMUM = (3, 11)
 SOURCE_PARTS = ('installer', 'runtime', 'agents', 'commands', 'context', 'skills', 'templates', 'schemas',
-                'packaging', 'VERSION', 'aikit.toml', 'organization.toml', 'CHANGELOG.md', 'pyproject.toml', 'README.md', 'LICENSE')
+                'packaging', 'VERSION', 'aikit.toml', 'CHANGELOG.md', 'pyproject.toml', 'README.md', 'LICENSE')
 IT_HELP = ('What to ask IT support: Python {}.{} or newer with its standard venv and pip modules, usable by your standard account,'
            ' as provided or approved by the company (software centre). Then run the installer again.').format(*MINIMUM)
 

@@ -128,13 +128,7 @@ class OrganizationTests(unittest.TestCase):
         self.assertEqual(set(schema['properties']['hooks']['properties']), set(read_json(ROOT/'runtime/hooks/hooks.json')['hooks']) | set(RENAMED_HOOKS))
 
     def test_shipped_files_follow_the_schemas(self):
-        text = (ROOT/'organization.toml').read_text(encoding='utf-8')
-        schema_line = re.search(r'(?m)^#:schema (.+)$', text)
-        self.assertTrue((ROOT/schema_line.group(1).strip()).is_file())
-        org = read_toml(ROOT/'organization.toml')
-        known = set(read_json(ROOT/'schemas/organization.schema.json')['properties'])
-        self.assertEqual([k for k in org if k not in known], [])
-        self.assertEqual(cli.unknown_keys(org.get('defaults', {})), [])
+        self.assertFalse((ROOT/'organization.toml').exists())  # 2.2: not in the Core (managed.toml, mcp/servers.toml, Team repos)
         template = (ROOT/'templates/user-overrides.toml').read_text(encoding='utf-8')
         self.assertTrue((ROOT/'templates'/re.search(r'(?m)^#:schema (.+)$', template).group(1).strip()).is_file())
         self.assertEqual(read_toml(ROOT/'templates/user-overrides.toml'), {})  # comments only: nothing set for the person

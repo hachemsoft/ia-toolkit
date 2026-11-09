@@ -153,8 +153,18 @@ def detect_identity(home):
 
 
 def organization():
-    """organization.toml at the root of the kit: what the organization decides (expected email domains, defaults, teams)."""
+    """What the organization decides. 2.2: the Core holds no organization.toml; its MCP servers are in mcp/servers.toml
+    ([servers.<name>], read as the defaults' mcp). An organization.toml still present in a Core (an organization's own copy) is
+    read the same way as before, and ai-kit validate says where its keys go (managed.toml, mcp/servers.toml, Team repos)."""
     org = read_toml(content_root()/'organization.toml', {})
+    servers = read_toml(content_root()/'mcp'/'servers.toml', {}).get('servers', {})
+    if servers:
+        if not isinstance(servers, dict) or not all(isinstance(v, dict) for v in servers.values()):
+            raise KitError('mcp/servers.toml: one table per server ([servers.<name>]).')
+        defaults = dict(org.get('defaults') or {})
+        defaults['mcp'] = {**{n: {k: v for k, v in {'server': {x: y for x, y in s.items() if x != 'enabled'}, 'enabled': s.get('enabled')}.items() if v is not None}
+                              for n, s in servers.items()}, **(defaults.get('mcp') or {})}
+        org = {**org, 'defaults': defaults}
     if not isinstance(org.get('defaults', {}), dict):
         raise KitError('organization.toml: defaults must be a table ([defaults]).')
     teams = org.get('teams', {})
@@ -169,10 +179,11 @@ TRACKER_KINDS = ('gitlab', 'github')
 TRACKER_SOURCES = ('agent', 'person', 'doctor')
 
 
-def friction_tracker(org, personal):
+def friction_tracker(org, personal, managed=None):
     """[friction_tracker] of organization.toml, validated, with its defaults, or None: no tracker, or the person wrote
     share_frictions = false. What the /friction script reads from state.json (runtime/friction.py)."""
-    config = org.get('friction_tracker')
+    # 2.2: IT sets the tracker in managed.toml [frictions.tracker]; organization.toml [friction_tracker] is read as before.
+    config = ((managed or {}).get('frictions') or {}).get('tracker', org.get('friction_tracker'))
     if config is None:
         return None
     if not isinstance(config, dict):

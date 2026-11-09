@@ -43,7 +43,7 @@ sources = { "installer" = "ai_kit" }
 "schemas" = "ai_kit/kit/schemas"
 
 [tool.hatch.build.targets.sdist]
-include = ["LICENSE", "installer", "runtime", "agents", "commands", "context", "skills", "aikit.toml", "templates", "schemas", "scripts", "docs", "evals", "tests", "VERSION", "organization.toml", "README.md", "CHANGELOG.md", "pyproject.toml"]
+include = ["LICENSE", "installer", "runtime", "agents", "commands", "context", "skills", "aikit.toml", "templates", "schemas", "scripts", "docs", "evals", "tests", "VERSION", "README.md", "CHANGELOG.md", "pyproject.toml"]
 
 [project.optional-dependencies]
 dev = ["ruff"]

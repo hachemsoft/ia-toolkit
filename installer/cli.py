@@ -338,11 +338,11 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     changed = version_changes((state.get('installed') or {}).get('versions'), installed_versions)
     if changed:
         p.notices.append('[Info] Updated: '+', '.join(changed)+'. What changed: CHANGELOG.md of the kit.')
-    tracker = friction_tracker(org_defaults_root(), personal)
+    tracker = friction_tracker(org_defaults_root(), personal, managed)
     if tracker:
         # approval (default): nothing is sent on its own; the person sends from a terminal (ai-kit friction --sync). D5, ADR 0023.
         tracker = None if publication(managed) == 'disabled' else {**tracker, 'publication': publication(managed)}
-    if org_defaults_root().get('friction_tracker') and tracker is None:
+    if (org_defaults_root().get('friction_tracker') or ((managed or {}).get('frictions') or {}).get('tracker')) and tracker is None:
         p.notices.append('[Info] Frictions stay local: share_frictions = false in your overrides.toml (your organization set a friction tracker).')
     new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'news':news,'frictions_retention':(managed or {}).get('frictions', {}).get('retention_days', 30),**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
                  'installed':{'sources':resource_sources(selected, catalog, agents, agent_catalog, core_synced(kit, extra_writes)),'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],

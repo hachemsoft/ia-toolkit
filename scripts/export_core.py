@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 
 from installer.resolve import agent_catalog, skill_catalog  # noqa: E402
 
-COPIED = ('commands', 'context', 'templates', 'organization.toml')
+COPIED = ('commands', 'context', 'templates')
 
 
 def export(dest):

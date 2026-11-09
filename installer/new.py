@@ -27,7 +27,7 @@ LOCK, SNAPSHOT = 'versions.lock.json', 'tests/golden/install-snapshot.json'
 TARGET_TESTS = ('test_skills_catalog', 'test_skill_dependencies', 'test_commands', 'test_consistency', 'test_evals_runner', 'test_versions',
                 'test_evals_and_playbooks', 'test_invariants', 'test_snapshot')
 # What the version lock and the snapshot read: an uncommitted change here would be recorded by them and left out of the commit.
-DIGESTS_READ = ('skills', 'agents', 'commands', 'context', 'templates', 'runtime', 'installer', 'schemas', 'organization.toml', 'VERSION')
+DIGESTS_READ = ('skills', 'agents', 'commands', 'context', 'templates', 'runtime', 'installer', 'schemas', 'VERSION')
 # The snapshot reference holds POSIX paths (tests/test_snapshot.py skips on Windows): rewritten there, it breaks every other system.
 WINDOWS = os.name == 'nt'
 

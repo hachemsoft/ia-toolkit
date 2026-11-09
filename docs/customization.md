@@ -8,10 +8,11 @@
 
 ## Organization, team and person
 
-Settings are combined at every `setup` and `update`, in this order, each on top of the previous one: **organization**, **profile** (the skills, commands, agents and MCP servers of your job, `profiles/<profile>.toml`), **team**, **you**. The person keeps the last word.
+Settings are combined at every `setup`, `update` and `sync`, in this order, each on top of the previous one: the **Core** (its default selection and its defaults), the active **Team**, **you**; then **IT** (`managed.toml`) wins over all of them for the keys it sets. AI Kit 2 has no profiles: a Team turns on what a job needs, and you add or remove a resource with `extra_*` and `disabled_*`.
 
-- **`organization.toml`**, at the root of the kit repository, belongs to the organization. It is changed by merge request and reaches workstations with the next version of the kit. It holds the expected email domains (`allowed_domains`) and the organization defaults (`defaults`, with the same keys as `overrides.toml`: guardrails, MCP, skills, commands, agents, `skill_prefix`, `frictions`), and optionally the friction tracker (`[friction_tracker]`: `kind` gitlab or github, `project`, `host` for a self-hosted instance, `labels`, `sources`), the project where frictions become issues through each person's own `glab` or `gh`; `share_frictions = false` in a person's `overrides.toml` keeps theirs local.
-- **The team's settings**, in the same `organization.toml`, under `teams` (see [Teams](#teams)).
+- **The Core** is the kit's content: this repository, or the organization's own Core repository ([Core and Team sources](core-source.md)). Its `mcp/servers.toml` defines the MCP servers; `context/10-company.md` holds the company practices.
+- **A Team** is a repository of its own: its `[defaults]`, `context/`, skills and agents ([Teams](core-source.md#teams)).
+- **`organization.toml`** (before 2.2, at the root of the kit repository) is still read when an organization's copy of the Core has one; `ai-kit validate` says where each of its keys goes now: `locked_hooks` to `managed.toml` `hooks.locked`, `friction_tracker` to `managed.toml` `[frictions.tracker]`, the MCP servers to `mcp/servers.toml`, each team to a Team repository.
 - **`~/.ai-kit/overrides.toml`** belongs to the person. It is applied on top: lists add up, objects combine, the person's value wins for a single value. It never replaces the organization or team settings wholesale; `doctor` lists the values a person changed.
 
 ```toml
@@ -29,9 +30,9 @@ Both files are TOML and have a JSON Schema in `schemas/`, named on their first l
 
 | Who | Where | Decides |
 | --- | --- | --- |
-| the organization | `organization.toml` (`allowed_domains`, `defaults`), `context/10-company.md` | defaults for everyone: guardrails, approved MCP servers, skills and commands, company practices |
-| the team | `organization.toml` (`teams.<team>`), `context/20-<team>.md` | its tools and its practices, on top of the organization |
-| the profile | `profiles/<profile>.toml` | the skills, commands, agents and MCP servers of a job |
+| IT | `managed.toml` ([managed](managed.md)) | what nobody else can change: guardrails, MCP refusals, Core and Team origins, friction tracker |
+| the Core | its repository: skills, agents, commands with `aikit-default`, `context/10-company.md`, `mcp/servers.toml` | the default selection for everyone, the company practices, the MCP servers ([Core and Team sources](core-source.md)) |
+| the team | its Team repository (`[defaults]`, `context/`, its skills and agents); before 2.2, `organization.toml` `teams.<team>` and `context/20-<team>.md` | its tools and its practices, on top of the Core |
 | you | `~/.ai-kit/overrides.toml`, `30_USER.md` | your additions and exceptions, your preferences |
 | the repo | `AGENTS.md`, `.agents/skills/`, `.ai-kit/protected-paths` | how to work in that repo |
 
