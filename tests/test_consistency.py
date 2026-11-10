@@ -44,7 +44,7 @@ class ConsistencyTests(unittest.TestCase):
   """General pages talk about "the agent" and "the CLI"; CLI-specific content goes in docs/cli/ (tables and links tolerated)."""
   # README.md is not part of it: it is the home page, which presents the supported CLIs.
   general=['docs/'+n for n in ('getting-started.md','configuration.md','repositories.md','commands.md','frictions.md','extending.md','hooks.md','mcp.md','troubleshooting.md','evals.md','compliance.md','architecture.md')]
-  allowed=re.compile(r"cli/(gemini|matrice|agy|codex|claude-code)|`gemini` or `agy`|`gemini`, `agy` or `codex`|`gemini`, `agy`, `codex`|--cli codex|Gemini, agy and Claude Code|gemini-2\.5|gemini-api-key|GEMINI_API_KEY|--cli gemini|\.gemini/protected-paths|Gemini CLI and Antigravity CLI|Gemini CLI, Antigravity CLI, Codex CLI|`~/\.gemini/` if Gemini CLI is installed",re.I)
+  allowed=re.compile(r"cli/(gemini|matrice|agy|codex|claude-code)|`gemini` or `agy`|`gemini`, `agy` or `codex`|`gemini`, `agy`, `codex`|--cli codex|Gemini, agy and Claude Code|gemini-2\.5|gemini-api-key|GEMINI_API_KEY|--cli gemini|Gemini CLI and Antigravity CLI|Gemini CLI, Antigravity CLI, Codex CLI|`~/\.gemini/` if Gemini CLI is installed",re.I)
   bad=[]
   for f in general:
    fence=False

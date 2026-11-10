@@ -1,7 +1,6 @@
-import contextlib, io, json, tempfile, unittest
+import contextlib, io, tempfile, unittest
 from pathlib import Path
 from installer.adapters.gemini import diagnose_live
-from installer.core import read_json
 from v1_profiles import apply_as  # noqa: E402
 S_KEY={'security':{'auth':{'selectedType':'gemini-api-key'}}}
 class LiveDiagnosisTests(unittest.TestCase):
@@ -31,17 +30,6 @@ class RetiredAuthAndModelTests(unittest.TestCase):
   out=io.StringIO()
   with contextlib.redirect_stdout(out):notices=apply_as('data-analyst',self.home,False,None,'gemini')
   return notices
- def test_what_an_earlier_version_wrote_is_kept(self):
-  # As 0.35 left it: a kit-marked block in ~/.gemini/.env and the auth type in settings.json.
-  env=self.home/'.gemini/.env';env.parent.mkdir(parents=True)
-  env.write_text('PERSO=1\n# ai-kit : Vertex AI (managed by the kit, edit overrides.json)\nGOOGLE_GENAI_USE_VERTEXAI=true\nGOOGLE_CLOUD_PROJECT=demo-project-01\n',encoding='utf-8')
-  (self.home/'.gemini/settings.json').write_text(json.dumps({'security':{'auth':{'selectedType':'vertex-ai'}},'model':{'name':'gemini-2.5-flash'}}),encoding='utf-8')
-  self.run_kit();text=env.read_text(encoding='utf-8')
-  self.assertIn('PERSO=1',text);self.assertIn('GOOGLE_CLOUD_PROJECT=demo-project-01',text);self.assertIn('GOOGLE_GENAI_USE_VERTEXAI=true',text)
-  self.assertNotIn('managed by the kit',text);self.assertIn('now yours',text)
-  settings=read_json(self.home/'.gemini/settings.json')
-  self.assertEqual(settings['security']['auth']['selectedType'],'vertex-ai');self.assertEqual(settings['model']['name'],'gemini-2.5-flash')
-  self.run_kit();self.assertEqual(env.read_text(encoding='utf-8'),text)  # nothing more on the next update
  def test_uninstall_keeps_the_authentication(self):
   env=self.home/'.gemini/.env';env.parent.mkdir(parents=True);env.write_text('# ai-kit : Vertex AI (managed by the kit)\nGOOGLE_CLOUD_PROJECT=demo-project-01\n',encoding='utf-8')
   self.run_kit()

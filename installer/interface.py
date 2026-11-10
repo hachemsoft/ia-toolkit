@@ -2,7 +2,7 @@
 
 - Plan: what to install, built once by the orchestrator, neutral with respect to the CLIs.
 - DoctorContext: what the orchestrator lends to the adapters' checks.
-- Adapter: what each adapter module must provide; ContextHost and LiveCheck are optional capabilities.
+- Adapter: what each adapter module must provide; LiveCheck is an optional capability.
 
 An adapter is a Python module: the protocols describe its module attributes and functions.
 """
@@ -44,7 +44,6 @@ class Plan:
     agent_body: Callable[[Dict[str, Any]], str]  # full prompt of an agent, practices included
     agent_markdown: Dict[str, str] = field(default_factory=dict)  # agents rendered by Gemini, reused by agy
     blocks: Dict[str, str] = field(default_factory=dict)  # digests of the managed blocks in user files
-    migrated_prefs: bool = False
     notices: List[str] = field(default_factory=list)  # lines for the person: a refused synchronisation, a moved file
     adapter_data: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # private data of an adapter, by NAME
     skill_notes: Dict[str, str] = field(default_factory=dict)  # appended to a skill's SKILL.md: optional skills not installed
@@ -95,14 +94,6 @@ class Adapter(Protocol):
     def doctor(self, home: Path, state: Dict[str, Any], status: Status, ctx: DoctorContext) -> None: ...
     def doctor_hint(self) -> Optional[str]: ...
     def history(self, home: Path, state: Dict[str, Any]) -> Iterator[Dict[str, Any]]: ...
-
-
-@runtime_checkable
-class ContextHost(Protocol):
-    """The CLI only reads its context from its own folder: if it is active, it receives a copy of the layers and of USER.md
-    (context_dir: where an installation before 0.39 kept them)."""
-    def context_dir(self, home: Path) -> Path: ...
-    def installed_from_files(self, state: Dict[str, Any]) -> Dict[str, List[str]]: ...
 
 
 @runtime_checkable

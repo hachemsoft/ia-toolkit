@@ -55,7 +55,7 @@ class AgyAdapterTests(unittest.TestCase):
   self.assertEqual(run_hook('dbt-prod-guard.py',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt run --target prod'}},'workspacePaths':['/x']}).get('decision'),'deny')
   self.assertNotIn('decision',run_hook('dbt-prod-guard.py',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt test -t dev'}}}))
   with tempfile.TemporaryDirectory() as tmp:
-   (Path(tmp)/'.gemini').mkdir();(Path(tmp)/'.gemini/protected-paths').write_text('target/**\n',encoding='utf-8')
+   (Path(tmp)/'.ai-kit').mkdir();(Path(tmp)/'.ai-kit/protected-paths').write_text('target/**\n',encoding='utf-8')
    self.assertEqual(run_hook('protected-paths.py',{'toolCall':{'name':'write_to_file','args':{'TargetFile':tmp+'/target/a.sql'}},'workspacePaths':[tmp]}).get('decision'),'deny')
    self.assertIsNone(run_hook('protected-paths.py',{'toolCall':{'name':'write_to_file','args':{'TargetFile':tmp+'/models/a.sql'}},'workspacePaths':[tmp]}).get('decision'))
  def test_command_skill_text_valid_frontmatter(self):

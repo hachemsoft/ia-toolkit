@@ -463,7 +463,7 @@ def doctor_checks(home, cwd=None, problems=None):
         profile = core_selection()
         profile = {**profile, 'practices': state.get('practices') or profile['practices']}  # with the person's team
         ctx = DoctorContext(context_names=managed_context_names(profile), load_commands=load_commands)
-        context = state.get('context_dir', '.gemini')
+        context = '.ai-kit/context'
         user_file = home/context/USER_CONTEXT
         status(user_file.is_file(),'Personal context present: '+context+'/'+USER_CONTEXT)
         if user_file.is_file():

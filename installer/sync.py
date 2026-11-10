@@ -4,7 +4,7 @@ other command uses.
 activation() is wrapped around the existing apply(): it takes the engine lock, resumes an interrupted activation, chooses
 the content (the locked Core and Team, newly fetched tags, another Team, or the previous configuration), overlays the active
 Team on the Core, and gives apply() the files to write in the same transaction (lock.toml, aikit.toml). Without a Core or a
-Team source, the content stays the package's (V1)."""
+Team source, the content is the package's own."""
 import contextlib
 from dataclasses import dataclass, field
 from pathlib import Path

@@ -189,7 +189,7 @@ def parse_frontmatter(text):
     return parse(text)
 
 def adopt_user_copy(p, copy, last):
-    """A copy of USER.md the person edited by hand (before 0.39 it was the file to edit): when the file itself did not
+    """A copy of USER.md the person edited by hand: when the file itself did not
     change since it was copied, the edit becomes the file; otherwise the file wins and the person is told. True when the
     edit was taken."""
     data = p.writes[p.user_file] if p.user_file in p.writes else p.user_file.read_bytes() if p.user_file.exists() else b''
@@ -353,7 +353,7 @@ def load_commands():
         if '"""' in body:
             raise KitError('Command ' + name + ': the prompt cannot contain three double quotes.')
         command = {'name': name, 'description': meta['description'], 'category': meta['category'], 'skills': skills, 'prompt': body.strip() + '\n', 'order': int(meta.get('order', 1000)),
-                   'default': str(meta.get('default', 'true')).lower() != 'false'}  # 2.2: in the Core default selection unless default: false
+                   'default': str(meta.get('default', 'true')).lower() != 'false'}  # in the Core default selection unless default: false
         for key in ('stage', 'artifact'):
             if meta.get(key):
                 command[key] = meta[key]

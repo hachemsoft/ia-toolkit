@@ -137,7 +137,7 @@ def main(argv=None):
                 shutil.copy2(src, payload/rel)
             else:
                 raise SystemExit('Missing from the repository: '+rel)
-        # 2.2: the package holds only the engine; the content travels as a git bundle of this repository at v<version>
+        # The package holds only the engine; the content travels as a git bundle of this repository at v<version>
         # (this repository is the Core), activated offline by the first installation.
         core_bundle(version, args.worktree, payload/'core'/'ai-kit-core.bundle', tmp/'core-clone')
         (payload/'INSTALL.txt').write_text(INSTALL_TXT.format(version=version), encoding='utf-8')

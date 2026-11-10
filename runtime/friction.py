@@ -40,7 +40,7 @@ SECRET = re.compile(r'AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9_-]{20,}|sk_(?:live|te
                     r'|(?i:\b(?:[a-z0-9]+_)*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key)(?:_[a-z0-9_]*)?\b["\']?\s*[:=]\s*["\']?)'
                     r'(?!\$\{)(?=[^\s"\',;]*[A-Za-z])[^\s"\',;]{6,}')
 
-# 2.1 (ADR 0023): what could identify a person or a machine is redacted too, before a friction is stored or sent.
+# ADR 0023: what could identify a person or a machine is redacted too, before a friction is stored or sent.
 PERSONAL = ((re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'), '[email]'),
             (re.compile(r'(?:/Users|/home)/[^/\s]+|[A-Za-z]:\\Users\\[^\\\s]+'), '~'),
             (re.compile(r'\b(?:[a-z0-9-]+\.)+(?:internal|corp|lan|local|intra)\b', re.I), '[host]'))
@@ -62,7 +62,7 @@ def kit_dir(home=None):
     return os.path.join(home or os.path.expanduser('~'), '.ai-kit')
 
 def private(descriptor):
-    """Readable by the person only, also when the file was left by an older version with another mode (0.51.1). POSIX only."""
+    """Readable by the person only. POSIX only."""
     if hasattr(os, 'fchmod'):
         try:
             os.fchmod(descriptor, 0o600)
@@ -77,7 +77,7 @@ def context(home=None):
             state = json.load(handle)
         info['kit'] = str(state.get('version', ''))
         if state.get('team'):
-            info['team'] = str(state['team'])  # 2.2: the team, not a profile (ADR 0018)
+            info['team'] = str(state['team'])
     except (OSError, ValueError):
         pass
     return info

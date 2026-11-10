@@ -5,13 +5,12 @@ import os
 from pathlib import Path
 import shutil
 import sys
-from datetime import datetime, timezone
 
 from . import resolve
 from .core import (content_root, STATE_SCHEMA, check_state_schema, _PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, KitError, friction_module, is_guardrail, read_json, json_bytes, digest,
-                   safe_id, load_commands, load_agent, redact, user_context_refusal)
+                   safe_id, load_commands, load_agent, redact)
 from .adapters import ADAPTERS
-from .interface import ContextHost, Plan
+from .interface import Plan
 from .settings import (CORE_SELECTION, core_selection, context_folder, practice_file, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, organization, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, resolve_skills, skill_note, unknown_names, allowed_commands, selected_commands, recorded_targets, version_changes, PERSONAL_FILE, personal_settings, CHOICE_KEYS, friction_tracker)  # noqa: F401 (re-exported)
 from .console import styled_output
 from .commit import (BACKUPS_KEPT, prune_backups, commit_changes, atomic_write, KIT_MANAGED, managed_roots, prune_empty_dirs)  # noqa: F401 (re-exported)
@@ -103,14 +102,9 @@ def agent_instruction(definition):
             'Ask the parent for anything missing. '+scope+'\n')
 
 
-def context_locations():
-    """Possible context folders, relative to the home folder: those of the CLIs that host it, then the kit's own."""
-    return [a.HOME_DIR for a in ADAPTERS if isinstance(a, ContextHost)] + ['.ai-kit/context']
-
-
 def context_location(home, active):
-    """Folder for the layers and USER.md: always ~/.ai-kit/context (0.39), whatever the CLIs. The CLIs include them from
-    there by path, or receive a copy at each update (a CLI that only reads its own folder, or that cannot include a file)."""
+    """Folder for the layers and USER.md: always ~/.ai-kit/context, whatever the CLIs. The CLIs include them from there by
+    path, or receive a copy at each activation (a CLI that only reads its own folder, or that cannot include a file)."""
     return home/'.ai-kit'/'context'
 
 
@@ -155,7 +149,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     first_shipped = SHIPPED[0] is not None and not read_toml(kit/'lock.toml', {}).get('sources')
     if extra_writes is None and (first_shipped or (content_root() == ROOT and read_toml(kit/'lock.toml', {}).get('sources'))):
         from .sync import activation
-        # 2.2: a first installation from the release ZIP activates the Core it ships (lock.toml written with the files).
+        # A first installation from the release ZIP activates the Core it ships (lock.toml written with the files).
         with activation(home, 'sync' if first_shipped else 'update', dry_run, managed_file=managed_file,
                         bundle=SHIPPED[0] if first_shipped else None, shipped=first_shipped) as act:
             return apply(profile_id, home, dry_run, user, target, act.team or team, choices, report, progress, command, managed_file, act.writes)
@@ -250,11 +244,8 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     for name, text in zip(practice_names, practice_texts):
         managed_write(context_dir/name, text.encode('utf-8'), 'Context file', restore=True)
     user_file = context_dir/USER_CONTEXT
-    relocate_user_context(p, home, state, user_file, kit)
-    if (kit/'preferences.md').exists():
-        writes[kit/'preferences.md.migrated'] = (kit/'preferences.md').read_bytes()
-        deletes.append(kit/'preferences.md')
-        p.migrated_prefs = True
+    if not user_file.exists():  # USER.md belongs to the person: created once, never rewritten
+        writes[user_file] = p.user_context_text.encode('utf-8')
     # --- Adapters: each translates the plan for its CLI. ---
     for adapter in active:
         adapter.install(p)
@@ -271,7 +262,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         tracker = None if publication(managed) == 'disabled' else {**tracker, 'publication': publication(managed)}
     if ((managed or {}).get('frictions') or {}).get('tracker') and tracker is None:
         p.notices.append('[Info] Frictions stay local: frictions.publication = "disabled" in your aikit.toml (your organization set a friction tracker).')
-    new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'context_dir':context_dir.relative_to(home).as_posix(),'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'frictions_retention':(managed or {}).get('frictions', {}).get('retention_days', 30),**({'mcp_approvals':mcp_approvals} if mcp_approvals else {}),**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
+    new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'frictions_retention':(managed or {}).get('frictions', {}).get('retention_days', 30),**({'mcp_approvals':mcp_approvals} if mcp_approvals else {}),**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
                  'installed':{'sources':resource_sources(selected, catalog, agents, agent_catalog, core_synced(kit, extra_writes)),'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}
     # V2 slice 2: lock.toml (written by sync and rollback) goes in the same transaction as the files it describes; its digest
@@ -309,8 +300,6 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     for target in restored:
         print('[Check] '+target.name+' was modified by hand: restored to the kit version; your copy: '+str(backup/target.relative_to(home))
               + '. Personal preferences go in USER.md; a rule change goes through the kit repository.')
-    if p.migrated_prefs:
-        print('Old preferences migrated to this file; copy kept in preferences.md.migrated.')
     for adapter in active:
         line = adapter.summary(p)
         if line:
@@ -318,42 +307,6 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     for notice in p.notices:
         print(notice)
     return p.notices
-
-
-def relocate_user_context(p, home, state, user_file, kit):
-    """USER.md belongs to the person: never rewritten in place. When the context folder changes (another CLI chosen),
-    the version in effect is the one at the previous recorded location, whatever other copies exist or their dates: it is
-    copied to the new place; a different copy already there is kept beside it, and the person is told which file is in effect."""
-    previous_dir = home/state['context_dir'] if state.get('context_dir') else None
-    source = previous_dir/USER_CONTEXT if previous_dir and previous_dir != user_file.parent else None
-    if source is not None and source.is_file():
-        data = source.read_bytes()
-        refusal = user_context_refusal(data)
-        if refusal:
-            p.notices.append('[Check] Personal context not copied from '+str(source)+' to '+str(user_file)+': '+refusal+'. '
-                             'Fix the file, then run ai-kit sync --offline. The kit configuration itself is installed.')
-            if not user_file.exists():
-                p.writes[user_file] = p.user_context_text.encode('utf-8')
-            return
-        if user_file.exists() and user_file.read_bytes() != data:
-            kept = user_file.with_name(USER_CONTEXT+'.before-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S'))
-            p.writes[kept] = user_file.read_bytes()
-            p.notices.append('[Check] An older, different '+USER_CONTEXT+' was in '+str(user_file.parent)+': kept as '+kept.name+'.')
-        if not user_file.exists() or user_file.read_bytes() != data:
-            p.writes[user_file] = data
-            reader = next((a for a in ADAPTERS if a.NAME in p.active and isinstance(a, ContextHost) and a.context_dir(home) == source.parent), None)
-            p.notices.append('[Info] Personal context moved: '+str(user_file)+' is now the file to edit; '+str(source)
-                             + (' becomes the copy '+reader.LABEL+' reads, refreshed at each update.' if reader else ' is no longer read (left in place).'))
-        return
-    if not user_file.exists():
-        # First installation, or a state from before context_dir was recorded: an existing copy is reused, the original stays in place.
-        previous = next((f for f in (home/d/USER_CONTEXT for d in context_locations()) if f != user_file and f.is_file()), None)
-        legacy_prefs = kit/'preferences.md'
-        data = previous.read_bytes() if previous else legacy_prefs.read_bytes() if legacy_prefs.exists() else p.user_context_text.encode('utf-8')
-        if previous and user_context_refusal(data):
-            p.notices.append('[Check] Personal context not copied from '+str(previous)+': '+user_context_refusal(data)+'. A new one is created; fix the old one and move its content by hand.')
-            data = p.user_context_text.encode('utf-8')
-        p.writes[user_file] = data
 
 
 def org_defaults_root():
@@ -451,7 +404,7 @@ def main(argv=None):
                 return 130
             except SystemExit as exc:  # the script's own argparse: usage already printed
                 return exc.code if isinstance(exc.code, int) else 2
-    # 2.2: the package holds only the engine; the content of this run comes from the clone, the locked Core, the Core the
+    # The package holds only the engine; the content of this run comes from the clone, the locked Core, the Core the
     # release ZIP ships, or the launcher's folder (installer/bootstrap.py).
     home_arg = next((argv[i+1] for i, a in enumerate(argv[:-1]) if a == '--home'), None) or next((a.split('=', 1)[1] for a in argv if a.startswith('--home=')), None)
     from .bootstrap import run_content

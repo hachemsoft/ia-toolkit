@@ -62,7 +62,7 @@ class TeamTests(unittest.TestCase):
         return json.loads((self.kit/'state.json').read_text(encoding='utf-8'))
 
     def context_text(self):
-        folder = self.home/self.state()['context_dir']
+        folder = self.home/'.ai-kit/context'
         return ''.join(p.read_text(encoding='utf-8') for p in folder.glob('*.md'))
 
     def test_team_use_installs_the_team_on_top_and_records_it(self):

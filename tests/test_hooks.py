@@ -90,7 +90,7 @@ class HookScriptTests(unittest.TestCase):
    (Path(tmp)/'profiles.yml').write_text('my_project:\n  target: dev\n',encoding='utf-8');self.assertNotIn('decision',run('dbt run'))
  def test_protected_paths(self):
   with tempfile.TemporaryDirectory() as tmp:
-   (Path(tmp)/'.gemini').mkdir();(Path(tmp)/'.gemini/protected-paths').write_text('# protected\ntarget/**\ndbt_project.yml\n*.lock\n',encoding='utf-8')
+   (Path(tmp)/'.ai-kit').mkdir();(Path(tmp)/'.ai-kit/protected-paths').write_text('# protected\ntarget/**\ndbt_project.yml\n*.lock\n',encoding='utf-8')
    deny=lambda p,tool='write_file':run_hook('protected-paths.py',{'tool_name':tool,'cwd':tmp,'tool_input':{'file_path':p}}).get('decision')
    self.assertEqual(deny(tmp+'/target/run.sql'),'deny');self.assertEqual(deny('dbt_project.yml','replace'),'deny');self.assertEqual(deny('poetry.lock'),'deny')
    self.assertIsNone(deny('models/a.sql'));self.assertIsNone(deny('target/x','run_shell_command'))
@@ -100,24 +100,18 @@ class HookScriptTests(unittest.TestCase):
    self.assertIsNone(run_hook('protected-paths.py',{'tool_name':'write_file','cwd':tmp,'tool_input':{'file_path':'target/x'}}).get('decision'))
  def test_protected_paths_from_repo_root_when_launched_in_subfolder(self):
   with tempfile.TemporaryDirectory() as tmp:
-   root=Path(tmp);(root/'.git').mkdir();(root/'.gemini').mkdir();(root/'.gemini/protected-paths').write_text('target/**\nfinance/closing/**\n',encoding='utf-8')
-   (root/'finance/.gemini').mkdir(parents=True);(root/'finance/.gemini/protected-paths').write_text('seeds/**\n',encoding='utf-8')
+   root=Path(tmp);(root/'.git').mkdir();(root/'.ai-kit').mkdir();(root/'.ai-kit/protected-paths').write_text('target/**\nfinance/closing/**\n',encoding='utf-8')
+   (root/'finance/.ai-kit').mkdir(parents=True);(root/'finance/.ai-kit/protected-paths').write_text('seeds/**\n',encoding='utf-8')
    sub=str(root/'finance')
    deny=lambda p:run_hook('protected-paths.py',{'tool_name':'write_file','cwd':sub,'tool_input':{'file_path':p}}).get('decision')
    self.assertEqual(deny(str(root/'target/x.sql')),'deny');self.assertEqual(deny('closing/2026.sql'),'deny');self.assertEqual(deny('seeds/a.csv'),'deny')
    self.assertIsNone(deny('models/margin.sql'));self.assertIsNone(deny(str(root/'marketing/seeds/a.csv')))
- def test_protected_paths_neutral_file_and_legacy_file_both_read(self):
-  with tempfile.TemporaryDirectory() as tmp:
-   root=Path(tmp);(root/'.git').mkdir();(root/'.ai-kit').mkdir();(root/'.ai-kit/protected-paths').write_text('target/**\n',encoding='utf-8')
-   (root/'.gemini').mkdir();(root/'.gemini/protected-paths').write_text('*.lock\n',encoding='utf-8')
-   deny=lambda p:run_hook('protected-paths.py',{'tool_name':'write_file','cwd':tmp,'tool_input':{'file_path':p}}).get('decision')
-   self.assertEqual(deny('target/a.sql'),'deny');self.assertEqual(deny('poetry.lock'),'deny');self.assertIsNone(deny('models/a.sql'))
- def test_old_hook_location_migrated(self):
+ def test_hook_no_longer_written_is_removed(self):
   import hashlib
   with tempfile.TemporaryDirectory() as tmp:
    home=Path(tmp);write_personal(home,{'hooks':{'dbt-prod-guard':True}})
    with contextlib.redirect_stdout(io.StringIO()):apply_as('data-analyst',home,False,None,'gemini')
-   # Simulate a 0.16 installation: script at the old location, tracked by the state.
+   # A hook script the state tracks at a place this installation no longer writes.
    old=home/'.gemini/hooks/ai-kit/dbt-prod-guard.py';old.parent.mkdir(parents=True);old.write_bytes((H/'dbt-prod-guard.py').read_bytes())
    state=read_json(home/'.ai-kit/state.json');state['files']['.gemini/hooks/ai-kit/dbt-prod-guard.py']=hashlib.sha256(old.read_bytes()).hexdigest()
    (home/'.ai-kit/state.json').write_text(json.dumps(state),encoding='utf-8')

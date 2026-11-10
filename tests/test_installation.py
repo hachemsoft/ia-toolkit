@@ -47,9 +47,6 @@ class InstallationTests(unittest.TestCase):
  def test_mcp_conflict(self):
   self.core_servers({'dbt':{'command':'dbt-mcp'}});self.overrides({'mcp':{'dbt':True}});self.run_kit();p=self.path('.gemini/settings.json');v=read_json(p);v['mcpServers']['ai-kit-dbt']['command']='custom';p.write_text(json.dumps(v),encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()
- def test_malformed_context(self):
-  self.write('.gemini/GEMINI.md',START)
-  with self.assertRaises(KitError):self.run_kit()
  def test_backup(self):
   self.write('.gemini/settings.json','{}');self.run_kit();backups=list(self.path('.ai-kit/backups').glob('*/.gemini/settings.json'));self.assertEqual(len(backups),1);self.assertEqual(backups[0].read_text(encoding='utf-8'),'{}')
  def test_unknown_skill(self):

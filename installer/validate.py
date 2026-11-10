@@ -65,7 +65,7 @@ def problems(root, engine_version):
             if skill in skills:
                 found.append('commands/'+command['name']+'.md: activates '+skill+' without listing it in skills:.')
     module = check_skills_module()
-    # The reviewed scripts, recognised by their path inside their skill: the same in the V1 layout and in a flattened Core.
+    # The reviewed scripts, recognised by their path inside their skill: the same in this repository and in a flattened Core.
     inside_skill = tuple('/'+'/'.join(p.split('/')[3:]) for p in module.KIT_ALLOWED)
     allowed = {f.resolve() for f in (root/'skills').rglob('*') if f.is_file() and f.as_posix().endswith(inside_skill)}
     paths = [root/p for p in module.KIT_PATHS if (root/p).exists()]

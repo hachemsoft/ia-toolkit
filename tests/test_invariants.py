@@ -11,10 +11,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from installer.adapters import ADAPTERS, agy, codex, gemini
+from installer.adapters import ADAPTERS, gemini
 from installer.resolve import skill_catalog
 from installer.cli import apply, prune_empty_dirs
-from installer.interface import Adapter, ContextHost, LiveCheck
+from installer.interface import Adapter, LiveCheck
 from installer.core import ROOT
 from personal import write_personal
 from v1_profiles import apply_as  # noqa: E402
@@ -112,10 +112,7 @@ class InvariantTests(unittest.TestCase):
         for adapter in ADAPTERS:
             self.assertIsInstance(adapter, Adapter, adapter.__name__)
         self.assertEqual(len({a.NAME for a in ADAPTERS}), len(ADAPTERS))
-        self.assertIsInstance(gemini, ContextHost)
         self.assertIsInstance(gemini, LiveCheck)
-        self.assertNotIsInstance(agy, ContextHost)
-        self.assertNotIsInstance(codex, ContextHost)
 
     def test_each_cli_alone_gets_the_whole_profile(self):
         """Installed alone, each CLI gets all the skills and all the agents of the profile."""

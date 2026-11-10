@@ -298,7 +298,7 @@ def selected_commands(selected, manifest, allowed=None):
 
 def version_changes(before, now):
     """The skills and agents whose version changed since the previous installation: "skill tdd 1.0.0 → 1.1.0". Nothing
-    on a first installation, or from a state written before 0.40 (no versions recorded)."""
+    on a first installation."""
     if not before:
         return []
     return [kind[:-1]+' '+name+' '+str(before[kind][name])+' → '+str(version)

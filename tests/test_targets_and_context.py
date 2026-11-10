@@ -70,13 +70,13 @@ class TargetTests(Base):
                 for path in sorted(self.home.iterdir()):
                     __import__('shutil').rmtree(path)
                 self.run_kit(first)
-                user = self.home/self.state()['context_dir']/'USER.md'
+                user = self.home/'.ai-kit/context/USER.md'
                 user.write_text('Prefers French, after '+first+'\n', encoding='utf-8')
                 self.run_kit(second)
                 self.run_kit()  # update keeps the second choice
                 self.assertEqual(self.state()['targets'], [a.NAME for a in cli.selected_adapters(second, self.home)])
                 self.run_kit(first)
-                active = self.home/self.state()['context_dir']/'USER.md'
+                active = self.home/'.ai-kit/context/USER.md'
                 self.assertEqual(active.read_text(encoding='utf-8'), 'Prefers French, after '+first+'\n')
                 # No managed file recorded in the state is missing, no managed reference points to a missing layer.
                 for rel in self.state()['files']:
@@ -89,8 +89,8 @@ class TargetTests(Base):
 
 class PersonalContextTests(Base):
     def test_one_file_whatever_the_clis(self):
-        """0.39: Gemini with A written in its copy (the habit before 0.39), then Codex, then B in the file, then back to
-        Gemini: one file all along, ~/.ai-kit/context/USER.md, and B in Gemini's copy."""
+        """Gemini with A written in its copy, then Codex, then B in the file, then back to Gemini: one file all along,
+        ~/.ai-kit/context/USER.md, and B in Gemini's copy."""
         self.run_kit('gemini')
         (self.home/'.gemini/USER.md').write_text('Preference A\n', encoding='utf-8')
         notices = self.run_kit('codex')
@@ -104,23 +104,6 @@ class PersonalContextTests(Base):
         self.assertEqual((self.home/'.gemini/USER.md').read_text(encoding='utf-8'), 'Preference B\n')
         self.assertFalse([p for p in (self.home/'.gemini').iterdir() if p.name.startswith('USER.md.before-')])
         self.assertIn(str(self.home.resolve()/'.ai-kit/context/USER.md'), self.out)  # resolved: Windows short names (RUNNER~1)
-
-    def test_installation_before_0_39_moves_the_file_and_keeps_it(self):
-        """Gemini installed by 0.38: the file lived in ~/.gemini. The update copies it to ~/.ai-kit/context, the old file
-        becomes Gemini's copy, with the same text."""
-        self.run_kit('gemini')
-        user, copy = self.home/'.ai-kit/context/USER.md', self.home/'.gemini/USER.md'
-        state_path = self.home/'.ai-kit/state.json'
-        state = json.loads(state_path.read_text(encoding='utf-8'))
-        state['context_dir'] = '.gemini'
-        state['files'] = {rel: h for rel, h in state['files'].items() if not rel.startswith('.ai-kit/context/') and rel != '.gemini/USER.md'}
-        state_path.write_text(json.dumps(state), encoding='utf-8')
-        user.unlink()
-        copy.write_text('Mine, from 0.38\n', encoding='utf-8')
-        notices = self.run_kit('gemini')
-        self.assertEqual(user.read_text(encoding='utf-8'), 'Mine, from 0.38\n')
-        self.assertEqual(copy.read_text(encoding='utf-8'), 'Mine, from 0.38\n')
-        self.assertTrue(any('becomes the copy Gemini CLI reads' in n for n in notices))
 
     def test_secret_is_never_copied_to_a_new_location(self):
         self.run_kit('gemini')

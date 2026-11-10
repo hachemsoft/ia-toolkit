@@ -165,15 +165,13 @@ SHELLS = ('sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'cmd', 'cmd.exe', 'powersh
 
 
 def server_warnings(short, server):
-    """What AI Kit 2.x reports but still installs (a V1 server must be told one version before it is refused): a key outside the
-    closed schema, a shell as the command or a -c script (anything can then run, unseen by the CLI's approval)."""
-    found = ['[Check] MCP server '+short+': unknown key '+k+' (AI Kit knows '+', '.join(MCP_KEYS)+'); it will be refused in a later release.'
+    """What AI Kit reports but still installs (ADR 0022): a key outside the closed schema, a shell as the command or a -c script (anything can then run, unseen by the CLI's approval)."""
+    found = ['[Check] MCP server '+short+': unknown key '+k+' (AI Kit knows '+', '.join(MCP_KEYS)+'); AI Kit does not check it.'
              for k in sorted(set(server) - set(MCP_KEYS))]
     command = str(server.get('command') or '')
     if command and (Path(command.replace('\\', '/')).name.lower() in SHELLS or re.search(r'[;&|`$<>]', command)
                     or any(a in ('-c', '/c', '-Command', '-EncodedCommand') for a in server.get('args') or [])):
-        found.append('[Check] MCP server '+short+': runs a shell or a shell script ('+command+'); name the program itself. '
-                     'It will be refused in a later release.')
+        found.append('[Check] MCP server '+short+': runs a shell or a shell script ('+command+'); name the program itself.')
     return found
 
 
@@ -402,7 +400,7 @@ def version_tuple(text):
 
 
 def check_source(root, engine_version):
-    """The content tree's manifest (name, min_engine), or None when it has none (the V1 layout). Refuses a content that needs a
+    """The content tree's manifest (name, min_engine), or None when it has none. Refuses a content that needs a
     newer engine: installing it with an older one would install resources it cannot apply."""
     path = Path(root)/AIKIT_FILE
     if not path.is_file():

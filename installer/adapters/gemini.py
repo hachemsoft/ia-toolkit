@@ -11,20 +11,12 @@ from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
 from .. import resolve
-from ..core import (content_root, user_context_refusal, adopt_user_copy, LIVE_PROMPT, network_problem, START, END, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
+from ..core import (content_root, user_context_refusal, adopt_user_copy, LIVE_PROMPT, network_problem, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
                     rename_references, renamed_skill_file, renamed_notice, kit_name,
                     digest, merge_defaults, run_timed,
                     record_auto_friction, _ts)
 
 PROJECT_CONTEXT = ('GEMINI.md', 'AGENTS.md')  # repo context files Gemini must read
-
-ENV_MARKER = '# ai-kit : '
-HANDED_OVER = '# Set by the AI Kit before 0.36, now yours: the kit no longer writes authentication; edit these lines here.'
-
-def handed_over(text):
-    """~/.gemini/.env as an earlier version wrote it: the values stay (removing them would cut access to the model),
-    only the kit's marker line is reworded, so the file says it is the person's now."""
-    return '\n'.join(HANDED_OVER if line.strip().startswith(ENV_MARKER) else line for line in text.splitlines()) + '\n'
 
 def merge_context_filenames(settings, managed=(), retired=()):
     """Ensure the kit and project context, without removing personal files; remove the layers the kit used to manage and no longer produces."""
@@ -39,15 +31,6 @@ def merge_context_filenames(settings, managed=(), retired=()):
     stale = set(retired) - set(managed)
     context['fileName'] = list(dict.fromkeys(list(managed) + [USER_CONTEXT] + list(PROJECT_CONTEXT) + [n for n in names if n not in stale]))
     return settings
-
-def context_parts(text):
-    if START not in text and END not in text:
-        return text, None, ''
-    if text.count(START) != 1 or text.count(END) != 1:
-        raise KitError('Invalid kit markers in GEMINI.md.')
-    before, rest = text.split(START)
-    managed, after = rest.split(END)
-    return before, START+managed+END, after
 
 def gemini_active_account(home):
     """Active Google account of Gemini, or None. Read only, never the tokens."""
@@ -202,16 +185,11 @@ BUILTIN_COMMANDS = {'about','agents','auth','bug','chat','clear','commands','com
 def present(home):
     return bool(shutil.which(COMMAND)) or (home/HOME_DIR/'settings.json').is_file()
 
-def context_dir(home):
-    """Gemini only imports files located in ~/.gemini (checked on 0.65): it gets a copy of the layers and of USER.md there.
-    Before 0.39 the files themselves lived there."""
-    return home/HOME_DIR
-
 def is_managed(rel):
     """Path a kit installation may have put in place for Gemini, so one it can remove if intact."""
     if rel.startswith(MANAGED_PREFIXES):
         return True
-    return rel.startswith('.gemini/') and bool(CONTEXT_NAME.fullmatch(rel[len('.gemini/'):]))  # USER.md included: a copy since 0.39
+    return rel.startswith('.gemini/') and bool(CONTEXT_NAME.fullmatch(rel[len('.gemini/'):]))  # USER.md included: a copy
 
 def active_account(home):
     return gemini_active_account(home)
@@ -239,19 +217,6 @@ def install(p: Plan) -> None:
     """Skills, TOML commands and agents in ~/.gemini, and a copy of the context files."""
     gemini = p.home/'.gemini'
     copy_context(p)
-    # Block inherited from versions 0.0.x in GEMINI.md: removed if intact.
-    context_file = gemini/'GEMINI.md'
-    if context_file.exists():
-        old_context = context_file.read_text(encoding='utf-8')
-        before, old_block, after = context_parts(old_context)
-        if old_block is not None:
-            if p.state.get('context_hash') != digest(old_block.encode()):
-                raise KitError('Kit block modified or not recognised in GEMINI.md. Move your changes to '+str(p.user_file)+' then remove the block between the ai-kit markers before update.')
-            remaining = (before.rstrip('\n')+'\n\n'+after.lstrip('\n')).strip('\n')
-            if remaining:
-                p.writes[context_file] = (remaining+'\n').encode('utf-8')
-            else:
-                p.deletes.append(context_file)
     names = skill_names(p)
     # Gemini turns every skill into a /command too: a personal skill takes the command's name as well.
     personal_skill = ((lambda n: gemini/'skills'/n, lambda n: '.gemini/skills/'+n),)
@@ -306,15 +271,12 @@ def agent_markdown(p: Plan, agent: str, definition: dict, tool_names=None) -> by
     return ('\n'.join(header)+'\n\n'+p.agent_body(definition)).encode('utf-8')
 
 def was_installed(state):
-    """Gemini was a target of the previous installation (states before 0.17 only have the files)."""
-    clis = (state.get('installed') or {}).get('clis')
-    if clis is not None:
-        return NAME in clis
-    return any(rel.startswith('.gemini/commands/') for rel in state.get('files', {}))
+    """Gemini was a target of the previous installation."""
+    return NAME in ((state.get('installed') or {}).get('clis') or [])
 
 def remove_kit_settings(p: Plan) -> None:
     """Gemini no longer a target: its settings lose what the kit added (guardrail groups, kit MCP servers, the kit layers
-    in context.fileName); the person's own settings stay, and so does what an earlier version wrote in .env. A kit entry edited by hand stops the update."""
+    in context.fileName and the USER.md copy); the person's own settings stay. A kit entry edited by hand stops the change."""
     gemini = p.home/'.gemini'
     settings_file = gemini/'settings.json'
     if settings_file.is_file():
@@ -343,18 +305,8 @@ def remove_kit_settings(p: Plan) -> None:
         context = settings.get('context')
         if isinstance(context, dict) and isinstance(context.get('fileName'), list):
             layers = {rel.split('/', 1)[1] for rel in p.old_files if re.fullmatch(r'\.gemini/\d\d_[A-Z_]+\.md', rel)}
-            # USER.md stays declared only where it is the person's own file (installed before 0.39), not the kit's copy.
-            own_user_file = HOME_DIR+'/'+USER_CONTEXT not in p.old_files
-            context['fileName'] = [n for n in context['fileName'] if n not in layers or (n == USER_CONTEXT and own_user_file)]
+            context['fileName'] = [n for n in context['fileName'] if n not in layers and n != USER_CONTEXT]
         p.writes[settings_file] = json_bytes(settings)
-    hand_over_env(p)
-
-def hand_over_env(p: Plan) -> None:
-    env_file = p.home/'.gemini'/'.env'
-    if env_file.is_file():
-        text = env_file.read_text(encoding='utf-8')
-        if ENV_MARKER in text:
-            p.writes[env_file] = handed_over(text).encode('utf-8')
 
 def finalize(p: Plan, active: bool = True) -> None:
     """Settings ~/.gemini/settings.json (defaults, layers, guardrails, MCP); authentication and model are left to the person.
@@ -368,8 +320,7 @@ def finalize(p: Plan, active: bool = True) -> None:
     settings_file = gemini/'settings.json'
     settings = read_json(settings_file)
     merge_defaults(settings, read_json(Path(__file__).resolve().parent/'gemini_defaults.json'))
-    # Authentication and model belong to the CLI and the IT procedure (0.36): the kit writes neither; what it wrote before stays.
-    hand_over_env(p)
+    # Authentication and model belong to the CLI and the IT procedure: the kit writes neither.
     retired = [rel.split('/',1)[1] for rel in p.old_files if re.fullmatch(r'\.gemini/\d\d_[A-Z_]+\.md', rel)]
     merge_context_filenames(settings, p.context_names, retired)
     original_hooks = settings.get('hooks')
@@ -453,8 +404,6 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     print('[Info] '+str(len(skills))+' skills, '+str(len(installed_commands))+' commands; skill descriptions injected on every turn: '+str(skill_description_weight(home, skills))+' bytes.')
     shadowed = [s for s in skills if (home/'.agents/skills'/s/'SKILL.md').is_file()]
     status(not shadowed,'No kit skill shadowed by a copy in ~/.agents/skills'+(' (shadowed: '+', '.join(shadowed)+')' if shadowed else ''))
-    legacy = home/'.gemini/GEMINI.md'
-    status(not legacy.exists() or START not in legacy.read_text(encoding='utf-8'),'No legacy kit block in GEMINI.md')
     settings = read_json(home/'.gemini/settings.json')
     names = settings.get('context',{}).get('fileName',[])
     names = [names] if isinstance(names,str) else names
@@ -487,13 +436,6 @@ def doctor_hint():
 def live(home):
     """Real call to the model, with diagnosis and fix; 0 if Gemini answers."""
     return print_live(home)
-
-def installed_from_files(state):
-    """State written before 0.17: the installed names are derived from the recorded Gemini paths."""
-    files = state.get('files', {})
-    return {'skills': sorted({rel.split('/')[2] for rel in files if rel.startswith('.gemini/skills/')}),
-            'commands': sorted(rel.split('/')[2][:-5] for rel in files if rel.startswith('.gemini/commands/')),
-            'agents': sorted(rel.split('/')[2][:-3] for rel in files if rel.startswith('.gemini/agents/'))}
 
 def session_logs(home):
     return sorted((home/'.gemini/tmp').glob('*/chats/*.json')) if (home/'.gemini/tmp').is_dir() else []

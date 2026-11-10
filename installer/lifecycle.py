@@ -126,7 +126,7 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
     deletes.append(kit/'state.json')
     remove_command(home, state, writes)
     writes = {path: data for path, data in writes.items() if not path.exists() or path.read_bytes() != data}
-    personal = [str(home/state.get('context_dir', '.gemini')/USER_CONTEXT)] + [str(home/rel) for rel in PERSONAL_KEPT if (home/rel).exists()]
+    personal = [str(home/'.ai-kit/context'/USER_CONTEXT)] + [str(home/rel) for rel in PERSONAL_KEPT if (home/rel).exists()]
     def rel(path):
         return path.relative_to(home).as_posix()
     summary = {'removed': [rel(d) for d in deletes], 'rewritten': sorted(rel(w) for w in writes), 'kept_modified': kept,

@@ -2,8 +2,8 @@
 """Kit guardrail (before a tool call): blocks agent writes to the configuration of the kit and of the CLIs, and under the
 paths a repo protects.
 
-Protected paths of a repo are glob patterns, one per line, in <repo>/.ai-kit/protected-paths (or the legacy
-<repo>/.gemini/protected-paths), comments with #. Example: target/**  ·  models/legacy/**  ·  *.lock  ·  dbt_project.yml
+Protected paths of a repo are glob patterns, one per line, in <repo>/.ai-kit/protected-paths,
+comments with #. Example: target/**  ·  models/legacy/**  ·  *.lock  ·  dbt_project.yml
 A shell command that names a protected path is allowed only when every program it runs only reads (cat, grep, ls…):
 the list of what is allowed is closed, not the list of what writes. Output: JSON {"decision": "deny", "reason": ...} or {}.
 """
@@ -13,8 +13,8 @@ import os
 import re
 import sys
 
-# Protected-paths file of a folder: .ai-kit/protected-paths (neutral, all CLIs), and the legacy .gemini/protected-paths, also read.
-PATTERN_FILES = (os.path.join('.ai-kit', 'protected-paths'), os.path.join('.gemini', 'protected-paths'))
+# Protected-paths file of a folder: .ai-kit/protected-paths (neutral, all CLIs).
+PATTERN_FILES = (os.path.join('.ai-kit', 'protected-paths'),)
 
 # Configuration of the kit and of the CLIs, always protected: an agent must not be able to switch off its own guardrails.
 # Relative to the home folder; a trailing / protects a whole folder. ~/.ai-kit/learning/ (personal /learn progress) and
@@ -30,7 +30,7 @@ CONFIG_PATHS = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/sources/', '
 CONFIG_FOLDERS = ('.ai-kit', '.gemini', '.codex', '.claude')
 # Configuration of a repo, protected in every repo: a project setting can turn hooks off or change the environment the
 # guardrails read (a .env setting the kit's variables is refused through its content).
-REPO_CONFIG = ('.ai-kit/protected-paths', '.gemini/protected-paths', '.claude/settings.json', '.claude/settings.local.json',
+REPO_CONFIG = ('.ai-kit/protected-paths', '.claude/settings.json', '.claude/settings.local.json',
                '.gemini/settings.json', '.gemini/.env', '.codex/config.toml')
 KIT_VARIABLES = re.compile(r'^\s*(export\s+)?(AI_KIT_[A-Z_]*|DBT_TARGET)\s*=', re.M)
 

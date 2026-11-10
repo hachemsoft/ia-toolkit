@@ -11,21 +11,10 @@ from ..core import (USER_CONTEXT, KitError, digest, hook_command, cli_event, spl
                     skill_prefix, free_name, rename_references, renamed_skill_file, renamed_notice, _ts, live_call, LIVE_PROMPT, skills_read)
 
 CODEX_DIR = '.codex'
-# Managed block markers: no path, so they never change when a folder is renamed. Their text is an identifier, kept as
-# written up to 0.36 ("overrides.json" is now aikit.toml): changing it would orphan the blocks already installed.
+# Managed block markers: no path, so they never change when a folder is renamed. Their text is an identifier: changing it
+# would orphan the blocks already installed.
 CODEX_MD = ('<!-- ai-kit:start : block managed by the AI Kit; do not edit here (USER.md, aikit.toml, then ai-kit sync --offline) -->', '<!-- ai-kit:end -->')
 CODEX_TOML = ('# >>> ai-kit : block managed by the AI Kit; do not edit here (aikit.toml, then ai-kit sync --offline) >>>', '# <<< ai-kit <<<')
-# Markers written by earlier versions (French, before and after 0.18): recognised to take the block over, then replaced.
-LEGACY_STARTS = {
-    CODEX_MD[0]: ('<!-- ai-kit:début : bloc géré par le kit IA ; modifier ~/.gemini/USER.md ou ~/.ai-toolkit/overrides.json, puis update -->',
-                  '<!-- ai-kit:début : bloc géré par le Kit IA ; ne pas le modifier ici (USER.md, overrides.json, puis update) -->'),
-    CODEX_TOML[0]: ('# >>> ai-kit : bloc géré par le kit IA ; modifier ~/.ai-toolkit/overrides.json, puis update >>>',
-                    '# >>> ai-kit : bloc géré par le Kit IA ; ne pas le modifier ici (overrides.json, puis update) >>>'),
-}
-LEGACY_ENDS = {
-    CODEX_MD[1]: ('<!-- ai-kit:fin -->',),
-    CODEX_TOML[1]: (),
-}
 CODEX_EXPLICIT_ONLY = 'policy:\n  allow_implicit_invocation: false\n'
 
 def explicit_only(skill_text):
@@ -37,21 +26,9 @@ def normalize_newlines(text):
     return text.replace('\r\n', '\n').replace('\r', '\n')
 
 def read_block(text, markers, label):
-    """Like split_block, but also recognises legacy markers. Returns (before, block with current markers, after, block as written)."""
-    legacy = next((old for old in LEGACY_STARTS[markers[0]] if old in text), None)
-    legacy_end = next((old for old in LEGACY_ENDS[markers[1]] if old in text), None)
-    if legacy:
-        text = text.replace(legacy, markers[0], 1)
-    if legacy_end:
-        text = text.replace(legacy_end, markers[1], 1)
+    """split_block, plus the block as written. Returns (before, block, after, block as written)."""
     before, block, after = split_block(text, markers, label)
-    written = block  # the block as it was written and recorded
-    if block is not None and legacy:
-        written = written.replace(markers[0], legacy, 1)
-    if block is not None and legacy_end:
-        written = written[:-len(markers[1])]+legacy_end
-    return before, block, after, written
-
+    return before, block, after, block
 def toml_value(value):
     """TOML string, list or inline table; a JSON string is a valid TOML string."""
     if isinstance(value, dict):
@@ -241,7 +218,7 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
             continue
         status(block is not None and digest(written.encode('utf-8')) == blocks.get(rel), 'Kit block intact in ~/'+rel)
     agents_md = home/CODEX_DIR/'AGENTS.md'
-    user_file = home/state.get('context_dir', '.gemini')/USER_CONTEXT
+    user_file = home/'.ai-kit/context'/USER_CONTEXT
     if agents_md.exists() and user_file.exists():
         current = user_file.read_text(encoding='utf-8').strip() in agents_md.read_text(encoding='utf-8')
         status(current, 'Codex has the latest version of USER.md'+('' if current else ' (run ai-kit sync --offline after editing it)'))
