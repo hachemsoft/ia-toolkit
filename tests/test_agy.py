@@ -4,7 +4,7 @@ from installer.core import KitError, read_json, load_commands, command_skill_tex
 from installer.adapters.agy import AGY_PLUGIN
 from unittest import mock
 from personal import write_personal  # noqa: E402
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload,env=None):
  proc=subprocess.run([sys.executable,'-I',str(H/script)],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8',env={**os.environ,**(env or {})});return json.loads(proc.stdout or '{}')
@@ -38,7 +38,7 @@ class AgyAdapterTests(unittest.TestCase):
   # Gemini reads the shared folder: no command skill there, or it would show every command twice.
   self.assertFalse((shared/'intent').exists());self.assertFalse((shared/'retro').exists())
  def test_analyst_gets_only_its_commands_as_skills(self):
-  self.run_kit();base=self.plugin()/'skills';self.assertTrue((base/'intent/SKILL.md').is_file());self.assertTrue((base/'review/SKILL.md').is_file());self.assertFalse((base/'design').exists())  # 2.2: spec is a Core default; design stays optional
+  self.run_kit();base=self.plugin()/'skills';self.assertTrue((base/'intent/SKILL.md').is_file());self.assertTrue((base/'review/SKILL.md').is_file());self.assertFalse((base/'design').exists())  # spec is a Core default; design stays optional
  def test_gemini_only_target(self):
   self.run_kit(target='gemini');self.assertFalse(self.plugin().exists());self.assertFalse((self.home/'.gemini/skills/intent').exists())
  def test_switch_target_removes_plugin(self):
@@ -46,7 +46,7 @@ class AgyAdapterTests(unittest.TestCase):
  def test_hooks_enabled_and_mcp_in_plugin(self):
   core={'defaults':{'mcp':{'dbt':{'server':{'command':'dbt-mcp'}}}}}  # the Core's mcp/servers.toml
   self.overrides({'hooks':{'dbt-prod-guard':True},'mcp':{'dbt':True}})
-  with mock.patch('installer.plan.organization',return_value=core):self.run_kit()
+  with mock.patch('installer.plan.core_settings',return_value=core):self.run_kit()
   self.assertTrue(read_json(self.plugin()/'hooks.json')['ai-kit-dbt-prod-guard']['enabled']);self.assertIn('ai-kit-dbt',read_json(self.plugin()/'mcp_config.json')['mcpServers'])
  def test_modified_plugin_file_blocks(self):
   self.run_kit();(self.plugin()/'rules/AGENTS.md').write_text('mine',encoding='utf-8')

@@ -106,7 +106,7 @@ class UserEditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp).resolve()
             with contextlib.redirect_stdout(io.StringIO()):
-                cli.apply('general', home, False, None, 'claude')
+                cli.apply(home, False, None, 'claude')
             with mock.patch('installer.cli.interactive', return_value=False), contextlib.redirect_stdout(io.StringIO()) as out:
                 self.assertEqual(cli.main(['user', 'edit', '--home', str(home)]), 0)
             self.assertTrue(out.getvalue().strip().endswith('USER.md'))

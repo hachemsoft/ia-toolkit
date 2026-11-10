@@ -7,7 +7,6 @@ metadata:
   aikit-origin: "internal"
   aikit-summary: "Create, modify, test or document a dbt model, on any adapter (BigQuery specifics when the project uses it)."
   aikit-category: "domain"
-  aikit-tier: "profile"
   aikit-requires: "tdd"
 ---
 

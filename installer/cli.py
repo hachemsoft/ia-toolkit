@@ -11,7 +11,7 @@ from .core import (content_root, STATE_SCHEMA, check_state_schema, _PACKAGE_DIR,
                    safe_id, load_commands, load_agent, redact)
 from .adapters import ADAPTERS
 from .interface import Plan
-from .settings import (CORE_SELECTION, core_selection, context_folder, practice_file, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, organization, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, resolve_skills, skill_note, unknown_names, allowed_commands, selected_commands, recorded_targets, version_changes, PERSONAL_FILE, personal_settings, CHOICE_KEYS, friction_tracker)  # noqa: F401 (re-exported)
+from .settings import (CORE_SELECTION, core_selection, context_folder, practice_file, managed_context_names, validate_server, SECRET_NAME, git_identity, detect_identity, core_settings, team_settings, resolve_mcp, merge_settings, unknown_keys, setting_differences, resolve_skills, skill_note, unknown_names, allowed_commands, selected_commands, recorded_targets, version_changes, PERSONAL_FILE, personal_settings, CHOICE_KEYS, friction_tracker)  # noqa: F401 (re-exported)
 from .console import styled_output
 from .commit import (BACKUPS_KEPT, prune_backups, commit_changes, atomic_write, KIT_MANAGED, managed_roots, prune_empty_dirs)  # noqa: F401 (re-exported)
 from .doctor import (GUARDRAIL_PROBES, command_parts, guardrail_checks, REPO_SKILL_DIRS, repo_root, repo_skill_overrides, mcp_report, print_summary, doctor, kit_version, source_folder, version_line, SCRIPT_INTERPRETER, kit_commands_on_path, runtime_checks, doctor_checks, release_check, live_checks, plain_text_problem)  # noqa: F401 (re-exported)
@@ -133,7 +133,7 @@ def selected_adapters(target, home, recorded=None):
     return [a for a in ADAPTERS if a.NAME in wanted]
 
 
-def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None, command=None, managed_file=None, extra_writes=None):
+def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None, command=None, managed_file=None, extra_writes=None):
     """Full prevalidation, neutral plan, adapters, backup, then atomic write file by file.
     target: a --target value or a list of CLI names; None keeps the CLIs recorded by the previous installation.
     choices: new values for keys of the person's aikit.toml (CHOICE_KEYS), written with the rest of the installation,
@@ -152,26 +152,24 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         # A first installation from the release ZIP activates the Core it ships (lock.toml written with the files).
         with activation(home, 'sync' if first_shipped else 'update', dry_run, managed_file=managed_file,
                         bundle=SHIPPED[0] if first_shipped else None, shipped=first_shipped) as act:
-            return apply(profile_id, home, dry_run, user, target, act.team or team, choices, report, progress, command, managed_file, act.writes)
+            return apply(home, dry_run, user, target, act.team or team, choices, report, progress, command, managed_file, act.writes)
     state = read_json(kit/'state.json')
     check_state_schema(state, kit/'state.json')
     check_source(content_root(), (ROOT/'VERSION').read_text(encoding='utf-8').strip())  # min_engine of the content (2.0)
     active = selected_adapters(target, home, recorded_targets(state))
     context_dir = context_location(home, active)
-    # 2.2: no profiles (ADR 0018): the Core default selection; profile_id is kept for the callers of the V1 API, never read.
-    profile_id = CORE_SELECTION
-    profile = core_selection()
+    selection = core_selection()  # the Core default (ADR 0018); the Team and the person add or remove
     # Team: chosen at setup (--team or the setup question), then kept for update.
     # 'none' (setup --team none) leaves the team; no value keeps the recorded one.
     team = None if team == 'none' else safe_id(team) if team else state.get('team')
     org_defaults, team_layer, personal, overrides, choices = effective_settings(kit, team, choices)
-    # managed.toml (IT): every key it sets wins over the organization, the team and the person (ADR 0015).
+    # managed.toml (IT): every key it sets wins over the Core, the Team and the person (ADR 0015).
     hook_specs = read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})
     managed = load_managed(managed_file, [n for n, s in hook_specs.items() if is_guardrail(s)])
     overrides, managed_notices = apply_values(overrides, managed)
     catalog = resolve.skill_catalog(content_root())
     manifest = load_commands()
-    selected, allowed = resolve_selection(profile, overrides, catalog, manifest)
+    selected, allowed = resolve_selection(selection, overrides, catalog, manifest)
     writes, deletes = {}, []
     personal_path, personal_bytes, personal_notices = personal_file(kit, choices, deletes)
     if personal_bytes is not None:  # the person's file: created once, then written only for a choice of this run
@@ -180,7 +178,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     if identity.get('email') and not EMAIL.fullmatch(identity['email']):
         raise KitError('Invalid email: '+identity['email'])
     if team and (context_folder()/('20-'+team+'.md')).is_file():
-        profile = {**profile, 'practices': ['company', team]}  # the active Team's context replaces the default team layer
+        selection = {**selection, 'practices': ['company', team]}  # the active Team's context replaces the default team layer
     files = {}
     old_files = state.get('files',{})
     restored = []  # kit rule layers edited by hand: put back, the edited copy kept in the backup
@@ -198,19 +196,19 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         writes[target] = data
         files[rel] = digest(data)
     # --- Neutral plan: what to install, with nothing specific to a CLI. ---
-    context_names = managed_context_names(profile)
+    context_names = managed_context_names(selection)
     commands = selected_commands(selected, manifest, allowed)
-    kit_text = (content_root()/'templates/kit-context.md').read_text(encoding='utf-8').format(profile=profile_id, commands=command_lines(commands), playbooks=playbook_lines(selected, catalog), frictions=friction_rule(overrides.get('frictions', 'propose')))
-    practice_names, practice_texts = practice_layers(profile)
+    kit_text = (content_root()/'templates/kit-context.md').read_text(encoding='utf-8').format(commands=command_lines(commands), playbooks=playbook_lines(selected, catalog), frictions=friction_rule(overrides.get('frictions', 'propose')))
+    practice_names, practice_texts = practice_layers(selection)
     practices = '\n'.join(practice_texts)
     sources = skill_sources(selected, catalog)
     agent_catalog = resolve.agent_catalog(content_root())
-    agents = select_agents(profile, overrides, agent_catalog, load_agent)
+    agents = select_agents(selection, overrides, agent_catalog, load_agent)
     hooks_dir = kit/'hooks'  # scripts shared by all CLIs, like kit/bin/friction.py
     hook_manifest, enabled_hooks, turned_off = guardrails(overrides, hooks_dir, locked_guardrails(managed), [n for n, v in (managed or {}).get('hooks', {}).items() if v is False])
     kit_dir = kit_folder()
     # MCP: resolved from the three sources apart, not from the merged overrides ("github": true must not erase the server).
-    servers, _ = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
+    servers, _ = resolve_mcp(org_defaults.get('mcp', {}), selection.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
     enabled_mcp, mcp_notices = filter_mcp({'ai-kit-'+name: server for name, server in servers.items()}, managed)
     team_servers = {n: e.get('server', {}) for n, e in (team_layer.get('mcp') or {}).items() if isinstance(e, dict) and e.get('team')}
     enabled_mcp, team_notices, mcp_approvals = team_mcp_gate(enabled_mcp, team_servers, managed, state.get('mcp_approvals'), APPROVE[0])
@@ -262,7 +260,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
         tracker = None if publication(managed) == 'disabled' else {**tracker, 'publication': publication(managed)}
     if ((managed or {}).get('frictions') or {}).get('tracker') and tracker is None:
         p.notices.append('[Info] Frictions stay local: frictions.publication = "disabled" in your aikit.toml (your organization set a friction tracker).')
-    new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'profile':profile_id,'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'team':team,'targets':[a.NAME for a in active],'practices':profile['practices'],'command':command_state,'frictions_retention':(managed or {}).get('frictions', {}).get('retention_days', 30),**({'mcp_approvals':mcp_approvals} if mcp_approvals else {}),**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
+    new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'team':team,'targets':[a.NAME for a in active],'practices':selection['practices'],'command':command_state,'frictions_retention':(managed or {}).get('frictions', {}).get('retention_days', 30),**({'mcp_approvals':mcp_approvals} if mcp_approvals else {}),**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
                  'installed':{'sources':resource_sources(selected, catalog, agents, agent_catalog, core_synced(kit, extra_writes)),'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}
     # V2 slice 2: lock.toml (written by sync and rollback) goes in the same transaction as the files it describes; its digest
@@ -277,7 +275,7 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     if report is not None:
         def rel(path):
             return path.relative_to(home).as_posix()
-        report.update({'profile': profile_id, 'team': team, 'targets': [a.NAME for a in active], 'skills': selected,
+        report.update({'team': team, 'targets': [a.NAME for a in active], 'skills': selected,
                        'commands': [c['name'] for c in commands], 'agents': ['ai-kit-'+a for a, _ in agents], 'hooks': sorted(enabled_hooks),
                        'created': sorted(rel(w) for w in writes if not w.exists()), 'modified': sorted(rel(w) for w in writes if w.exists()),
                        'removed': sorted(rel(d) for d in deletes), 'restored': [rel(r) for r in restored], 'notices': p.notices,
@@ -307,14 +305,6 @@ def apply(profile_id, home, dry_run=False, user=None, target=None, team=None, ch
     for notice in p.notices:
         print(notice)
     return p.notices
-
-
-def org_defaults_root():
-    """The Core's settings (its MCP servers)."""
-    return organization()
-
-
-FRICTION_MODES = ('propose', 'auto', 'off')
 
 
 def kit_folder():
@@ -540,7 +530,7 @@ def command_main(argv):
             with activation(home, action, args.dry_run, confirm, guardrail_names=[n for n, s in hook_specs.items() if is_guardrail(s)],
                             team_name=args.rest[1] if args.action == 'team' else None, team_url=args.url, ask_url=ask_url,
                             bundle=args.from_bundle or (SHIPPED[0] if first_shipped else None), shipped=first_shipped) as act:
-                apply(CORE_SELECTION, home, args.dry_run, identity, args.target, act.team or state.get('team'),
+                apply(home, args.dry_run, identity, args.target, act.team or state.get('team'),
                       command={'yes': True, 'no': False}.get(args.command_on_path), extra_writes=act.writes)
             if not args.dry_run:
                 print_summary(home, read_json(home/'.ai-kit/state.json'), None)

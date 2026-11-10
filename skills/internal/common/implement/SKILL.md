@@ -9,7 +9,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Implement a ticket or a spec, with TDD, then review."
   aikit-category: "workflow"
-  aikit-tier: "core"
   aikit-requires: "tdd,code-review"
 ---
 

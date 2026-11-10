@@ -25,7 +25,7 @@ class CapabilityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp).resolve()
             with contextlib.redirect_stdout(io.StringIO()):
-                cli.apply('general', home, False, None, 'gemini')
+                cli.apply(home, False, None, 'gemini')
             with contextlib.redirect_stdout(io.StringIO()) as out:
                 cli.doctor(home)
         self.assertIn('Gemini CLI capabilities: OK: ', out.getvalue())

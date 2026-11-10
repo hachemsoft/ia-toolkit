@@ -7,7 +7,6 @@ metadata:
   aikit-origin: "internal"
   aikit-summary: "Develop or review a Java feature in an existing repo (Maven or Gradle, Spring or other)."
   aikit-category: "domain"
-  aikit-tier: "profile"
   aikit-requires: "tdd"
   aikit-optional-mr: "describe the delivery in the merge request (MR) or pull request (PR) format the repo uses: what changed, why, how it was verified"
 ---

@@ -25,7 +25,7 @@ class Base(unittest.TestCase):
     def run_kit(self, choices=None):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            notices = cli.apply('general', self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini', choices=choices)
+            notices = cli.apply(self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini', choices=choices)
         return notices, out.getvalue()
 
 

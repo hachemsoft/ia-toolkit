@@ -7,7 +7,6 @@ metadata:
   aikit-origin: "internal"
   aikit-summary: "Define a KPI before computing it: grain, population, period, exclusions, source of truth, owner."
   aikit-category: "domain"
-  aikit-tier: "profile"
 ---
 
 # kpi-definition

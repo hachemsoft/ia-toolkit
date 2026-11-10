@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Turn the conversation into a specification: in this kit, /spec writes it as spec.md, never a ticket."
   aikit-category: "workflow"
-  aikit-tier: "profile"
   aikit-optional-setup-workflow: "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue"
 ---
 

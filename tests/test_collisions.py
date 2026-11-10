@@ -29,7 +29,7 @@ class Base(unittest.TestCase):
 
     def run_kit(self, target):
         with contextlib.redirect_stdout(io.StringIO()):
-            return cli.apply('general', self.home, False, {'email': 'a@example.org', 'source': 'option'}, target)
+            return cli.apply(self.home, False, {'email': 'a@example.org', 'source': 'option'}, target)
 
     def read(self, rel):
         return (self.home/rel).read_text(encoding='utf-8')

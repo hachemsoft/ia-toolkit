@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Generate an interactive bash wizard for the steps only a human can perform."
   aikit-category: "tool"
-  aikit-tier: "optional"
 ---
 
 # Wizard

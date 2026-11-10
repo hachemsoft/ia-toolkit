@@ -7,7 +7,6 @@ metadata:
   aikit-origin: "internal"
   aikit-summary: "Analyse a question about the project: explore, verify each claim, report verdict, evidence and unknowns."
   aikit-category: "workflow"
-  aikit-tier: "core"
 ---
 
 # analysis

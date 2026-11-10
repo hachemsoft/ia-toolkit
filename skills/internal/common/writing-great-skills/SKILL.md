@@ -9,7 +9,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Reference for writing and reviewing predictable skills."
   aikit-category: "reference"
-  aikit-tier: "optional"
   aikit-optional-tdd: "an example name only"
 ---
 

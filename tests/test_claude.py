@@ -17,7 +17,7 @@ from installer import cli, core
 from installer.adapters import claude
 from installer.core import ROOT, KitError, read_json
 from personal import write_personal  # noqa: E402
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 
 H = ROOT/'runtime/hooks'
 PERSONAL_HOOK = {'hooks': [{'type': 'command', 'command': '/usr/local/bin/my-status'}]}
@@ -38,7 +38,7 @@ class Base(unittest.TestCase):
     def core_servers(self, servers):
         """The Core's MCP servers (mcp/servers.toml) for this test: each defined, turned on by the person in aikit.toml."""
         org = {'defaults': {'mcp': {name: {'server': server} for name, server in servers.items()}}} if servers else {}
-        for target in ('installer.settings.organization', 'installer.plan.organization', 'installer.cli.organization', 'installer.doctor.organization'):
+        for target in ('installer.settings.core_settings', 'installer.plan.core_settings', 'installer.cli.core_settings', 'installer.doctor.core_settings'):
             patcher = mock.patch(target, return_value=org)
             patcher.start()
             self.addCleanup(patcher.stop)

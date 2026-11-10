@@ -69,7 +69,7 @@ The report reads, locally, the session logs each CLI already writes, and counts:
 
 - A skill or agent is called unused only when every session comes from a CLI whose logs show it; otherwise it is "not observable".
 - Logs that exist but are not recognised are reported (`[Check]`), not counted as zero.
-- Below 10 sessions and 50 prompts, nothing is recommended. Above, the candidates are installed skills marked `aikit-tier: "core"`, of category `workflow` or `tool`, never activated and required by nothing used (a typed command or an activated skill).
+- Below 10 sessions and 50 prompts, nothing is recommended. Above, the candidates are installed skills of the Core default selection, of category `workflow` or `tool`, never activated and required by nothing used (a typed command or an activated skill).
 
 ## Usage review
 
@@ -78,7 +78,7 @@ The team's procedure to keep the kit small. Every installed skill costs context 
 1. Each person runs `ai-kit usage --json <file>` and shares it, if they want to.
 2. The team aggregates: `python3 scripts/usage-aggregate.py <files>` (Markdown ready to paste); `--draft-issues` prints one ticket draft per group of frictions. Nothing is created automatically.
 3. Each group of frictions becomes one fix: a `doctor` check, a [troubleshooting](troubleshooting.md) line, an eval case, or a prompt change.
-4. Each candidate: take it out of the default selection (remove `aikit-default`, set `aikit-tier: "optional"`), or write in one line why it stays.
+4. Each candidate: take it out of the default selection (set `aikit-default: "false"`), or write in one line why it stays.
 5. Each command never typed: check that `/guide` suggests it and that its description is clear; fix the router or the description, not the command.
 6. A written rule that `rule` frictions show broken again becomes a check (an eval case, a guardrail, a `doctor` check).
 7. Release, and name the friction ids a fix answers in the `CHANGELOG`.

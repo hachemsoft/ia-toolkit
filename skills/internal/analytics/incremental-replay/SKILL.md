@@ -7,7 +7,6 @@ metadata:
   aikit-origin: "internal"
   aikit-summary: "Incremental model and its replay: unique key, late-arriving data, reprocessing window, idempotence, full refresh."
   aikit-category: "domain"
-  aikit-tier: "profile"
 ---
 
 # incremental-replay

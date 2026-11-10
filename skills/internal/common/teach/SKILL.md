@@ -9,7 +9,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Learn a perimeter or a concept over several sessions: lessons, quizzes and briefs; shared material in the repo's docs/learn/<topic>/, personal progress in ~/.ai-kit/learning/."
   aikit-category: "tool"
-  aikit-tier: "core"
 ---
 
 The user has asked you to teach them something. This is a stateful request - they intend to learn the topic over multiple sessions.

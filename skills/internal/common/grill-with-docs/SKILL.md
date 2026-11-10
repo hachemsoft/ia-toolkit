@@ -9,7 +9,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Tight interview that feeds GLOSSARY.md and the ADRs as answers come in; entry point of the main flow."
   aikit-category: "workflow"
-  aikit-tier: "core"
   aikit-requires: "grilling,domain-modeling"
 ---
 

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from installer.cli import apply, usage
 from installer.core import KitError
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 def msg(kind, ts, **extra):
  return {'id':'x','timestamp':ts.strftime('%Y-%m-%dT%H:%M:%S.000Z'),'type':kind,**extra}
 
@@ -49,7 +49,7 @@ class ObservabilityTests(unittest.TestCase):
  """A CLI whose logs hold only the prompts says nothing about skills or agents: no removal is ever recommended from that silence."""
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
-  with contextlib.redirect_stdout(io.StringIO()):apply('general',self.home,False,None,'codex')
+  with contextlib.redirect_stdout(io.StringIO()):apply(self.home,False,None,'codex')
  def codex_history(self,sessions,prompts_each):
   import time;now=int(time.time())
   lines=[json.dumps({'session_id':'s'+str(s),'ts':now,'text':('/intent idea' if p==0 else 'plain request '+str(p))}) for s in range(sessions) for p in range(prompts_each)]

@@ -20,7 +20,7 @@ class Base(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
         with contextlib.redirect_stdout(io.StringIO()):
-            cli.apply('general', self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini')
+            cli.apply(self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini')
         self.user_file = self.home/'.ai-kit/context/USER.md'
 
 

@@ -7,7 +7,6 @@ metadata:
   aikit-origin: "internal"
   aikit-summary: "HTML brief of a Data perimeter from a dbt repo, quiz and candidate glossary terms; first lesson of /learn."
   aikit-category: "domain"
-  aikit-tier: "profile"
   aikit-requires: "domain-modeling"
   aikit-optional-kpi-definition: "mark a KPI without a definition \"undefined\" and list it among the open questions"
 ---

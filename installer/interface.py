@@ -62,7 +62,7 @@ class Plan:
 
 @dataclass
 class DoctorContext:
-    context_names: List[str]  # managed context layers expected, in order (V2: computed by the engine, no profile)
+    context_names: List[str]  # managed context layers expected, in order
     load_commands: Callable[[], List[Dict[str, Any]]]
 
 

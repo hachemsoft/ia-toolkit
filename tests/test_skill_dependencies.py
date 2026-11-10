@@ -10,7 +10,7 @@ from installer.cli import resolve_skills, ROOT
 from installer.resolve import skill_catalog
 from installer.core import KitError, read_json
 from personal import write_personal  # noqa: E402
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 from installer.settings import core_selection  # noqa: E402
 
 CATALOG = skill_catalog(ROOT)

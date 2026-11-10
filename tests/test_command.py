@@ -97,7 +97,7 @@ class Base(unittest.TestCase):
     def apply(self, *args, **kwargs):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            cli.apply('general', self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini', *args, **kwargs)
+            cli.apply(self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini', *args, **kwargs)
         return out.getvalue()
 
     def shim(self):

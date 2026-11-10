@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Map a piece of work too large for one session into decision tickets, resolved one by one."
   aikit-category: "workflow"
-  aikit-tier: "optional"
   aikit-requires: "grilling"
   aikit-optional-setup-workflow: "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue"
   aikit-optional-prototype: "a prototype ticket is a throwaway spike, deleted afterwards"

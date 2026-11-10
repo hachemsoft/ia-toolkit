@@ -34,7 +34,7 @@ class ContentRootTests(unittest.TestCase):
         command = self.source/'commands/build.md'
         command.write_text(command.read_text(encoding='utf-8')+'\nMarker in the build command.\n', encoding='utf-8')
         with content_from(self.source), contextlib.redirect_stdout(io.StringIO()):
-            apply('general', self.home, False, None, 'claude')
+            apply(self.home, False, None, 'claude')
         self.assertEqual(content_root(), ROOT)  # restored after the block
         self.assertIn('Marker from the source tree.', (self.home/'.claude/skills/ai-kit-tdd/SKILL.md').read_text(encoding='utf-8'))
         self.assertIn('Marker in the build command.', (self.home/'.claude/commands/build.md').read_text(encoding='utf-8'))
@@ -44,7 +44,7 @@ class ContentRootTests(unittest.TestCase):
         shutil.rmtree(self.source/'skills/internal/common/tdd')
         with content_from(self.source), contextlib.redirect_stdout(io.StringIO()):
             with self.assertRaises(KitError) as caught:
-                apply('general', self.home, False, None, 'claude')
+                apply(self.home, False, None, 'claude')
         self.assertIn('requires tdd, which does not exist', str(caught.exception))  # 2.0 slice 3: refused by the requirement check
 
 

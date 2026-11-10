@@ -34,7 +34,7 @@ class ShellTests(Base):
         "python3 -c \"open('/h/.ai-kit/aikit.toml','w').write('x')\"",
         "node -e \"require('fs').writeFileSync(process.env.HOME+'/.ai-kit/aikit.toml','x')\"",
         "perl -pi -e 's/true/false/' ~/.ai-kit/aikit.toml",
-        "sed -i 's/a/b/' ~/.ai-kit/aikit.toml",  # 2.0: the person's V2 settings file
+        "sed -i 's/a/b/' ~/.ai-kit/aikit.toml",  # the person's settings file
         "sed -Ei 's/a/b/' ~/.ai-kit/aikit.toml",
         "gsed -i 's/a/b/' ~/.ai-kit/aikit.toml",
         "awk -i inplace '{print}' ~/.ai-kit/aikit.toml",

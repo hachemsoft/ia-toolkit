@@ -47,7 +47,7 @@ class FrictionCommandTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
         first, second = self.lines()
         self.assertEqual(set(first), set(second))  # the very same format: one implementation
-        self.assertEqual((first['category'], first['command'], first['cli'], first['source'], first['kit'], first.get('profile')), ('docs', 'build', 'claude', 'person', cli.kit_version(), None))  # 2.2: no profile recorded
+        self.assertEqual((first['category'], first['command'], first['cli'], first['source'], first['kit'], first.get('profile')), ('docs', 'build', 'claude', 'person', cli.kit_version(), None))
         self.assertEqual(first['text'], 'The plan step is too long')
         code, out = self.run_kit('friction', '--list')
         self.assertEqual(code, 0, out)

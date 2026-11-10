@@ -5,17 +5,13 @@ from installer.resolve import agent_catalog, skill_catalog
 from installer.core import ROOT, load_commands, parse_frontmatter
 from installer.adapters.gemini import gemini_command_toml, parse_env_file
 import tempfile
-from v1_profiles import PROFILES  # noqa: E402
+from presets import PROFILES  # noqa: E402
 
 class ConsistencyTests(unittest.TestCase):
- """Product consistency checked continuously: profiles, tiers, commands, forbidden terms, Python dependencies."""
+ """Product consistency checked continuously: presets, commands, forbidden terms, Python dependencies."""
  def setUp(self):
   self.cat=skill_catalog(ROOT);self.cmds=load_commands()
   self.profiles=dict(PROFILES)
- def test_core_tier_installed_in_every_profile(self):
-  for n,e in self.cat.items():
-   if e.get('tier')=='core' and not e.get('replaced_by'):
-    for pid,p in self.profiles.items():self.assertIn(n,p['skills'],n+' is core but missing from profile '+pid)
  def test_command_prompts_only_cite_installed_playbooks(self):
   for pid,p in self.profiles.items():
    installed=[c for c in self.cmds if all(s in p['skills'] for s in c['skills']) and (not p.get('commands') or c['name'] in p['commands'])]
@@ -29,7 +25,7 @@ class ConsistencyTests(unittest.TestCase):
  def test_contrib_skills_rules(self):
   for n,e in self.cat.items():
    if e.get('origin')=='contrib':
-    self.assertTrue(e['path'].startswith('skills/contrib/'),n);self.assertEqual(e.get('tier'),'optional',n+': a contributed skill is optional');self.assertTrue(e.get('owner'),n+': owner required')
+    self.assertTrue(e['path'].startswith('skills/contrib/'),n);self.assertFalse(e.get('default'),n+': a contributed skill is optional');self.assertTrue(e.get('owner'),n+': owner required')
    elif e.get('path','').startswith('skills/contrib/'):self.fail(n+': under skills/contrib but origin != contrib')
   self.assertTrue((ROOT/'skills/contrib/README.md').is_file())
  def test_contrib_agents_rules(self):

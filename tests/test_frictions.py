@@ -3,7 +3,7 @@ from pathlib import Path
 from installer.cli import apply, usage
 from installer.core import read_json, ROOT
 from installer.toml_files import dump_toml, read_toml
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 class FrictionTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
@@ -59,7 +59,7 @@ class FrictionSignalTests(unittest.TestCase):
   msgs=[{'type':'user','timestamp':now,'content':c} for c in ('/design the sale','/help','/intent active customers of the dashboard','/intent active customers of the dashboard')]
   (chats/'s.json').write_text(json.dumps({'messages':msgs}),encoding='utf-8')
   with contextlib.redirect_stdout(io.StringIO()):usage(self.home,42,self.home/'r.json')
-  r=read_json(self.home/'r.json');self.assertEqual(r['unknown_commands'],{'design':1})  # 2.2: spec is a Core default; design is optional;self.assertEqual(r['repeated_prompts'],1)
+  r=read_json(self.home/'r.json');self.assertEqual(r['unknown_commands'],{'design':1})  # spec is a Core default; design is optional;self.assertEqual(r['repeated_prompts'],1)
  def test_friction_mode_option(self):
   kit=lambda:(self.home/'.gemini/00_KIT.md').read_text(encoding='utf-8')
   self.assertIn('Offer in one line to log a `/friction`',kit())
@@ -84,7 +84,7 @@ class FrictionStdinTests(unittest.TestCase):
    proc=subprocess.run([sys.executable,'-I',str(ROOT/'runtime/friction.py'),'--category','command','--command','test','--cli','codex'],input=text.encode('utf-8'),capture_output=True,env={**os.environ,'HOME':tmp,'USERPROFILE':tmp})
    self.assertEqual(proc.returncode,0,proc.stderr)
    entry=json.loads((Path(tmp)/'.ai-kit/frictions.jsonl').read_text(encoding='utf-8').splitlines()[0])
-   # 2.1: a home path in the sentence is redacted to ~ (C:\\Users\\<name> on Windows runners); the shell syntax stays text.
+   # a home path in the sentence is redacted to ~ (C:\\Users\\<name> on Windows runners); the shell syntax stays text.
    spec=importlib.util.spec_from_file_location('friction_redact',ROOT/'runtime/friction.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);expected=module.redact(text)
    self.assertEqual(entry['text'],expected);self.assertEqual(entry['cli'],'codex');self.assertFalse(marker.exists())
  def test_command_prompt_uses_stdin(self):
@@ -100,7 +100,7 @@ class FrictionLoopTests(unittest.TestCase):
  def test_script_stores_id_and_usage_exports_it(self):
   with tempfile.TemporaryDirectory() as tmp:
    home=Path(tmp)
-   with contextlib.redirect_stdout(io.StringIO()):apply('general',home,False,{'email':'t@example.org','source':'test'},'gemini')
+   with contextlib.redirect_stdout(io.StringIO()):apply(home,False,{'email':'t@example.org','source':'test'},'gemini')
    proc=subprocess.run([sys.executable,'-I',str(home/'.ai-kit/bin/friction.py'),'--category','rule','--command','build','--cli','gemini'],input='Ignored the AGENTS.md rule on migrations'.encode('utf-8'),capture_output=True,env={**os.environ,'HOME':tmp,'USERPROFILE':tmp})
    self.assertEqual(proc.returncode,0,proc.stderr)
    entry=json.loads((home/'.ai-kit/frictions.jsonl').read_text(encoding='utf-8').splitlines()[0])

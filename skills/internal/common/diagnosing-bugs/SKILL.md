@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Diagnosis loop for hard bugs and performance regressions: reproduce, minimize, hypothesize, instrument, fix."
   aikit-category: "workflow"
-  aikit-tier: "core"
 ---
 
 # Diagnosing Bugs

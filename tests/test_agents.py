@@ -7,7 +7,7 @@ import unittest
 from installer.core import KitError, read_json, ROOT
 from installer.toml_files import dump_toml
 from personal import write_personal  # noqa: E402
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 class AgentTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
@@ -17,7 +17,7 @@ class AgentTests(unittest.TestCase):
  def overrides(self,v):
   write_personal(self.home,v)
  def test_analyst_selection(self):
-  self.run_kit();self.assertTrue(self.agent('repo-investigator').exists());self.assertTrue(self.agent('sql-reviewer').exists());self.assertTrue(self.agent('dbt-reviewer').exists());self.assertTrue(self.agent('code-reviewer').exists())  # 2.2: a Core default for everyone
+  self.run_kit();self.assertTrue(self.agent('repo-investigator').exists());self.assertTrue(self.agent('sql-reviewer').exists());self.assertTrue(self.agent('dbt-reviewer').exists());self.assertTrue(self.agent('code-reviewer').exists())  # a Core default for everyone
  def test_agents_inherit_the_session_model(self):
   # 0.36: the kit no longer chooses models; a "models" table in aikit.toml is an unknown key, ignored (and reported), every agent inherits.
   p=self.home/'.ai-kit/aikit.toml';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(dump_toml({'schema':1,'models':{'fast':'gemini-2.5-flash','deep':'gemini-2.5-pro'}}),encoding='utf-8');self.run_kit('data-developer')
@@ -29,7 +29,6 @@ class AgentTests(unittest.TestCase):
  def test_modified_agent_blocks(self):
   self.run_kit();self.agent('sql-reviewer').write_text('personal',encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit('data-developer')
-  self.assertEqual(read_json(self.home/'.ai-kit/state.json')['profile'],'core')  # 2.2: no profiles
  def test_existing_agent_blocks(self):
   p=self.agent('sql-reviewer');p.parent.mkdir(parents=True);p.write_text('third-party',encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()

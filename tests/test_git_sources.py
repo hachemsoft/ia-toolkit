@@ -60,7 +60,7 @@ class Base(unittest.TestCase):
         (self.kit/'aikit.toml').write_text(dump_toml({'schema': 1, 'core': {'repo': self.url}}), encoding='utf-8')
         self.managed = self.base/'managed.toml'
         with contextlib.redirect_stdout(io.StringIO()):
-            cli.apply('general', self.home, False, None, 'claude', managed_file=self.managed)
+            cli.apply(self.home, False, None, 'claude', managed_file=self.managed)
 
     def release(self, tag, marker, push=False):
         skill = self.work/'skills/internal/common/tdd/SKILL.md'
@@ -75,7 +75,7 @@ class Base(unittest.TestCase):
     def run_action(self, action, dry_run=False, confirm=True, team=None, url=None):
         with contextlib.redirect_stdout(io.StringIO()) as out:
             with sync.activation(self.home, action, dry_run, (lambda q: confirm), managed_file=self.managed, team_name=team, team_url=url) as act:
-                cli.apply('general', self.home, dry_run, None, 'claude', act.team, extra_writes=act.writes, managed_file=self.managed)
+                cli.apply(self.home, dry_run, None, 'claude', act.team, extra_writes=act.writes, managed_file=self.managed)
         return out.getvalue()
 
     def installed(self):
@@ -102,7 +102,7 @@ class SyncTests(Base):
         # The guided installer and the re-apply after /me call apply() directly: they must not fall back to the package content.
         self.run_action('sync')
         with contextlib.redirect_stdout(io.StringIO()):
-            cli.apply('general', self.home, False, None, 'claude', managed_file=self.managed)
+            cli.apply(self.home, False, None, 'claude', managed_file=self.managed)
         self.assertIn('Marker v1.0.0.', self.installed())
 
     def test_init_installs_then_syncs_the_core(self):
@@ -114,7 +114,6 @@ class SyncTests(Base):
             code = cli.main(['init', '--home', str(home), '--target', 'claude', '--user', 'a@example.org'])
         self.assertEqual(code, 0, out.getvalue())
         self.assertIn('Marker v1.0.0.', (home/'.claude/skills/ai-kit-tdd/SKILL.md').read_text(encoding='utf-8'))
-        self.assertEqual(json.loads((home/'.ai-kit/state.json').read_text(encoding='utf-8'))['profile'], 'core')  # 2.2: no profiles
 
     def test_sync_from_the_command_line_and_offline(self):
         # ADR 0025: sync takes the highest tag; without network it fails and changes nothing; sync --offline re-applies.

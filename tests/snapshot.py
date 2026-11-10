@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from personal import write_personal  # noqa: E402
-from v1_profiles import PROFILES, apply_as  # noqa: E402
+from presets import PROFILES, apply_as  # noqa: E402
 
 GOLDEN = ROOT / 'tests' / 'golden' / 'install-snapshot.json'
 IDENTITY = {'email': 'test@example.org', 'name': 'Test', 'source': 'option'}

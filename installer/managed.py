@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .core import ROOT, KitError, read_json, is_guardrail
 from .toml_files import toml_value
-from .settings import organization
+from .settings import core_settings
 
 # Written by an agent, these would switch a guardrail off or change what every session loads. USER.md and
 # ~/.ai-kit/learning stay writable: /me and /learn write there.
@@ -112,7 +112,7 @@ def managed_settings(out, hooks_only=False, mcp_only=False, managed_file=None):
     if out.exists() and any(out.iterdir()):
         raise KitError(str(out)+' is not empty: give a new folder, nothing is overwritten.')
     manifest = read_json(ROOT/'runtime'/'hooks'/'hooks.json')['hooks']
-    org = organization()
+    org = core_settings()
     names = locked(org, manifest)
     mcp = org_servers(org) if mcp_only else None
     # V2 slice 6: managed.toml goes into the native files too. Its hooks.locked add to the organization's locked guardrails,

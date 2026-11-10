@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Test-first development: red, green, refactor; integration tests preferred."
   aikit-category: "workflow"
-  aikit-tier: "core"
   aikit-optional-code-review: "refactoring happens after green, as its own step, with the tests still passing"
 ---
 

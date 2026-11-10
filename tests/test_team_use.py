@@ -43,7 +43,7 @@ class TeamTests(unittest.TestCase):
         run_git('clone', '-q', '--bare', str(self.work), str(self.bare), cwd=self.base)
         self.url = 'file://'+self.bare.as_posix()
         with contextlib.redirect_stdout(io.StringIO()):
-            cli.apply('general', self.home, False, None, 'claude', managed_file=self.managed)
+            cli.apply(self.home, False, None, 'claude', managed_file=self.managed)
 
     def commit_tag(self, tag, push=False):
         run_git('add', '-A', cwd=self.work)
@@ -55,7 +55,7 @@ class TeamTests(unittest.TestCase):
     def use(self, name, url=None, ask=None, action='team-use'):
         with contextlib.redirect_stdout(io.StringIO()) as out:
             with sync.activation(self.home, action, False, managed_file=self.managed, team_name=name, team_url=url, ask_url=ask) as act:
-                cli.apply('general', self.home, False, None, 'claude', act.team, extra_writes=act.writes, managed_file=self.managed)
+                cli.apply(self.home, False, None, 'claude', act.team, extra_writes=act.writes, managed_file=self.managed)
         return out.getvalue()
 
     def state(self):

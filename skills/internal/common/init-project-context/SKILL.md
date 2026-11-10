@@ -7,7 +7,6 @@ metadata:
   aikit-origin: "internal"
   aikit-summary: "Set up a repo's agent context, with confirmation for each file: short AGENTS.md, prefilled GLOSSARY.md, REVIEW.md, git rule for artifacts; does not copy the templates, does not create an empty ADR."
   aikit-category: "setup"
-  aikit-tier: "core"
   aikit-requires: "writing-for-agents,domain-modeling"
   aikit-optional-setup-workflow: "skip the ticket tracker: the workflow works without one"
   aikit-optional-to-spec: "not installed: nothing to configure for it"

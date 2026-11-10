@@ -7,7 +7,6 @@ metadata:
   aikit-origin: "internal"
   aikit-summary: "Investigate and document an architecture decision (ADR): options, criteria, consequences, reversibility."
   aikit-category: "domain"
-  aikit-tier: "profile"
   aikit-requires: "grilling,domain-modeling"
   aikit-optional-prototype: "settle a question that needs evidence with a throwaway script, deleted afterwards"
 ---

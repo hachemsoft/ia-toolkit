@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Throwaway prototype to settle a design, logic or interface question."
   aikit-category: "workflow"
-  aikit-tier: "optional"
 ---
 
 # Prototype

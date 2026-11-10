@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Review changes, committed or not (branch commits, staged, unstaged, new files), on bugs, security, standards and the spec when one exists; one severity scale."
   aikit-category: "workflow"
-  aikit-tier: "core"
 ---
 
 The kit's single review behaviour: `/review` and a plain request ("review my changes") both follow it, with the same scope rule, passes and severities. Report only: fix nothing.

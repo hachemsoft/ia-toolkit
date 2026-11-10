@@ -15,7 +15,7 @@ from .core import (_PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitError, read_json
 from . import versions
 from .adapters import ADAPTERS
 from .interface import DoctorContext, LiveCheck
-from .settings import core_selection, context_folder, managed_context_names, merge_settings, organization, personal_settings, recorded_targets, resolve_mcp, setting_differences, team_settings, unknown_keys, version_changes
+from .settings import core_selection, context_folder, managed_context_names, merge_settings, core_settings, personal_settings, recorded_targets, resolve_mcp, setting_differences, team_settings, unknown_keys, version_changes
 
 
 # A known case each guardrail must block; doctor runs it to prove the guardrail works, not just that its file exists.
@@ -145,10 +145,10 @@ def plain_text_problem(path):
 def mcp_report(home, state):
     """MCP lines of the summaries, from the installer's own resolution: configured, chosen but not provided by the
     organization, or turned off. Never claims a connection: the kit does not call MCP servers."""
-    profile = core_selection()
+    selection = core_selection()
     mine, team = personal_settings(home/'.ai-kit').get('mcp', {}), team_settings(state.get('team')).get('mcp', {})
-    servers, undefined = resolve_mcp(organization().get('defaults', {}).get('mcp', {}), profile.get('mcp', []), mine, team)
-    # 2.2: no profile chooses servers; a server the person or the team turned off is said so.
+    servers, undefined = resolve_mcp(core_settings().get('defaults', {}).get('mcp', {}), selection.get('mcp', []), mine, team)
+    # A server the person or the team turned off is said so.
     off = sorted({n for layer in (mine, team) for n, v in (layer or {}).items() if v is False} - set(servers) - set(undefined))
     lines = []
     if servers:
@@ -460,9 +460,9 @@ def doctor_checks(home, cwd=None, problems=None):
         news_checks(home, state, status)
         identity = state.get('user', {})
         print('Recorded identity: '+(identity.get('email') or identity.get('name') or 'none')+(' (source '+identity['source']+')' if identity.get('source') else ''))
-        profile = core_selection()
-        profile = {**profile, 'practices': state.get('practices') or profile['practices']}  # with the person's team
-        ctx = DoctorContext(context_names=managed_context_names(profile), load_commands=load_commands)
+        selection = core_selection()
+        selection = {**selection, 'practices': state.get('practices') or selection['practices']}  # with the person's team
+        ctx = DoctorContext(context_names=managed_context_names(selection), load_commands=load_commands)
         context = '.ai-kit/context'
         user_file = home/context/USER_CONTEXT
         status(user_file.is_file(),'Personal context present: '+context+'/'+USER_CONTEXT)
@@ -493,7 +493,7 @@ def doctor_checks(home, cwd=None, problems=None):
             behind = version_changes(recorded, {kind: {n: v for n, v in names.items() if n in recorded.get(kind, {})}
                                                 for kind, names in versions.catalog_versions().items()})
             status(not behind, 'Skills and agents at the versions of this kit' + (': '+', '.join(behind)+'; run ai-kit sync --offline' if behind else ''))
-        org_defaults = organization().get('defaults', {})
+        org_defaults = core_settings().get('defaults', {})
         team_layer = team_settings(state.get('team'))
         personal = personal_settings(home/'.ai-kit')
         layers = [('~/.ai-kit/aikit.toml', personal)] + ([('Team '+state['team']+' [defaults]', team_layer)] if state.get('team') else [])
@@ -530,7 +530,7 @@ def doctor_checks(home, cwd=None, problems=None):
                     print('[Info] '+adapter.LABEL+' '+found+' is newer than the version the kit was checked on ('+adapter.VERIFIED+'). '
                           'If something stops working, the checks above and usage say what; log it with /friction.')
         try:
-            servers, undefined = resolve_mcp(org_defaults.get('mcp', {}), profile.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))
+            servers, undefined = resolve_mcp(org_defaults.get('mcp', {}), selection.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))
             print('[Info] MCP servers: '+(', '.join(servers) or 'none')+(' | chosen but not defined (mcp/servers.toml, your Team): '+', '.join(undefined) if undefined else ''))
         except KitError as exc:
             status(False, str(exc))

@@ -4,8 +4,8 @@ from installer.resolve import skill_catalog
 from installer.core import load_commands, ROOT
 sys.path.insert(0,str(ROOT/'evals'))
 import run as evals_run
-from v1_profiles import apply_as  # noqa: E402
-from v1_profiles import PROFILES  # noqa: E402
+from presets import apply_as  # noqa: E402
+from presets import PROFILES  # noqa: E402
 
 class PlaybookTests(unittest.TestCase):
  def test_domain_skills_have_excuse_tables(self):

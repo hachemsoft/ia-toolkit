@@ -7,7 +7,6 @@ metadata:
   aikit-origin: "internal"
   aikit-summary: "Review SQL, plain or in dbt, on any warehouse, and investigate suspicious aggregations, duplicates or business results."
   aikit-category: "domain"
-  aikit-tier: "profile"
   aikit-requires: "diagnosing-bugs"
 ---
 

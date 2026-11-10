@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Vocabulary of deep modules: interface, seam, depth; interface design in several variants."
   aikit-category: "reference"
-  aikit-tier: "optional"
 ---
 
 # Codebase Design

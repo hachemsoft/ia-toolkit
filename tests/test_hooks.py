@@ -3,7 +3,7 @@ from pathlib import Path
 from installer.cli import doctor
 from installer.core import KitError, read_json, ROOT
 from personal import write_personal  # noqa: E402
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload,env=None):
  proc=subprocess.run([sys.executable,'-I',str(H/script)],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8',env={**os.environ,**(env or {})});return json.loads(proc.stdout or '{}')

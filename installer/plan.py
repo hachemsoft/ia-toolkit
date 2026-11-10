@@ -5,7 +5,7 @@ from .core import content_root, ROOT, USER_CONTEXT, KitError, read_json, digest,
 from .toml_files import set_schema, set_section_key
 from .config import AIKIT_FILE
 from .adapters import ADAPTERS
-from .settings import (organization, team_settings, personal_settings, merge_settings, allowed_commands, resolve_skills,
+from .settings import (core_settings, team_settings, personal_settings, merge_settings, allowed_commands, resolve_skills,
                        practice_file, CHOICE_KEYS, SCALAR_CHOICES)
 from .commit import KIT_MANAGED
 
@@ -15,7 +15,7 @@ LIST_KEYS = ('extra_skills', 'disabled_skills', 'extra_agents', 'disabled_agents
 def effective_settings(kit, team, choices):
     """The Core's defaults, then the Team's settings, then the person's aikit.toml on top (never replaced wholesale),
     with the choices of this run. Returns (Core defaults, team layer, personal, merged overrides, choices)."""
-    org_defaults, team_layer, personal = organization().get('defaults', {}), team_settings(team), personal_settings(kit)
+    org_defaults, team_layer, personal = core_settings().get('defaults', {}), team_settings(team), personal_settings(kit)
     choices = {k: (v if k in SCALAR_CHOICES else list(v)) for k, v in (choices or {}).items()}
     if set(choices) - set(CHOICE_KEYS) - set(SCALAR_CHOICES):
         raise KitError('Unknown choice: '+', '.join(sorted(set(choices) - set(CHOICE_KEYS) - set(SCALAR_CHOICES))))
@@ -29,7 +29,7 @@ def effective_settings(kit, team, choices):
     return org_defaults, team_layer, personal, overrides, choices
 
 
-def resolve_selection(profile, overrides, catalog, manifest):
+def resolve_selection(selection, overrides, catalog, manifest):
     """The skills and the commands to install. Returns (selected skills, allowed commands)."""
     command_names = [c['name'] for c in manifest]
     for key in ('extra_commands','disabled_commands'):
@@ -38,8 +38,8 @@ def resolve_selection(profile, overrides, catalog, manifest):
                 raise KitError(key+': unknown command '+name+'. Kit commands: '+', '.join(command_names))
     # A command added in one line (extra_commands) also installs its skills.
     extra_command_skills = [s for c in manifest if c['name'] in overrides.get('extra_commands', []) for s in c['skills']]
-    selected = resolve_skills({**profile, 'skills': list(profile['skills']) + extra_command_skills}, overrides, catalog)
-    return selected, allowed_commands(profile.get('commands'), overrides, command_names)
+    selected = resolve_skills({**selection, 'skills': list(selection['skills']) + extra_command_skills}, overrides, catalog)
+    return selected, allowed_commands(selection.get('commands'), overrides, command_names)
 
 
 def personal_file(kit, choices, deletes):
@@ -60,10 +60,10 @@ def personal_file(kit, choices, deletes):
     return path, (text.replace('\r\n', '\n').replace('\n', '\r\n') if crlf else text).encode('utf-8'), []
 
 
-def practice_layers(profile):
-    """The practice layers of the profile, in order. Returns (file names, texts)."""
+def practice_layers(selection):
+    """The practice layers of the selection, in order. Returns (file names, texts)."""
     names, texts = [], []
-    for practice_id in profile['practices']:
+    for practice_id in selection['practices']:
         source, name = practice_file(practice_id)
         names.append(name)
         texts.append(source.read_text(encoding='utf-8'))
@@ -84,9 +84,9 @@ def skill_sources(selected, catalog):
     return sources
 
 
-def select_agents(profile, overrides, agent_catalog, load_agent):
-    """(name, definition) of the profile's agents, with the person's extra and disabled ones."""
-    names = list(dict.fromkeys(profile.get('agents',[]) + overrides.get('extra_agents',[])))
+def select_agents(selection, overrides, agent_catalog, load_agent):
+    """(name, definition) of the selection's agents, with the person's extra and disabled ones."""
+    names = list(dict.fromkeys(selection.get('agents',[]) + overrides.get('extra_agents',[])))
     names = [x for x in names if x not in overrides.get('disabled_agents',[])]
     agents = []
     for agent in names:

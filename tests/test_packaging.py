@@ -17,7 +17,7 @@ class PackagingTests(unittest.TestCase):
  def test_console_command(self):
   self.assertIn('ai-kit = "ai_kit.cli:main"',self.text)
  def test_the_package_holds_the_engine_and_never_the_content(self):
-  # 2.2: what the engine reads from ROOT is packaged; the content (read from content_root()) travels as the Core bundle.
+  # what the engine reads from ROOT is packaged; the content (read from content_root()) travels as the Core bundle.
   code=''.join(f.read_text(encoding='utf-8') for f in (ROOT/'installer').rglob('*.py'))
   read=set(re.findall(r"ROOT ?/ ?'([A-Za-z][\w.-]*)",code))-{'.git','versions.lock.json','tests','docs'}
   packaged=set(re.findall(r'^"([\w.-]+)" = "ai_kit/kit/',self.text,re.M))

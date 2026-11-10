@@ -6,7 +6,6 @@ metadata:
   aikit-origin: "team"
   aikit-summary: "Check a report before it is published: filters, period, totals, labels."
   aikit-category: "domain"
-  aikit-tier: "optional"
 ---
 
 # report-check

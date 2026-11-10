@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Retrospective of a work session: improve the agent's environment, not the code."
   aikit-category: "tool"
-  aikit-tier: "profile"
   aikit-requires: "writing-for-agents"
 ---
 

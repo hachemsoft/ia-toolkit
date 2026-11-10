@@ -4,8 +4,8 @@ from installer.cli import doctor, resolve_skills, command_lines, playbook_lines
 from installer.resolve import skill_catalog
 from installer.core import KitError, read_json, ROOT
 from personal import write_personal  # noqa: E402
-from v1_profiles import apply_as  # noqa: E402
-from v1_profiles import PROFILES  # noqa: E402
+from presets import apply_as  # noqa: E402
+from presets import PROFILES  # noqa: E402
 FAKE={'a':{'path':'x','requires':['b']},'b':{'path':'x'},'c':{'path':'x','stage':'ship'}}
 class SkillCatalogTests(unittest.TestCase):
  def setUp(self):

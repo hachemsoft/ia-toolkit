@@ -25,7 +25,7 @@ class Base(unittest.TestCase):
         self.home = self.base/'home'
         self.home.mkdir()
         with contextlib.redirect_stdout(io.StringIO()), mock.patch('shutil.which', return_value=None):
-            cli.apply('general', self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'codex')
+            cli.apply(self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'codex')
 
     def doctor(self, **env):
         out = io.StringIO()

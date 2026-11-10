@@ -33,7 +33,6 @@ metadata:
   aikit-owner: "team-reporting"  # required for contrib
   aikit-default: "false"         # "true": installed for everyone
   aikit-category: "tool"         # workflow | tool | domain | reference | setup
-  aikit-tier: "optional"         # core for a skill every installation needs; optional for any contrib skill
   aikit-summary: "Review a dashboard before publishing."
   aikit-requires: "grilling"     # installed with it; comma-separated
   aikit-optional-tdd: "write the check first by hand"   # what to do when an optional skill is absent

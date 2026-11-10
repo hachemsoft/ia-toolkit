@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Create a skill: structure, progressive disclosure, resources."
   aikit-category: "tool"
-  aikit-tier: "optional"
   aikit-requires: "writing-great-skills"
 ---
 

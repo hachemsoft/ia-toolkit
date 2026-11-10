@@ -15,7 +15,7 @@ from installer.config import load_aikit, to_overrides
 from installer.core import KitError, ROOT, read_json
 from installer.toml_files import read_toml
 from personal import write_personal
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 
 IDENTITY = {'email': 'first.last@example.com', 'source': 'test'}
 
@@ -121,7 +121,7 @@ class OrganizationTests(unittest.TestCase):
         self.assertEqual(cli.unknown_keys(to_overrides(full)), [])
 
     def test_shipped_files_follow_the_schemas(self):
-        self.assertFalse((ROOT/'organization.toml').exists())  # 2.2: not in the Core (managed.toml, mcp/servers.toml, Team repos)
+        self.assertFalse((ROOT/'organization.toml').exists())  # not in the Core (managed.toml, mcp/servers.toml, Team repos)
         template = (ROOT/'templates/user-aikit.toml').read_text(encoding='utf-8')
         self.assertTrue((ROOT/'templates'/re.search(r'(?m)^#:schema (.+)$', template).group(1).strip()).is_file())
         self.assertEqual(read_toml(ROOT/'templates/user-aikit.toml'), {'schema': 1})  # nothing set for the person
@@ -233,7 +233,7 @@ class McpTests(unittest.TestCase):
     def test_installed_from_the_core_servers_and_aikit_toml(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
-            # 2.2: no profile turns bigquery on; the person does.
+            # no profile turns bigquery on; the person does.
             write_personal(home, {'mcp': {'bigquery': True, 'dbt': False, 'github': True}})
             real = settings.read_toml
             servers = {'servers': {n: {**{k: v for k, v in e.items() if k != 'server'}, **e['server']} for n, e in self.ORG.items()}}

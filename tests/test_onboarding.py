@@ -11,7 +11,7 @@ from unittest import mock
 from installer import cli, doctor as doctor_module
 from installer.core import read_json
 from personal import write_personal
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 
 FALSE_SUCCESS = re.compile(r'(?i)\b(connected|authenticated|signed in|ready to use)\b')
 
@@ -30,15 +30,15 @@ class SummaryTests(unittest.TestCase):
     def install(self, profile='data-analyst', target='all', overrides=None, org=None):
         if overrides is not None:
             write_personal(self.home, overrides)
-        self.org = org or {}  # the Core's mcp/servers.toml, as settings.organization() gives it
-        with mock.patch.object(doctor_module, 'organization', return_value=self.org), mock.patch('installer.plan.organization', return_value=self.org), \
+        self.org = org or {}  # the Core's mcp/servers.toml, as settings.core_settings() gives it
+        with mock.patch.object(doctor_module, 'core_settings', return_value=self.org), mock.patch('installer.plan.core_settings', return_value=self.org), \
              contextlib.redirect_stdout(io.StringIO()):
             apply_as(profile, self.home, False, {'email': 'a@example.org', 'source': 'test'}, target)
         return read_json(self.home/'.ai-kit/state.json')
 
     def summary(self, which, live=None, problems=()):
         out = io.StringIO()
-        with mock.patch.object(cli.shutil, 'which', side_effect=which), mock.patch.object(doctor_module, 'organization', return_value=self.org), \
+        with mock.patch.object(cli.shutil, 'which', side_effect=which), mock.patch.object(doctor_module, 'core_settings', return_value=self.org), \
              contextlib.redirect_stdout(out):
             cli.print_summary(self.home, read_json(self.home/'.ai-kit/state.json'), live, problems)
         return out.getvalue()
@@ -76,7 +76,7 @@ class SummaryTests(unittest.TestCase):
         self.assertIn('Next step: apply the fix shown above, then run doctor --live.', failed)
 
     def test_mcp_chosen_but_not_defined(self):
-        # 2.2: no profile chooses servers; the person (or the migration of a V1 profile) turns them on.
+        # No preset chooses servers; the person turns them on.
         self.install(overrides={'mcp': {'bigquery': True, 'dbt': True}})
         out = self.summary(found('gemini'))
         self.assertIn('bigquery not provided by your organization yet; dbt not provided by your organization yet', out)
@@ -144,7 +144,7 @@ class HomeWithSpacesTests(unittest.TestCase):
             home = Path(tmp)/'Home à'
             home.mkdir()
             with contextlib.redirect_stdout(io.StringIO()):
-                cli.apply('general', home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
+                cli.apply(home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
                 cli.doctor(home)

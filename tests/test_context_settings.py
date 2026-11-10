@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from installer.core import KitError
 from installer.adapters.gemini import merge_context_filenames
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 class ContextSettingsTests(unittest.TestCase):
  def test_absent(self):
   self.assertEqual(merge_context_filenames({}),{'context':{'fileName':['USER.md','GEMINI.md','AGENTS.md']}})

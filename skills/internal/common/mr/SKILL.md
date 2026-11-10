@@ -9,7 +9,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Write a merge request description: visual summary, evidence, merge risk."
   aikit-category: "workflow"
-  aikit-tier: "core"
 ---
 
 Use this template for writing the MR body:

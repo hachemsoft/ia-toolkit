@@ -7,7 +7,7 @@ from .core import KitError
 from .frontmatter import aikit_metadata, csv, parse
 
 SKILL_KEYS = (('version', 'version', str), ('origin', 'origin', str), ('license', 'license', str), ('summary', 'description', str),
-              ('category', 'category', str), ('tier', 'tier', str), ('requires', 'requires', csv),
+              ('category', 'category', str), ('requires', 'requires', csv),
               ('needs-agents', 'needs_agents', lambda v: v == 'true'), ('protected', 'protected', lambda v: v == 'true'), ('owner', 'owner', str),
               ('default', 'default', lambda v: v == 'true'))
 AGENT_KEYS = (('version', 'version', str), ('origin', 'origin', str), ('protected', 'protected', lambda v: v == 'true'), ('owner', 'owner', str),

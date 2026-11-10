@@ -71,7 +71,7 @@ class InstalledTests(unittest.TestCase):
 
     def run_kit(self):
         with contextlib.redirect_stdout(io.StringIO()):
-            return cli.apply('general', self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini')
+            return cli.apply(self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini')
 
     def state(self):
         return json.loads((self.home/'.ai-kit/state.json').read_text(encoding='utf-8'))

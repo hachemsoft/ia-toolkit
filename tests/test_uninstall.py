@@ -26,9 +26,9 @@ class UninstallTests(unittest.TestCase):
         (self.home/'.codex').mkdir()
         (self.home/'.codex/AGENTS.md').write_text('# My Codex notes\n', encoding='utf-8')
         (self.home/'.codex/config.toml').write_text('model = "my-model"\n', encoding='utf-8')
-        self.quiet(cli.apply, 'general', self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'all')
+        self.quiet(cli.apply, self.home, False, {'email': 'a@example.org', 'source': 'option'}, 'all')
         (self.home/'.ai-kit/context/USER.md').write_text('My preferences\n', encoding='utf-8')
-        self.quiet(cli.apply, 'general', self.home, False, None)  # the copies follow
+        self.quiet(cli.apply, self.home, False, None)  # the copies follow
 
     def quiet(self, function, *args, **kwargs):
         out = io.StringIO()
@@ -101,7 +101,7 @@ class UninstallTests(unittest.TestCase):
 
     def test_reinstall_after_uninstall_reuses_the_personal_context(self):
         self.quiet(cli.uninstall, self.home)
-        self.quiet(cli.apply, 'general', self.home, False, None, 'gemini')
+        self.quiet(cli.apply, self.home, False, None, 'gemini')
         self.assertEqual((self.home/'.gemini/USER.md').read_text(encoding='utf-8'), 'My preferences\n')
         self.quiet(cli.doctor_checks, self.home)
         self.assertFalse([line for line in self.out.splitlines() if line.startswith('[Check] .')], self.out)

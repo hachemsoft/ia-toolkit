@@ -71,7 +71,7 @@ class LockedHookTests(unittest.TestCase):
             managed = Path(tmp)/'managed.toml'
             managed.write_text(dump_toml({'managed_schema': 1, 'hooks': {'locked': ['protected-paths']}}), encoding='utf-8')
             with contextlib.redirect_stdout(io.StringIO()):
-                notices = cli.apply('general', home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini', managed_file=managed)
+                notices = cli.apply(home, False, {'email': 'a@example.org', 'source': 'option'}, 'gemini', managed_file=managed)
             self.assertIn('protected-paths', json.loads((home/'.ai-kit/state.json').read_text(encoding='utf-8'))['hooks'])
             self.assertTrue(any('stays on' in n for n in notices))
 

@@ -9,7 +9,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Configure a repo for the flow: ticket tracker (GitHub, GitLab, local), triage labels, location of the glossary and the ADRs. Run once per repo."
   aikit-category: "setup"
-  aikit-tier: "core"
   aikit-optional-domain-modeling: "not installed in this profile: skip that part, or add it with extra_skills"
   aikit-optional-grill-with-docs: "not installed in this profile: skip that part, or add it with extra_skills"
   aikit-optional-grilling: "not installed in this profile: skip that part, or add it with extra_skills"

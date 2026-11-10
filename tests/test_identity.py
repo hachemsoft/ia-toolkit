@@ -4,7 +4,7 @@ from unittest import mock
 from installer import cli, settings
 from installer.cli import doctor, detect_identity
 from installer.core import read_json, ROOT
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 class IdentityTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)

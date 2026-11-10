@@ -5,7 +5,7 @@ from installer.core import KitError, read_json, ROOT
 from installer.adapters.codex import CODEX_MD, CODEX_TOML
 from unittest import mock
 from personal import write_personal  # noqa: E402
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload):
  p=subprocess.run([sys.executable,'-I',str(H/script)],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8');return json.loads(p.stdout or '{}')
@@ -81,7 +81,7 @@ class CodexAdapterTests(unittest.TestCase):
   self.run_kit();self.assertIn('- Short answers.',self.agents.read_text(encoding='utf-8'))
  def test_hooks_declared_and_mcp(self):
   core={'defaults':{'mcp':{'documentation':{'server':{'httpUrl':'https://docs.example.org/mcp'}}}}}  # the Core's mcp/servers.toml
-  with mock.patch('installer.plan.organization',return_value=core):out=self.run_kit(overrides={'hooks':{'dbt-prod-guard':True},'mcp':{'documentation':True}})
+  with mock.patch('installer.plan.core_settings',return_value=core):out=self.run_kit(overrides={'hooks':{'dbt-prod-guard':True},'mcp':{'documentation':True}})
   c=self.config.read_text(encoding='utf-8');self.assertIn('[[hooks.PreToolUse]]',c);self.assertIn('dbt-prod-guard.py',c);self.assertIn('[mcp_servers.ai-kit-documentation]',c);self.assertIn('url = "https://docs.example.org/mcp"',c);self.assertIn('Trust',out)
  def test_conflicting_hooks_refused(self):
   self.config.write_text('hooks.PreToolUse = []\n',encoding='utf-8')

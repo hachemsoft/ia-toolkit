@@ -11,7 +11,7 @@ from unittest import mock
 from installer import cli
 from installer.adapters import codex
 from installer.core import read_json, json_error, KitError, load_agent
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 
 SECRET = 'api_key = abcdefghijklmnop1234'  # fake, matches the detector
 

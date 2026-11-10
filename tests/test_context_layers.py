@@ -2,7 +2,7 @@ import contextlib, io, json, tempfile, unittest
 from pathlib import Path
 from installer.cli import apply, doctor
 from installer.core import KitError, read_json, digest, ROOT
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 class ContextLayerTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
@@ -15,7 +15,7 @@ class ContextLayerTests(unittest.TestCase):
   self.run_kit()
   for name in ('00_KIT.md','10_COMPANY.md','20_TEAM.md','USER.md'):
    self.assertTrue(self.path('.ai-kit/context/'+name).is_file(),name);self.assertTrue(self.path('.gemini/'+name).is_file(),name)  # the file, Gemini's copy
-  self.assertNotIn('Profile:',self.path('.gemini/00_KIT.md').read_text(encoding='utf-8'))  # 2.2: no profiles in the context
+  self.assertNotIn('Profile:',self.path('.gemini/00_KIT.md').read_text(encoding='utf-8'))  # no profiles in the context
   self.assertIn('Team practices',self.path('.gemini/20_TEAM.md').read_text(encoding='utf-8'))
   state=read_json(self.path('.ai-kit/state.json'));self.assertEqual(state['schema_version'],2);self.assertNotIn('context_hash',state)
   self.assertIn('.gemini/00_KIT.md',state['files']);self.assertIn('.gemini/USER.md',state['files']);self.assertNotIn('.ai-kit/context/USER.md',state['files'])
@@ -30,7 +30,6 @@ class ContextLayerTests(unittest.TestCase):
   self.run_kit();official=self.path('.gemini/10_COMPANY.md').read_text(encoding='utf-8');self.write('.gemini/10_COMPANY.md','modified')
   self.run_kit('data-developer')
   self.assertEqual(self.path('.gemini/10_COMPANY.md').read_text(encoding='utf-8'),official)
-  self.assertEqual(read_json(self.path('.ai-kit/state.json'))['profile'],'core')  # 2.2: no profiles
  def test_existing_unmanaged_layer_blocks(self):
   self.write('.gemini/00_KIT.md','third-party')
   with self.assertRaises(KitError):self.run_kit()
@@ -70,7 +69,7 @@ class RuleLayerRestoreTests(unittest.TestCase):
         import contextlib, io
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            apply('general', self.home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
+            apply(self.home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
         return out.getvalue()
 
     def test_hand_edited_rule_layer_restored_with_backup(self):

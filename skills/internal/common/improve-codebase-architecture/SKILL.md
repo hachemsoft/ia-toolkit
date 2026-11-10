@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Find the modules to deepen, HTML report, then an interview on the ones selected."
   aikit-category: "tool"
-  aikit-tier: "optional"
   aikit-requires: "grilling,codebase-design"
 ---
 

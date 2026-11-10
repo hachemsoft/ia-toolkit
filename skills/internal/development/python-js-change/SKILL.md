@@ -7,7 +7,6 @@ metadata:
   aikit-origin: "internal"
   aikit-summary: "Develop or review a Python or JavaScript feature in an existing repo."
   aikit-category: "domain"
-  aikit-tier: "profile"
   aikit-requires: "tdd"
   aikit-optional-codebase-design: "before adding an interface, keep it small with a deep implementation, and add a seam only where a test needs one"
   aikit-optional-mr: "describe the delivery in the merge request (MR) or pull request (PR) format the repo uses: what changed, why, how it was verified"

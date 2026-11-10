@@ -291,7 +291,7 @@ def drift(recorded, path=None):
 
 
 def provenance(org_defaults, team_layer, personal, managed=None):
-    """Where each effective setting comes from: {key: 'organization' | 'team' | 'you' | 'IT'}, the highest layer that sets it.
+    """Where each effective setting comes from: {key: 'Core' | 'team' | 'you' | 'IT'}, the highest layer that sets it.
     Guardrail switches are listed one by one (hooks.<name>); IT's frictions.capture sets the person's frictions key."""
     def flat(layer):
         out = {}
@@ -305,7 +305,7 @@ def provenance(org_defaults, team_layer, personal, managed=None):
     if 'capture' in (managed or {}).get('frictions', {}):
         it['frictions'] = managed['frictions']['capture']
     origin = {}
-    for label, layer in (('organization', flat(org_defaults)), ('team', flat(team_layer)), ('you', flat(personal)), ('IT', it)):
+    for label, layer in (('Core', flat(org_defaults)), ('team', flat(team_layer)), ('you', flat(personal)), ('IT', it)):
         origin.update({key: label for key in layer})
     return dict(sorted(origin.items()))
 

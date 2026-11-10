@@ -19,7 +19,7 @@ class StateSchemaTests(unittest.TestCase):
 
     def install(self):
         with contextlib.redirect_stdout(io.StringIO()):
-            apply('general', self.home, False, None, 'gemini')
+            apply(self.home, False, None, 'gemini')
         return self.home/'.ai-kit/state.json'
 
     def test_written_schema_is_the_supported_one(self):
@@ -35,7 +35,7 @@ class StateSchemaTests(unittest.TestCase):
                 before = {p: p.read_bytes() for p in self.home.rglob('*') if p.is_file()}
                 with contextlib.redirect_stdout(io.StringIO()):
                     with self.assertRaises(KitError) as caught:
-                        apply('general', self.home, False, None, 'gemini')
+                        apply(self.home, False, None, 'gemini')
                     with self.assertRaises(KitError):
                         uninstall(self.home, confirm=lambda summary: True)
                 self.assertIn('schema', str(caught.exception))
@@ -48,7 +48,7 @@ class StateSchemaTests(unittest.TestCase):
         del state['schema_version']
         state_file.write_text(json.dumps(state), encoding='utf-8')
         with contextlib.redirect_stdout(io.StringIO()):
-            apply('general', self.home, False, None, 'gemini')
+            apply(self.home, False, None, 'gemini')
         self.assertEqual(json.loads(state_file.read_text(encoding='utf-8'))['schema_version'], STATE_SCHEMA)
 
 

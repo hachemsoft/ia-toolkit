@@ -25,8 +25,7 @@ class PortabilityTests(unittest.TestCase):
 
     def test_native_cli_lifecycle_in_unicode_path(self):
         self.run_cli('init', '--target', 'gemini')
-        state = self.home / '.ai-kit/state.json'
-        self.assertEqual(json.loads(state.read_text(encoding='utf-8'))['profile'], 'core')  # 2.2: no profiles, the Core default
+        self.assertTrue((self.home / '.ai-kit/state.json').is_file())
         prefs = self.home / '.gemini/USER.md'
         self.assertTrue(prefs.exists())
         prefs.write_text('Answer concisely. Personal preference.', encoding='utf-8')

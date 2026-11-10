@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Project glossary (GLOSSARY.md) and architecture decisions (ADRs)."
   aikit-category: "reference"
-  aikit-tier: "core"
 ---
 
 # Domain Modeling

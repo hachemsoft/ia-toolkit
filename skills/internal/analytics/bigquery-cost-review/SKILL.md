@@ -7,7 +7,6 @@ metadata:
   aikit-origin: "internal"
   aikit-summary: "BigQuery cost measured before and after: bytes, partitions, clustering, slots, frequency, budget."
   aikit-category: "domain"
-  aikit-tier: "profile"
 ---
 
 # bigquery-cost-review

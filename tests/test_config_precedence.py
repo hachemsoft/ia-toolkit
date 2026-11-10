@@ -35,7 +35,7 @@ class Base(unittest.TestCase):
 
     def apply(self, **kwargs):
         with contextlib.redirect_stdout(io.StringIO()):
-            return cli.apply('general', self.home, False, None, 'claude', managed_file=self.managed, **kwargs)
+            return cli.apply(self.home, False, None, 'claude', managed_file=self.managed, **kwargs)
 
     def state(self):
         return json.loads((self.home/'.ai-kit/state.json').read_text(encoding='utf-8'))
@@ -120,7 +120,7 @@ class PrecedenceTests(Base):
     def core_servers(self, servers):
         """The Core's mcp/servers.toml, every server enabled for everyone."""
         mcp = {name: {'server': server, 'enabled': True} for name, server in servers.items()}
-        return mock.patch('installer.plan.organization', return_value={'defaults': {'mcp': mcp}})
+        return mock.patch('installer.plan.core_settings', return_value={'defaults': {'mcp': mcp}})
 
     def test_mcp_denied_and_stdio_refused(self):
         self.write_managed({'managed_schema': 1, 'mcp': {'denied': ['other'], 'allow_stdio': False}})
@@ -191,7 +191,7 @@ class ProvenanceTests(unittest.TestCase):
 
 class ManagedTrackerTests(Base):
     def test_it_sets_the_tracker_in_managed_toml(self):
-        # 2.2: the Core has no organization.toml; the tracker comes from managed.toml [frictions.tracker].
+        # the Core has no organization.toml; the tracker comes from managed.toml [frictions.tracker].
         self.write_managed({'managed_schema': 1, 'frictions': {'tracker': {'kind': 'gitlab', 'project': 'tools/ai-kit'}, 'publication': 'approval'}})
         self.apply()
         tracker = self.state()['friction_tracker']

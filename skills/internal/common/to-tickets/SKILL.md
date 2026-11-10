@@ -9,7 +9,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Split a plan or a spec into tracer-bullet tickets with their blocking dependencies."
   aikit-category: "workflow"
-  aikit-tier: "profile"
   aikit-requires: "to-spec"
   aikit-optional-setup-workflow: "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue"
 ---

@@ -1,7 +1,7 @@
 import contextlib, io, tempfile, unittest
 from pathlib import Path
 from installer.adapters.gemini import diagnose_live
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 S_KEY={'security':{'auth':{'selectedType':'gemini-api-key'}}}
 class LiveDiagnosisTests(unittest.TestCase):
  def test_ok(self):

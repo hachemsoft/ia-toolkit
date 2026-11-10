@@ -49,7 +49,7 @@ class CoreExportTests(unittest.TestCase):
 
     def install(self, home, content=None):
         with content_from(content) if content else contextlib.nullcontext(), contextlib.redirect_stdout(io.StringIO()):
-            cli.apply('general', home, False, None, 'claude')
+            cli.apply(home, False, None, 'claude')
         return files_of(home)
 
     def test_the_exported_core_is_flat_valid_and_installs_the_same_files(self):
@@ -78,14 +78,14 @@ class CoreExportTests(unittest.TestCase):
         (home/'.ai-kit/aikit.toml').write_text(dump_toml({'schema': 1, 'core': {'repo': url}}), encoding='utf-8')
         managed = self.base/'no-managed.toml'
         with contextlib.redirect_stdout(io.StringIO()):
-            cli.apply('general', home, False, None, 'claude', managed_file=managed)
+            cli.apply(home, False, None, 'claude', managed_file=managed)
             with sync.activation(home, 'sync', False, lambda q: True, managed_file=managed, bundle=bundle) as act:
-                cli.apply('general', home, False, None, 'claude', act.team, extra_writes=act.writes, managed_file=managed)
+                cli.apply(home, False, None, 'claude', act.team, extra_writes=act.writes, managed_file=managed)
         core = read_toml(home/'.ai-kit/lock.toml')['sources']['core']
         self.assertEqual((core['url'], core['tag']), (url, 'v'+VERSION))
         self.assertEqual(len(core['commit']), 40)
         with mock.patch('installer.sources.remote_tags', side_effect=AssertionError('no network')), contextlib.redirect_stdout(io.StringIO()):
-            cli.apply('general', home, False, None, 'claude', managed_file=managed)  # update: from the cache
+            cli.apply(home, False, None, 'claude', managed_file=managed)  # update: from the cache
         self.assertTrue((home/'.claude/skills/ai-kit-tdd/SKILL.md').is_file())
 
 

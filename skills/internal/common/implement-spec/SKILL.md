@@ -9,7 +9,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Implement a whole spec: tickets read as a graph, sub-agents in parallel, integration branch."
   aikit-category: "workflow"
-  aikit-tier: "optional"
   aikit-requires: "implement,tdd,code-review"
   aikit-needs-agents: "true"
   aikit-optional-setup-workflow: "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue"

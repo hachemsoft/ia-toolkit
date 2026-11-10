@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Research on primary sources, recorded in a Markdown file in the repo, delegated to a background agent."
   aikit-category: "tool"
-  aikit-tier: "optional"
   aikit-needs-agents: "true"
 ---
 

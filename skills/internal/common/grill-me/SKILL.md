@@ -9,7 +9,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Tight interview to sharpen a plan, with no repo and no written record."
   aikit-category: "workflow"
-  aikit-tier: "optional"
   aikit-requires: "grilling"
 ---
 

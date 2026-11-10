@@ -9,7 +9,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Which skill or which flow for the current situation: router across all skills."
   aikit-category: "tool"
-  aikit-tier: "optional"
   aikit-optional-code-review: "not installed in this profile: skip that part, or add it with extra_skills"
   aikit-optional-codebase-design: "not installed in this profile: skip that part, or add it with extra_skills"
   aikit-optional-diagnosing-bugs: "not installed in this profile: skip that part, or add it with extra_skills"

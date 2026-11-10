@@ -1,4 +1,4 @@
-"""Settings: the organization, team and personal layers, the Core default selection, and what they resolve to (skills, commands, MCP servers)."""
+"""Settings: the Core, Team and personal layers, the Core default selection, and what they resolve to (skills, commands, MCP servers)."""
 import getpass
 import os
 import re
@@ -25,7 +25,7 @@ def practice_file(practice_id):
     return source, source.stem[:2]+'_'+practice_id.upper().replace('-','_')+'.md'
 
 
-CORE_SELECTION = 'core'  # 2.2: no profiles; state.json records this instead of a profile name
+CORE_SELECTION = 'core'
 
 
 def core_selection():
@@ -39,10 +39,10 @@ def core_selection():
             'commands': [c['name'] for c in load_commands() if c.get('default', True)]}
 
 
-def managed_context_names(profile):
-    names = [KIT_CONTEXT] + [practice_file(p)[1] for p in profile['practices']]
+def managed_context_names(selection):
+    names = [KIT_CONTEXT] + [practice_file(p)[1] for p in selection['practices']]
     if len(set(names)) != len(names):
-        raise KitError('Duplicate practice prefixes in the profile.')
+        raise KitError('Duplicate practice prefixes in the selection.')
     return names
 
 
@@ -121,7 +121,7 @@ def detect_identity(home):
     return {'name': login, 'source': 'os'} if login else {}
 
 
-def organization():
+def core_settings():
     """The Core's settings: its MCP servers (mcp/servers.toml, [servers.<name>]) as the defaults' mcp. IT's decisions are in
     managed.toml, a team's in its Team repository."""
     servers = read_toml(content_root()/'mcp'/'servers.toml', {}).get('servers', {})
@@ -171,7 +171,7 @@ def team_settings(team):
     return read_toml(content_root()/'teams'/(safe_id(team)+'.toml'), {}) if team else {}
 
 
-def resolve_mcp(org_mcp, profile_mcp, personal_mcp, team_mcp=None):
+def resolve_mcp(org_mcp, selection_mcp, personal_mcp, team_mcp=None):
     """MCP servers to install, by name, and the names chosen without a definition.
     The Core's mcp/servers.toml says how to reach each server (active for everyone with enabled = true); the Team then the
     person turn a defined server on or off."""
@@ -179,9 +179,9 @@ def resolve_mcp(org_mcp, profile_mcp, personal_mcp, team_mcp=None):
     for label, entries in (('mcp/servers.toml', org_mcp), ('Team', team_mcp), ('aikit.toml', personal_mcp)):
         if not isinstance(entries, dict):
             raise KitError(label+': mcp must be an object.')
-    if not isinstance(profile_mcp, list) or not all(isinstance(n, str) for n in profile_mcp):
-        raise KitError('Profile: mcp must be a list of server names.')
-    defined, active = {}, set(profile_mcp)
+    if not isinstance(selection_mcp, list) or not all(isinstance(n, str) for n in selection_mcp):
+        raise KitError('Selection: mcp must be a list of server names.')
+    defined, active = {}, set(selection_mcp)
     for source, entries in (('mcp/servers.toml', org_mcp), ('Team', team_mcp), ('aikit.toml', personal_mcp)):
         for name, entry in entries.items():
             safe_id(name)
@@ -241,7 +241,7 @@ def setting_differences(base, effective, prefix=''):
     return changed
 
 
-def resolve_skills(profile, overrides, catalog, log=print):
+def resolve_skills(selection, overrides, catalog, log=print):
     """Final selection: the Core default + extra, dependencies added, disabled skills respected."""
     disabled = set(overrides.get('disabled_skills', []))
     selected = []
@@ -259,7 +259,7 @@ def resolve_skills(profile, overrides, catalog, log=print):
         selected.append(name)
         for dependency in entry.get('requires', []):
             add(dependency, name)
-    for name in list(profile['skills']) + list(overrides.get('extra_skills', [])):
+    for name in list(selection['skills']) + list(overrides.get('extra_skills', [])):
         add(name)
     return selected
 
@@ -282,17 +282,17 @@ def unknown_names(overrides, catalog, agent_catalog, notices):
             notices.append('[Check] aikit.toml '+key+': unknown name '+', '.join(unknown)+' (a typo?); it has no effect.')
 
 
-def allowed_commands(profile_commands, overrides, command_names):
-    """Allowed commands: the profile list (or all), plus extra_commands, minus disabled_commands; None when nothing restricts."""
+def allowed_commands(selection_commands, overrides, command_names):
+    """Allowed commands: the selection's list (or all), plus extra_commands, minus disabled_commands; None when nothing restricts."""
     extra, disabled = overrides.get('extra_commands', []), set(overrides.get('disabled_commands', []))
-    if profile_commands is None and not disabled:
+    if selection_commands is None and not disabled:
         return None
-    base = list(profile_commands) if profile_commands is not None else list(command_names)
+    base = list(selection_commands) if selection_commands is not None else list(command_names)
     return [c for c in base + [e for e in extra if e not in base] if c not in disabled]
 
 
 def selected_commands(selected, manifest, allowed=None):
-    """Commands whose skills are all installed, in manifest order; restricted to the profile list if there is one."""
+    """Commands whose skills are all installed, in manifest order; restricted to the selection's list if there is one."""
     return [c for c in manifest if all(s in selected for s in c['skills']) and (allowed is None or c['name'] in allowed)]
 
 

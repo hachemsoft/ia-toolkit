@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Challenge a plan, a decision or an idea through rounds of questions before implementing it."
   aikit-category: "workflow"
-  aikit-tier: "core"
 ---
 
 Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it.

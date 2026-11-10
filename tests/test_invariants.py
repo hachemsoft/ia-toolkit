@@ -17,7 +17,7 @@ from installer.cli import apply, prune_empty_dirs
 from installer.interface import Adapter, LiveCheck
 from installer.core import ROOT
 from personal import write_personal
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 from installer.settings import core_selection  # noqa: E402
 
 IDENTITY = {'email': 'test@example.org', 'source': 'test'}
@@ -124,7 +124,7 @@ class InvariantTests(unittest.TestCase):
             home = Path(self.temp.name)/target
             home.mkdir()
             with contextlib.redirect_stdout(io.StringIO()):
-                apply('general', home, False, IDENTITY, target)
+                apply(home, False, IDENTITY, target)
             for skill in profile['skills']:
                 self.assertTrue((home/skills_dir/skill/'SKILL.md').is_file(), target+' : skill '+skill)
             agents = sorted(f.stem for f in (home/agents_dir).iterdir())

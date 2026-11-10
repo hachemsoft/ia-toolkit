@@ -8,7 +8,6 @@ metadata:
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Move incoming tickets through a triage state machine until they are ready for an agent."
   aikit-category: "workflow"
-  aikit-tier: "optional"
   aikit-requires: "grilling"
   aikit-optional-setup-workflow: "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue"
 ---

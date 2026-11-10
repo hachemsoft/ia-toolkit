@@ -23,11 +23,11 @@ class ManagedSettingsTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def run_it(self, org=None, hooks_only=False, mcp_only=False, imposed=None):
-        """org: the Core's servers as settings.organization() gives them; imposed: the text of a managed.toml."""
+        """org: the Core's servers as settings.core_settings() gives them; imposed: the text of a managed.toml."""
         managed_file = Path(self.tmp.name)/'managed.toml'
         if imposed is not None:
             managed_file.write_text(imposed, encoding='utf-8')
-        with mock.patch.object(managed, 'organization', return_value=org or {}), mock.patch('installer.config.ownership_problem', return_value=None), \
+        with mock.patch.object(managed, 'core_settings', return_value=org or {}), mock.patch('installer.config.ownership_problem', return_value=None), \
                 contextlib.redirect_stdout(io.StringIO()):
             return managed_settings(self.out, hooks_only, mcp_only, managed_file=managed_file)
 
@@ -48,7 +48,7 @@ class ManagedSettingsTests(unittest.TestCase):
         imposed = Path(self.tmp.name)/'managed.toml'
         imposed.write_text('managed_schema = 1\n[hooks]\nlocked = ["dbt-prod-guard"]\n[mcp]\ndenied = ["db"]\n', encoding='utf-8')
         org = {'defaults': {'mcp': {'db': {'server': {'command': 'uvx', 'args': ['db']}}, 'docs': {'server': {'httpUrl': 'https://docs.example.org/mcp'}}}}}
-        with mock.patch.object(managed, 'organization', return_value=org), mock.patch('installer.config.ownership_problem', return_value=None), \
+        with mock.patch.object(managed, 'core_settings', return_value=org), mock.patch('installer.config.ownership_problem', return_value=None), \
                 contextlib.redirect_stdout(io.StringIO()):
             managed_settings(self.out, False, True, managed_file=imposed)
         settings = json.loads((self.out/'claude-code/managed-settings.json').read_text(encoding='utf-8'))

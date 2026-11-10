@@ -66,7 +66,7 @@ class ChoicesTests(Base):
     def test_choices_go_to_aikit_and_a_leftover_overrides_toml_is_left_alone(self):
         self.write('aikit.toml', '#:schema x\nschema = 1\n\n# my notes\n[user]\nextra_skills = ["prototype"]\n')
         self.write('overrides.toml', {'extra_skills': ['investigation']})
-        quiet(cli.apply, 'general', self.home, False, None, 'claude', choices={'disabled_commands': ['learn'], 'extra_skills': ['prototype', 'teach']})
+        quiet(cli.apply, self.home, False, None, 'claude', choices={'disabled_commands': ['learn'], 'extra_skills': ['prototype', 'teach']})
         text = (self.kit/'aikit.toml').read_text(encoding='utf-8')
         self.assertIn('# my notes', text)
         self.assertEqual(parse_toml(text)['user'], {'extra_skills': ['prototype', 'teach'], 'disabled_commands': ['learn']})
@@ -100,13 +100,13 @@ class MinEngineTests(Base):
 
     def test_a_content_needing_a_newer_engine_changes_nothing(self):
         with content_from(self.source('schema = 1\nname = "core"\nmin_engine = "99.0.0"\n')), self.assertRaises(KitError) as caught:
-            quiet(cli.apply, 'general', self.home, False, None, 'claude')
+            quiet(cli.apply, self.home, False, None, 'claude')
         self.assertIn('needs AI Kit 99.0.0 or newer', str(caught.exception))
         self.assertFalse((self.kit/'state.json').exists())
 
     def test_no_manifest_is_the_v1_layout_and_a_bad_one_is_refused(self):
         with content_from(self.source(None)):
-            quiet(cli.apply, 'general', self.home, False, None, 'claude')
+            quiet(cli.apply, self.home, False, None, 'claude')
         for manifest, message in (('schema = 1\n', 'name must be'), ('schema = 1\nname = "c"\nmin_engine = "2"\n', 'X.Y.Z'),
                                   ('schema = 1\nname = "c"\nextra = 1\n', 'unknown key')):
             with self.subTest(manifest=manifest), self.assertRaises(KitError) as caught:

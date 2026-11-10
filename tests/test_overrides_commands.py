@@ -3,7 +3,7 @@ from pathlib import Path
 from installer.core import KitError
 from installer.toml_files import dump_toml
 from personal import write_personal  # noqa: E402
-from v1_profiles import apply_as  # noqa: E402
+from presets import apply_as  # noqa: E402
 class ExtraCommandsTests(unittest.TestCase):
  def setUp(self):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)

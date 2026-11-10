@@ -100,7 +100,6 @@ class LauncherTests(unittest.TestCase):
         shutil.rmtree(self.base/'Kit IA été')
         self.setup_kit(new_kit)
         state = read_json(self.home/'.ai-kit/state.json')
-        self.assertEqual(state['profile'], 'core')  # 2.2: no profiles
         self.assertEqual(state['user']['email'], 'first.last@example.com')
         self.assertEqual(user_file.read_bytes(), user_before)
         self.assertIn('Mon rôle : ingénieure données', (self.home/'.codex/AGENTS.md').read_text(encoding='utf-8'))
@@ -278,7 +277,7 @@ class SecretsAndNetworkTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             with contextlib.redirect_stdout(io.StringIO()):
-                cli.apply('general', home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
+                cli.apply(home, False, {'email': 'a@example.org', 'source': 'test'}, 'gemini')
             (home/'.ai-kit/context/USER.md').write_text('My key: AIzaSyA1234567890abcdefghijklmnopqrstuv\n', encoding='utf-8')
             out = io.StringIO()
             with contextlib.redirect_stdout(out):

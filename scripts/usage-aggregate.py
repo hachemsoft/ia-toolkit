@@ -93,7 +93,7 @@ def main(argv=None):
         catalog = skill_catalog(args.content)
     except Exception:  # no readable content next to the script: no candidate to retire
         catalog = {}
-    candidates = sorted(s for s in (unused_everywhere or set()) if catalog.get(s, {}).get('tier') == 'core' and catalog.get(s, {}).get('category') in ('workflow', 'tool'))
+    candidates = sorted(s for s in (unused_everywhere or set()) if catalog.get(s, {}).get('default') and catalog.get(s, {}).get('category') in ('workflow', 'tool'))
     out = ['# Aggregated usage summary', '', str(len(reports)) + ' machines | ' + str(totals['sessions']) + ' sessions | ' + str(totals['prompts']) + ' prompts | ' + str(totals['errors']) + ' errors'
            + (' | the kit used in ' + str(totals['sessions_with_the_kit']) + ' (' + str(round(100 * totals['sessions_with_the_kit'] / totals['sessions'])) + ' %)' if totals['sessions'] else ''), '',
            table('Commands typed', commands), '', table('Skills activated', skills), '', table('Agents called', agents), '',

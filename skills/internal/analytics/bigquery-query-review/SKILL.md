@@ -7,7 +7,6 @@ metadata:
   aikit-origin: "internal"
   aikit-summary: "Optimize a slow or expensive BigQuery query and check scans, partitions, joins and plan."
   aikit-category: "domain"
-  aikit-tier: "profile"
   aikit-requires: "diagnosing-bugs"
 ---
 
