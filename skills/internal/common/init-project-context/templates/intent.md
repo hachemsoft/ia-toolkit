@@ -2,6 +2,8 @@
 
 Author: <name> · Date: <YYYY-MM-DD> · Origin: idea | ticket <link> | incident <link> · Local working note (not committed by default)
 
+Status: draft | accepted
+
 ## Problem
 <What cannot be done today, who is affected, what it costs. Facts, not a solution.>
 

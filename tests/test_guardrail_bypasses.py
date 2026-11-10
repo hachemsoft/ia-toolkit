@@ -62,6 +62,8 @@ class ShellTests(Base):
         'sort -o ~/.ai-kit/aikit.toml /etc/hosts',
         'uniq /etc/hosts ~/.ai-kit/aikit.toml',
         "sed -n 'w ~/.ai-kit/aikit.toml' /etc/hosts",
+        "sed -n '1,5p' ~/.gemini/settings.json",  # sed and awk are never readers: their scripts can write or run
+        "awk '{print}' ~/.ai-kit/aikit.toml",
         "sed 's/a/b/w ~/.ai-kit/aikit.toml' /etc/hosts",
         'git diff --output=~/.ai-kit/aikit.toml',
         'tree -o ~/.ai-kit/aikit.toml .',
@@ -76,7 +78,7 @@ class ShellTests(Base):
     ALLOWED = (
         'cat ~/.ai-kit/aikit.toml',
         'grep hooks ~/.gemini/settings.json',
-        "sed -n '1,5p' ~/.gemini/settings.json",
+        'head -n 5 ~/.gemini/settings.json',
         'ls -la ~/.ai-kit/hooks/',
         'git diff -- .claude/settings.json',
         'cp ~/.ai-kit/aikit.toml /tmp/copy.toml',

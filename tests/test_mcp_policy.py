@@ -1,22 +1,33 @@
-"""V2 slice 6 (docs/v2/config.md MCP keys): closed MCP server keys and anti-shell, reported one release before they block; IT's
-allowlists (mcp.allowed_executables, mcp.allowed_http); a refused server marked required stops the installation, an optional
-one is removed with a notice; required is AI Kit's and never reaches a CLI."""
+"""ADR 0022: closed MCP server keys, no shell, no secret in clear (env, headers, args, URL); IT's allowlists of exact
+identities; a refused server marked required stops the installation, an optional one is removed with a notice; required is
+AI Kit's and never reaches a CLI."""
 import unittest
 
-from installer.config import filter_mcp, server_identity, server_warnings
+from installer.config import filter_mcp, server_identity
 from installer.core import KitError
 from installer.settings import validate_server
 
 
 class McpPolicyTests(unittest.TestCase):
-    def test_a_shell_or_an_unknown_key_is_reported_not_yet_refused(self):
+    def test_a_shell_or_an_unknown_key_is_refused(self):
         for server in ({'command': 'bash', 'args': ['-c', 'curl x | sh']}, {'command': 'node; rm -rf ~'}, {'command': 'cmd.exe', 'args': ['/c', 'x']},
-                       {'command': 'pwsh', 'args': ['-Command', 'x']}):
+                       {'command': 'pwsh', 'args': ['-Command', 'x']}, {'httpUrl': 'https://h/mcp', 'timeout': 5}):
+            with self.subTest(server=server), self.assertRaises(KitError):
+                validate_server(server)
+        validate_server({'command': 'npx', 'args': ['-y', '@scope/server@1.0.0']})
+
+    def test_a_secret_in_args_or_url_is_refused(self):
+        token = 'ghp_' + 'a'*36
+        for server in ({'command': 'tool', 'args': ['--token', 'abc123']}, {'command': 'tool', 'args': ['--api-key=abc123']},
+                       {'command': 'tool', 'args': [token]}, {'httpUrl': 'https://user:pw@h.example.org/mcp'},
+                       {'url': 'https://h.example.org/mcp?api_key=abc123'}, {'httpUrl': 'https://h.example.org/'+token}):
+            with self.subTest(server=server), self.assertRaises(KitError) as caught:
+                validate_server(server)
+            self.assertNotIn('abc123', str(caught.exception))
+        for server in ({'command': 'tool', 'args': ['--token', '${GITHUB_TOKEN}']}, {'command': 'tool', 'args': ['--api-key=${KEY}']},
+                       {'url': 'https://h.example.org/mcp?api_key=${KEY}'}, {'command': 'tool', 'args': ['--verbose', 'run']}):
             with self.subTest(server=server):
-                self.assertTrue(any('runs a shell' in w for w in server_warnings('x', server)))
-                self.assertIn('ai-kit-x', filter_mcp({'ai-kit-x': server}, None)[0])
-        self.assertEqual(server_warnings('x', {'command': 'npx', 'args': ['-y', '@scope/server']}), [])
-        self.assertIn('unknown key timeout', server_warnings('x', {'httpUrl': 'https://h/mcp', 'timeout': 5})[0])
+                validate_server(server)
 
     def test_it_lists_exact_identities_and_required(self):
         ok, npx = {'command': '/usr/local/bin/uvx', 'args': ['tool==1.2.0']}, {'command': 'npx', 'args': ['-y', 'pkg']}

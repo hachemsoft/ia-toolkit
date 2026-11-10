@@ -15,6 +15,8 @@ set "KIT_FOUND="
 call :try_python py -3
 if not defined KIT_PY call :try_python python
 if not defined KIT_PY call :try_python python3
+rem No Python on the PATH (a conda environment not activated): the kit's own environment, when it still starts.
+if not defined KIT_PY if exist "%USERPROFILE%\.ai-kit\runtime\venv\Scripts\python.exe" call :try_python "%USERPROFILE%\.ai-kit\runtime\venv\Scripts\python.exe"
 if defined KIT_PY goto :launch
 echo.
 if "%KIT_FOUND%"=="old" (
@@ -46,7 +48,7 @@ if "%~1"=="" if not "%AI_KIT_NO_PAUSE%"=="1" (
 endlocal & exit /b %KIT_CODE%
 
 :try_python
-where %1 >nul 2>nul || exit /b 0
+if not exist "%~1" where %1 >nul 2>nul || exit /b 0
 %* -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 3)" >nul 2>nul
 if not errorlevel 1 (
   set "KIT_PY=%*"

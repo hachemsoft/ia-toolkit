@@ -5,20 +5,24 @@ below. The CLI applies their keys above what a person, a repo or an agent writes
 version you deploy: the vendors change them between releases.
 
 The guardrails declared here are not a lock: they call a script and a Python under $HOME, which the person and an agent
-with a shell can change, and a hook that cannot start blocks nothing. On Windows, the generated command points to
-venv/bin/python, which does not exist there: do not deploy these hooks on Windows. Details: docs/hooks.md.
+with a shell can change, and a hook that cannot start blocks nothing. Details: docs/hooks.md.
 
-claude-code/managed-settings.json
+macOS and Linux use the files at the top of this folder; Windows uses those under windows/ (Codex has one file for all).
+On Windows, Claude Code runs the guardrails through PowerShell (field shell) with the venv's Scripts\python.exe. Gemini
+CLI's docs do not say which shell runs a hook on Windows: windows/gemini-cli/settings.json only turns YOLO mode off, and
+the guardrails there are those the kit installs per person. Try one workstation before the fleet.
+
+claude-code/managed-settings.json, windows/claude-code/managed-settings.json
   macOS   /Library/Application Support/ClaudeCode/managed-settings.json
   Linux   /etc/claude-code/managed-settings.json
-  Windows C:\Program Files\ClaudeCode\managed-settings.json
+  Windows C:\Program Files\ClaudeCode\managed-settings.json (the file under windows/)
   Denies agent edits to the kit's and Claude Code's configuration, and runs the guardrails: {hooks}.{hooks_only}
 
-gemini-cli/settings.json (system settings)
+gemini-cli/settings.json, windows/gemini-cli/settings.json (system settings)
   macOS   /Library/Application Support/GeminiCli/settings.json
   Linux   /etc/gemini-cli/settings.json
-  Windows C:\ProgramData\gemini-cli\settings.json
-  Runs the guardrails ({hooks}) and turns YOLO mode off.
+  Windows C:\ProgramData\gemini-cli\settings.json (the file under windows/)
+  Runs the guardrails ({hooks}) and turns YOLO mode off; on Windows, turns YOLO mode off only.
 
 codex/requirements.toml
   macOS and Linux  /etc/codex/requirements.toml

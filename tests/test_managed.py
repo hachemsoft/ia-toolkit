@@ -68,6 +68,19 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertNotIn('never', codex['allowed_approval_policies'])
         self.assertIn('dbt-prod-guard', (self.out/'README.txt').read_text(encoding='utf-8'))
 
+    def test_windows_files_use_powershell_and_the_venv_scripts_folder(self):
+        self.run_it()
+        claude = json.loads((self.out/'windows/claude-code/managed-settings.json').read_text(encoding='utf-8'))
+        hook = claude['hooks']['PreToolUse'][0]['hooks'][0]
+        self.assertEqual(hook['shell'], 'powershell')
+        self.assertTrue(hook['command'].startswith('& "$HOME\\.ai-kit\\runtime\\venv\\Scripts\\python.exe" -I '), hook['command'])
+        self.assertIn('protected-paths.py', hook['command'])
+        posix = json.loads((self.out/'claude-code/managed-settings.json').read_text(encoding='utf-8'))
+        self.assertNotIn('shell', posix['hooks']['PreToolUse'][0]['hooks'][0])
+        self.assertIn('venv/bin/python', posix['hooks']['PreToolUse'][0]['hooks'][0]['command'])
+        gemini = json.loads((self.out/'windows/gemini-cli/settings.json').read_text(encoding='utf-8'))
+        self.assertEqual(gemini, {'security': {'disableYoloMode': True}})  # its hook shell on Windows is not documented
+
     def test_unknown_guardrail_and_non_empty_folder_refused(self):
         with self.assertRaises(KitError):
             self.run_it(imposed='managed_schema = 1\n[hooks]\nlocked = ["nope"]\n')

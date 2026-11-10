@@ -19,7 +19,8 @@ def shim_bytes(folder):
     if os.name == 'nt':
         text = ('@echo off\r\n'
                 'rem AI Kit command, installed by the kit: runs the launcher of the kit folder. Removed by uninstall.\r\n'
-                'set "AI_KIT_NO_PAUSE=1"\r\n'
+                + ('chcp 65001 >nul\r\n' if not folder.isascii() else '')  # the folder's name, read as UTF-8
+                + 'set "AI_KIT_NO_PAUSE=1"\r\n'
                 'call "'+folder+'\\Installer.cmd" %*\r\n'
                 'exit /b %ERRORLEVEL%\r\n')
     else:

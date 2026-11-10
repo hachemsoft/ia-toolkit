@@ -208,19 +208,23 @@ def pip(python, args):
         raise LauncherError('Installing the kit package failed; the agents were not configured.\n'+tail, 3)
 
 
-def ensure_runtime(runtime, kind):
-    """The private environment, ready for this version of the kit. Rebuilt when it does not run or a previous install stopped."""
+READ_ONLY = {'status', 'doctor', 'usage', 'validate'}
+
+
+def ensure_runtime(runtime, kind, read_only=False):
+    """The private environment, ready for this version of the kit. Rebuilt when it does not run or a previous install stopped.
+    read_only: a reading action (status, doctor...) uses an environment that runs as it is, without pip."""
     venv, record_file = runtime/'venv', runtime/'install.json'
     python = environment_python(venv)
     record, wanted = read_record(record_file), fingerprint(kind)
-    if record.get('status') == 'ready' and record.get('fingerprint') == wanted and runs(python):
+    if record.get('status') == 'ready' and (record.get('fingerprint') == wanted or read_only) and runs(python):
         return python, False
     if record.get('status') == 'installing':
         say('A previous installation of the kit runtime did not finish: it is started again from scratch.')
     elif record.get('status') == 'failed':
         say('The previous installation of the kit runtime failed: it is started again from scratch.')
-    # Unfinished, failed or not starting: rebuilt from scratch. Ready but older: reused, only the package changes.
-    if venv.exists() and (record.get('status') != 'ready' or not runs(python)):
+    # An environment that does not start is rebuilt from scratch; one that starts is reused, only the package changes.
+    if venv.exists() and not runs(python):
         shutil.rmtree(venv)
     write_record(record_file, {'status': 'installing', 'version': kit_version(), 'kind': kind, 'started': time.time()})
     try:
@@ -262,7 +266,7 @@ def main(argv):
         if not args or action is None:
             args = ['init', *args]  # double-clicking the installer: a first installation, or a re-check of this one
         with Lock(runtime/'install.lock'):
-            python, installed = ensure_runtime(runtime, kind)
+            python, installed = ensure_runtime(runtime, kind, read_only=action in READ_ONLY)
             version = installed_version(python)
             if version != kit_version():
                 say('The kit folder holds version '+kit_version()+' but the private environment has '+str(version)+'.')

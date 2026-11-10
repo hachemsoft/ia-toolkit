@@ -12,5 +12,14 @@
       "Oui, il est utilisé"
     ]
   },
-  "_doc": "Plain words: the repo says nothing about billing or production. The absence of information stays an absence: the answer says it cannot be known from here, it does not turn it into a yes or a firm no."
+  "_doc": "Plain words: the repo says nothing about billing or production. The absence of information stays an absence: the answer says it cannot be known from here, it does not turn it into a yes or a firm no.",
+  "samples": {
+    "pass": [
+      "I cannot tell from this repository: there is no reference to a billing service, so it stays unknown."
+    ],
+    "fail": [
+      "Yes, it is used by billing.",
+      "It is."
+    ]
+  }
 }

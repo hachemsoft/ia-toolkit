@@ -61,13 +61,13 @@ def version_tuple(text):
 
 
 def changelog_section(text, version):
-    """The lines under '## <version>' of a CHANGELOG, up to the next '## ' heading."""
+    """The lines under "## <version> (<date>)" of a CHANGELOG, up to the next '## ' heading."""
     lines, keep = [], False
     for line in text.splitlines():
         if line.startswith('## '):
             if keep:
                 break
-            keep = line[3:].strip() == version
+            keep = (line[3:].split() or [''])[0] == version  # '## 4.1.0 (2026-11-10)'
             continue
         if keep:
             lines.append(line)

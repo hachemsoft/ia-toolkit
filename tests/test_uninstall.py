@@ -106,10 +106,13 @@ class UninstallTests(unittest.TestCase):
         self.quiet(cli.doctor_checks, self.home)
         self.assertFalse([line for line in self.out.splitlines() if line.startswith('[Check] .')], self.out)
 
-    def test_nothing_to_remove_is_said(self):
+    def test_nothing_to_remove_is_said_and_exits_0(self):
+        """Exit 0, so that uninstall --remove-runtime after an uninstall still removes the runtime (the launcher needs 0)."""
         self.quiet(cli.uninstall, self.home)
-        with self.assertRaises(cli.KitError):
-            self.quiet(cli.uninstall, self.home)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(cli.uninstall(self.home), 0)
+        self.assertIn('nothing to remove', out.getvalue())
 
 
 if __name__ == '__main__':

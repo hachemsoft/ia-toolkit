@@ -19,8 +19,9 @@ gives a path the kit owns and site-packages isolated from the person's Python. A
 
 **Consequences**: on Windows under AppLocker or WDAC the venv's `python.exe` sits in the user profile and may need a
 publisher rule from IT; where the `ai-kit` command is blocked, use `Installer.cmd`.
-`managed-settings` points the guardrails it writes for IT at the venv's POSIX path
-(`$HOME/.ai-kit/runtime/venv/bin/python`); it has no Windows interpreter path.
+`managed-settings` points the guardrails it writes for IT at the venv under `$HOME`: `venv/bin/python` on macOS and Linux,
+`venv\Scripts\python.exe` through PowerShell for Claude Code on Windows (`windows/`); Gemini CLI does not document its
+hook shell on Windows, so no guardrail is written for it there.
 
 **Considered**: `pip install --user` plus `python -m ai_kit` (conflicts with `-I` and the PATH); hooks through `py -3.11`
 (version chosen by a user-editable file, Windows only); an embedded Python in the ZIP (another runtime to maintain).

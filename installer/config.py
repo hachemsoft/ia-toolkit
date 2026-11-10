@@ -160,21 +160,6 @@ def locked_guardrails(managed):
     return list((managed or {}).get('hooks', {}).get('locked', []))
 
 
-MCP_KEYS = ('command', 'args', 'env', 'cwd', 'httpUrl', 'url', 'headers', 'required')
-SHELLS = ('sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'cmd', 'cmd.exe', 'powershell', 'powershell.exe', 'pwsh', 'pwsh.exe')
-
-
-def server_warnings(short, server):
-    """What AI Kit reports but still installs (ADR 0022): a key outside the closed schema, a shell as the command or a -c script (anything can then run, unseen by the CLI's approval)."""
-    found = ['[Check] MCP server '+short+': unknown key '+k+' (AI Kit knows '+', '.join(MCP_KEYS)+'); AI Kit does not check it.'
-             for k in sorted(set(server) - set(MCP_KEYS))]
-    command = str(server.get('command') or '')
-    if command and (Path(command.replace('\\', '/')).name.lower() in SHELLS or re.search(r'[;&|`$<>]', command)
-                    or any(a in ('-c', '/c', '-Command', '-EncodedCommand') for a in server.get('args') or [])):
-        found.append('[Check] MCP server '+short+': runs a shell or a shell script ('+command+'); name the program itself.')
-    return found
-
-
 FETCH_AND_RUN = ('npx', 'uvx', 'bunx', 'pnpx', 'pipx')
 
 
@@ -250,7 +235,6 @@ def filter_mcp(enabled_mcp, managed):
     kept, notices = {}, []
     for name, server in enabled_mcp.items():
         short = name[len('ai-kit-'):] if name.startswith('ai-kit-') else name
-        notices += server_warnings(short, server)
         local, identity = bool(server.get('command')), server_identity(server)
         why = ('refused by IT (managed.toml mcp.denied)' if denied_match(short, server, denied)
                else 'local (stdio) servers are refused by IT (managed.toml mcp.allow_stdio = false)' if not stdio and local

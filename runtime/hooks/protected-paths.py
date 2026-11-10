@@ -121,7 +121,7 @@ SHELL_TOOLS = ('run_shell_command', 'run_command', 'shell', 'local_shell', 'exec
 READERS = {'cat', 'bat', 'less', 'more', 'head', 'tail', 'grep', 'egrep', 'fgrep', 'rg', 'ag', 'ack', 'ls', 'll', 'dir', 'stat', 'file',
            'wc', 'diff', 'cmp', 'md5', 'md5sum', 'shasum', 'sha1sum', 'sha256sum', 'jq', 'yq', 'column', 'sort', 'uniq', 'cut', 'nl', 'od',
            'xxd', 'hexdump', 'strings', 'tree', 'realpath', 'readlink', 'basename', 'dirname', 'test', '[', 'echo', 'printf', 'true',
-           'type', 'which', 'find', 'sed', 'awk', 'git', 'cp',
+           'type', 'which', 'find', 'git', 'cp',  # not sed or awk: their scripts can write a file or run a command
            # PowerShell
            'get-content', 'gc', 'select-string', 'sls', 'get-childitem', 'gci', 'test-path', 'get-item', 'gi', 'get-filehash',
            'resolve-path', 'measure-object', 'write-output', 'write-host', 'out-string', 'format-list', 'select-object'}
@@ -198,12 +198,6 @@ def only_reads(program, words, mentions_in):
     if program not in READERS:
         return False
     positional = [w for w in words if not w.startswith('-')]
-    if program == 'sed':
-        # In place, or a script that writes a file or runs a command (w, W, e, s///w).
-        return not any(re.match(r'-[a-z]*i|--in-place', w, re.I) or re.fullmatch(r'(\d+|\$|/[^/]*/)?[we]', w)
-                       or re.fullmatch(r's(.).*\1.*\1[a-z0-9]*w[a-z0-9]*', w) for w in words)
-    if program == 'awk':
-        return not any('inplace' in w or 'system(' in w or '|' in w for w in words)
     if program == 'find':
         return not any(w in ('-delete', '-exec', '-execdir', '-ok', '-okdir', '-fprint', '-fprint0', '-fprintf', '-fls') for w in words)
     if program == 'git':
@@ -225,7 +219,7 @@ def only_reads(program, words, mentions_in):
     return True
 
 PYTHONS = re.compile(r'(python[0-9.]*|py)(\.exe)?')
-KIT_TOOLS = ('/.ai-kit/bin/friction.py', '/.ai-kit/bin/news.py')  # run by the kit's own commands (/friction, a refused update): they write only outside the protected paths
+KIT_TOOLS = ('/.ai-kit/bin/friction.py',)  # run by the kit's own /friction command: it writes only outside the protected paths
 
 # The kit's own subcommands that change the installation or bill a model call: the agent tells the person, it does not run them
 # (0.52.0). Reading ones (doctor, usage, news, friction logging, --version, managed-settings into an empty folder) stay allowed.

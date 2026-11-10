@@ -35,7 +35,7 @@ class TeamTests(unittest.TestCase):
         (self.work/'skills/data-check').mkdir(parents=True)
         (self.work/'skills/data-check/SKILL.md').write_text(
             '---\nname: data-check\ndescription: "Check a data change. Triggers: data check."\nmetadata:\n  aikit-version: "1.0.0"\n'
-            '  aikit-origin: "team"\n  aikit-category: "domain"\n  aikit-tier: "optional"\n---\n\n# data-check\n\nCheck it.\n', encoding='utf-8')
+            '  aikit-origin: "team"\n  aikit-category: "domain"\n---\n\n# data-check\n\nCheck it.\n', encoding='utf-8')
         (self.work/'context').mkdir()
         (self.work/'context/rules.md').write_text('# Data team\n\nTeam rule marker.\n', encoding='utf-8')
         run_git('init', '-q', cwd=self.work)

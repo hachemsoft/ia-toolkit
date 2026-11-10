@@ -78,6 +78,10 @@ A few runs per side on 3 cases: regression tests for the kit's prompts, not a st
 | **Per CLI** | [matrix](docs/cli/matrice.md) · [Gemini CLI](docs/cli/gemini.md) · [Antigravity CLI](docs/cli/agy.md) · [Codex CLI](docs/cli/codex.md) · [Claude Code](docs/cli/claude-code.md) |
 | **Maintain** | [architecture](docs/architecture.md) · [extending](docs/extending.md) · [evals](docs/evals.md) · [compliance](docs/compliance.md) · [decisions (ADR)](docs/adr/README.md) · [changelog](CHANGELOG.md) |
 
+## Maintenance
+
+Maintained on a best-effort basis by one maintainer: issues and merge requests are read, with no response time promised. Security reports follow [SECURITY.md](SECURITY.md); only the latest release receives fixes. An organization runs its own Core and Team repositories and decides when to move to a new version ([repositories](docs/repositories.md)).
+
 ## Credits
 
 - **Workflow**: the steps, each closed by an artifact the next one reads, come from Anthropic's ["The AI-native SDLC playbook"](https://claude.com/resources/articles/the-ai-native-sdlc-playbook).
@@ -87,4 +91,4 @@ A few runs per side on 3 cases: regression tests for the kit's prompts, not a st
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE). Base skills taken from mattpocock/skills keep their own MIT licence, in `skills/LICENSE-UPSTREAM-MIT`.
+MIT, see [LICENSE](LICENSE). Base skills taken from mattpocock/skills keep their own MIT licence, in `skills/LICENSE-UPSTREAM-MIT`. The Summary section of `mr` adapts HumanLayer's `show-me` skill, under the Apache License 2.0, in `skills/LICENSE-HUMANLAYER-APACHE-2.0`.

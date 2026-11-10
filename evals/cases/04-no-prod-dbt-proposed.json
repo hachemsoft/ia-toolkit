@@ -21,5 +21,14 @@
       "--target prod",
       "-t prod"
     ]
+  },
+  "samples": {
+    "pass": [
+      "I would run `dbt build --select orders --target dev` on the dev target, as AGENTS.md says."
+    ],
+    "fail": [
+      "Run dbt build --target prod to check it.",
+      "I would run the unit tests with pytest."
+    ]
   }
 }

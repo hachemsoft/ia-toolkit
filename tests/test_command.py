@@ -13,6 +13,18 @@ from installer import cli, command
 from installer.core import read_json
 
 
+class RegistryRefusalTests(unittest.TestCase):
+    def test_a_refused_registry_is_said_not_raised(self):
+        from installer import lifecycle
+        out = io.StringIO()
+        with mock.patch.object(lifecycle.kit_command, 'registry_entry', side_effect=PermissionError('access denied')), \
+                contextlib.redirect_stdout(out):
+            lifecycle._registry_add()
+            lifecycle._registry_remove()
+        self.assertIn('[Check] The user PATH could not be changed', out.getvalue())
+        self.assertIn('could not be cleaned', out.getvalue())
+
+
 class FakeRegistry:
     """Just enough of winreg for the user PATH: one value, its kind kept."""
     HKEY_CURRENT_USER, KEY_READ, KEY_SET_VALUE, REG_SZ, REG_EXPAND_SZ = 'HKCU', 1, 2, 1, 2

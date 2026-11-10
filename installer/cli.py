@@ -78,8 +78,7 @@ ROLE_PLACEHOLDER = '<!-- One line: my role and what I work on these weeks. -->'
 def user_context_text(identity, answers=None, role=None):
     """USER.md as the kit creates it: the template, with the quick answers (the defaults without them) and the role."""
     template = (ROOT/'templates/user-context.md').read_text(encoding='utf-8')
-    parts = [identity.get('name'), '<'+identity['email']+'>' if identity.get('email') else None]
-    line = ' '.join(p for p in parts if p)
+    line = identity.get('name') or ''  # the email stays out of a file every session reads
     chosen = {**QUICK_DEFAULTS, **(answers or {})}
     sections = {'answers': [], 'working': []}
     for key, (_, section, options) in QUICK_QUESTIONS.items():
@@ -188,7 +187,8 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
             if rel in old_files:
                 if digest(previous) != old_files[rel] and not replace_edited:
                     if not restore:
-                        raise KitError(label+' modified locally: '+str(target))
+                        raise KitError(label+' modified locally: '+str(target)+'. Nothing was changed. Keep your copy elsewhere, delete this file '
+                                       '(the previous kit version is in ~/.ai-kit/backups/), then run the command again.')
                     restored.append(target)
             elif previous != data:
                 raise KitError(label+' existing file not managed by the kit: '+str(target))
@@ -280,6 +280,10 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
                        'removed': sorted(rel(d) for d in deletes), 'restored': [rel(r) for r in restored], 'notices': p.notices,
                        'context_file': str(p.user_file), 'home': str(home), 'identity': identity})
     print('Core selection'+(' | team '+team if team else '')+' | '+str(len(selected))+' skills | '+str(len(agents))+' agents | '+str(sum(1 for n in enabled_hooks if is_guardrail(hook_manifest[n])))+' guardrails')
+    guards = [n for n, s in hook_manifest.items() if is_guardrail(s)]
+    off = [n for n in guards if n not in enabled_hooks]
+    print('Guardrails: '+', '.join(n+(' on' if n in enabled_hooks else ' off') for n in guards)
+          + (' (turn one on: [hooks] '+off[0]+' = true in ~/.ai-kit/aikit.toml, then ai-kit sync --offline)' if off else ''))
     if identity.get('email'):
         print('Identity: '+identity['email']+' (source '+identity.get('source','?')+')')
     if dry_run:

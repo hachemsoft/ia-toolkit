@@ -3,7 +3,9 @@ import json
 import os
 import re
 import shutil
+import signal
 import tempfile
+import threading
 import uuid
 from datetime import datetime, timezone
 
@@ -12,6 +14,34 @@ from .adapters import ADAPTERS
 
 
 BACKUPS_KEPT = 20
+
+
+class Stopped(KeyboardInterrupt):
+    """SIGTERM or SIGHUP received during the writes: handled like Ctrl+C, every file is put back."""
+
+
+def trap_stops():
+    """While the files are written, SIGTERM (a killed process) and SIGHUP (a closed terminal) raise Stopped, so the writes are
+    undone like on Ctrl+C. SIGKILL and a power cut cannot be caught: the pending manifest is resumed at the next start
+    (resume_pending). Returns the previous handlers, for release_stops."""
+    if threading.current_thread() is not threading.main_thread():
+        return {}
+    def stop(signum, frame):
+        raise Stopped('signal '+str(signum))
+    previous = {}
+    for name in ('SIGTERM', 'SIGHUP'):
+        number = getattr(signal, name, None)
+        if number is not None:
+            try:
+                previous[number] = signal.signal(number, stop)
+            except (OSError, ValueError):
+                pass
+    return previous
+
+
+def release_stops(previous):
+    for number, handler in previous.items():
+        signal.signal(number, handler)
 
 
 def prune_backups(kit, keep=BACKUPS_KEPT):
@@ -36,6 +66,7 @@ def commit_changes(home, kit, writes, deletes, progress=None):
     if not changed:
         return changed, backup
     backup.mkdir(parents=True,exist_ok=True)
+    previous = trap_stops()
     try:
         if os.name != 'nt':
             backup.chmod(0o700)
@@ -69,7 +100,9 @@ def commit_changes(home, kit, writes, deletes, progress=None):
             else:
                 atomic_write(path,data)
         raise
-    # V2 slice 2: done once every write landed; a pending manifest at the next start means a machine stop during the writes.
+    finally:
+        release_stops(previous)
+    # Done once every write landed; a pending manifest at the next start means a machine stop during the writes.
     (backup/'manifest.json').write_bytes(json_bytes({**manifest, 'status': 'done'}))
     prune_backups(kit)
     return changed, backup

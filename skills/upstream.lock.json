@@ -7,6 +7,14 @@
       "license": "MIT",
       "license_file": "skills/LICENSE-UPSTREAM-MIT",
       "catalog_origin": "upstream"
+    },
+    {
+      "source": "https://github.com/humanlayer/humanlayer",
+      "author": "Dex Horthy (HumanLayer)",
+      "license": "Apache-2.0",
+      "license_file": "skills/LICENSE-HUMANLAYER-APACHE-2.0",
+      "used_in": "mr",
+      "what": "the Summary section of mr: the show-me skill's menu of visuals and its placement guidance, adapted to a diff (skills/internal/common/mr/CREDITS.md)"
     }
   ],
   "note": "Skills marked origin: upstream in skills/catalog.json, adapted for the kit. Original commit not recorded: note it at the next upstream sync.",

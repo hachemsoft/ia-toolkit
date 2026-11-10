@@ -104,7 +104,7 @@ The rule layers next to it (`00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md` or the ac
 
 ## Identity
 
-`init` detects an identity, in order: the CLI's active account where the kit can read it, the global Git `user.email` and `user.name`, the system login. You confirm it at a terminal, or pass `--user <email>`. It is recorded in `~/.ai-kit/state.json` and written in the header of `USER.md` when the file is created. `doctor` prints it and, where the CLI exposes its active account, checks that they match. The identity is not authentication and grants no rights; tokens are never read.
+`init` detects an identity, in order: the CLI's active account where the kit can read it, the global Git `user.email` and `user.name`, the system login. You confirm it at a terminal, or pass `--user <email>`. It is recorded in `~/.ai-kit/state.json`; only your name goes in the header of `USER.md` when the file is created, never your email. `doctor` prints it and, where the CLI exposes its active account, checks that they match. The identity is not authentication and grants no rights; tokens are never read.
 
 ## Authentication and model
 

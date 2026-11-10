@@ -17,14 +17,24 @@ def _nothing():
     pass
 
 
+def _registry(add):
+    """The user PATH change, after the files are written. A registry refusal (a policy, a locked key) is said, never raised:
+    the kit itself is installed, only the command is missing from the PATH."""
+    try:
+        if kit_command.registry_entry(add):
+            kit_command.announce_environment_change()
+    except OSError as exc:
+        print('[Check] The user PATH could not be '+('changed' if add else 'cleaned')+' in the registry ('+str(exc)+'): '
+              + ('add '+kit_command.REGISTRY_ENTRY+' to it by hand, or start the kit with Installer.cmd.' if add
+                 else 'remove '+kit_command.REGISTRY_ENTRY+' from it by hand.'))
+
+
 def _registry_add():
-    if kit_command.registry_entry(True):
-        kit_command.announce_environment_change()
+    _registry(True)
 
 
 def _registry_remove():
-    kit_command.registry_entry(False)
-    kit_command.announce_environment_change()
+    _registry(False)
 
 
 def plan_command(p, managed_write, choice):
@@ -103,7 +113,9 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
     kit = home/'.ai-kit'
     state = read_json(kit/'state.json')
     if not state:
-        raise KitError('The kit configuration is not installed in '+str(home)+': nothing to remove.')
+        # Exit 0: a second uninstall, or uninstall --remove-runtime after an uninstall, still lets the launcher remove the runtime.
+        print('The kit configuration is not installed in '+str(home)+': nothing to remove.')
+        return 0
     check_state_schema(state, kit/'state.json')
     old_files = state.get('files', {})
     writes, deletes, kept = {}, [], []

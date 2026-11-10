@@ -95,7 +95,7 @@ class FrictionLoopTests(unittest.TestCase):
  def test_id_cited_and_fixed_version_found(self):
   from installer.core import fixed_frictions,friction_id
   self.assertEqual(friction_id('2026-10-26T10:00:00Z','x'),friction_id('2026-10-26T10:00:00Z','x'))
-  log='# Changelog\n\n## 0.23.0\nOther.\n\n## 0.22.0\n`/test` no longer reruns the whole suite (frictions: a1b2c3, D4E5F6).\n'
+  log='# Changelog\n\n## 0.23.0 (2026-11-10)\nOther.\n\n## 0.22.0 (2026-11-01)\n`/test` no longer reruns the whole suite (frictions: a1b2c3, D4E5F6).\n'
   self.assertEqual(fixed_frictions(log),{'a1b2c3':'0.22.0','d4e5f6':'0.22.0'})
  def test_script_stores_id_and_usage_exports_it(self):
   with tempfile.TemporaryDirectory() as tmp:

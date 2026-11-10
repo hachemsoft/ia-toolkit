@@ -39,9 +39,9 @@ required = false
 | `required` | `true`: if the server is refused, the run fails and nothing changes |
 | `enabled` | on or off by default, as in the table above |
 
-- A value in `env` or `headers` that looks secret is refused: write `${VARIABLE}`, defined in each person's environment.
+- A value that looks secret in `env`, `headers`, `args` (`--token value`, `--token=value`) or the URL (a password, `?api_key=`) is refused: write `${VARIABLE}`, defined in each person's environment.
 - `trust` is refused: the CLI keeps asking before a server's tools act.
-- An unknown key, or a shell (or a shell script) as the command, is reported.
+- An unknown key, or a shell (or a shell script) as the command, is refused: name the program itself.
 - Pin versions (`:1.2.3`, `pkg==1.2.3`, `pkg@1.2.3`), never `latest`.
 - A local server needs its program on the workstation, installed by your IT procedure.
 

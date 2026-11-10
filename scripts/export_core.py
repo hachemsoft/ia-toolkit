@@ -32,7 +32,8 @@ def export(dest):
     for skill, entry in skill_catalog(ROOT).items():
         if 'path' in entry:
             shutil.copytree(ROOT/entry['path'], dest/'skills'/skill)
-    shutil.copy2(ROOT/'skills/LICENSE-UPSTREAM-MIT', dest/'skills/LICENSE-UPSTREAM-MIT')
+    for licence in ('LICENSE-UPSTREAM-MIT', 'LICENSE-HUMANLAYER-APACHE-2.0'):
+        shutil.copy2(ROOT/'skills'/licence, dest/'skills'/licence)
     shutil.copy2(ROOT/'skills/upstream.lock.json', dest/'skills/upstream.lock.json')
     (dest/'agents').mkdir()
     shutil.copy2(ROOT/'agents/defaults.json', dest/'agents/defaults.json')

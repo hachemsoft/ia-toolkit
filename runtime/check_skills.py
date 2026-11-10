@@ -18,6 +18,8 @@ KIT_PATHS = ('skills', 'agents', 'commands')
 # The scripts the kit ships inside skills, reviewed: templates a skill copies, never run by the kit itself.
 KIT_ALLOWED = ('skills/internal/common/manual-steps/template.sh', 'skills/internal/common/diagnosing-bugs/scripts/hitl-loop.template.sh')
 TEXT = {'.md', '.txt', '.json', '.toml', '.yaml', '.yml'}
+# Only these exact names are skipped: any other dotfile or licence file is scanned like the rest.
+SKIPPED = {'LICENSE', 'LICENSE-UPSTREAM-MIT', 'LICENSE-HUMANLAYER-APACHE-2.0', '.DS_Store', '.gitkeep'}
 
 RULES = (
     ('pipe-to-shell', re.compile(r'\b(?:curl|wget)\b[^\n|`]*\|\s*(?:sudo\s+)?(?:ba|z|da)?sh\b'
@@ -64,7 +66,7 @@ def scan(paths, allowed):
     for base in paths:
         files = [base] if base.is_file() else sorted(p for p in base.rglob('*') if p.is_file())
         for path in files:
-            if path.name.startswith('.') or path.name.startswith('LICENSE'):
+            if path.name in SKIPPED:
                 continue
             listed = path.resolve() in allowed
             if path.suffix.lower() not in TEXT and not listed:

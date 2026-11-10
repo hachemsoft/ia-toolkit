@@ -66,6 +66,18 @@ class RunnerTests(unittest.TestCase):
     def calls(self):
         return [c for c in (self.log.read_text(encoding='utf-8').splitlines() if self.log.exists() else []) if c != '--version']
 
+    def test_checks_tell_good_answers_from_bad_ones(self):
+        """Cases with samples: each "pass" answer passes check(), each "fail" answer fails it. No model call."""
+        cases = [c for c in evals_run.load_cases(ROOT/'evals'/'cases') if c.get('samples')]
+        self.assertGreaterEqual(len(cases), 4)
+        for case in cases:
+            for answer in case['samples'].get('pass', []):
+                with self.subTest(case=case['name'], answer=answer):
+                    self.assertEqual(evals_run.check(answer, case['expect']), [])
+            for answer in case['samples'].get('fail', []):
+                with self.subTest(case=case['name'], answer=answer):
+                    self.assertNotEqual(evals_run.check(answer, case['expect']), [])
+
     def test_real_run_needs_explicit_consent(self):
         self.case()
         code, out = self.run_cases()

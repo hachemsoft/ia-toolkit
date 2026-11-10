@@ -7,6 +7,8 @@ import sys
 import tempfile
 import unittest
 
+import wheelhouse
+
 ROOT = Path(__file__).resolve().parents[1]
 
 class PortabilityTests(unittest.TestCase):
@@ -61,10 +63,12 @@ class PortabilityTests(unittest.TestCase):
             ast.parse(source.read_text(encoding='utf-8'),feature_version=(3,11))
 
     @unittest.skipIf(os.name == 'nt', 'Shell launcher on Unix only')
+    @unittest.skipUnless(wheelhouse.AVAILABLE, wheelhouse.WHY)
     def test_native_shell_launcher_from_outside_repo(self):
+        # The launcher installs the engine with pip: from the local wheelhouse, so a contributor needs no package index.
         proc = subprocess.run(['sh', str(ROOT/'scripts/bootstrap.sh'), 'init',
                                '--home',str(self.home),'--target','gemini'],
-                              cwd=self.base,capture_output=True,text=True,encoding='utf-8')
+                              cwd=self.base,capture_output=True,text=True,encoding='utf-8',env={**os.environ, **wheelhouse.pip_env()})
         self.assertEqual(proc.returncode,0,proc.stdout+proc.stderr)
         self.assertTrue((self.home/'.ai-kit/state.json').exists())
 

@@ -88,10 +88,12 @@ ai-kit managed-settings --out <empty folder> [--managed-hooks-only] [--managed-m
 | `--managed-hooks-only` | the CLI ignores hooks from any other source |
 | `--managed-mcp-only` | only the Core's MCP servers are allowed |
 
-The generated `README.txt` says where each file goes, per system and per CLI.
+The generated `README.txt` says where each file goes, per system and per CLI. Windows has its own files under `windows/`, where the guardrails run through PowerShell; for a CLI whose docs do not say which shell runs a hook on Windows, that file writes no guardrail (`README.txt` names it).
 
 ## Limits
 
 - A rule on the text of a command is defeated by an alias, a wrapper script or a program the hook does not know.
+- A path or a command built at run time (a variable, `base64`, `eval`, a script written then run) is not seen: the hook reads the text it is given, before it runs.
+- A tool renamed or added by a CLI release is matched only once the kit's matchers name it; `doctor` probes each guardrail, the weekly drift check reads each CLI's help.
 - A guardrail calls a script and a Python under your home folder; a hook that cannot start blocks nothing.
 - Real access limits come from rights on the data and systems (IAM), not from the agent's instructions.

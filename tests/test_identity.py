@@ -27,10 +27,11 @@ class IdentityTests(unittest.TestCase):
   self.assertEqual(identity.get('source'),'os');self.assertNotIn('email',identity)
  def test_header_written_once(self):
   self.run_kit(user={'email':'first.last@example.com','name':'Zoé Martin','source':'option'})
-  u=self.home/'.ai-kit/context/USER.md';self.assertIn('Person: Zoé Martin <first.last@example.com>',u.read_text(encoding='utf-8'))
+  u=self.home/'.ai-kit/context/USER.md';self.assertIn('Person: Zoé Martin\n',u.read_text(encoding='utf-8'))
+  self.assertNotIn('example.com',u.read_text(encoding='utf-8'))  # the email stays out of a file every session reads
   self.assertEqual(read_json(self.home/'.ai-kit/state.json')['user']['email'],'first.last@example.com')
   self.run_kit(user={'email':'other@example.com','source':'option'})
-  self.assertIn('first.last@example.com',u.read_text(encoding='utf-8'));self.assertEqual(read_json(self.home/'.ai-kit/state.json')['user']['email'],'other@example.com')
+  self.assertIn('Person: Zoé Martin\n',u.read_text(encoding='utf-8'));self.assertEqual(read_json(self.home/'.ai-kit/state.json')['user']['email'],'other@example.com')
  def test_no_identity_no_header(self):
   self.run_kit();text=(self.home/'.ai-kit/context/USER.md').read_text(encoding='utf-8');self.assertNotIn('Person:',text);self.assertNotIn('{identity}',text)
  def test_identity_asked_by_init_only(self):

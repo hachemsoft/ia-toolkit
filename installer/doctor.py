@@ -268,10 +268,13 @@ def command_checks(home, state, status):
     from . import command as kit_command
     recorded = state.get('command') or {}
     if not recorded.get('chosen') or not recorded.get('folder'):
-        return  # not chosen, or never installed (the kit ran without the launcher): setup and update already said so
+        return  # not chosen, or never installed (the kit ran without the launcher): init already said so
     shim = home/'.ai-kit'/'bin'/kit_command.SHIM_NAME
     if not shim.is_file():
         status(False, 'The `ai-kit` command is missing: run the installer from the kit folder (Installer.cmd, or sh scripts/bootstrap.sh)')
+        return
+    if os.name != 'nt' and not os.access(shim, os.X_OK):
+        status(False, 'The `ai-kit` command is not executable ('+str(shim)+'): run the installer from the kit folder again')
         return
     folder = kit_command.shim_folder(shim.read_bytes()) or recorded.get('folder')
     if folder and Path(folder).is_dir():
@@ -526,6 +529,8 @@ def doctor_checks(home, cwd=None, problems=None):
                 adapter.doctor(home, state, status, ctx)
                 hints.append(adapter.doctor_hint())
                 found = cli_version(adapter.COMMAND)
+                if found is None and shutil.which(adapter.COMMAND):
+                    print('[Info] '+adapter.LABEL+': version unreadable (--version printed no version); compatibility not compared.')
                 if found and newer_than(found, adapter.VERIFIED):
                     print('[Info] '+adapter.LABEL+' '+found+' is newer than the version the kit was checked on ('+adapter.VERIFIED+'). '
                           'If something stops working, the checks above and usage say what; log it with /friction.')

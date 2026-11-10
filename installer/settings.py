@@ -5,6 +5,9 @@ import re
 import shutil
 import subprocess
 
+from pathlib import Path
+from urllib.parse import parse_qsl, urlsplit
+
 from .core import (content_root, KIT_CONTEXT, EMAIL, SECRET, KitError, safe_id)
 from .toml_files import read_toml
 from .adapters import ADAPTERS
@@ -46,7 +49,37 @@ def managed_context_names(selection):
     return names
 
 
+MCP_KEYS = ('command', 'args', 'env', 'cwd', 'httpUrl', 'url', 'headers', 'required')
+SHELLS = ('sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'cmd', 'cmd.exe', 'powershell', 'powershell.exe', 'pwsh', 'pwsh.exe')
+VARIABLE = re.compile(r'\$\{[A-Za-z_][A-Za-z0-9_]*\}')
+
+
+def secret_in(text, name=''):
+    """A value that looks secret: a known token format, or a non-empty value under a secret-sounding name, unless it is
+    only ${VARIABLE} references."""
+    bare = VARIABLE.sub('', text).strip()
+    return bool(SECRET.search(text)) or bool(name and SECRET_NAME.search(name) and bare)
+
+
+def secret_problem(server):
+    """Where a server carries a secret in clear: an argument (--token value, --token=value, a token), or a URL (password
+    in it, secret query parameter, a token). None when there is none."""
+    args = server.get('args') or []
+    for i, arg in enumerate(args):
+        flag, _, value = arg.partition('=')
+        if (value and flag.startswith('-') and secret_in(value, flag)) or secret_in(arg) \
+                or (i and args[i-1].startswith('-') and '=' not in args[i-1] and secret_in(arg, args[i-1])):
+            return 'argument '+str(i+1)
+    url = server.get('httpUrl') or server.get('url') or ''
+    if url:
+        parts = urlsplit(url)
+        if parts.password or secret_in(url) or any(secret_in(v, k) for k, v in parse_qsl(parts.query, keep_blank_values=True)):
+            return 'URL'
+    return None
+
+
 def validate_server(server):
+    """A server definition AI Kit installs (ADR 0022): closed keys, one transport, HTTPS, no shell, no secret in clear."""
     if not isinstance(server, dict):
         raise KitError('MCP configuration: object expected.')
     transports = [key for key in ('command','httpUrl','url') if server.get(key)]
@@ -64,6 +97,17 @@ def validate_server(server):
     # Never preselect automatic trust, whatever its form: "true" as a string went through to Gemini and agy before 0.51.1.
     if 'trust' in server:
         raise KitError('MCP: trust is not supported by this kit (the CLI asks before running a server\'s tools).')
+    unknown = sorted(set(server) - set(MCP_KEYS))
+    if unknown:
+        raise KitError('MCP: unknown key '+', '.join(unknown)+' (AI Kit knows '+', '.join(MCP_KEYS)+').')
+    command = server.get('command') or ''
+    if command and (Path(command.replace('\\', '/')).name.lower() in SHELLS or re.search(r'[;&|`$<>]', command)
+                    or any(a in ('-c', '/c', '-Command', '-EncodedCommand') for a in server.get('args') or [])):
+        raise KitError('MCP: '+command+' runs a shell or a shell script, unseen by the CLI\'s approval: name the program itself.')
+    where = secret_problem(server)
+    if where:
+        raise KitError('MCP: the '+where+' holds a value that looks secret: write ${VARIABLE} instead and define that variable in '
+                       'your environment (docs/mcp.md).')
     # A secret written as a value would be copied in clear into the CLIs' settings, the state and the backups: ${VARIABLE} only.
     for field in ('env', 'headers'):
         values = server.get(field) or {}

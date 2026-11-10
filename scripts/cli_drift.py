@@ -68,7 +68,9 @@ def main(argv=None):
             print('[Skip] ' + r['cli'] + ': not installed')
             continue
         line = r['cli'] + ' ' + str(r['version']) + ' (checked on ' + r['verified'] + ')'
-        if r['status'] == 'broken':
+        if r['version'] is None and r['status'] != 'broken':
+            print('[Check] ' + r['cli'] + ': version unreadable (--version printed no version); the options were checked')
+        elif r['status'] == 'broken':
             print('[Broken] ' + line + ': options gone: ' + ', '.join(r['missing_options'] or [r.get('error', '')]))
         elif r['newer']:
             print('[Newer] ' + line + ': the options the kit relies on are still there; check the adapter, then raise VERIFIED')

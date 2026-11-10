@@ -14,6 +14,10 @@ KIT_FILES = ('~/.ai-kit/aikit.toml', '~/.ai-kit/state.json', '~/.ai-kit/hooks/**
 CLAUDE_FILES = ('~/.claude/settings.json', '~/.claude/CLAUDE.md', '~/.claude/agents/ai-kit-*', '~/.claude/skills/ai-kit-*/**', '~/.claude.json')
 POSIX_PYTHON = '"$HOME/.ai-kit/runtime/venv/bin/python"'
 POSIX_HOOKS = '"$HOME/.ai-kit/hooks/'
+# Windows: Claude Code runs a hook through Git Bash, or PowerShell when the hook says so (hooks docs, field shell). The
+# Windows file asks for PowerShell, present on every workstation: $HOME expands there, and & runs a quoted program.
+WINDOWS_PYTHON = '& "$HOME\\.ai-kit\\runtime\\venv\\Scripts\\python.exe"'
+WINDOWS_HOOKS = '"$HOME\\.ai-kit\\hooks\\'
 
 
 def locked(org, manifest):
@@ -21,7 +25,9 @@ def locked(org, manifest):
     return [n for n, spec in manifest.items() if spec.get('default') and is_guardrail(spec)]
 
 
-def command(spec):
+def command(spec, windows=False):
+    if windows:
+        return WINDOWS_PYTHON+' -I '+WINDOWS_HOOKS+spec['script']+'"'
     return POSIX_PYTHON+' -I '+POSIX_HOOKS+spec['script']+'"'
 
 
@@ -61,11 +67,12 @@ def codex_mcp(servers):
     return '\n'.join(lines)
 
 
-def claude(names, manifest, hooks_only, mcp=None):
+def claude(names, manifest, hooks_only, mcp=None, windows=False):
     from .adapters.claude import hook_matcher
+    shell = {'shell': 'powershell'} if windows else {}
     settings = {'permissions': {'deny': ['Edit('+p+')' for p in KIT_FILES + CLAUDE_FILES]},
                 'hooks': {'PreToolUse': [{'matcher': hook_matcher(manifest[n]['matcher']),
-                                          'hooks': [{'type': 'command', 'command': command(manifest[n]), 'timeout': 20}]} for n in names]}}
+                                          'hooks': [{'type': 'command', 'command': command(manifest[n], windows), **shell, 'timeout': 20}]} for n in names]}}
     if hooks_only:
         settings['allowManagedHooksOnly'] = True
     if mcp is not None:
@@ -74,12 +81,15 @@ def claude(names, manifest, hooks_only, mcp=None):
     return json.dumps(settings, indent=2)+'\n'
 
 
-def gemini(names, manifest):
+def gemini(names, manifest, windows=False):
+    """On Windows, Gemini CLI's docs do not say which shell runs a hook: no hook is written there, YOLO mode stays off."""
     settings = {'hooks': {}, 'security': {'disableYoloMode': True}}
-    for n in names:
+    for n in ([] if windows else names):
         spec = manifest[n]
         settings['hooks'].setdefault(spec['event'], []).append(
             {'matcher': spec['matcher'], 'hooks': [{'name': 'ai-kit-'+n, 'type': 'command', 'command': command(spec)}]})
+    if not settings['hooks']:
+        settings.pop('hooks')
     return json.dumps(settings, indent=2)+'\n'
 
 
@@ -115,7 +125,7 @@ def managed_settings(out, hooks_only=False, mcp_only=False, managed_file=None):
     org = core_settings()
     names = locked(org, manifest)
     mcp = org_servers(org) if mcp_only else None
-    # V2 slice 6: managed.toml goes into the native files too. Its hooks.locked add to the organization's locked guardrails,
+    # managed.toml goes into the native files too. Its hooks.locked add to the Core's locked guardrails,
     # a guardrail it turns off is not locked, and its MCP refusals (denied, allow_stdio, allowlists) apply to the MCP lock.
     from .config import filter_mcp, load_managed
     imposed = load_managed(managed_file, [n for n, s in manifest.items() if is_guardrail(s)])
@@ -128,6 +138,8 @@ def managed_settings(out, hooks_only=False, mcp_only=False, managed_file=None):
                 print(line)
     files = {'claude-code/managed-settings.json': claude(names, manifest, hooks_only, mcp),
              'gemini-cli/settings.json': gemini(names, manifest),
+             'windows/claude-code/managed-settings.json': claude(names, manifest, hooks_only, mcp, windows=True),
+             'windows/gemini-cli/settings.json': gemini(names, manifest, windows=True),
              'codex/requirements.toml': codex(mcp),
              'README.txt': (ROOT/'templates'/'managed-settings-README.txt').read_text(encoding='utf-8').format(version=(ROOT/'VERSION').read_text(encoding='utf-8').strip(), hooks=', '.join(names),
                                          hooks_only=' With allowManagedHooksOnly, hooks from any other source are ignored.' if hooks_only else '',

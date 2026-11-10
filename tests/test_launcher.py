@@ -176,6 +176,29 @@ class LauncherRunTests(unittest.TestCase):
 
 
 class LauncherUnitTests(unittest.TestCase):
+    def test_a_reading_action_uses_a_working_environment_without_pip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            launcher.write_record(runtime/'install.json', {'status': 'ready', 'fingerprint': 'an older kit folder'})
+            with mock.patch.object(launcher, 'runs', return_value=True), mock.patch.object(launcher, 'pip') as pip, \
+                    mock.patch.object(launcher.shutil, 'rmtree') as rmtree:
+                python, installed = launcher.ensure_runtime(runtime, 'zip', read_only=True)
+            self.assertFalse(installed)
+            pip.assert_not_called()
+            rmtree.assert_not_called()
+
+    def test_an_unfinished_install_keeps_an_environment_that_starts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp)
+            (runtime/'venv').mkdir()
+            launcher.write_record(runtime/'install.json', {'status': 'installing'})
+            with mock.patch.object(launcher, 'runs', return_value=True), mock.patch.object(launcher, 'pip'), \
+                    mock.patch.object(launcher, 'installed_version', return_value='x'), \
+                    mock.patch.object(launcher, 'environment_python', return_value=runtime/'venv'), \
+                    mock.patch.object(launcher.shutil, 'rmtree') as rmtree, mock.patch.object(launcher, 'say'):
+                launcher.ensure_runtime(runtime, 'zip')
+            rmtree.assert_not_called()  # only the package is installed again
+
     def test_missing_venv_support_explains_the_it_prerequisite(self):
         with mock.patch.dict(sys.modules, {'ensurepip': None}):
             with self.assertRaises(launcher.LauncherError) as caught:

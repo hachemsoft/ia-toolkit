@@ -1,3 +1,5 @@
+import os
+import signal
 import tempfile
 import unittest
 from pathlib import Path
@@ -44,6 +46,25 @@ class RollbackTests(unittest.TestCase):
             commit_changes(self.home, self.kit, {self.kept: b'after\n'}, [self.gone])
         self.assertEqual(self.kept.read_text(encoding='utf-8'), 'before\n')
         self.assertTrue(self.gone.exists())
+
+    @unittest.skipIf(not hasattr(signal, 'SIGTERM') or os.name == 'nt', 'POSIX signal delivery')
+    def test_sigterm_during_the_writes_puts_every_file_back(self):
+        new = self.kit/'new.md'
+        real = commit.atomic_write
+        calls = []
+
+        def killed(path, data):
+            calls.append(path)
+            real(path, data)
+            if len(calls) == 1:
+                os.kill(os.getpid(), signal.SIGTERM)  # a stopped process, after the first file landed
+        before = signal.getsignal(signal.SIGTERM)
+        with mock.patch.object(commit, 'atomic_write', side_effect=killed), self.assertRaises(commit.Stopped):
+            commit_changes(self.home, self.kit, {self.kept: b'after\n', new: b'new\n'}, [self.gone])
+        self.assertEqual(self.kept.read_text(encoding='utf-8'), 'before\n')
+        self.assertFalse(new.exists())
+        self.assertTrue(self.gone.exists())
+        self.assertEqual(signal.getsignal(signal.SIGTERM), before)  # the previous handler is back
 
     def test_success_keeps_a_backup_of_what_changed(self):
         changed, backup = commit_changes(self.home, self.kit, {self.kept: b'after\n'}, [self.gone])

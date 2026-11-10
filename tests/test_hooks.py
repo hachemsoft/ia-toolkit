@@ -51,7 +51,7 @@ class HookScriptTests(unittest.TestCase):
   # The agent cannot overwrite aikit.toml or the CLI settings through simple shell commands; reading stays allowed.
   for cmd in ('echo "{}" > ~/.ai-kit/aikit.toml',"sed -i 's/true/false/' ~/.ai-kit/aikit.toml",'tee ~/.gemini/settings.json < x','rm ~/.ai-kit/hooks/dbt-prod-guard.py','cp new.toml ~/.codex/config.toml','Set-Content $HOME\\.ai-kit\\aikit.toml "{}"','mv x .ai-kit/protected-paths'):
    self.assertEqual(run_hook('protected-paths.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}).get('decision'),'deny',cmd)
-  for cmd in ('cat ~/.ai-kit/aikit.toml','grep hooks ~/.gemini/settings.json','echo hi > notes.txt','rm -rf build/','sed -n 1,5p ~/.gemini/settings.json'):
+  for cmd in ('cat ~/.ai-kit/aikit.toml','grep hooks ~/.gemini/settings.json','echo hi > notes.txt','rm -rf build/','head -n 5 ~/.gemini/settings.json'):
    self.assertNotIn('decision',run_hook('protected-paths.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}),cmd)
   # Judged per simple command: a write and a protected path in two different commands, or a protected path quoted in the
   # data of a heredoc given to another language, are not a write to the configuration.
@@ -214,7 +214,7 @@ class SessionNewsTests(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);t=Path(self.tmp.name)
   self.home=t/'home';self.kit=self.home/'.ai-kit/news';self.kit.mkdir(parents=True)
-  (self.kit/'CHANGELOG.md').write_text('# Changelog\n\n## 0.47.0\n\n- News at session start.\n\n## 0.46.0\n\n- Older line.\n',encoding='utf-8')
+  (self.kit/'CHANGELOG.md').write_text('# Changelog\n\n## 0.47.0 (2026-11-10)\n\n- News at session start.\n\n## 0.46.0 (2026-11-01)\n\n- Older line.\n',encoding='utf-8')
   self.env={'HOME':str(self.home),'USERPROFILE':str(self.home)};self.state()
  def state(self,**extra):
   s={'version':'0.47.0','team':'data-platform',**extra}

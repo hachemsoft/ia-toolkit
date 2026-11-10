@@ -1,15 +1,28 @@
 # Changelog
 
-## 4.0.2
+## 4.1.0 (2026-11-10)
 
+**Breaking for MCP definitions**: a server definition that an earlier version only reported is now refused, and the change stops until its source is fixed.
+
+- **MCP** (ADR 0022): a key outside the closed list, a shell or a shell script as the command, and a value that looks secret in `args` (`--token value`, `--token=value`, a known token format) or in the URL (a password, `?api_key=`) are refused; write `${VARIABLE}`.
+- **`managed-settings` for Windows**: a `windows/` folder with Claude Code's managed settings, whose guardrails run through PowerShell with the venv's `Scripts\python.exe`. Gemini CLI does not document its hook shell on Windows: its Windows file only turns YOLO mode off.
+- **Writes**: SIGTERM and SIGHUP during an installation put every file back, as Ctrl+C does; "modified locally" errors say how to proceed.
+- **Guardrail `protected-paths`**: `sed` and `awk` no longer count as readers of a protected file (their scripts can write or run a command); read with `cat`, `grep`, `head`.
+- **Launcher**: an environment that starts is never deleted; `status`, `doctor`, `usage` and `validate` run without pip; `Installer.cmd` falls back to the kit's own environment when no Python is on the PATH; the `ai-kit` command works from a folder with non-ASCII characters on Windows; a refused registry change is reported instead of failing.
+- `uninstall` with nothing installed exits with 0, so `uninstall --remove-runtime` still removes the runtime.
+- The installation summary lists each guardrail on or off; `USER.md` no longer holds your email; `doctor` says when a CLI's version is unreadable and when the `ai-kit` command is not executable.
+- Commands: `/diagnose` proposes a mitigation first when users are hurt now; `/build` lets a docs-only change or a pure refactor prove itself with the existing checks; `intent.md` has a Status line.
+- Licences: the Summary section of `mr` adapts HumanLayer's `show-me` skill; its Apache License 2.0 now ships (`skills/LICENSE-HUMANLAYER-APACHE-2.0`). The build backend is pinned; Dependabot also watches the Python dependencies.
+- Eval cases can carry sample answers that an offline test checks against their criteria.
+- Cleanup: no migration code from earlier installations, no profile left in the engine, `aikit-tier` removed (`aikit-default` decides), ADRs state the decisions as implemented, CHANGELOG headings carry their date.
+
+## 4.0.2 (2026-11-09)
 - The 4.0.1 release was not published: on Windows, a test that compares two installations did not ignore the home folder as written inside JSON settings (escaped backslashes). Only the test changes; the kit is the same as 4.0.1.
 
-## 4.0.1
-
+## 4.0.1 (2026-11-09)
 - The 4.0.0 release was not published: on Windows, each installation rewrote `~/.ai-kit/aikit.toml` and turned its Windows line endings into Unix ones. The file is now left byte for byte as you wrote it unless the run records a choice, and its line endings are kept when it does. A test that compares two installations now also ignores the home folder written with forward slashes.
 
-## 4.0.0
-
+## 4.0.0 (2026-11-09)
 The final V2 design, without any compatibility layer for earlier versions. **Breaking**: reinstall from the 4.0.0 ZIP; older settings files are not read.
 
 - **One command line**: `init`, `sync` (`--offline` re-applies, `--from-bundle`), `team list|use`, `status`, `doctor`, `rollback`, `user edit`, `uninstall`, `usage`, `friction`, `managed-settings`, `validate`. `setup`, `update`, `news`, `new` and the guided installer are gone; the launchers run `init` when no action is given. Exit codes: 1 refused or failed, 2 usage error, 3 `managed.toml` unusable.
@@ -23,12 +36,10 @@ The final V2 design, without any compatibility layer for earlier versions. **Bre
 - Documentation rewritten and shortened, with architecture diagrams; the V2 decisions (ADR 0013 to 0026) are published in `docs/adr/`.
 - Removed: the friction `--mode` option (set `[frictions] capture` in `aikit.toml`), skill and guardrail aliases, legacy folder and settings migrations.
 
-## 3.0.1
-
+## 3.0.1 (2026-11-09)
 - The 3.0.0 release was not published: in CI, the tests that build a release ZIP ran on a shallow clone, whose Core bundle missed objects. The test jobs now fetch the whole history, `scripts/build_release.py` refuses a shallow clone with a clear message, and the schema check covers the new schemas and manifests (organization.toml left the Core). No change to the kit itself.
 
-## 3.0.0
-
+## 3.0.0 (2026-11-09)
 The V2 structure, complete. **Breaking**: no more profiles (`--profile <job>` is refused; `general` is still accepted), the installed package holds only the engine (the release ZIP ships the Core as `core/ai-kit-core.bundle`), `organization.toml` leaves the Core, and `practices/` is `context/`. An installation made with a profile keeps everything it had (its resources become personal lines, commented, at the next update); an organization's own Core with `organization.toml` or `practices/` is still read. This Core needs AI Kit 3.0 or newer (`min_engine`): an older engine refuses it and changes nothing. Git 2.29 or newer.
 
 - MCP policy (V2 slice 6): a server's keys are a closed list (`command`, `args`, `env`, `cwd`, `httpUrl`, `url`, `headers`, `required`), and a shell as the command or a `-c` script is reported; both are warnings in this release and will be refused in a later one. IT can allow only exact server identities (`managed.toml` `mcp.allowed_stdio`, `mcp.allowed_http`: the hash of the command, args, env templates and folder, or of the URL and headers; `ai-kit status --verbose` shows them), and `mcp.denied` now matches a name, a URL prefix or an executable. A server refused by IT and marked `required = true` stops the installation; an optional one is removed with a notice; `required` is never written into a CLI.
@@ -49,12 +60,10 @@ The V2 structure, complete. **Breaking**: no more profiles (`--profile <job>` is
 - `practices/` is now `context/` (the company and team layers of the context); a Core that still has `practices/` is read the same way.
 - `organization.toml` leaves the Core: IT sets the friction tracker in `managed.toml` `[frictions.tracker]` (and the locked guardrails in `hooks.locked`), the Core defines its MCP servers in `mcp/servers.toml`, each team is a Team repository. An `organization.toml` still present in an organization's copy of the Core is read as before, and `ai-kit validate` says where each key goes. `SECURITY.md` now covers `managed.toml`, Git sources and MCP validation.
 
-## 2.1.1
-
+## 2.1.1 (2026-11-08)
 - The 2.1.0 release was not published: two tests failed on Windows, where Git leaves its object files read-only and the tests could not delete a test repository. The tests now remove it the Windows way. No change to the kit itself.
 
-## 2.1.0
-
+## 2.1.0 (2026-11-08)
 Core and Team content from Git, at stable tags, with rollback. Without a Core or Team source configured, nothing changes.
 
 - Core source from Git (V2 slice 2): `ai-kit sync` installs the highest stable `vX.Y.Z` tag of the Core repository set by IT (`managed.toml` `enterprise.core`) or by the person (`aikit.toml` `[core] repo`), never a branch; `ai-kit rollback` goes back to the previous Core, without network, and a second rollback comes back. `~/.ai-kit/lock.toml` records the URL, tag, tag object, commit and tree digest, written in the same transaction as the files; `update` keeps the locked Core. Without a Core source, nothing changes.
@@ -69,8 +78,7 @@ Core and Team content from Git, at stable tags, with rollback. Without a Core or
 - `ai-kit init`: first installation (the general selection when no profile is given), then a first `sync` when a Core source is set.
 - Fixed: with a Core synced, the guided installer and the re-apply after `/me` now use the locked Core instead of the package content.
 
-## 2.0.0
-
+## 2.0.0 (2026-11-08)
 The first release of the V2 structure. **Breaking: Python 3.11 or newer** (the kit needed 3.9): a workstation on Python 3.9 or 3.10 stays on AI Kit 0.52, which keeps receiving security fixes; the launchers say what to ask IT.
 
 - `managed.toml`, the settings IT imposes on AI Kit, read from a fixed administered path (macOS `/Library/Application Support/ai-kit/`, Windows `C:\ProgramData\ai-kit\`, Linux `/etc/ai-kit/`), never from an environment variable. Closed schema: every key present wins over the organization, the team and the person, whatever its value (`false` and `[]` included); a key absent locks nothing; `hooks.locked` and `mcp.denied` add to the other layers' restrictions; an unknown key, an unreadable file or a file the person could change refuses every change (exit code 3). Keys of this version: guardrails (switch and lock), `mcp.allow_stdio`, `mcp.denied`, `frictions.capture`, `frictions.publication`. `doctor` shows what it sets. Contract: `docs/managed.md`.
@@ -86,13 +94,11 @@ The first release of the V2 structure. **Breaking: Python 3.11 or newer** (the k
 - `installer/cli.py` is split: the `ai-kit` command on the PATH and `uninstall` move to `installer/lifecycle.py`, unchanged (797 lines → 653, under the 800-line rule).
 - `scripts/baseline_v1.py` freezes a model-free baseline of a release (tests, golden, inventory, selection of every profile, eval preconditions per CLI), the reference the V2 migration is compared with.
 
-## 0.52.0
-
+## 0.52.0 (2026-11-08)
 - Commands chain only skills the model can invoke. Claude Code (2.1.316 to 2.1.319) hides a skill marked `disable-model-invocation` from the model and refuses it in its Skill tool ("do not replicate this skill's workflow"); Codex (0.167.0) leaves it out of the model's skill list. So `/build` never reached `implement`, and through it `tdd` and `code-review` (in recorded eval sessions: `tdd` once in 22 `/build` runs, `code-review` never). `/build` now activates `tdd` for each slice and `code-review` on the whole change; `/intent` activates `grilling` and `domain-modeling`; `implement` and `grill-with-docs` stay on command only, for the person. The skills a command carries (`to-spec`, `teach`, `retrospective`, `wayfinder`, `ticket-sorting`, `to-questionnaire`, `improve-codebase-architecture`, `zoom-out`, `wait-what`, `handover`) become model-invocable, with a description that says to use them only on their command (the guard already used for Codex command skills); their version is raised to 1.1.0. The commands' fallback now reads "if this skill is not installed here": the old "if the skill tool is unavailable" was wrong on Claude Code, where the tool exists. A test fails when a command chains a skill the model cannot invoke.
 - The agent may no longer run the kit's subcommands that change the installation or bill a model call (`ai-kit setup`, `update`, `uninstall`, `new`, `doctor --live`, `friction --mode <value>`, also through `python -m ai_kit` and the launchers): `protected-paths` refuses them in the agent's shell and the agent tells the person. Before, only a sentence of the kit context stopped it. Reading subcommands stay allowed. Defence in depth on the text of a command, not a barrier (`docs/hooks.md`).
 
-## 0.51.1
-
+## 0.51.1 (2026-11-08)
 Security fixes, no change of behaviour otherwise; update from a clone of the kit soon.
 
 - The session hook (`whats-new`), `update` and `doctor --live` ran git in the kit folder with that clone's own configuration: a `core.fsmonitor` or `core.hooksPath` written in its `.git/config` ran a program at every session start, outside the CLI's sandbox. git now runs there with `core.fsmonitor` off and no hooks.
@@ -102,106 +108,87 @@ Security fixes, no change of behaviour otherwise; update from a clone of the kit
 - An MCP server's `trust` is refused in every form (the string `"true"` went through to Gemini and agy). `frictions.jsonl` and `frictions-sent.json` are made readable by the person only even when an older version left them with another mode.
 - Docs say what was overstated: what the guardrail protects (`docs/hooks.md`), what `managed-settings` writes for Codex, "on command only" on Gemini and agy (`docs/cli/matrice.md`), frictions sent when a tracker is defined (ADR 0007, `docs/customization.md`), the release ZIP's SHA-256 checked by hand and no integrity check for a clone (`docs/compliance.md`).
 
-## 0.51.0
-
+## 0.51.0 (2026-11-07)
 - `ai-kit new <profile|skill|agent|command>`: from a git clone of the kit, a component with its catalog entry, its version and its eval case, then the kit's own checks, then a branch `new-<type>-<name>`, a commit and a merge request. Skills and agents always go under `contrib/` with an owner; moving one to `internal/` stays a maintainer's act; profiles go in `profiles/`. The commit and the push are two questions always asked: `--yes` answers only the questions about the content, `--no-mr` stops after the checks. The merge request goes through the person's own `glab` or `gh`, otherwise the command gives the page. Refused before writing from a ZIP installation, without a terminal (unless `--no-mr`: a pipe never answers for the commit), on a name taken, on a detached HEAD, and on uncommitted changes in what it rewrites or what the version lock and the snapshot read. Every stop says how to undo. `evals/run.py` never sends a skeleton case to a model. No model call. Tested at a real pseudo-terminal, up to a real push to a local repository. Spec: `docs/sdlc/2026-11-05-new-component-command/spec.md`.
 - The colour layer of `update`, `doctor` and `usage` hid the real stream's binary buffer behind a text attribute of the same name: any question asked under it (Questionary, `prompt_toolkit`) crashed. Seen with `ai-kit new`; the layer now lets it through.
 - The `session-news` hook is now `whats-new`: its name says what it tells, not when. The setting is `[hooks] whats-new = false`; a setting still written `session-news` keeps its effect and `update` says to rename it (the schema accepts both). The script is `runtime/hooks/whats-new.py`; `update` replaces the old hook entries in the four CLIs and removes `~/.ai-kit/hooks/session-news.py`. The `[news]` section, `ai-kit news` and `NEWS.md` keep their names; the announcement ids already shown are kept, so nothing is announced twice.
 
-## 0.50.0
-
+## 0.50.0 (2026-11-05)
 - Skills reviewed like code. `runtime/check_skills.py` refuses, in `skills/`, `agents/` and `commands/` or any folder given, a download piped into a shell, an instruction to drop previous instructions, a permission bypass, an instruction to turn a guardrail off or to change the kit's or a CLI's configuration, a secret (the kit's one list), and a script or binary not declared; it runs in CI and in the tests, and a project repo runs it on `.agents/skills` from a checkout of the kit (snippets for GitHub Actions and GitLab CI in `docs/extending.md`). `doctor` lists the skills of the home folder the kit did not install and what the same check finds in them, as `[Info] To review`, never as a failure. A root `CODEOWNERS`, commented: an organization's copy names its groups. `.gitlab-ci.yml`: the same model-free checks for a GitLab copy, on Linux runners (tests on Python 3.9, 3.11 and 3.14, ruff, schemas, `NEWS.md`, skills check, release ZIP as an artifact).
 - `managed-settings --managed-mcp-only`: the managed settings allow only the MCP servers `organization.toml` defines (defaults and teams), so a person cannot add one of their own. Claude Code gets `allowedMcpServers` (a remote server by `serverUrl`, a local one by `serverCommand`, never by name) with `allowManagedMcpServersOnly`; Codex CLI gets an `mcp_servers` allowlist in `requirements.toml`, matched by the installed name (`ai-kit-<name>`) and identity (URL, or executable and each argument exactly). Keys taken from each vendor's managed-configuration docs. Gemini CLI gets nothing: its `mcp.allowed`, `mcp.excluded` and `admin.mcp.config` are documented without the shape of an entry; the README says so. Without the option the files are unchanged.
 
-## 0.49.0
-
+## 0.49.0 (2026-11-05)
 - The whole eval suite, once, with 0.48.0 installed (Claude Code 2.1.317, general profile): 16 of 17 pass once two criteria learn French wordings (`contract-change-updates-its-test`: « je remplace … test », `no-claimed-run`: « aucun test n'a tourné »), four skipped (Data or DevOps playbook). `small-change-without-ceremony` failed (no `Level:` first line) then passed on a rerun: variance, recorded in `docs/eval-cases.md`.
 - The five cases left: `fuzzy-request-aligns-first` with "before code or a query", and the four playbook cases (`no-prod-dbt-proposed`, `monorepo-cross-area-impact`, `mixed-dbt-and-python`, `infra-exposure-is-flagged`), all OK once with their playbooks installed through `extra_skills`. Every eval case is now measured at least once.
 - CI: the Python matrices run on `ubuntu-24.04` instead of `ubuntu-latest`, which moved to Ubuntu 26.04, where setup-python has no Python 3.9; the 3.9 jobs failed there at the setup step, before any test.
 - `docs/eval-cases.md`: every eval case explained (what it checks, the prompt, when it passes, why it exists) and the last measured result of each; a test fails when a case has no section. `evals/results/2026-11-05.json` keeps the runs of 0.48.0 and of this version (Claude Code 2.1.317, one run each, all OK: the four ownership cases, the stricter contract case, `java-api-change-is-not-quick`, `infra-destroy-plans-first`). `scripts/eval_charts.py` reads the latest results file that carries the comparison and the audit, so a results file without them no longer breaks the charts.
 - Less Data-centred outside the Data playbooks: the generic docs (MCP, customization, tools) take neutral examples (a documentation server, GitHub, a `payments` team, session news) instead of BigQuery, dbt and the dbt guardrail; the Data pages and the profiles keep theirs. The kit context asks the deciding question "before code or a query" instead of "before code or SQL" (3,793 characters). Two eval cases outside Data, measured on any profile: `java-api-change-is-not-quick` on a new `java-mini` fixture, and `infra-destroy-plans-first`.
 
-## 0.48.0
-
+## 0.48.0 (2026-11-04)
 - Operational ownership, in the existing steps: the level of a change follows what it can break and whether that can be undone, not its size (quick now excludes a changed contract, however short); the kit context keeps what was observed apart from what is assumed, never calls verified what was not run, and leaves the unknown unknown; a full change says how a failure would show and how to undo or mitigate it, or that it does not apply (`/build` plan, `plan.md` template, `/review full`), and `/ship` adds what is not verified and what a human must decide. `intent.md` and `spec.md` templates get an Assumption line (`init-project-context` 1.1.0). No command, agent, skill or file added; lines of the kit context are tightened, with the same meaning, to stay under its 3,800-character ceiling. Four eval cases (`small-contract-change-names-its-consequences`, `no-claimed-run`, `unknown-stays-unknown`, `irreversible-change-plans-recovery`), `small-change-without-ceremony` also checks that no rollback is asked; `docs/workflow.md` maps each principle to where the kit holds it.
 - `session-news`, a hook at session start on the four CLIs (on by default, `[hooks] session-news = false`): the agent says once, in its first reply, what is new: the CHANGELOG section of the version just installed, the entries of the repository's new `NEWS.md` aimed at the person's profile and team (a skill, a training, a tip; an organization writes its own in its copy of the repository), and a newer version found on the kit's `origin/main`, read at most once a day by a `git fetch` with a short timeout and no prompt (`[news] check_remote = false` keeps it local; nothing with a ZIP install). The update is never run by the hook nor by the agent: on a yes the agent gives `ai-kit update`, on a no it runs `ai-kit news --later` and the version is not proposed again (ADR 0012). `ai-kit news --list` and `--check`; `doctor` shows the kit folder, the last read and what waits; `scripts/check_news.py` checks `NEWS.md` in CI. Adapters: the manifest event names the CLI event (`BeforeTool` → `PreToolUse`, `SessionStart` as is; agy takes a flat list for a lifecycle hook); `locked_hooks` and `managed-settings` keep to guardrails; `update` records the kit folder (`kit_dir`) and `news` in `state.json`. Codex asks to trust the new hook; Gemini warns once. Antigravity CLI reads neither `additionalContext` nor plain stdout: the script answers it in its own contract, `injectSteps` with a persisted `systemMessage` (its built-in hooks reference), recognising agy by the `conversationId` of the input.
 
-## 0.47.0
-
+## 0.47.0 (2026-11-01)
 - Frictions as issues of the organization's project: `[friction_tracker]` in `organization.toml` (`kind` gitlab or github, `project`, `host`, `labels`, `sources`), recorded by `update` in `state.json`; the `/friction` script then creates one issue per friction of the chosen sources (by default `agent`: `/friction` passes `--source agent` when the agent logs on its own in `auto` mode) through the person's own `glab` or `gh`, signed in with their personal access token; the kit holds no token. The issue carries the sentence, the context and the friction id to cite in the CHANGELOG; its URL is kept in `~/.ai-kit/frictions-sent.json` and shown by `--list`. Any failure keeps the friction local with one line saying why; `ai-kit friction --sync` sends what is left; `doctor` checks the CLI and its sign-in and counts the frictions waiting. `share_frictions = false` in `overrides.toml` keeps a person's frictions local. `doctor --live` frictions carry `source: doctor`.
 - `ai-kit friction` in the terminal: the very script `/friction` runs (`runtime/friction.py`, one implementation, now with `--home`), so `ai-kit friction --category docs --text "…"` logs a friction with the same format; `ai-kit friction --list [N]` shows the last ones (also `friction.py --list`); `ai-kit friction --mode` shows the frictions mode and where it comes from, `--mode propose|auto|off` writes it in `overrides.toml` (your other keys and comments kept) and reapplies the agents' context; switching to `auto` asks first in a terminal (`--yes` for automation). The secret filter, `redact` and the friction ids of the kit package are now imported from that script instead of being a copy of it; `doctor --live` writes its auth frictions through the same function.
 - `update`, `doctor` and `usage` in colour: `[OK]` green, `[Check]` yellow, `[Info]` cyan, `Error:` red, the headings and "Next step" in bold, through one output layer (`installer/console.py`) that changes no character of the text. Nothing changes with `--plain`, `AI_KIT_PLAIN=1`, `NO_COLOR`, `TERM=dumb`, an output redirected to a file, or without Rich.
 - Decision records: `docs/adr/` holds eleven decisions reconstructed from this changelog, one file each, with the version that decided it; the repository names no competing product (ADR 0009). `docs/learn` is removed: learning material stays personal.
 - CI: the Windows jobs failed since 0.46.0 on a test that compared the runner's short temporary path with the path the launcher records, so the v0.46.0 release was never published; this version carries it. Fixed in the test; the tracker tests check the issue body in process (a Windows `.cmd` wrapper truncates an argument at a newline, the real `glab.exe` and `gh.exe` do not); ruff findings fixed; native tests on Python 3.9, 3.11 and 3.14 (3.13 dropped).
 
-## 0.46.0
-
+## 0.46.0 (2026-11-01)
 - The `ai-kit` command in your terminal: the installer asks at setup (yes by default) and writes `~/.ai-kit/bin/ai-kit` (`ai-kit.cmd` on Windows), a script that runs the launcher of the kit folder, so `ai-kit update` fetches the new version, reinstalls and reapplies, from any folder; `ai-kit doctor`, `ai-kit usage`, and `ai-kit` alone for the menu. The folder goes on your own PATH only: the user `Path` of the Windows registry (never the machine PATH, never `setx`), or one marked block in your shell startup file (`.zshrc`, `.bash_profile`, `.bashrc`, `.profile`; an unknown shell gets the line to add). `update` keeps the choice, `setup --command-on-path no` or the question turns it off, `uninstall` removes everything. The kit folder must stay: `doctor` reports a command whose folder moved or was deleted, and running the installer from the new place rewrites it. Run without the launcher (a developer's `pip install .`), the kit writes no command and keeps an existing one. The "no change to the PATH" promise of the launchers and docs becomes "your own PATH, if you chose it"; `installer/command.py` is the only module allowed to touch it (test).
 - Documentation: install from a git clone by default (`update` fetches), the release ZIP for workstations without git or a package index; never `pip install` the kit next to the launcher's copy.
 
-## 0.45.9
-
+## 0.45.9 (2026-11-01)
 - The README opens with the kit's logo (light and dark) and a section "Does it help?": the plain-words tasks run with and without the kit, as two charts.
 - `evals/results/2026-11-01.json` keeps every eval result of that day, re-judged with the criteria of 0.45.8 (no answer text); `scripts/eval_charts.py` redraws the charts in `docs/img/` from it, light and dark, without dependency.
 
-## 0.45.8
-
+## 0.45.8 (2026-11-01)
 - `protected-paths`: a reader that can also write a file is a reader only without that option. In 0.45.7, `sort -o`, `uniq IN OUT`, a `sed` script with `w` (or `s///w`), `git diff --output`, `tree -o`, `xxd -r`, `find -fprintf` or `-fls`, `yq -i`, and `cp` into a configuration folder (`cp overrides.toml ~/.ai-kit/`, `cp -t`) got through. Found by the audit pass of 0.45.7; each one is a test, and so are the reads that stay allowed.
 
-## 0.45.7
-
+## 0.45.7 (2026-11-01)
 Durability, when a CLI changes:
 - Each adapter declares the CLI version it was checked on (`VERIFIED`, shown in the CLI matrix); `doctor` says when a newer one runs (`<cli> --version`, local, no model call).
 - `.github/workflows/cli-drift.yml`, once a week: the latest release of each CLI published on npm, and `scripts/cli_drift.py` checks that the options the kit relies on are still in its `--help`. No model call, no secret; a red run means an adapter or the evals need a change.
 - The eval case `secret-kept-out-of-code` accepts any mention of the environment ("lire la clé depuis l'environnement" was refused).
 
-## 0.45.6
-
+## 0.45.6 (2026-11-01)
 Maintainability, nothing installed changes (the snapshot of the 16 scenarios is identical):
 - `apply` goes from 244 to 138 lines: its steps are named functions of `installer/plan.py` (the settings that apply, the selection, the personal file, the practices, skills, agents and guardrails, the old files to remove, the refusal of links).
 - `usage` goes from 152 lines to a short flow: counting the events, reading the frictions and printing are functions of their own. Its text and JSON output are the same, checked on a real workstation.
 
-## 0.45.5
-
+## 0.45.5 (2026-11-01)
 - Evals: a CLI's log line where a timestamp ends in three digits followed by the word "error" (`16:35:10.505 xcodebuild … error`) is no longer taken for an API error, so a real answer is judged instead of left out. The plain-words cases accept French answers (`contrat`, `variable d’environnement`), as the others do.
 - Measured on Codex 0.164.0 with 0.45.4: the fuzzy request is framed with the kit and not without it, as on Claude Code; the two other plain-words cases tie. One run each.
 
-## 0.45.4
-
+## 0.45.4 (2026-11-01)
 - The kit context stops before code on a business rule: "A request changing a business rule or KPI, or saying people disagree on one, is full: ask the deciding question before code or SQL, even if a definition exists." Measured on Claude Code 2.1.316: the plain-words case `fuzzy-request-aligns-first` failed with the kit before (SQL delivered at once, as without the kit) and passes now; `small-change-without-ceremony` stays quick. One run each. Seven lines of the context are tightened to stay under its 3,800-character ceiling.
 
-## 0.45.3
-
+## 0.45.3 (2026-11-01)
 - `update` after `uninstall` reinstalls with the choices of the last installation (profile, team, CLIs, identity, kept in the backup the uninstall made) instead of stopping at "Kit not installed: run setup"; it says so. With no installation in the backups, it still says to run setup.
 - Three eval cases in plain words, without a kit command, judged on the outcome rather than on the kit's vocabulary: a fuzzy request gets a question before SQL, a red suite keeps its test, a key stays out of the source (even as a default value). On Claude Code they tie with and without the kit: what the kit adds is measured through its commands.
 
-## 0.45.2
-
+## 0.45.2 (2026-11-01)
 - `/friction` works again: since 0.41, the guardrail refused the command that runs the kit's own `~/.ai-kit/bin/friction.py`, because it names a protected folder without only reading it. Python running that script is allowed when nothing else in the command names a protected path; anything else under that folder is still refused. A test now runs the command `/friction` gives, on macOS and in PowerShell.
 
-## 0.45.1
-
+## 0.45.1 (2026-11-01)
 - Evals on Claude Code: a home folder where Claude Code is not signed in is reported as such (it was reported as Codex), and `MultiEdit`, which Claude Code no longer has, is no longer in the denied tools. `docs/evals.md` says how to sign in the home folder without the kit.
 
-## 0.45.0
-
+## 0.45.0 (2026-11-01)
 Measuring the kit's effect:
 - `evals/run.py --baseline` runs the cases in a home folder without the kit (refused if the kit is there), and `evals/compare.py` compares that run with a run with the kit: cases passed only with the kit, only without, with both. Both runs are billed and nothing runs on its own; the comparison itself calls no model. The pilot page lists it among the before-and-after measures.
 
-## 0.44.0
-
+## 0.44.0 (2026-11-01)
 For IT:
 - `managed-settings --out <empty folder>` writes, from `organization.toml`, the managed settings that make the guardrails hold whatever a person or an agent changes on the workstation: Claude Code (edits to the kit's and Claude Code's configuration denied, the guardrails as managed hooks, `--managed-hooks-only` to ignore every other hook), Gemini CLI system settings (the guardrails, YOLO mode off), Codex CLI requirements (sandbox and approvals kept on), and a README saying where each file goes. The guardrails are those of `locked_hooks`, or those on by default. Nothing is installed: IT reviews and deploys the files with its device management.
 
-## 0.43.0
-
+## 0.43.0 (2026-11-01)
 Maintainability:
 - `installer/cli.py` (1,516 lines) is split by responsibility: `settings.py` (organization, team and personal layers, profiles), `commit.py` (backup, atomic writes, rollback, retention), `doctor.py`, `usage.py`; `cli.py` keeps `apply`, the commands and the migrations. Nothing installed changes (the snapshot is identical); the names stay importable from `installer.cli`.
 - Tests for the rollback: an error or Ctrl+C in the middle of the writes or removals puts every file back; backups keep the newest only.
 - A test keeps every installer module under 800 lines; `docs/architecture.md` names the modules.
 
-## 0.42.0
-
+## 0.42.0 (2026-11-01)
 Simpler to start, and measurable:
 - The README and the getting-started page are cut by a third and half: what a newcomer needs on day one, in order; options, every action of the installer and the per-repo details moved to the reference pages they belong to.
 - `docs/architecture.md`: the flow of an installation, the adapter contract, the invariants a test guards, what the kit depends on without controlling it, the migration policy.
@@ -209,8 +196,7 @@ Simpler to start, and measurable:
 - The pilot page has a before-and-after measurement protocol: what to measure, where it comes from, what would show the kit helps.
 - Claude Code reads a repo's `AGENTS.md` itself when the repo has no `CLAUDE.md` (since 2.1.277): the block in `~/.claude/CLAUDE.md` and the CLI pages say so.
 
-## 0.41.0
-
+## 0.41.0 (2026-11-01)
 Security, after the audit of 0.40:
 - `protected-paths` turns around: a shell command that names a protected path is allowed only when every program it runs only reads (`cat`, `grep`, `ls`, `diff`, `jq`, `sed`/`awk` without in-place editing, read-only `git`, `cp` from it). In 0.40, `python -c`, `perl -pi`, `node -e`, `sed -Ei`, `cd ~/.ai-kit && echo x > overrides.toml`, a variable holding the path, quotes or `//` in the path, `unlink`, `find -delete` or `eval` got through. Paths are compared as the shell resolves them; a `cd` into a configuration folder or a wildcard inside one is refused; a very long command is judged at once (no timeout that would let it through); a call that names a protected path in a form the script cannot read is refused.
 - Claude Code's `PowerShell` tool is checked, by both guardrails.
@@ -221,16 +207,14 @@ Security, after the audit of 0.40:
 - `organization.toml` `locked_hooks`: guardrails that stay on whatever a team or a person writes. `docs/hooks.md` says where the real lock is (the managed settings of each CLI, deployed by IT) and what to set, CLI by CLI.
 - Releases: each ZIP comes with `SHA256SUMS.txt` and a build provenance attestation (`gh attestation verify`); a published asset is never overwritten; the CI actions are pinned by commit, kept current by Dependabot. `Installer.cmd` never runs a `python.exe` planted in the current folder.
 
-## 0.40.0
-
+## 0.40.0 (2026-11-01)
 A version for every skill and agent:
 - Each skill and agent carries its own version in its catalog (`skills/catalog.json`, `agents/catalog.json`), in semver: patch for a wording, minor for a behaviour added, major when what it produces or needs changes. All start at 1.0.0.
 - `versions.lock.json` records each version with a digest of the content (line endings ignored, so a Windows checkout gives the same). The tests refuse a skill or an agent changed under the same version, and say what to do: raise it, then `python3 scripts/versions.py --update`.
 - Your installation records the versions it installed: `update` says which changed ("Updated: skill tdd 1.0.0 → 1.1.0"), `doctor` says when this kit has newer ones than your installation, and a `/friction` about a skill records its version.
 - `agents/contrib/`, like `skills/contrib/`: an agent contributed by someone in the organization, with an owner and a version, in no profile, enabled with `extra_agents`.
 
-## 0.39.0
-
+## 0.39.0 (2026-11-01)
 One place for your context, whatever the CLIs:
 - The layers (`00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md`) and your `30_USER.md` are always in `~/.ai-kit/context/`, as other kits keep one neutral source. Before, they were in `~/.gemini/` when Gemini CLI was chosen, which puzzled people who never use Gemini.
 - agy and Claude Code include them from there; Gemini CLI, which reads only `~/.gemini`, and Codex CLI get a copy at each `update`. After editing `30_USER.md` by hand, run `update` for these two (`/me` says so).
@@ -246,8 +230,7 @@ Your personal context, by interview:
 - `docs/customization.md` says what makes a good personal context, from the studies of context files and personalization.
 - The `protected-paths` guardrail counts a writing command only where the shell runs it (first word, after `sudo`, `xargs`, `find -exec`, `bash -c`, a subshell): a word inside a path, such as `install.json` or a folder named `rm-old`, no longer blocks a read. A path piped into `xargs rm` is still blocked.
 
-## 0.37.0
-
+## 0.37.0 (2026-10-31)
 The files people write are easier to write:
 - Your settings are `~/.ai-kit/overrides.toml`, in TOML: real `#` comments, no comma to forget, sections for the guardrails and MCP servers (`[hooks]`, `[mcp.github.server]`). A new file starts from a commented template with examples. The editor still completes and checks the keys: the first line, `#:schema …`, names the schema copied in `~/.ai-kit/schemas/`.
 - Your `overrides.json` becomes `overrides.toml` at the next `setup` or `update`: the same settings (checked by reading them back before anything is written), its `_` explanations as `#` comments; the JSON file is kept in that update's backup. If both files exist, the TOML is read and the installer says so.
@@ -258,22 +241,19 @@ The files people write are easier to write:
 - Before Python 3.11, the kit reads TOML with `tomli`, installed by the launcher and shipped in the release ZIP.
 - The markers of the managed blocks in `~/.codex/` and `~/.claude/CLAUDE.md` still say "overrides.json": they identify the blocks already installed and never change.
 
-## 0.36.2
-
+## 0.36.2 (2026-10-31)
 Reported frictions fixed (frictions: 6d941d, d8a974, ebbdb2):
 - `grilling`: every question gives at least two options, each with what it implies, then the recommended one: the person can choose without asking for a rewording. A decision outside the step's scope (hosting, access, operations while framing) is listed under **Later** instead of being asked.
 - `/spec`: the decisions `intent.md` leaves open are asked in one round, only those that change the spec, with options and a recommendation; then the whole `spec.md` is written in the same turn, the deferred ones under open questions.
 
-## 0.36.1
-
+## 0.36.1 (2026-10-31)
 - The `protected-paths` guardrail judges a shell line one simple command at a time (split on `;`, `&&`, `||`, `|`, new lines), and the text of a heredoc given to a program that is not a shell is data: a command that only quotes a protected path next to an unrelated `sed -i` or `rm` is no longer refused. A write to the configuration in the same simple command, through a pipe, a continued line or a heredoc run by a shell is still blocked.
 - `00_KIT.md` no longer contradicts the Claude Code setup: "never create a `CLAUDE.md`" now names its one exception, the one-line `@AGENTS.md` that "Initialize the project context" proposes for Claude Code.
 - `/friction` works in Claude Code (the script refused `--cli claude`, so nothing was recorded).
 - Gemini CLI: one of your skills named like a kit command now gives the kit command the prefix too (Gemini makes a command of every skill, and both were renamed).
 - Documentation checked page by page against the code: changing CLIs (a plain `update` keeps the CLIs chosen; detection is for the first installation), what remained of authentication and model in overrides, names already taken, usage and eval examples, the Codex agent file names.
 
-## 0.36.0
-
+## 0.36.0 (2026-10-31)
 Authentication and model left to each CLI:
 - The kit no longer writes authentication or models: `vertex`, `code_assist`, `model` and `models` in `overrides.json` (or the organization's defaults) are ignored, and `update` and `doctor` say so. Signing in and choosing a model are done in each CLI, following the IT procedure; `docs/customization.md` says where, CLI by CLI.
 - Nothing that worked stops working: what an earlier version wrote stays, now the person's. The lines of `~/.gemini/.env` are kept (their `# ai-kit :` comment now says they are yours), and so are `selectedType` and `model.name` in `~/.gemini/settings.json`; `uninstall` keeps them too.
@@ -290,8 +270,7 @@ The same on every CLI:
 Workflow:
 - The ceremony level is now a fixed first line, `Level: quick`, `Level: standard` or `Level: full` with its reason, in `00_KIT.md`, `/build` and `/intent`, written even when the agent then asks, stops or is blocked (the first Claude Code eval campaign, 7/8, missed it on a blocked quick change). The eval checks that line.
 
-## 0.35.0
-
+## 0.35.0 (2026-10-31)
 Claude Code, the fourth supported CLI, with everything the others get:
 - Context: a managed block at the top of `~/.claude/CLAUDE.md` imports the kit layers and `30_USER.md` by path (nothing copied); it asks Claude Code to read the repository's `AGENTS.md`, and "Initialize the project context" proposes a one-line `CLAUDE.md`, `@AGENTS.md`, for a repository used with Claude Code.
 - Skills in `~/.claude/skills/` with a prefix, `ai-kit-` by default, set with `skill_prefix` in `overrides.json` (or the organization's or team's defaults): Claude Code ships its own `code-review` and people often keep personal skills with the kit's names. The texts the kit installs name its skills with the prefix. `""` installs without a prefix and is refused when a name collides; changing the prefix renames the kit's files at the next update.
@@ -303,8 +282,7 @@ Claude Code, the fourth supported CLI, with everything the others get:
 - `doctor --live` now calls only the CLIs the person chose, never one merely present on the workstation.
 - `docs/cli/claude-code.md` (named so that it is never read as a `CLAUDE.md` on a case-insensitive file system), a Claude Code column in the matrix.
 
-## 0.34.0
-
+## 0.34.0 (2026-10-31)
 No call to a model unless asked:
 - `setup` and `update` never call the model any more: the summary says "connection not verified". `doctor --live` is the only real call, announced as possibly billed; `AI_KIT_NO_LIVE=1` refuses it. `--no-live` is still accepted and changes nothing.
 - The paid evals (`agent-evals.yml`) no longer run on merge requests or every Monday: started by hand only, with a `confirm_paid_run` box unticked by default and a `cli_version` input for a reference campaign. The model-free tests run on every push, with `AI_KIT_NO_LIVE=1`. A workflow changed in a branch keeps its old triggers on the remote default branch until merged.
@@ -341,8 +319,7 @@ Consistent instructions:
 - One review behaviour for `/review` and "review my changes": the branch's commits, staged and unstaged changes and new files by default, the scope stated, narrower on request; no spec or tracker required; one severity scale. Upstream adaptations recorded in `skills/upstream.lock.json`.
 - The router starts with four everyday uses (understand a repo, change a behaviour, diagnose, review); plain sentences are the normal path; no tracker or document before a first task; the project context is offered when useful, as one grouped proposal. `sql-review` and `dbt-model-change` no longer assume BigQuery; playbook descriptions say what they are not for.
 
-## 0.33.0
-
+## 0.33.0 (2026-10-31)
 Neutral core, the domain in its playbooks:
 - The shared commands (`/build`, `/diagnose`, `/intent`, `/review`, `/learn`, `/test`, `/guide`, `/explain`) no longer carry SQL, dbt, BigQuery, KPI, Java or infrastructure clauses: they send to "the installed playbook matching the files or the task". Each domain playbook (the seven data ones, `java-change`, `python-js-change`, `infra-change`) gains a `## In the kit commands` section holding, word for word, what the commands used to say for its domain; a check confirms none was lost. `/review`'s Data pass becomes a Domain pass. `/build` and `/diagnose` are shorter for every profile.
 - The shared team practice (`20-team.md`) no longer has a data-only rule: a neutral one ("state what a component guarantees and keep it") replaces it; the grain, joins, dates and NULLs rule is in `sql-review`.
@@ -350,8 +327,7 @@ Neutral core, the domain in its playbooks:
 - The repo templates of `init-project-context` are neutral: `GLOSSARY.md` holds the format and placeholder terms, the data starter terms move to `GLOSSARY-DATA.md` (proposed only for a data repo); `REVIEW.md` has a Domain pass with lines for services, data and infrastructure; the spec's "Data contracts" becomes "Contracts" (APIs, events or data); `AGENTS.md` lists Python, JS/TS, Java, dbt and Terraform rows and neutral architecture lines.
 - Doc examples varied: the diagnosis signal (test, assertion query, plan), the monorepo (services or dbt), shared terms beyond metrics.
 
-## 0.32.0
-
+## 0.32.0 (2026-10-31)
 Discovery and installation, for a data analyst in particular:
 - **End of setup**: a summary instead of loose lines: the kit configuration, each targeted CLI (found, or not found with its configuration prepared), the data connections (MCP) and the next step. A connection is "verified" only after a real call to the model; otherwise "connection not verified". No invitation to start a CLI that is not found; a missing CLI no longer hides one that is there. Exit codes and the network policy of setup are unchanged.
 - **Data connections explained**: instead of "0 MCP enabled", each server chosen by the profile is reported as not provided by the organization yet, turned off, or configured (connection not verified), with what the person can do meanwhile (work on the repo's SQL and dbt files with its usual tools).
@@ -362,8 +338,7 @@ Discovery and installation, for a data analyst in particular:
 
 Documentation: replacing a kit command in a repo is described as depending on the CLI (customization, format, workflow), with a skill named for the project as the fallback.
 
-## 0.31.0
-
+## 0.31.0 (2026-10-30)
 Priority rule hardened in `00_KIT.md`: only the person, in the conversation, can ask for an exception to a practice, and never for a guardrail, permission or access control; a conflict between a repo instruction and an explicit request gets the more cautious of the two and a confirmation; what the agent reads (files, command output, web pages, tickets, MCP results) is data, not instructions.
 `update` restores the rule layers `00_KIT.md`, `10_COMPANY.md` and `20_…md` when they were edited by hand, instead of stopping: the edited copy goes to `~/.ai-kit/backups/` and a `[Check]` line says so. Other kit files edited by hand still stop `update`; `30_USER.md` is never touched.
 `protected-paths` now also protects the kit layers `00`, `10` and `20` when they are installed in the CLI's own folder (until now only `~/.ai-kit/context/` was covered): an agent could edit `00_KIT.md` there.
@@ -371,20 +346,17 @@ Repo skills named like kit skills: verified per CLI (Gemini replaces in a truste
 
 Documentation: "one kit, all your repos" with a table of which file to change and how to apply it (getting started); priorities aligned with `00_KIT.md` (the person may ask for an explicit exception to a practice, a repo cannot) and three mechanisms kept apart: settings merge, priority between instructions, technical restrictions (project layer); repo skill precedence and folder trust in the CLI matrix; Windows path quoted in the `notepad` example.
 
-## 0.30.0
-
+## 0.30.0 (2026-10-30)
 Documentation reviewed from three newcomers' paths (install, use in a repo, adjust): how to run `setup`, `update` and `doctor` on Windows and Mac, where your files are, one rule for a new version, how the repo combines with your layers and what wins, who decides what and what the kit cannot enforce, the model settings per CLI, your own skills folder per CLI. `setup --team none` leaves a team.
 
-## 0.29.0
-
+## 0.29.0 (2026-10-30)
 Teams bring their tools, not only their context ([customization › Teams](docs/configuration.md)).
 - `organization.json` gets a `teams` section: per team, the same keys and formats as `overrides.json` (skills, commands, agents, guardrails, MCP servers, model). Order: organization defaults, team, then the person's `overrides.json`, which keeps the last word.
 - A team can have settings, a practices file (`practices/20-<team>.md`), or both. A team with settings only keeps the shared team practices.
 - `setup` lists every team; `doctor` shows the team and where its content comes from, and checks the team's keys like the others.
 - `organization.schema.json` describes `teams`.
 
-## 0.28.0
-
+## 0.28.0 (2026-10-30)
 MCP servers made simple: three files, one role each ([docs/mcp.md](docs/mcp.md)).
 - `organization.json` says **how** to reach each approved server (`defaults.mcp.<name>.server`); `"enabled": true` there turns it on for every profile.
 - A profile says **which** servers are on for that job: `"mcp": ["bigquery", "dbt"]` (names only). The former `{"recommended": [...]}` is gone; in the public kit, no server is defined, so nothing changes.
@@ -393,8 +365,7 @@ MCP servers made simple: three files, one role each ([docs/mcp.md](docs/mcp.md))
 - `doctor` lists the installed servers and the names chosen but not defined in `organization.json`.
 - The `mcp/` folder is removed: its sheets had no server and nothing read them.
 
-## 0.27.0
-
+## 0.27.0 (2026-10-30)
 Enterprise installation, the same on Windows and macOS, with a standard account: download the release ZIP, extract it, run the installer, choose the profile, optionally personalise `30_USER.md`, use the CLI.
 - **Windows: `Installer.cmd`**, at the root of the kit, double-click. Command Prompt only, no PowerShell: `scripts/bootstrap.ps1` is removed. It finds Python 3.9+ (`py -3`, `python`, `python3`; the Microsoft Store alias without Python counts as absent), runs the installer, and keeps the window open when double-clicked.
 - **macOS: `sh scripts/bootstrap.sh`**, from Terminal (type `sh `, drag the file, Enter). No double-click launcher: Gatekeeper refuses an unsigned downloaded script, and getting past it would mean changing a security decision. The launcher no longer runs `/usr/bin/python3` without the developer tools, which would offer to install them.
@@ -406,50 +377,50 @@ Enterprise installation, the same on Windows and macOS, with a standard account:
 - **Offline and company networks**: the final model check names a network failure, a proxy asking for authentication (407) or HTTPS inspection without the company root certificate, with what to ask IT; it never suggests disabling a protection. The installation itself needs no network.
 - **Validation**: [docs/validation.md](docs/getting-started.md) states the commitments, what CI proves and the manual checks on real company workstations. Tests: launchers from folders with spaces and accents, Python absent, old or blocked, extracted folder deleted, new version from another folder, no system-change command in the installer and launchers, nothing downloaded.
 
-## 0.26.0
+## 0.26.0 (2026-10-26)
 No skill shares a command's name any more: Gemini CLI 0.65 turns every skill into a `/command`, so `/guide` and the `guide` skill were both renamed (`/user.guide`, `/guide1`). Skills renamed: `guide` → `routing`, `handoff` → `handover`, `research` → `investigation`, `retro` → `retrospective`, `triage` → `ticket-sorting`, `wizard` → `manual-steps`; the commands keep their names and, in agy and Codex, now get their own command skill with the kit's instructions. Old names still work in `overrides.json` (with a notice); `update` removes the old skill folders. A test forbids a skill named like a command.
 With agy installed, its command skills (`intent`, `build`, `test`…) move from the shared `~/.gemini/skills/` to the agy plugin (`~/.gemini/config/plugins/ai-kit/skills/`): Gemini CLI, which reads the shared folder, showed every kit command twice and renamed them. Verified: agy counts plugin skills, Gemini does not see them. `update` removes the old copies.
 JSON Schemas for `overrides.json` and `organization.json` (`schemas/`): editors complete the keys, show their description and flag a typo or a wrong value as you type. The personal file created by `setup` and `organization.json` point to them. `doctor` reports unknown keys; the CI checks the shipped JSON files against the schemas, so a merge request that breaks `organization.json` fails before reaching workstations.
 
-## 0.25.1
+## 0.25.1 (2026-10-26)
 JSON error messages: Python 3.13 and later word a trailing comma differently ("Illegal trailing comma"); it now gets the same plain explanation. A test checks that every usual JSON mistake is explained, on every Python version of the CI.
 
-## 0.25.0
+## 0.25.0 (2026-10-26)
 No personal data in the kit repository: `people` (email to profile and team) is removed from `organization.json`; `setup` asks for the profile and the team, or takes `--profile` and `--team`, which IT hands each team as a ready-made command. `allowed_domains` stays (it warns about a CLI signed in with a personal account). A mistake in a JSON file (`overrides.json`, `organization.json`, CLI settings) is reported with its line, its column, the line itself and the usual cause in plain words.
 The test of the launcher's `git pull` builds its own repositories from the current files, so it also passes on tag checkouts (the v0.24.0 tag CI failed on it).
 
-## 0.24.0
+## 0.24.0 (2026-10-26)
 `organization.json` at the root of the kit replaces `profiles/directory.json` and the organization use of `templates/user-overrides.json`: expected domains, each person's profile and team, and organization defaults. The defaults are always merged with the person's `overrides.json` (lists add up, objects combine, the person wins for a single value): a personal file no longer drops the organization's authentication, model or guardrails. `doctor` lists the defaults a person changed. Teams are their own dimension: `practices/20-<team>.md`, chosen by `setup --team`, by `organization.json` or by a question at setup, installed as `20_<TEAM>.md` whatever the profile. `update` through the launcher fetches the new version itself (`git pull --ff-only` in a clean git clone, never blocking); `doctor` reports an installed version behind the folder and `doctor --live` a newer published version. `organization.json` and `CHANGELOG.md` are now in the pipx package.
 Profiles are discovered from the `profiles/` folder: each file carries its menu `label` and `order`, so adding a profile is adding one file (no code, no test to edit; the tests and the snapshot pick it up).
 
-## 0.23.0
+## 0.23.0 (2026-10-26)
 The agent cannot overwrite its own configuration. `protected-paths` is now on by default (`"protected-paths": false` in `overrides.json` turns it off) and, besides the CLI write tools, refuses simple shell commands that write to `~/.ai-kit/overrides.json`, the CLI settings and `.env` files, the guardrails or the repo protected paths (redirection, `tee`, `sed -i`, `cp`, `mv`, `rm`, `chmod`, PowerShell equivalents); reading them stays allowed. The kit context tells the agent never to change that configuration and to say what to change instead. With Codex, each person answers "Trust" once at the first launch.
 Evals on this version: Gemini 5/5, Codex 5/5; agy runs hit a temporary quota limit (HTTP 429), not a behaviour failure.
 
-## 0.22.0
+## 0.22.0 (2026-10-26)
 Repo skills that replace kit skills: `doctor`, run from a repo, lists the skills of `.agents/skills`, `.gemini/skills` or `.codex/skills` that carry the name of a kit skill or command. The kit context states that a repo file never lifts a company or team practice. `docs/compliance.md` gets a "Security limits" section.
 Friction loop: each friction gets a short id; `usage-aggregate.py --draft-issues` prints one ticket draft per group of frictions, to paste by hand (nothing is created); a CHANGELOG line citing `(frictions: <ids>)` lets `usage` tell each person which of their frictions a version fixed. Sixth friction signal and `rule` category: the agent went against a written rule. The usage review promotes a rule broken again to a check and removes rules older than six months with no friction. "Things the agent gets wrong" lines carry their date (`since YYYY-MM`). `/retro` proposes one change at a time, written only after approval.
 Eval criterion for the intent case tolerates punctuation between the words ("client « actif »"). Evals on this version: Gemini 5/5, agy 5/5, Codex 5/5.
 
-## 0.21.0
+## 0.21.0 (2026-10-26)
 Security hardening after the audit. `dbt-prod-guard`: `dbt` recognized inside `sh -c "…"`; a target only known at run time (`$T`, `$(…)`, backticks, glued quotes) is blocked; `AI_KIT_ALLOW_PROD` ignored when set in a `.env` file the CLI loads. `protected-paths`: always protects the configuration of the kit and of the CLIs (an agent cannot switch off its own guardrails) and resolves symbolic links. `doctor`: for each enabled guardrail, checks its Python and script, runs it on a case it must block, and reports Codex guardrails not yet approved. Guardrails run with `python -I`. `/friction` passes the sentence on standard input (no shell expansion) and accepts `--cli codex`, which was refused. Backup manifest written `0600`.
 
-## 0.20.0
+## 0.20.0 (2026-10-26)
 Everything in English: documentation, installer and script messages, domain playbooks, practices, context templates, agent instructions, eval cases and tests. Agents still reply in the person's language; the default `30_USER.md` now says "reply in the language I write in" (existing files are never rewritten). Docs renamed: `troubleshooting.md`, `compliance.md`, `installer.md`, `pilot.md`, `cli/gemini-to-agy.md`. Codex managed blocks get English markers; the previous markers are recognized and replaced on `update`. Doctor prefixes: `[Check]`, `[Optional]`.
 Eval patterns accept English and French answers, since agents reply in the person's language. Evals on this version: Gemini 5/5 (the intent and dbt cases replayed twice), agy 5/5, Codex 5/5.
 "Compliance and governance" page (`docs/compliance.md`): what the kit does, does not do and leaves to the organization, against the AI Act, the NIST AI RMF and ISO/IEC 42001, without claiming compliance. Badges in the README: tests, version, Python, operating systems, licence.
 
-## 0.19.0
+## 0.19.0 (2026-10-26)
 A single technical name, `ai-kit`: the kit folder on the workstation becomes `~/.ai-kit` (instead of `~/.ai-toolkit`), the recommended clone folder `ai-kit`, the archive `ai-kit-<version>.zip`. Migration on the first `setup` or `update`: `~/.ai-toolkit` is renamed and the state carried over; guardrail declarations, agy rules and Codex blocks are rewritten; if both folders exist, the kit stops and says what to do; `doctor` reports an old folder. Codex block markers without a path; old markers still recognized.
 Credits and inspirations named: workflow taken from Anthropic's "AI-native SDLC playbook", core skills from mattpocock/skills (Matt Pocock, MIT), rationalization tables and doubter agent from agent-skills (Addy Osmani), pstack, comparison of packs by Switch Dimension (README, `docs/sources.md`, `skills/upstream.lock.json`).
 Windows, verified by CI (Windows, macOS, Linux; Python 3.9 to 3.14): the guardrails read and write UTF-8 whatever the console (a refusal with accented characters reached the CLIs unreadable); a `30_USER.md` with CRLF no longer makes the Codex block look edited by hand; the installer and the scripts replace a character that cannot be displayed instead of crashing; every file read or write specifies its encoding (regression test). Python 3.11 or later recommended, 3.9 minimum. CI publishes failing tests as annotations.
 
-## 0.18.0
+## 0.18.0 (2026-10-25)
 Fix: `--target agy` now installs the profile skills and the agents when Gemini is not installed (test: each CLI alone receives the whole profile). Docs reread in full before release: README turned into a home page (profiles, supported CLIs, index by audience), installer details in `docs/installer.md`, choice of `--target` and a generated profiles × commands × agents table in "Getting started", adding a profile and a CLI in the contributing page, generic domain vocabulary, the old troubleshooting section merged into "Troubleshooting", roadmap and portability report removed from the public repository, test of links and anchors.
 
 Generic kit, for all development roles. Three new profiles: **Java Developer** (`java-change` playbook), **DevOps** (`infra-change` playbook: read-only evidence before any change, never an `apply` or a deployment started by the agent, written rollback) and **Architect** (`architecture-decision` playbook: ADR, compared options, reversibility). Three new agents: `security-reviewer`, `infra-reviewer`, `architecture-reviewer`. The `setup` menu offers **General** first, then the domain profiles. `code-reviewer` is no longer presented as limited to Python and JavaScript; the last "AI Kit Data" mentions are removed.
 
-## 0.17.0
+## 0.17.0 (2026-10-25)
 Tooling: git repository, `ruff` configured and run in CI (unused imports and variables removed), invariant tests (no bypass of confirmations, no Codex hook approval written, no authentication without overrides, no write outside the home folder, bounded cleanup, merge request (MR) vocabulary). Typed contract between the orchestrator and the adapters in `installer/interface.py`: `Plan` and `DoctorContext` as dataclasses, `Adapter`, `ContextHost` and `LiveCheck` as protocols, tested on each adapter.
 Gemini is no longer installed by default. `--target auto` installs the detected CLIs (Gemini by default if none is detected); new targets `--target codex` and `--target agy`. The layers and `30_USER.md` are written by the orchestrator: in `~/.gemini/` when Gemini is installed (it imports only files from its own folder, verified on 0.65), otherwise in `~/.ai-toolkit/context/`. A Codex-only workstation no longer gets a `~/.gemini`. Location change: `30_USER.md` is copied if missing, never deleted. No change for workstations with Gemini, except one header sentence in the agy rules.
 Orchestrator without CLI names: `installer/cli.py` now talks only to the adapter interface (identity from each CLI's active account, `doctor` and real model call per adapter, installed names recorded in the state instead of being inferred from Gemini paths, deletion scope and empty-folder cleanup provided by each adapter); the tests import each name from its real module. Guardrail scripts moved from `~/.gemini/hooks/ai-kit/` to `~/.ai-toolkit/hooks/`, next to `friction.py`: `update` removes the old ones and rewrites the declarations of the three CLIs (migration test added).

@@ -81,8 +81,8 @@
       "digest": "520ef079ce23173b"
     },
     "init-project-context": {
-      "version": "1.1.0",
-      "digest": "6036d9813bf4762a"
+      "version": "1.1.1",
+      "digest": "bd8776c96f5d08bb"
     },
     "investigation": {
       "version": "1.0.0",
@@ -93,8 +93,8 @@
       "digest": "3771d3fc9c70433a"
     },
     "mr": {
-      "version": "1.0.1",
-      "digest": "85301eef6423f09f"
+      "version": "1.0.2",
+      "digest": "416cb107fee44c07"
     },
     "prototype": {
       "version": "1.0.0",
@@ -105,8 +105,8 @@
       "digest": "15ebacab6d1e8ab1"
     },
     "routing": {
-      "version": "1.0.1",
-      "digest": "7f4d24060bc2706c"
+      "version": "1.0.2",
+      "digest": "31fe3eac7f317063"
     },
     "setup-workflow": {
       "version": "1.0.0",

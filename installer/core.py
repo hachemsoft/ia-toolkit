@@ -404,7 +404,7 @@ def fixed_frictions(changelog):
     fixed, version = {}, None
     for line in changelog.splitlines():
         if line.startswith('## '):
-            version = line[3:].strip()
+            version = (line[3:].split() or [''])[0]  # '## 4.1.0 (2026-11-10)'
             continue
         for match in FIXED_FRICTIONS.finditer(line):
             for fid in re.split(r'\s*,\s*', match.group(1).lower()):

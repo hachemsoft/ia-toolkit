@@ -6,8 +6,9 @@ since: 4.0.0
 
 The Core defines its servers in `mcp/servers.toml`; a Team may ship its own; the person turns servers on or off
 (`[mcp] enabled`, `denied`). A server's keys are a closed list (`command`, `args`, `env`, `cwd`, `httpUrl`, `url`, `headers`,
-`required`); `trust` is refused; a remote server must use HTTPS; an `env` or `headers` value that looks secret is refused
-(`${VARIABLE}` only); `args` and URLs are not searched for secrets. A server's identity is the SHA-256 of its exact command, args, env templates and folder (stdio), or of
+`required`): another key is refused, and so is `trust`; a remote server must use HTTPS; a shell or a shell script as the
+command is refused; a value that looks secret in `env`, `headers`, `args` (`--token value`, `--token=value`, a known token
+format) or the URL (a password, a secret query parameter) is refused: `${VARIABLE}` only. A server's identity is the SHA-256 of its exact command, args, env templates and folder (stdio), or of
 its URL and header templates (http): a rename does not change it, a changed argument does.
 
 `managed.toml` decides first: `mcp.denied` matches a name, a URL prefix or an executable; `mcp.allow_stdio = false` refuses
@@ -22,8 +23,8 @@ runs anything, and denying by name is escaped by a rename. The CLIs' native allo
 Kit's check agrees with them.
 
 **Consequences**: a person confirms each new or changed Team server once when IT lists none. AI Kit never vouches for a
-server's code or package version. A shell as the command, or a key outside the list, is reported with a `[Check]` line when
-the configuration is applied, and still installed.
+server's code or package version. A definition refused for its keys, a shell or a secret stops the change: the source must
+be fixed.
 
 **Considered**: a prefix per source in server names (renames every server for information the state already holds); an
 approval flag on the command line (an agent could pass it); probing a server's code (no execution, no false assurance).
