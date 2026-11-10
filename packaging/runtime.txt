@@ -6,6 +6,6 @@ markdown-it-py==3.0.0
 mdurl==0.1.2
 pygments==2.19.2
 questionary==2.1.1
-prompt_toolkit==3.0.52
+prompt_toolkit==3.0.53
 wcwidth==0.2.14
 # Only installed before Python 3.11 (pyproject.toml marker); always in the ZIP, which serves every Python.
