@@ -366,7 +366,7 @@ def runtime_checks(home, status):
     if source is not None:
         folder_version = (source/'VERSION').read_text(encoding='utf-8').strip()
         status(folder_version == kit_version(), 'The kit folder ('+folder_version+') and the installed kit package ('+kit_version()+') are the same version'
-               + ('' if folder_version == kit_version() else ': run the installer from that folder, Update'))
+               + ('' if folder_version == kit_version() else ': run the installer from that folder'))
     own = os.path.normcase(os.path.realpath(str(home/'.ai-kit'/'bin'/kit_command.SHIM_NAME)))
     commands = [(path, version) for path, version in kit_commands_on_path() if os.path.normcase(os.path.realpath(path)) != own]  # the kit's own command runs this very kit
     if commands:

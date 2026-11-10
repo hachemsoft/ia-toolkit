@@ -171,7 +171,7 @@ def finalize(p: Plan, active: bool = True) -> None:
                 # The source stays as it is; Codex keeps the last copy it had, and the person is told why.
                 user_text = copied_user_text(old_block)
                 p.notices.append('[Check] '+USER_CONTEXT+' not copied into ~/.codex/AGENTS.md: '+refusal+'. Codex keeps its previous copy'
-                                 ' until the file is fixed and update runs again. The kit configuration itself is installed.')
+                                 ' until the file is fixed and ai-kit sync --offline runs again. The kit configuration itself is installed.')
             else:
                 user_text = data.decode('utf-8')
             block = codex_context_block(p.kit_text, p.practice_texts, user_text, p.adapter_data.get(NAME, {}).get('renamed'))

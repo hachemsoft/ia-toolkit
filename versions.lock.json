@@ -105,8 +105,8 @@
       "digest": "15ebacab6d1e8ab1"
     },
     "routing": {
-      "version": "1.0.0",
-      "digest": "dec56f6757ff9848"
+      "version": "1.0.1",
+      "digest": "7f4d24060bc2706c"
     },
     "setup-workflow": {
       "version": "1.0.0",

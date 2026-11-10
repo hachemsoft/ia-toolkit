@@ -159,8 +159,7 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
     active = selected_adapters(target, home, recorded_targets(state))
     context_dir = context_location(home, active)
     selection = core_selection()  # the Core default (ADR 0018); the Team and the person add or remove
-    # Team: chosen at setup (--team or the setup question), then kept for update.
-    # 'none' (setup --team none) leaves the team; no value keeps the recorded one.
+    # Team: chosen by ai-kit team use, then kept; 'none' leaves the team; no value keeps the recorded one.
     team = None if team == 'none' else safe_id(team) if team else state.get('team')
     org_defaults, team_layer, personal, overrides, choices = effective_settings(kit, team, choices)
     # managed.toml (IT): every key it sets wins over the Core, the Team and the person (ADR 0015).

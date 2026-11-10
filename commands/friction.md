@@ -24,4 +24,4 @@ On Windows (PowerShell), the same with a literal here-string:
 
 `--source person` when the person asked for this friction; `--source agent` when you log it on your own, as the Frictions rule of your context may ask.
 
-The script adds the kit version, profile and operating system itself. The line lands in ~/.ai-kit/frictions.jsonl on this machine; nothing is sent, unless the organization set a friction tracker: then the script itself creates an issue with the person's own glab or gh and prints its URL (a failure keeps the friction local). Repeat the script's output in one line (what was recorded, the issue URL if any), then go back to the work in progress.
+The script adds the kit version, team and operating system itself. The line lands in ~/.ai-kit/frictions.jsonl on this machine; nothing is sent, unless the organization set a friction tracker: then the script itself creates an issue with the person's own glab or gh and prints its URL (a failure keeps the friction local). Repeat the script's output in one line (what was recorded, the issue URL if any), then go back to the work in progress.

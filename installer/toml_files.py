@@ -1,6 +1,6 @@
 """The kit's TOML files: the person's aikit.toml, managed.toml, the manifests and lock.toml. Read with
 tomllib (standard library); written only in two narrow ways, both checked by reading the result back:
-a whole file when an overrides.json is migrated, and one top-level list at a time, the rest of the file (comments
+a whole file when it is created, and one top-level list at a time, the rest of the file (comments
 included) kept as is."""
 import json
 from pathlib import Path

@@ -16,7 +16,7 @@ from ..interface import DoctorContext, Plan, Status
 from ..core import (content_root, ROOT, USER_CONTEXT, KitError, digest, hook_command, cli_event, split_block, place_block, json_bytes, read_json, _ts, live_call, LIVE_PROMPT, DEFAULT_PREFIX, skill_prefix, rename_references, renamed_skill_file)
 
 CLAUDE_DIR = '.claude'
-# The marker text is an identifier, kept as written in 0.35 ("overrides.json" is now aikit.toml).
+# The marker text is an identifier: changing it would orphan the blocks already installed.
 CLAUDE_MD = ('<!-- ai-kit:start : block managed by the AI Kit; do not edit here (USER.md, aikit.toml, then ai-kit sync --offline) -->', '<!-- ai-kit:end -->')
 # Skills Claude Code itself ships: a kit skill installed without a prefix must not take one of these names.
 BUNDLED_SKILLS = {'code-review', 'security-review', 'simplify', 'init', 'loop', 'schedule', 'claude-api', 'update-config',

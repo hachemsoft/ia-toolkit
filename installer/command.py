@@ -1,7 +1,7 @@
 """The `ai-kit` command in the person's terminal: a small script in ~/.ai-kit/bin that runs the launcher of the kit
-folder with the same arguments (so `ai-kit update` is the launcher's update: fetch, reinstall, apply), and that folder
-on the person's own PATH: the user `Path` of the registry on Windows, a marked block in the login shell's startup file
-on Mac and Linux. Chosen at setup (yes by default), kept by update, removed by uninstall. Only the launcher knows the
+folder with the same arguments, and that folder on the person's own PATH: the user `Path` of the registry on Windows, a
+marked block in the login shell's startup file on Mac and Linux. Chosen at init (yes by default), kept by sync, removed by
+uninstall. Only the launcher knows the
 kit folder: run otherwise, the kit writes no command and keeps an existing one as it is."""
 import os
 import sys
