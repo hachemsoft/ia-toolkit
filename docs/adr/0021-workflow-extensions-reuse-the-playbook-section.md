@@ -1,5 +1,5 @@
 ---
-status: accepted, amended: the hook sentence is in /intent, /build, /review, /diagnose and /learn only; the format is checked by offline tests, not by `ai-kit validate`
+status: accepted
 since: 4.0.0
 ---
 # Workflow extensions reuse the playbook section "In the kit commands"

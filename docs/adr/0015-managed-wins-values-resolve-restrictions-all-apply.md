@@ -1,5 +1,5 @@
 ---
-status: accepted, amended: there is no Core policy layer and no `resources.denied_*` key; the restrictions implemented are `hooks.locked`, `mcp.denied` and the MCP allowlists
+status: accepted
 since: 4.0.0
 ---
 # managed.toml wins on every key it sets; values resolve by precedence, restrictions all apply

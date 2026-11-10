@@ -1,5 +1,5 @@
 ---
-status: accepted, amended: workstation approval applies to local servers a Team brings; a shell command or an unknown key is reported, not refused; secrets are not searched in args or URLs
+status: accepted
 since: 4.0.0
 ---
 # MCP: exact identities, approved by IT or on the workstation; what policy forbids is not installed
@@ -7,7 +7,7 @@ since: 4.0.0
 The Core defines its servers in `mcp/servers.toml`; a Team may ship its own; the person turns servers on or off
 (`[mcp] enabled`, `denied`). A server's keys are a closed list (`command`, `args`, `env`, `cwd`, `httpUrl`, `url`, `headers`,
 `required`); `trust` is refused; a remote server must use HTTPS; an `env` or `headers` value that looks secret is refused
-(`${VARIABLE}` only). A server's identity is the SHA-256 of its exact command, args, env templates and folder (stdio), or of
+(`${VARIABLE}` only); `args` and URLs are not searched for secrets. A server's identity is the SHA-256 of its exact command, args, env templates and folder (stdio), or of
 its URL and header templates (http): a rename does not change it, a changed argument does.
 
 `managed.toml` decides first: `mcp.denied` matches a name, a URL prefix or an executable; `mcp.allow_stdio = false` refuses

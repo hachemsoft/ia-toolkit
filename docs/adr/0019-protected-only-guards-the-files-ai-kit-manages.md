@@ -1,11 +1,12 @@
 ---
-status: accepted, amended: `protected` only stops a Team from replacing a Core resource; `disabled_*` does not check it, and no Core resource carries `aikit-protected` today
+status: accepted
 since: 4.0.0
 ---
 # `protected` only guards the files AI Kit manages
 
 A Core skill or agent marked `aikit-protected: "true"` cannot be replaced by a Team resource of the same name: the overlay
-refuses it at `sync` or `team use` (`installer/sync.py`). Against a project resource of the same name, read natively by the
+refuses it at `sync` or `team use` (`installer/sync.py`). That is all it does: a person's `disabled_*` lines do not check
+it, and no Core resource carries the marker today. Against a project resource of the same name, read natively by the
 CLI, AI Kit can impose nothing: what happens depends on the CLI (a repo skill replaces the kit's in one, is ignored in
 another, both are listed in a third; [CLI matrix](../cli/matrice.md)). `doctor`, run from a repo, lists those clashes. On
 Claude Code the kit's skills keep the `ai-kit-` prefix by default.

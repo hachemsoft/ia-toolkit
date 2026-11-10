@@ -1,5 +1,5 @@
 ---
-status: accepted, amended: no skill is inlined into its command; zoom-out and wait-what became model-invocable instead, and the check is an offline test, not `ai-kit validate`
+status: accepted
 since: 4.0.0
 ---
 # Commands chain only skills the model can invoke; user-only skills are never a command's target

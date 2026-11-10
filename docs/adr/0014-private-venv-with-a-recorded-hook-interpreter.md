@@ -1,5 +1,5 @@
 ---
-status: accepted, amended: the hook interpreter is recorded in each hook command, not in a `runtime.python` field of state.json
+status: accepted
 since: 4.0.0
 ---
 # The engine runs from its private venv on Python 3.11 or later; hooks use an absolute interpreter path

@@ -1,5 +1,5 @@
 ---
-status: accepted, amended: housekeeping runs in the session hook and in `ai-kit status`, not in every engine command
+status: accepted
 since: 4.0.0
 ---
 # Frictions stay in a local log; housekeeping runs at session start; publication is approved in a terminal

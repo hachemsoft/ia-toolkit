@@ -1,5 +1,5 @@
 ---
-status: accepted, amended: USER.md lives in `~/.ai-kit/context/`, stays writable by the agent for `/me`, and the interview reads no commit history
+status: accepted
 since: 4.0.0
 ---
 # USER.md and an adaptive interview with bounded local hints

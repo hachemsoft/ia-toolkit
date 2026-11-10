@@ -1,5 +1,5 @@
 ---
-status: accepted, amended: lock.toml keeps one `[previous]` configuration, not a history of three validated entries; there is no `rollback --list` or `--to`
+status: accepted
 since: 4.0.0
 ---
 # Rollback re-activates the previous Core and Team configuration; lock.toml is written in the activation's transaction

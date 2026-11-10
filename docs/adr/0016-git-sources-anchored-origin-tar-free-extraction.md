@@ -1,5 +1,5 @@
 ---
-status: accepted, amended: revocation comes from `managed.toml` `git.revoked` only; a source cannot revoke its own commits
+status: accepted
 since: 4.0.0
 ---
 # Git sources: stable tags, an anchored origin, tar-free extraction, revocation, optional signatures
