@@ -14,3 +14,4 @@ updates:
         patterns: ["*"]
     ignore:  # hatchling 1.33 needs tomlkit at build time, one more wheel for every approved index to carry
       - dependency-name: hatchling
+      - dependency-name: wcwidth  # 0.9 is downloaded as a platform wheel; the release ZIP holds pure-Python wheels only
