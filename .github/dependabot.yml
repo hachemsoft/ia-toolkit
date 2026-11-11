@@ -9,3 +9,8 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    groups:  # packaging/runtime.txt pins them on adjacent lines: one merge request, not one per package
+      runtime:
+        patterns: ["*"]
+    ignore:  # hatchling 1.33 needs tomlkit at build time, one more wheel for every approved index to carry
+      - dependency-name: hatchling
