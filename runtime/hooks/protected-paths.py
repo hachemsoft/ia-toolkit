@@ -21,7 +21,10 @@ PATTERN_FILES = (os.path.join('.ai-kit', 'protected-paths'),)
 # ~/.ai-kit/context/USER.md (the person's own file) stay writable. Every file the kit installed (state.json) is protected too.
 CONFIG_PATHS = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/sources/', '.ai-kit/state.json', '.ai-kit/hooks/', '.ai-kit/bin/', '.ai-kit/backups/',
                 '.ai-kit/runtime/', '.ai-kit/schemas/', '.ai-kit/context/00_', '.ai-kit/context/10_', '.ai-kit/context/20_',
+                # the news the session hook shows (their text enters the next session) and its marker
+                '.ai-kit/news/', '.ai-kit/news.json',
                 '.gemini/00_', '.gemini/10_', '.gemini/20_', '.gemini/settings.json', '.gemini/.env', '.gemini/config/plugins/ai-kit/',
+                '.gemini/antigravity-cli/settings.json',  # agy's permissions: the person's answers, never the agent's
                 '.codex/config.toml', '.codex/AGENTS.md', '.codex/ai-kit/', '.claude/settings.json', '.claude/CLAUDE.md', '.claude/agents/ai-kit-',
                 '.claude.json',
                 # git's own configuration can redirect the kit's next fetch (url.insteadOf) or run a program (core.fsmonitor) (0.51.1).
@@ -33,6 +36,8 @@ CONFIG_FOLDERS = ('.ai-kit', '.gemini', '.codex', '.claude')
 REPO_CONFIG = ('.ai-kit/protected-paths', '.claude/settings.json', '.claude/settings.local.json',
                '.gemini/settings.json', '.gemini/.env', '.codex/config.toml')
 KIT_VARIABLES = re.compile(r'^\s*(export\s+)?(AI_KIT_[A-Z_]*|DBT_TARGET)\s*=', re.M)
+SETS_KIT_VARIABLE = re.compile(r'(ai_kit_[a-z_]*|dbt_target)\s*=')  # the same, anywhere in a normalised (lower case) command
+DOTENV_BLOCKED = 'Blocked by the kit: a .env file the agent writes must not set the kit\'s variables (AI_KIT_*) or DBT_TARGET.'
 
 def patterns(directory):
     found = []
@@ -120,7 +125,7 @@ SHELL_TOOLS = ('run_shell_command', 'run_command', 'shell', 'local_shell', 'exec
 # Programs that only read: a command naming a protected path is allowed only when it runs nothing else.
 READERS = {'cat', 'bat', 'less', 'more', 'head', 'tail', 'grep', 'egrep', 'fgrep', 'rg', 'ag', 'ack', 'ls', 'll', 'dir', 'stat', 'file',
            'wc', 'diff', 'cmp', 'md5', 'md5sum', 'shasum', 'sha1sum', 'sha256sum', 'jq', 'yq', 'column', 'sort', 'uniq', 'cut', 'nl', 'od',
-           'xxd', 'hexdump', 'strings', 'tree', 'realpath', 'readlink', 'basename', 'dirname', 'test', '[', 'echo', 'printf', 'true',
+           'xxd', 'hexdump', 'strings', 'tree', 'du', 'realpath', 'readlink', 'basename', 'dirname', 'test', '[', 'echo', 'printf', 'true',
            'type', 'which', 'find', 'git', 'cp',  # not sed or awk: their scripts can write a file or run a command
            # PowerShell
            'get-content', 'gc', 'select-string', 'sls', 'get-childitem', 'gci', 'test-path', 'get-item', 'gi', 'get-filehash',
@@ -129,6 +134,9 @@ GIT_READS = {'status', 'diff', 'log', 'show', 'blame', 'ls-files', 'grep', 'rev-
 WRAPPERS = {'sudo', 'doas', 'env', 'xargs', 'nohup', 'time', 'command', 'exec', 'builtin', 'nice', '-exec', '-execdir', '-ok'}
 RUNS_TEXT = re.compile(r'-[a-z]*c|-command|-encodedcommand', re.I)  # bash -c, sh -lc, pwsh -Command: the next word is run
 SHELLS = {'sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'pwsh', 'powershell'}
+CMD = {'cmd', 'cmd.exe'}  # cmd /c program: the next word is run
+# A run of > is read once from its start: no quadratic search on a long one.
+REDIRECTION = re.compile(r'(?<!>)>+\|?\s*([^\s;|&<>]+)')
 CHANGES_DIRECTORY = {'cd', 'pushd', 'chdir', 'set-location', 'sl', 'push-location'}
 HEREDOC = re.compile(r'<<-?\s*["\']?([A-Za-z_][A-Za-z0-9_]*)["\']?')
 MAX_COMMAND = 50000  # longer: judged on its own (a pathological command is refused when it names a protected path)
@@ -182,8 +190,8 @@ def command_words(pipeline):
         if not (expect or opens):
             if found:
                 found[-1][1].append(core)
-            if (current in SHELLS and RUNS_TEXT.fullmatch(core)) or core in ('-exec', '-execdir', '-ok'):
-                expect = True  # bash -c '…', find … -exec: what follows is run
+            if (current in SHELLS and RUNS_TEXT.fullmatch(core)) or core in ('-exec', '-execdir', '-ok') or (current in CMD and core in ('/c', '/k')):
+                expect = True  # bash -c '…', find … -exec, cmd /c: what follows is run
             continue
         if re.fullmatch(r'[a-z_][a-z0-9_]*=.*', core):
             found.append(('=', [core]))  # VAR=value: an assignment, not a program
@@ -201,15 +209,16 @@ def only_reads(program, words, mentions_in):
     if program == 'find':
         return not any(w in ('-delete', '-exec', '-execdir', '-ok', '-okdir', '-fprint', '-fprint0', '-fprintf', '-fls') for w in words)
     if program == 'git':
-        subcommand = next((w for w in words if not w.startswith('-') and w not in ('-c',)), '')
-        return subcommand in GIT_READS and not any(w.startswith('--output') for w in words)
+        _, subcommand, _ = git_call(words)  # git -C folder status: the folder is not the subcommand
+        sets_config = any(w == '-c' and '=' in words[i + 1] for i, w in enumerate(words[:-1]))  # -c key=value can run a program
+        return subcommand in GIT_READS and not sets_config and not any(w.startswith('--output') for w in words)
     if program == 'cp':
         if any(w == '-t' or w.startswith('--target-directory') for w in words):
             return False
         return bool(positional) and not mentions_in(positional[-1])
     # Readers that also write a file when asked to: their output option, or a second file name.
     if program in ('sort', 'tree'):
-        return not any(w.startswith('-o') or w.startswith('--output') for w in words)
+        return not any(w.startswith('--o') or re.match(r'-[a-z0-9]*o', w) for w in words)  # -o, and -uo: o glued to other options
     if program == 'uniq':
         return len(positional) < 2
     if program == 'xxd':
@@ -224,34 +233,61 @@ KIT_TOOLS = ('/.ai-kit/bin/friction.py',)  # run by the kit's own /friction comm
 # The kit's own subcommands that change the installation or bill a model call: the agent tells the person, it does not run them
 # (0.52.0). Reading ones (doctor, usage, news, friction logging, --version, managed-settings into an empty folder) stay allowed.
 KIT_REFUSED = {'init', 'sync', 'rollback', 'uninstall'}
+# Every action of the command (installer/cli.py; a test compares the two lists).
+KIT_ACTIONS = {'init', 'sync', 'team', 'status', 'doctor', 'rollback', 'user', 'uninstall', 'usage', 'friction', 'managed-settings', 'validate'}
+# The launchers of a kit folder: they run the same command, and init when no action is given (Installer.cmd calls launcher.py).
+LAUNCHERS = ('bootstrap.sh', 'bootstrap.ps1', 'launcher.py')
 KIT_COMMAND_BLOCKED = ('Blocked by the kit: `ai-kit {}` changes the installation or bills a model call; the agent does not run it. '
                        'Tell the person the command to run in a terminal.')
 
 def kit_arguments(program, words):
-    """The words after the kit's entry point when this program runs the kit (ai-kit, python -m ai_kit, a launcher), else None."""
-    if program in ('ai-kit', 'ai-kit.cmd', 'installer.cmd'):
-        return words
+    """(the words after the kit's entry point, the launcher's file name or None) when this program runs the kit: ai-kit,
+    python -m ai_kit, or a launcher run directly, by Python or by a shell. Else None."""
+    if program in ('ai-kit', 'ai-kit.cmd', 'ai-kit.exe'):
+        return words, None
+    if program == 'installer.cmd' or program in LAUNCHERS:
+        return words, program
     if PYTHONS.fullmatch(program) and '-m' in words:
         index = words.index('-m')
-        return words[index + 2:] if index + 1 < len(words) and words[index + 1] in ('ai_kit', 'installer') else None
-    if program in SHELLS:
-        index = next((i for i, w in enumerate(words) if w.endswith('bootstrap.sh')), None)
-        return words[index + 1:] if index is not None else None
-    return None
+        return (words[index + 2:], None) if index + 1 < len(words) and words[index + 1] in ('ai_kit', 'installer') else None
+    if PYTHONS.fullmatch(program):  # the script Python runs, not a file it is given to check
+        index = next((i for i, w in enumerate(words) if not w.startswith('-')), None)
+    elif program in SHELLS:
+        index = next((i for i, w in enumerate(words) if w.rsplit('/', 1)[-1] in LAUNCHERS), None)
+    else:
+        return None
+    name = words[index].rsplit('/', 1)[-1] if index is not None else ''
+    return (words[index + 1:], name) if name in LAUNCHERS else None
 
-def kit_command_reason(command):
+def kit_launcher_at(name, text, current):
+    """True when the launcher a pipeline names sits with the kit's other launchers (scripts/ of a kit folder). The name alone
+    does not tell: another project has its own bootstrap.sh."""
+    script = next((w for w in text.replace('|', ' ').split() if w.rsplit('/', 1)[-1] == name), name)
+    folder = os.path.dirname(where(re.sub(r'^\$\{?home\}?', '~', script), current))
+    return all(os.path.isfile(os.path.join(folder, other)) for other in ('bootstrap.sh', 'launcher.py'))
+
+def kit_command_reason(command, cwd):
     """Reason to refuse a kit subcommand the agent must not run, or None."""
+    current = real(cwd)
     for pipeline in shell_segments(command):
-        for program, words in command_words(normalised(pipeline)):
+        text = normalised(pipeline)
+        for program, words in command_words(text):
+            if program in CHANGES_DIRECTORY and words:
+                current = where(words[-1], current)
             if PYTHONS.fullmatch(program) and '--sync' in words and any(w.endswith('/.ai-kit/bin/friction.py') for w in words):
                 return KIT_COMMAND_BLOCKED.format('friction --sync')  # publication is the person's approval (2.0.0)
-            arguments = kit_arguments(program, words)
-            if arguments is None:
+            found = kit_arguments(program, words)
+            if found is None:
                 continue
-            sub = next((w for w in arguments if not w.startswith('-')), '')
+            arguments, launcher = found
+            # The action is the first word that names one: an option's value placed before it (--home /tmp/h uninstall) is
+            # never taken for it, and an option counts wherever it is written (--live doctor).
+            sub = next((w for w in arguments if w in KIT_ACTIONS), '')
             rest = arguments[arguments.index(sub) + 1:] if sub else []
-            if (sub in KIT_REFUSED or (sub == 'doctor' and '--live' in rest) or (sub == 'friction' and ('--publish' in rest or '--sync' in rest))
-                    or (sub == 'team' and 'use' in rest)):
+            if not sub and launcher and (launcher == 'installer.cmd' or kit_launcher_at(launcher, text, current)):
+                sub = 'init'  # a launcher with no action installs
+            if (sub in KIT_REFUSED or (sub == 'doctor' and '--live' in arguments) or (sub == 'team' and 'use' in rest)
+                    or (sub == 'friction' and ('--publish' in arguments or '--sync' in arguments))):
                 return KIT_COMMAND_BLOCKED.format(' '.join([sub] + rest[:2]).strip())
     return None
 
@@ -276,25 +312,23 @@ def mention(text, names):
             start = text.find(name.rstrip('/'), end)
     return None
 
-def touches_config_folder(program, words):
-    """cd into a configuration folder, a wildcard inside one, or a program that is not a reader aimed at the folder itself
-    (ln -s ~/.ai-kit x, rm -rf ~/.claude): what follows cannot be judged, so it counts as a write."""
+def touches_config_folder(program, words, names):
+    """cd into a configuration folder, a wildcard inside one, the folder kept in a variable, or a program aimed at the folder
+    itself that does not only read (ln -s ~/.ai-kit x, rm -rf ~/.claude, find ~/.ai-kit -delete, cp x ~/.ai-kit/): the file
+    it writes is not named, or what follows cannot be judged, so it counts as a write."""
     def is_folder(word):
         return any(word.rstrip('/').endswith('/' + f) or word.rstrip('/') == f for f in CONFIG_FOLDERS)
     if program in CHANGES_DIRECTORY and words:
         last = words[-1].rstrip('/')
         if is_folder(last) or any('/' + folder + '/' in last + '/' for folder in CONFIG_FOLDERS):
             return True
-    if program not in READERS and program != '=' and any(is_folder(w) for w in words):
+    if program == '=':
+        # p=~/.ai-kit, c=$HOME/.ai-kit/context: a configuration folder, or a folder above a protected file.
+        value = '/' + words[0].split('=', 1)[1].rstrip('/')
+        tails = [value[value.rfind('/' + f) + 1:] for f in CONFIG_FOLDERS if '/' + f in value]
+        return any(tail in CONFIG_FOLDERS or any(name.startswith(tail + '/') for name in names) for tail in tails)
+    if any(is_folder(w) for w in words) and not only_reads(program, words, is_folder):
         return True
-    # cp into a configuration folder (cp aikit.toml ~/.ai-kit/, cp -t ~/.ai-kit x): the file it writes is not named.
-    if program == 'cp':
-        destinations = [w.split('=', 1)[-1] for w in words if w.startswith('--target-directory')]
-        destinations += [words[i + 1] for i, w in enumerate(words[:-1]) if w == '-t']
-        positional = [w for w in words if not w.startswith('-')]
-        destinations += positional[-1:] if len(positional) >= 2 else []
-        if any(is_folder(d) for d in destinations):
-            return True
     return any(re.search(r'[*?\[]', w) and any('/' + f + '/' in '/' + w for f in CONFIG_FOLDERS) for w in words)
 
 # --- The kit folder and git's configuration (0.51.1) -------------------------------------------------------------------
@@ -426,6 +460,19 @@ def kit_shell_reason(command, cwd):
                 return KIT_BLOCKED.format(name)
     return None
 
+def writes_kit_variables(text, programs, command):
+    """True when a pipeline writes a .env file (a redirection, or a program that does not only read) and its words set the
+    kit's variables: the content the write tools are refused for. An assignment before a program (AI_KIT_NO_LIVE=1 python3 …)
+    is that program's environment, not content; the body of a heredoc is content."""
+    def is_dotenv(word):
+        return word.rsplit('/', 1)[-1].startswith('.env')
+    written = any(is_dotenv(m.group(1)) for m in REDIRECTION.finditer(text)) or any(
+        any(is_dotenv(w) for w in words) and not only_reads(program, words, is_dotenv) for program, words in programs if program != '=')
+    if not written:
+        return False
+    content = normalised(command) if '<<' in text else ' '.join(' '.join(words) for program, words in programs if program != '=')
+    return bool(SETS_KIT_VARIABLE.search(content))
+
 def shell_config_write(command, cwd=None):
     """Reason for refusal when a shell command may change the configuration of the kit or of a CLI, or a repo's."""
     names = protected_names()
@@ -433,20 +480,22 @@ def shell_config_write(command, cwd=None):
         whole = normalised(command)
         name = mention(whole, names) or next((f for f in CONFIG_FOLDERS if f in whole), None)
         return BLOCKED.format(name) if name else None
-    reason = kit_shell_reason(command, cwd or os.getcwd()) or kit_command_reason(command)
+    reason = kit_shell_reason(command, cwd or os.getcwd()) or kit_command_reason(command, cwd or os.getcwd())
     if reason:
         return reason
     for pipeline in shell_segments(command):
         text = normalised(pipeline)
         programs = command_words(text)
         for program, words in programs:
-            if touches_config_folder(program, words):
+            if touches_config_folder(program, words, names):
                 return BLOCKED.format(next(f for f in CONFIG_FOLDERS if f in text))
+        if '.env' in text and writes_kit_variables(text, programs, command):
+            return DOTENV_BLOCKED
         name = mention(text, names)
         if not name:
             continue
         # A redirection to the protected file writes it, whatever the program.
-        for match in re.finditer(r'>+\|?\s*([^\s;|&<>]+)', text):
+        for match in REDIRECTION.finditer(text):
             if mention(match.group(1), names):
                 return BLOCKED.format(name)
         def allowed(program, words):
@@ -482,7 +531,7 @@ def config_reason(absolute, directories, content=''):
             return ('Blocked by the kit: "' + inner + '" configures the repo\'s guardrails or agent settings; a person changes it, '
                     'through a merge request.')
     if os.path.basename(absolute).lower().startswith('.env') and KIT_VARIABLES.search(content):
-        return 'Blocked by the kit: a .env file the agent writes must not set the kit\'s variables (AI_KIT_*) or DBT_TARGET.'
+        return DOTENV_BLOCKED
     return None
 
 def check(file_path, cwd, content=''):

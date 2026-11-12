@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.1.1 (2026-11-12)
+
+The `protected-paths` guardrail refuses plain forms it let through. Run `ai-kit sync` to install it.
+
+- **Configuration folders**: a command aimed at the folder itself is allowed only when every program only reads, so `find ~/.ai-kit -delete` and `find … -exec rm` are refused; so is the folder kept in a variable (`p=~/.ai-kit; echo x > $p/aikit.toml`), `sort -uo` on a protected file and `git -c key=value` next to one.
+- **Kit commands**: `init`, `sync`, `rollback`, `uninstall` and the others are refused wherever their options are written (`ai-kit --home <folder> uninstall`) and through a launcher however it is run (`python3 scripts/launcher.py`, `./scripts/bootstrap.sh`, `cmd /c Installer.cmd`); a launcher of a kit folder with no action installs, and is refused too.
+- **`.env`**: a shell command that writes `AI_KIT_*` or `DBT_TARGET` into a `.env` file is refused, as the write tools already were.
+- **Protected files**: the news the session hook shows (`~/.ai-kit/news/`, `news.json`) and agy's own permissions file join the list.
+- Reading stays allowed: `ls`, `du`, `cat`, `find` without an action, `git -C <folder> status`, `ai-kit status`.
+
 ## 4.1.0 (2026-11-10)
 
 **Breaking for MCP definitions**: a server definition that an earlier version only reported is now refused, and the change stops until its source is fixed.

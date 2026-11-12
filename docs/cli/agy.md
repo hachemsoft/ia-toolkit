@@ -51,8 +51,9 @@ The kit does not set this variable.
 ## Permissions: each person's, never the kit's
 
 agy asks before a shell command or a write and offers to remember the answer in `permissions.allow` of
-`~/.gemini/antigravity-cli/settings.json`. The kit never reads, writes or changes this file (checked by a test). An
-organization that wants a baseline distributes it outside the kit.
+`~/.gemini/antigravity-cli/settings.json`. The kit never reads, writes or changes this file (checked by a test), and
+its `protected-paths` guardrail refuses an agent's write to it: the answers stay yours. An organization that wants a
+baseline distributes it outside the kit.
 
 ## Known limits
 

@@ -36,14 +36,14 @@ Only `protected-paths` and `dbt-prod-guard` are guardrails IT can name.
 
 Always blocks an agent's write to:
 
-- `~/.ai-kit/`: `aikit.toml`, `lock.toml`, `sources/`, `state.json`, `hooks/`, `bin/`, `backups/`, `runtime/`, `schemas/`, and the rule layers `00_`, `10_`, `20_` in `context/`;
-- the CLIs' settings and instruction files the kit manages, and every file the kit installed (skills, commands, agents);
+- `~/.ai-kit/`: `aikit.toml`, `lock.toml`, `sources/`, `state.json`, `hooks/`, `bin/`, `backups/`, `runtime/`, `schemas/`, `news/`, `news.json`, and the rule layers `00_`, `10_`, `20_` in `context/`;
+- the CLIs' settings and instruction files the kit manages, a CLI's own permissions file the kit leaves to you ([agy](cli/agy.md)), and every file the kit installed (skills, commands, agents);
 - Git's own configuration, `~/.gitconfig` and `~/.config/git/config`, and the `.git/config` and `.git/hooks` of the kit folder;
-- in a repository: `.ai-kit/protected-paths` and the CLI settings files that could turn hooks off; a `.env` that sets `AI_KIT_*` or `DBT_TARGET`.
+- in a repository: `.ai-kit/protected-paths` and the CLI settings files that could turn hooks off; a `.env` that sets `AI_KIT_*` or `DBT_TARGET`, written by a write tool or by a shell command.
 
 `USER.md` and `~/.ai-kit/learning/` stay writable.
 
-A shell command that names a protected file is allowed only when every program it runs only reads (`cat`, `grep`, `ls`…); a redirection to it, or a `cd` into a configuration folder, is refused.
+A shell command that names a protected file, or a configuration folder itself (`~/.ai-kit`, `~/.claude`…), is allowed only when every program it runs only reads (`cat`, `grep`, `ls`…): `find ~/.ai-kit -delete` is refused. A redirection to a protected file, a `cd` into a configuration folder, or that folder kept in a variable (`p=~/.ai-kit`), is refused.
 
 **Your repo's own protected paths.** List glob patterns, one per line, `#` for comments, in `<repo>/.ai-kit/protected-paths`:
 
@@ -55,7 +55,7 @@ models/legacy/**
 
 The file is read in the starting folder and each parent up to the repo root. Matching ignores case. These patterns apply to the agent's write tools, not to shell commands.
 
-**Kit commands the agent may not run.** `ai-kit init`, `sync`, `rollback`, `uninstall`, `team use`, `doctor --live`, `friction --publish` (also through `python -m ai_kit` or the launchers). The agent tells you the command to run in a terminal. Reading commands (`status`, `doctor`, `usage`, `friction --list`) stay allowed.
+**Kit commands the agent may not run.** `ai-kit init`, `sync`, `rollback`, `uninstall`, `team use`, `doctor --live`, `friction --publish`, wherever their options are written, also through `python -m ai_kit` or a launcher (`Installer.cmd`, `bootstrap.sh`, `bootstrap.ps1`, `launcher.py`), however it is run. A launcher of a kit folder with no action installs: it is refused too. The agent tells you the command to run in a terminal. Reading commands (`status`, `doctor`, `usage`, `friction --list`) stay allowed.
 
 The refusal reaches the agent as a tool error starting with `Blocked by the kit:`.
 
