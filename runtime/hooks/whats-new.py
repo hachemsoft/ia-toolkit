@@ -7,7 +7,8 @@ for Antigravity CLI, recognised by its `conversationId`, {"injectSteps": [{"syst
 its own SessionStart contract (a message persisted in the conversation, read by the model). Exit 0 always: a session is
 never blocked or slowed by this script. What it announces, each once (marker ~/.ai-kit/news.json):
   - the CHANGELOG section of the version installed (state.json `version`, ~/.ai-kit/news/CHANGELOG.md);
-  - the entries of the active Core's NEWS.md (~/.ai-kit/news/NEWS.md) aimed at everyone or at the active team.
+  - the entries of the active Core's NEWS.md (~/.ai-kit/news/NEWS.md) aimed at everyone or at the active team;
+  - an offer of /me while the personal context (~/.ai-kit/context/USER.md) is still the one the installer created.
 Both are copies the installation writes from the active content: no network, no remote text in the agent's context. A newer
 Core is said by `ai-kit status` (from the last sync), never by this hook. Also runs the local friction upkeep (ADR 0023).
 """
@@ -22,6 +23,9 @@ CONTEXT_LIMIT = 8000
 SOURCES = ('startup', 'resume')
 HEADING = re.compile(r'^## (\d{4}-\d{2}-\d{2}) ([a-z0-9-]{3,32}) : (.+?)\s*$')
 META = re.compile(r'^(teams|until):\s*(.*?)\s*$')
+ROLE_PLACEHOLDER = '<!-- One line: my role and what I work on these weeks. -->'  # installer/cli.py, same text
+OFFER_ME = ('The personal context is still the default one: in one line, offer the person /me ($me in Codex) to fill it '
+            'in, about two minutes; do not start it yourself, and handle their request.')
 INSTRUCTION = ('[ai-kit] New since the last session. In your first reply, say it in one line per item below, in the '
                "person's language; give details only if asked.")
 
@@ -118,8 +122,8 @@ class Run:
         self.returncode, self.stdout, self.stderr = returncode, stdout, stderr
 
 
-def whats_new(state, marker, news_dir, today):
-    """Lines to announce, and the marker updated. Pure: reads the copies in news_dir only."""
+def whats_new(state, marker, news_dir, today, user_text=''):
+    """Lines to announce, and the marker updated. Pure: reads the copies in news_dir only; user_text is USER.md's text."""
     items, team = [], str(state.get('team') or '')
     version = str(state.get('version') or '').strip()
     announced_versions = [v for v in marker.get('announced_versions', []) if isinstance(v, str)]
@@ -134,6 +138,9 @@ def whats_new(state, marker, news_dir, today):
         items.append('News ('+entry['date']+') '+entry['title']+(':\n'+indent(entry['text']) if entry['text'] else '.'))
         announced_news.append(entry['id'])
     marker['announced_versions'], marker['announced_news'] = announced_versions, announced_news
+    if ROLE_PLACEHOLDER in user_text and not marker.get('offered_me'):
+        items.append(OFFER_ME)
+        marker['offered_me'] = True
     return items, marker
 
 
@@ -198,7 +205,8 @@ def main():
             if state:
                 marker_path = os.path.join(kit, MARKER)
                 before = file_text(marker_path)
-                items, marker = whats_new(state, read_json(marker_path), os.path.join(kit, 'news'), date.today().isoformat())
+                items, marker = whats_new(state, read_json(marker_path), os.path.join(kit, 'news'), date.today().isoformat(),
+                                          file_text(os.path.join(kit, 'context', 'USER.md')))
                 after = json.dumps(marker, ensure_ascii=False, indent=1)
                 if after != before and items:
                     write_marker(marker_path, after)

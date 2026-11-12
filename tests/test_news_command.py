@@ -54,10 +54,13 @@ class NewsInstallTests(unittest.TestCase):
         version = json.loads((self.home/'.ai-kit/state.json').read_text(encoding='utf-8'))['version']
         (self.home/'.ai-kit/news.json').write_text(json.dumps({'announced_versions': [version]}), encoding='utf-8')
         code, out = self.run_kit('doctor')
+        self.assertIn('[Info] Session start: 1 item(s) to announce', out)  # the /me offer: USER.md is the installer's
+        (self.home/'.ai-kit/news.json').write_text(json.dumps({'announced_versions': [version], 'offered_me': True}), encoding='utf-8')
+        code, out = self.run_kit('doctor')
         self.assertIn('[Info] Session start: nothing new to announce', out)
         (news/'NEWS.md').write_text('# News\n\n## 2026-11-02 hello : Hello\n\nText.\n\n## 2026-11-02 analysts : Not us\nteams: analysts\n\nText.\n', encoding='utf-8')
         code, out = self.run_kit('doctor')
-        self.assertIn('[Info] Session start: 1 item(s) to announce', out)
+        self.assertIn('[Info] Session start: 1 item(s) to announce', out)  # the news entry for everyone
         if installed is None:
             (news/'NEWS.md').unlink()
         else:

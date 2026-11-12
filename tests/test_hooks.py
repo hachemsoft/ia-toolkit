@@ -273,6 +273,17 @@ class SessionNewsTests(unittest.TestCase):
   self.assertEqual(items,[]);self.assertEqual(marker['announced_versions'],['0.47.0'])
   items,marker=h.whats_new({'version':'0.47.0','team':''},{},str(self.kit),'2026-11-09')
   self.assertEqual(len(items),1);self.assertIn('News at session start.',items[0]);self.assertFalse((self.home/'.ai-kit/news.json').exists())  # writes nothing
+ def test_me_offered_once_while_user_context_is_the_kit_one(self):
+  # The installer asks nothing: the first session after it offers /me, once, while USER.md is still the one it created.
+  self.marker(announced_versions=['0.47.0']);ctx=self.home/'.ai-kit/context';ctx.mkdir(parents=True)
+  self.assertEqual(self.hook(),{})  # no USER.md: nothing to offer
+  (ctx/'USER.md').write_text('# My context\n\n## Me\n- Data engineer, migrating the billing pipeline.\n',encoding='utf-8')
+  self.assertEqual(self.hook(),{})  # filled by the person
+  (ctx/'USER.md').write_text('# My context\n\n## Me\n<!-- One line: my role and what I work on these weeks. -->\n',encoding='utf-8')
+  c=self.context(self.hook());self.assertIn('/me',c);self.assertIn('$me',c)
+  self.assertTrue(self.marker()['offered_me']);self.assertEqual(self.hook(),{})  # once
+ def test_role_placeholder_is_the_installer_one(self):
+  from installer.cli import ROLE_PLACEHOLDER;self.assertEqual(self.module().ROLE_PLACEHOLDER,ROLE_PLACEHOLDER)
  def test_context_is_capped(self):
   (self.kit/'CHANGELOG.md').write_text('# Changelog\n\n## 0.47.0\n\n'+('- a very long line of changes\n'*2000),encoding='utf-8')
   self.assertLessEqual(len(self.context(self.hook())),8000)

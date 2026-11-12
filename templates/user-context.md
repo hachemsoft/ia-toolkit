@@ -12,11 +12,12 @@ This file is mine: the kit never rewrites it. `/me` in the CLI ($me in Codex) in
 - C4 diagrams in Mermaid: not an expert but passionate; go deeper and propose one when it helps. -->
 
 ## Answers
-{answers}
+- Reply in the language I write in.
+- Short answer first, five lines at most; details when I ask.
 - When my idea is risky or wrong, say so plainly with the evidence before acting. My preferences are about form, never about conclusions.
 
 ## Working with me
-{working}
+- When the request is clear, do it and tell me what you did; ask before anything irreversible.
 
 ## By situation
 <!-- Only where I want another tone. Example: - Reviews: simpler and more teaching, one finding at a time. -->

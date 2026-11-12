@@ -36,7 +36,7 @@ On macOS, `sh scripts/bootstrap.sh` reads the script instead of opening it as an
 
 1. Open a terminal in your repository and start your CLI.
 2. Type `/guide where do I start?` (`$guide` in the CLI that uses `$` for skills; see [CLI pages](cli/matrice.md)).
-3. Tell the agent about you: `ai-kit user edit` opens `~/.ai-kit/context/USER.md` in your text editor, or type `/me` in the CLI. Start a new session afterwards.
+3. Tell the agent about you: `ai-kit user edit` opens `~/.ai-kit/context/USER.md` in your text editor, or type `/me` in the CLI (the first session offers it while the file is still the default one). Start a new session afterwards.
 4. Check the installation: `ai-kit doctor` (local checks, no model call). `ai-kit doctor --live` makes one real call to the model, which your provider may bill.
 
 ## 3. Work one command per step

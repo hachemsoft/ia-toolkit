@@ -320,7 +320,9 @@ def news_checks(home, state, status):
     hook = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(hook)
     marker = read_json(home/'.ai-kit'/'news.json')
-    items, _ = hook.whats_new(state, marker, str(home/'.ai-kit'/'news'), __import__('datetime').date.today().isoformat())
+    user = home/'.ai-kit'/'context'/'USER.md'
+    items, _ = hook.whats_new(state, marker, str(home/'.ai-kit'/'news'), __import__('datetime').date.today().isoformat(),
+                              user.read_text(encoding='utf-8') if user.is_file() else '')
     print('[Info] Session start: '+(str(len(items))+' item(s) to announce' if items else 'nothing new to announce'))
 
 
