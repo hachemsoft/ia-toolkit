@@ -216,7 +216,8 @@ def activation(home, action, dry_run=False, confirm=None, managed_file=None, gua
         try:
             if action == 'sync':
                 if not core_url and not team:
-                    raise KitError('No Core source: set [core] repo = "<URL>" in ~/.ai-kit/aikit.toml, or IT sets enterprise.core in managed.toml.')
+                    raise KitError('No Core source: set [core] repo = "<URL>" in ~/.ai-kit/aikit.toml, or IT sets enterprise.core in managed.toml. '
+                                   'Without one, the content is the one of the kit folder: ai-kit init installs it, ai-kit sync --offline re-applies it.')
                 if core_url:
                     url = check_origin(core_url, settings)
                     if not (core and core.get('url') == url) and not anchored:

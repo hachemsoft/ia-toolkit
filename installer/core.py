@@ -168,6 +168,14 @@ def split_block(text, markers, label):
     start, end = markers
     if start not in text and end not in text:
         return text, None, ''
+    if start not in text and text.count(end) == 1:
+        # Same end marker, a start marker with other words: a whole block, written by another version of the kit.
+        family = start.split(' : ')[0]
+        lines = text.split('\n')
+        starts = [i for i, line in enumerate(lines) if line.startswith(family)]
+        if len(starts) == 1 and starts[0] < next(i for i, line in enumerate(lines) if end in line):
+            raise KitError('Kit block of another version of the kit in '+label+': remove it entirely, from its "'+family+'" line to its "'+end
+                           +'" line, then run the command again.')
     if text.count(start) != 1 or text.count(end) != 1 or text.index(start) > text.index(end):
         raise KitError('Kit markers damaged in '+label+': put the block back between the two ai-kit markers or remove it entirely, then ai-kit sync --offline.')
     before, rest = text.split(start, 1)

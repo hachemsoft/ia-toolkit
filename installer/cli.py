@@ -329,8 +329,18 @@ def resolve_identity(args, home, state):
         if not EMAIL.fullmatch(args.user):
             raise KitError('--user expects an email.')
         return {'email': args.user, 'source': 'option'}
+    recorded = (state.get('user') or {}).get('email')
     if args.action != 'init' and state.get('user'):  # sync, team, rollback keep the recorded identity: asked once
         return None
+    if recorded:  # init again: the identity already given is the one proposed, not a new detection
+        if not interactive():
+            return None
+        answer = input('Recorded identity: '+recorded+'. Press Enter to keep it, or type your email: ').strip()
+        if not answer:
+            return None
+        if not EMAIL.fullmatch(answer):
+            raise KitError('Invalid email.')
+        return {'email': answer, 'source': 'input'}
     detected = detect_identity(home)
     shown = detected.get('email') or detected.get('name')
     if not interactive():

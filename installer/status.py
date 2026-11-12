@@ -18,6 +18,9 @@ def status(home, verbose=False):
         print('A newer version was seen at the last sync: '+', '.join(newer)+'. Run ai-kit sync to install it.')
     if state:
         print('CLIs: '+', '.join(state.get('targets') or []))
+        missing = [a.LABEL for a in ADAPTERS if a.NAME not in (state.get('targets') or []) and a.present(home)]
+        if missing:  # a CLI installed after the kit: init keeps the recorded choice, so it is said here
+            print('[Info] On this machine but not configured by the kit: '+', '.join(missing)+'. ai-kit init --target auto configures the CLIs present.')
     try:
         managed = load_managed()
         print(summary(managed) if managed is not None else 'Not administered (no managed.toml).')

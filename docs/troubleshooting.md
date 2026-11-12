@@ -11,7 +11,7 @@ ai-kit doctor --live   # also one real call to the model (may be billed); --yes 
 
 `doctor` prints a summary (what is ready, what to fix, the next step), then one line per check: `[OK]`, `[Check]` (to act on) or `[Info]`. It covers Python, `managed.toml`, the private environment and the `ai-kit` command, Git, the installation and `lock.toml`, where each setting comes from, each CLI's capabilities, the friction tracker, your identity, `USER.md` and `aikit.toml`, every installed file, the guardrails, versions, MCP servers, and skills of the current repo named like kit skills. `--live` names a sign-in, quota, network, proxy or certificate failure and what to ask IT. `AI_KIT_NO_LIVE=1` refuses it.
 
-`ai-kit status` is the short view: the AI Kit version, the active Core and Team (tag, commit), what `rollback` returns to, a newer tag seen at the last sync, the CLIs, whether IT administers the workstation, frictions waiting. `--verbose` adds where each setting comes from, the installed resources, MCP identities and CLI capabilities. No network; the only write is the friction upkeep ([frictions](frictions.md)).
+`ai-kit status` is the short view: the AI Kit version, the active Core and Team (tag, commit), what `rollback` returns to, a newer tag seen at the last sync, the CLIs (and one present on the machine that the kit does not configure), whether IT administers the workstation, frictions waiting. `--verbose` adds where each setting comes from, the installed resources, MCP identities and CLI capabilities. No network; the only write is the friction upkeep ([frictions](frictions.md)).
 
 ## Exit codes
 
@@ -35,7 +35,8 @@ The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) add: 2 when Python or th
 | `Another ai-kit command is changing files (…). Wait for it to finish, then run again.` | wait; a lock from a dead process is taken over |
 | `Kit not installed: run ai-kit init.` | run `ai-kit init` |
 | `This AI Kit holds no content and no Core is installed: …` | run the installer from the kit folder, or `ai-kit sync --from-bundle <core bundle>` |
-| `No Core source: set [core] repo = "<URL>" in ~/.ai-kit/aikit.toml, or IT sets enterprise.core in managed.toml.` | set `[core] repo`, or ask IT |
+| `No Core source: set [core] repo = "<URL>" in ~/.ai-kit/aikit.toml, or IT sets enterprise.core in managed.toml. …` | set `[core] repo`, or ask IT; without a Core repository, `ai-kit init` installs the kit folder's content and `ai-kit sync --offline` re-applies it |
+| `Kit block of another version of the kit in <file>: remove it entirely, …` | remove the whole block from the file, from its start marker line to its end marker line, then run the command again |
 | `First use of <URL> needs your confirmation in a terminal: run ai-kit sync there.` | run `ai-kit sync` in a terminal and check the URL, tag and commit shown |
 | `git was not found: install Git (IT can provide it), then run the command again.` | ask IT for Git 2.29 or newer |
 | `git ls-remote failed (auth): …` (or `network`, `not-found`) | sign in to the Git host with your usual credential helper, check the network or the URL |

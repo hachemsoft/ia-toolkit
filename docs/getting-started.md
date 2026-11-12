@@ -23,8 +23,8 @@ On macOS, `sh scripts/bootstrap.sh` reads the script instead of opening it as an
 
 | Step | What happens |
 | --- | --- |
-| Identity | at a terminal: "Detected identity: … Press Enter to confirm, or type your email". Without a terminal, use `--user <email>`. The identity is declarative: it grants no rights. |
-| CLIs | the ones recorded by a previous run, else the ones present on the machine. Choose with `--target` (`auto`, `gemini`, `agy`, `codex`, `claude`, `both`, `all`). |
+| Identity | at a terminal: "Detected identity: … Press Enter to confirm, or type your email". Without a terminal, use `--user <email>`. A later `init` proposes the identity already recorded. The identity is declarative: it grants no rights. |
+| CLIs | the ones recorded by a previous run, else the ones present on the machine. Choose with `--target` (`auto`, `gemini`, `agy`, `codex`, `claude`, `both`, `all`). A CLI installed later: `ai-kit status` names it, `ai-kit init --target auto` configures the CLIs present. |
 | Content | a first install from the ZIP activates the Core it ships (`core/ai-kit-core.bundle`), offline. With a Core repository set (`[core] repo`, or IT's `enterprise.core`), `init` syncs it. From a clone without one, the clone's own content is installed. |
 | First use of a Core you set yourself | the URL, tag and commit are shown, and you confirm in a terminal. |
 | Files | skills, commands and agents for each CLI; the context layers and your `USER.md` in `~/.ai-kit/context`; guardrail scripts in `~/.ai-kit/hooks`; your `~/.ai-kit/aikit.toml`, created once. |

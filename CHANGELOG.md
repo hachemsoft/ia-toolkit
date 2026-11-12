@@ -1,8 +1,18 @@
 # Changelog
 
+## 4.1.2 (2026-11-12)
+
+Installing and updating say what to do next, and the first session offers `/me`. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`/me`**: the first session offers `/me`, once, while `USER.md` is still the one the installation created; the agent never starts it on its own. The installer's unused quick questions are removed and the default `USER.md` carries its plain defaults.
+- **Identity**: `ai-kit init` run again proposes the identity already recorded (`Recorded identity: … Press Enter to keep it, or type your email`) instead of detecting one again; without a terminal it keeps it.
+- **A CLI installed after the kit**: `ai-kit status` names a CLI present on the machine that the kit does not configure, with the command that adds it (`ai-kit init --target auto`).
+- **A block of another version**: a kit block whose start marker carries other words is named as such, with what to remove, instead of `Kit markers damaged`.
+- **No Core source**: the message of `ai-kit sync` says what works without a Core repository (`ai-kit init`, `ai-kit sync --offline`).
+
 ## 4.1.1 (2026-11-12)
 
-The `protected-paths` guardrail refuses plain forms it let through. Run `ai-kit sync` to install it.
+The `protected-paths` guardrail refuses plain forms it let through. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
 
 - **Configuration folders**: a command aimed at the folder itself is allowed only when every program only reads, so `find ~/.ai-kit -delete` and `find … -exec rm` are refused; so is the folder kept in a variable (`p=~/.ai-kit; echo x > $p/aikit.toml`), `sort -uo` on a protected file and `git -c key=value` next to one.
 - **Kit commands**: `init`, `sync`, `rollback`, `uninstall` and the others are refused wherever their options are written (`ai-kit --home <folder> uninstall`) and through a launcher however it is run (`python3 scripts/launcher.py`, `./scripts/bootstrap.sh`, `cmd /c Installer.cmd`); a launcher of a kit folder with no action installs, and is refused too.
