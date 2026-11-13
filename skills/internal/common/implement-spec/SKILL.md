@@ -4,7 +4,7 @@ description: "Implement the result of /to-spec and /to-tickets in code."
 disable-model-invocation: true
 metadata:
   aikit-default: "false"
-  aikit-version: "1.0.0"
+  aikit-version: "1.1.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Implement a whole spec: tickets read as a graph, sub-agents in parallel, integration branch."
@@ -36,7 +36,7 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 3. Create the integration branch. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR after the first merge in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets.
 
-4. Use **implementer subagents** to implement each ticket, each in its own worktree on its own branch. Each implementer subagent:
+4. Use **implementer subagents** to implement each ticket, each in its own worktree on its own branch. Create the worktree yourself before starting the subagent and give it the absolute path. When a worktree cannot be created (the CLI's sandbox refuses `git worktree add`), run one implementer subagent at a time, on its own branch in the current folder. Each implementer subagent:
    - confirms its worktree is based on the integration branch before starting, and resets onto it if not;
    - calls the Skill tool with `tdd` to build the ticket;
    - merges the integration branch tip into its own branch before reporting done
@@ -49,4 +49,4 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 8. If a draft PR exists, mark it ready for review. Otherwise, resolve each ticket the way the issue tracker closes work, and report the integration branch.
 
-9. Clean up all **implementer subagent** worktrees.
+9. Clean up all **implementer subagent** worktrees with `git worktree remove`, never with `--force`: a worktree git refuses to remove still holds work.

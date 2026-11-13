@@ -56,6 +56,7 @@ Then `/guide I need to …` in a repository. `doctor --live` makes one real call
 
 ## Specifics
 
+- **Parallel agents**: with the `parallel` setting, a sub-agent that writes works in a worktree the main agent creates. Claude Code can also isolate a sub-agent itself (`isolation: worktree` in an agent's definition; the kit's agents only read and do not use it), and a whole session with `claude --worktree` ([parallel agents](../parallel-agents.md)).
 - `protected-paths` also blocks agent writes to `~/.claude/settings.json`, `~/.claude/CLAUDE.md`,
   `~/.claude/agents/ai-kit-*` and `~/.claude.json`: you make such changes, then run `ai-kit sync --offline`.
 - `usage` reads `~/.claude/projects/` (prompts, skills called with the prefix removed, `ai-kit-*` agents, API errors); the

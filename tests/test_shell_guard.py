@@ -57,12 +57,14 @@ class GitGuardTests(Folder):
                'git push origin --delete main', 'git push origin :main', 'git push --force --all',
                'sh -c "git push -f origin main"', 'bash -lc git reset --hard', 'sudo git reset --hard', 'git -C repo reset --hard',
                'git status\ngit reset --hard', 'git status; git clean -fd', 'echo $(git reset --hard)', 'true | xargs git clean -f',
-               'GIT_DIR=x git reset --hard', '/usr/bin/git reset --hard', 'git.exe reset --hard', 'eval "git reset --hard"')
+               'GIT_DIR=x git reset --hard', '/usr/bin/git reset --hard', 'git.exe reset --hard', 'eval "git reset --hard"',
+               'git worktree remove --force .worktrees/t1', 'git worktree remove -f ../wt', 'git -C repo worktree remove .worktrees/t1 --force')
     ALLOWED = ('git status', 'git diff', 'git log --grep="reset --hard"', 'echo "git clean -fd" >> notes.md', 'grep -r "push --force" docs/',
                'git reset HEAD~1', 'git reset --soft HEAD~1', 'git clean -n', 'git clean -nfd', 'git clean --dry-run -f', 'git checkout main',
                'git checkout -b feature', 'git checkout -- src/a.py', 'git restore src/a.py', 'git restore --staged .', 'git branch -d merged',
                'git push', 'git push origin feature', 'git push --force-with-lease origin feature', 'git push --force origin feature',
-               'git commit -m "explain git reset --hard"', 'cat <<EOF > notes.md\ngit reset --hard\nEOF', 'git stash', 'git push -u origin feature')
+               'git commit -m "explain git reset --hard"', 'cat <<EOF > notes.md\ngit reset --hard\nEOF', 'git stash', 'git push -u origin feature',
+               'git worktree add -b t1 .worktrees/t1', 'git worktree remove .worktrees/t1', 'git worktree list', 'git worktree prune')
 
     def test_refused(self):
         for command in self.REFUSED:

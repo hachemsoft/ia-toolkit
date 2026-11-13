@@ -36,6 +36,19 @@ def command_lines(commands):
 FRICTION_SIGNALS = 'the person corrects or undoes what you just did; a check is red after "done"; they give up or ask the same thing again; you work around a skill or a guardrail; the ceremony was out of proportion; you went against a rule written in AGENTS.md, the kit context or a playbook (category rule).'
 
 
+PARALLEL_RULE = ('## Parallel agents\n'
+                 'When a task splits into two or more independent parts, each worth an agent of its own, give them to sub-agents at the same time instead of one after the other; otherwise work alone.\n'
+                 '- A sub-agent that only reads works in place.\n'
+                 '- A sub-agent that writes files works in its own git worktree, on its own branch: create it before you start the sub-agent, give it the absolute path, say so to the person and get their agreement once for the commits on these branches.\n'
+                 '- When it is done, bring its work back, then remove the worktree, never with `--force`.\n'
+                 '- When a worktree cannot be created (not a git repository, or the sandbox refuses), only one sub-agent writes at a time.\n\n')
+
+
+def parallel_rule(on):
+    """The Parallel agents section of 00_KIT.md, when aikit.toml or the Team turns it on (agents.parallel, off by default)."""
+    return PARALLEL_RULE if on else ''
+
+
 def friction_rule(mode):
     """The Frictions section of 00_KIT.md from aikit.toml (frictions: propose by default, auto, off)."""
     if mode == 'off':
@@ -168,7 +181,7 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
     # --- Neutral plan: what to install, with nothing specific to a CLI. ---
     context_names = managed_context_names(selection)
     commands = selected_commands(selected, manifest, allowed)
-    kit_text = (content_root()/'templates/kit-context.md').read_text(encoding='utf-8').format(commands=command_lines(commands), playbooks=playbook_lines(selected, catalog), frictions=friction_rule(overrides.get('frictions', 'propose')))
+    kit_text = (content_root()/'templates/kit-context.md').read_text(encoding='utf-8').format(commands=command_lines(commands), playbooks=playbook_lines(selected, catalog), frictions=parallel_rule(overrides.get('parallel_agents', False))+friction_rule(overrides.get('frictions', 'propose')))
     practice_names, practice_texts = practice_layers(selection)
     practices = '\n'.join(practice_texts)
     sources = skill_sources(selected, catalog)

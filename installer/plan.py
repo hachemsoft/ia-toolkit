@@ -23,6 +23,8 @@ def effective_settings(kit, team, choices):
     overrides = merge_settings(merge_settings(org_defaults, team_layer), personal)
     if overrides.get('frictions', 'propose') not in ('propose', 'auto', 'off'):
         raise KitError('frictions must be propose (default), auto or off.')
+    if not isinstance(overrides.get('parallel_agents', False), bool):
+        raise KitError('parallel_agents must be true or false.')
     for key in LIST_KEYS:
         if not isinstance(overrides.get(key,[]),list) or not all(isinstance(x,str) for x in overrides.get(key,[])):
             raise KitError(key+' must be a list of names.')

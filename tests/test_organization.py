@@ -116,7 +116,8 @@ class OrganizationTests(unittest.TestCase):
         read = set(re.findall(r"(?:overrides|personal)(?:\.get\(|\[)'([a-z_]+)'", code))
         lists = ('extra_skills', 'disabled_skills', 'extra_commands', 'disabled_commands', 'extra_agents', 'disabled_agents')
         full = {'schema': 1, 'user': {**{k: ['x'] for k in lists}, 'skill_prefix': 'ai-kit-'}, 'hooks': {'dbt-prod-guard': True},
-                'mcp': {'enabled': ['docs']}, 'frictions': {'capture': 'off', 'publication': 'disabled'}}
+                'mcp': {'enabled': ['docs']}, 'frictions': {'capture': 'off', 'publication': 'disabled'},
+                'agents': {'parallel': True}}
         self.assertEqual(read, set(to_overrides(full)))
         self.assertEqual(cli.unknown_keys(to_overrides(full)), [])
 

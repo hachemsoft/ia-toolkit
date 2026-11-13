@@ -67,6 +67,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "parallel_agents": {
+          "type": "boolean",
+          "description": "true turns the Parallel agents rule on for the Team's members; a person can turn it off (docs/parallel-agents.md)."
         }
       }
     }

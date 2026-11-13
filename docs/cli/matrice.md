@@ -31,6 +31,7 @@ with `--version` and `--help` only, that the latest CLIs still offer what the ki
 | Override a command in a repository | `.gemini/commands/<name>.toml` | not reliable: use another name | not reliable: use another name | `.claude/commands/<name>.md` (not verified) |
 | Agents | `~/.gemini/agents/ai-kit-<name>.md` | plugin `agents/` | `[agents.ai-kit-<name>]` in the managed block of `config.toml` | `~/.claude/agents/ai-kit-<name>.md` |
 | Agent turn and time limits | `max_turns`, `timeout_mins` in the header | the same | the CLI's own | the CLI's own |
+| Sub-agents that write at the same time, with the `parallel` setting ([parallel agents](../parallel-agents.md)) | each in a worktree the main agent creates | the same | one at a time: the sandbox refuses `git worktree add` | each in a worktree; also native (`isolation: worktree`) |
 | Agent tool list (`AGENT_TOOLS`) | native | native, with agy's tool names | instruction only; the session's sandbox applies | native (`Read`, `Grep`, `Glob`, `Bash`) |
 | Guardrails | `ai-kit-*` groups under `hooks.BeforeTool` | plugin `hooks.json` (`PreToolUse`) | `[[hooks.PreToolUse]]` in the block, to approve ("Trust") | groups under `hooks.PreToolUse` of `settings.json` |
 | `whats-new` hook | group under `hooks.SessionStart` | plugin `hooks.json` (`SessionStart`, `injectSteps`) | `[[hooks.SessionStart]]`, to approve | group under `hooks.SessionStart` |

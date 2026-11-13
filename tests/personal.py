@@ -1,5 +1,5 @@
 """Test helper: the person's settings written as ~/.ai-kit/aikit.toml (AI Kit 3), from a dict in the engine's vocabulary
-(extra_skills, disabled_*, skill_prefix, hooks, mcp {name: true/false}, frictions, share_frictions)."""
+(extra_skills, disabled_*, skill_prefix, hooks, mcp {name: true/false}, frictions, share_frictions, parallel_agents)."""
 from pathlib import Path
 
 from installer.toml_files import dump_toml
@@ -28,7 +28,9 @@ def aikit_data(settings):
         frictions['publication'] = 'disabled'
     if frictions:
         data['frictions'] = frictions
-    unknown = set(settings) - set(LISTS) - {'skill_prefix', 'hooks', 'mcp', 'frictions', 'share_frictions'}
+    if 'parallel_agents' in settings:
+        data['agents'] = {'parallel': settings['parallel_agents']}
+    unknown = set(settings) - set(LISTS) - {'skill_prefix', 'hooks', 'mcp', 'frictions', 'share_frictions', 'parallel_agents'}
     if unknown:
         raise ValueError('not an AI Kit 3 setting: '+', '.join(sorted(unknown)))
     return data

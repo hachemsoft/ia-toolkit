@@ -34,6 +34,7 @@ ignores `AI_KIT_ALLOW_PROD` when it is set in `~/.gemini/.env` or a repo `.env`,
 
 ## Specifics
 
+- **Parallel agents**: with the `parallel` setting, a sub-agent that writes works in a worktree the main agent creates; Gemini CLI has no worktree option for a sub-agent. A whole session starts in a worktree with `gemini --worktree`, experimental (`"experimental": {"worktrees": true}` in its settings) ([parallel agents](../parallel-agents.md)).
 - Gemini CLI turns every skill of `~/.gemini/skills/` into a `/<skill>` command, and renames both when two share a name: no
   kit skill shares a command's name, and agy's command skills live in its plugin, where Gemini does not look.
 - **`~/.agents/skills`**: Gemini reads it too, and it wins over `~/.gemini/skills` on equal names ("Skill conflict

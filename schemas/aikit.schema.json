@@ -119,6 +119,15 @@
         }
       }
     },
+    "agents": {
+      "type": "object",
+      "properties": {
+        "parallel": {
+          "type": "boolean",
+          "description": "true adds the Parallel agents rule to the kit context: parts of a task given to sub-agents at the same time, the ones that write each in a git worktree (docs/parallel-agents.md). Default false."
+        }
+      }
+    },
     "core": {
       "type": "object",
       "properties": {

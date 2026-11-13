@@ -43,6 +43,7 @@ command changes.
 
 ## Specifics
 
+- **Parallel agents**: Codex's sandbox does not let the agent write to `.git`, so it cannot create a worktree for a sub-agent: with the `parallel` setting, sub-agents that read run together and one writes at a time. To isolate a whole session, start it with `codex --worktree`; its sub-agents share that worktree ([parallel agents](../parallel-agents.md)).
 - **`~/.codex/AGENTS.override.md`**: when it exists, Codex reads it instead of `AGENTS.md` and the kit context is ignored;
   `doctor` reports it.
 - **Logs read by `usage`**: `~/.codex/history.jsonl` and `~/.codex/sessions/**/rollout-*.jsonl` (skill files read,

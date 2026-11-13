@@ -268,7 +268,7 @@ def merge_settings(base, extra):
 
 def unknown_keys(settings):
     """Keys of a settings layer (the person's aikit.toml translated, a Team's [defaults]) the engine does not know."""
-    known = set(CHOICE_KEYS) | {'hooks', 'mcp', 'skill_prefix', 'frictions', 'share_frictions'}
+    known = set(CHOICE_KEYS) | {'hooks', 'mcp', 'skill_prefix', 'frictions', 'share_frictions', 'parallel_agents'}
     return sorted(k for k in settings if not str(k).startswith(('_', '$')) and k not in known)
 
 

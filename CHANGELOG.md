@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.5.0 (2026-11-13)
+
+A setting to work with several agents at once, off by default. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`[agents] parallel = true`** in `aikit.toml` adds a short rule to the kit context: independent parts of a task go to sub-agents at the same time; one that only reads works in place; one that writes works in its own git worktree and branch, brought back and removed afterwards; when a worktree cannot be created, one sub-agent writes at a time. A Team turns it on for its members with `parallel_agents = true` under `[defaults]`. Nothing changes for who does not turn it on.
+- **Per CLI**: the new page [parallel agents](docs/parallel-agents.md) says what each CLI does with the rule, from one real run each: worktrees for writers in Gemini CLI, agy and Claude Code; one writer at a time in Codex, whose sandbox refuses `git worktree add`, and `codex --worktree` for a whole session.
+- **`git-guard`** refuses `git worktree remove --force`, which deletes a worktree with the changes not committed in it.
+- **`implement-spec`** (1.1.0) follows the same rule: one implementer at a time when a worktree cannot be created, and no forced removal.
+
 ## 4.4.0 (2026-11-13)
 
 `/build` asks for test-first where you look at the test. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

@@ -82,6 +82,7 @@ Blocks the git commands that lose work with no way back:
 | `git checkout .`, `git checkout -- .`, `git checkout -f` | `git checkout <branch>`, `git checkout -- <file>` |
 | `git restore .` | `git restore <file>`, `git restore --staged .` |
 | `git branch -D`, `git branch --delete --force` | `git branch -d` |
+| `git worktree remove --force` (`-f`) | `git worktree remove` (git itself refuses a worktree that is not clean) |
 | a forced push, or a branch deletion, on `main` or `master` (`--force`, `-f`, `+main`, `--force-with-lease`, `--delete`, `:main`) | `git push`, a forced push that names another branch |
 
 Add main branches with `AI_KIT_PROTECTED_BRANCHES` (comma-separated, for example `develop,release`). A forced push that names no branch reads the branch checked out (`.git/HEAD`); when it cannot be read, a plain `--force` is refused and `--force-with-lease` passes. There is no permission variable: the refusal tells the agent to let you run the command. The branch protection of your Git host stays the real barrier.

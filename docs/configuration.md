@@ -38,6 +38,7 @@ The Core's choices are not a file you write: its default selection is the `aikit
 | `[mcp] enabled`, `denied` | list of server names | turns a Core or Team server on, or off ([MCP](mcp.md)) |
 | `[frictions] capture` | `propose`, `auto`, `off` | how the agent logs frictions ([frictions](frictions.md)) |
 | `[frictions] publication` | `approval`, `disabled` | `disabled` keeps your frictions local |
+| `[agents] parallel` | `true`, `false` (default) | `true` adds the rule that gives independent parts of a task to sub-agents at the same time ([parallel agents](parallel-agents.md)) |
 | `[core] repo` | Git URL | your Core repository (IT's `enterprise.core` wins) |
 | `[git] allow_prerelease` | `true` or `false` | also follow `vX.Y.Z-rc.N` tags, unless IT decides |
 | `[teams.<name>] repo` | Git URL | a known Team; written by `team use --url` |
@@ -67,6 +68,7 @@ Never write a secret here: `doctor` flags one. Write `${VARIABLE}` and define th
 | `kind` | `"team"` |
 | `min_engine` | optional `X.Y.Z`: an older AI Kit refuses the content |
 | `[defaults] extra_skills`, `extra_agents`, `extra_commands`, `disabled_skills`, `disabled_agents`, `disabled_commands` | lists of names |
+| `[defaults] parallel_agents` | `true` turns [parallel agents](parallel-agents.md) on for the Team's members; a person turns it off with `[agents] parallel = false` |
 
 ## `managed.toml` (IT)
 

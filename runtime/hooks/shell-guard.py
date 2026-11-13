@@ -12,7 +12,7 @@ which the agent could write). A target only known at run time ($VAR, $(…)) is 
 Targets treated as production: prod, production, prd, or the AI_KIT_PROD_TARGETS list (comma-separated).
 
 git-guard: blocks the git commands that discard work for good (reset --hard, clean -f, checkout or restore of the whole
-tree, branch -D) and a forced push to a main branch (main, master, or the AI_KIT_PROTECTED_BRANCHES list).
+tree, branch -D, worktree remove --force) and a forced push to a main branch (main, master, or the AI_KIT_PROTECTED_BRANCHES list).
 bq-cost-guard: blocks `bq query` without --dry_run and without --maximum_bytes_billed.
 infra-prod-guard: blocks terraform apply/destroy and the kubectl commands that change a cluster, when the workspace,
 folder, variable file, context or namespace names production. Same one-off permission as dbt-prod-guard.
@@ -295,6 +295,8 @@ def git_guard(raw, payload):
                 return refusal(payload, '`git restore` of the whole working tree discards the changes that are not committed, for good.' + RUN_IT_YOURSELF)
         if verb == 'branch' and (short_flag(rest, 'D') or (('--delete' in rest or short_flag(rest, 'd')) and ('--force' in rest or short_flag(rest, 'f')))):
             return refusal(payload, '`git branch -D` deletes a branch even when its commits are merged nowhere.' + RUN_IT_YOURSELF)
+        if verb == 'worktree' and rest[:1] == ['remove'] and (short_flag(rest, 'f') or '--force' in rest):
+            return refusal(payload, '`git worktree remove --force` deletes a worktree with the changes that are not committed in it, for good. Without --force, git removes it only when it is clean.' + RUN_IT_YOURSELF)
         if verb == 'push':
             refspecs = [a for a in rest if not a.startswith('-')][1:]  # after the remote
             targets = [r.lstrip('+').rsplit(':', 1)[-1].replace('refs/heads/', '') for r in refspecs]

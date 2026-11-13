@@ -57,6 +57,7 @@ baseline distributes it outside the kit.
 
 ## Known limits
 
+- **Parallel agents**: with the `parallel` setting, a sub-agent that writes works in a worktree the main agent creates; agy has no worktree option of its own. In `agy -p` the main agent can return before its sub-agent has finished: the answer does not say the work is done ([parallel agents](../parallel-agents.md)).
 - **Print mode**: agy drops the whole answer when a tool asks for a permission it cannot request, so commands that read
   the repo fail in `agy -p` until the person has approved read rules. Interactive mode works.
 - **Write tool**: `protected-paths` recognises tools whose name contains `write`, `replace` or `edit` and looks for the

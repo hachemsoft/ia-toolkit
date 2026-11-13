@@ -308,7 +308,7 @@ AIKIT_FILE = 'aikit.toml'
 AIKIT_SCHEMAS = {1}
 USER_LISTS = ('extra_skills', 'disabled_skills', 'extra_commands', 'disabled_commands', 'extra_agents', 'disabled_agents')
 AIKIT_SECTIONS = {'user': USER_LISTS + ('skill_prefix', 'active_team'), 'hooks': None, 'mcp': ('denied', 'enabled'), 'frictions': ('capture', 'publication'),
-                  'core': ('repo',), 'git': ('allow_prerelease',), 'teams': None}
+                  'agents': ('parallel',), 'core': ('repo',), 'git': ('allow_prerelease',), 'teams': None}
 PERSONAL_PUBLICATION = ('approval', 'disabled')  # the person can only restrict (auto is set by IT or the organization)
 
 
@@ -343,6 +343,8 @@ def load_aikit(path):
                 raise KitError(where+': '+name+' must be a text.')
             if key == 'capture' and value not in FRICTION_CAPTURE:
                 raise KitError(where+': '+name+' must be '+', '.join(FRICTION_CAPTURE)+'.')
+            if (section, key) == ('agents', 'parallel') and not isinstance(value, bool):
+                raise KitError(where+': agents.parallel must be true or false.')
             if (section, key) == ('core', 'repo') and (not isinstance(value, str) or not value):
                 raise KitError(where+': core.repo must be the URL of the Core repository.')
             if (section, key) == ('git', 'allow_prerelease') and not isinstance(value, bool):
@@ -367,6 +369,8 @@ def to_overrides(data):
         out['frictions'] = frictions['capture']
     if frictions.get('publication') == 'disabled':
         out['share_frictions'] = False
+    if 'parallel' in data.get('agents', {}):
+        out['parallel_agents'] = data['agents']['parallel']
     return out
 
 

@@ -16,6 +16,9 @@
 # enabled = ["docs"]                   # a server of the Core or your Team, turned on
 # denied = ["legacy-db"]               # turned off
 #
+# [agents]
+# parallel = true                      # sub-agents at the same time when a task splits (docs/parallel-agents.md)
+#
 # [frictions]
 # capture = "propose"                  # propose | auto | off
 # publication = "disabled"             # your frictions stay local
