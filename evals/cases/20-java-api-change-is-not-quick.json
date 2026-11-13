@@ -10,12 +10,22 @@
   "expect": {
     "regex": [
       "(?i)checkout|caller|appelant|consumer|consommateur|published|publi",
-      "PriceCalculatorTest",
-      "(?i)mvn"
+      "(?i)PriceCalculatorTest|existing test|test existant|acceptance test|test d.acceptation",
+      "(?i)\\bmvn\\b|approv|approu|confirm|valid"
     ],
     "not_contains": [
       "level: quick"
     ]
   },
-  "_doc": "Java: a short change to a published API is not quick; the dependent service and the test are named, and the repo's Maven command is the evidence. Universal behaviour, no playbook required. Patterns accept English and French answers."
+  "_doc": "Java: a short change to a published API is not quick; the dependent service and the test are named. Since 4.4.0 (ADR 0028) a full-level /build shows the acceptance test and waits for approval before running anything, so the Maven run or the request for approval counts. Patterns accept English and French answers.",
+  "samples": {
+    "pass": [
+      "Level: full — `total(List<Line>)` est une API publiée ; changer son retour rompra la compilation du checkout et peut provoquer `NoSuchMethodError` si les versions sont mélangées.\n\nPlan proposé : garder `Line(double, int)`, calculer avec `BigDecimal.valueOf`, puis adapter le test existant. Le test d’acceptation vérifiera que `0.1 + 0.2` retourne `BigDecimal(\"0.3\")` ; il échouerait actuellement sur l’assertion.\n\nAucun fichier n’a été modifié. Le profil de cet environnement est en lecture seule : je ne peux ni écrire `plan.md` et le test, ni lancer les vérifications Maven qui écrivent dans `target/`. La revue du changement reste donc à faire.\n\nConfirmez-vous la migration du checkout vers ce nouveau contrat et le test proposé ? Il faudra aussi rouvrir le dépôt en écriture pour que je puisse poursuivre `$build`.",
+      "Level: full: PriceCalculator.total is published and the checkout service calls it. PriceCalculatorTest must change; `mvn -q test` after the change."
+    ],
+    "fail": [
+      "Level: quick. Changed total() to return BigDecimal. Done.",
+      "Level: full. Changed the return type; the checkout service calls it. Done."
+    ]
+  }
 }

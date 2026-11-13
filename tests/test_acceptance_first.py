@@ -17,7 +17,8 @@ class AcceptanceFirstTests(unittest.TestCase):
         self.assertIn('**standard** (small feature, a few files): short alignment, then a failing acceptance test approved before code.', kit)
         self.assertIn('run the check that covers it', kit)  # quick: no test written first
         self.assertIn('a go-ahead already given stands, not for an unseen test', kit)
-        self.assertIn('acceptance before code, then as standard', kit)  # full includes the standard step
+        self.assertIn('risks first: how a failure shows', kit)
+        self.assertIn('acceptance before code, then as standard', kit)  # full: risks first, then the standard step
         self.assertLess(len(kit), 3800)
 
     def test_build_shows_the_failing_test_and_waits(self):
@@ -26,7 +27,8 @@ class AcceptanceFirstTests(unittest.TestCase):
                       'Quick: no test written first', 'free', 'never commit while it fails'):
             self.assertIn(words, build)
         for words in ('except for the acceptance tests of step 2', 'at most three', 'not on an import or compile error',
-                      'do not stop for the tests', 'no test runner', 'needs no new test'):
+                      'do not stop for the tests', 'no test runner', 'needs no new test',
+                      'an empty stub in a new file', 'no existing file changes before approval'):
             self.assertIn(words, build)
         self.assertNotIn('red test first', build)
 

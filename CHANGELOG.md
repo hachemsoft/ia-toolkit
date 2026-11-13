@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.5.1 (2026-11-13)
+
+A full-level change names its risks and how to undo them before its tests again. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **Full level**: the kit context puts the risks first (how a failure shows, how to undo or mitigate it), then the acceptance tests. Since 4.4.0 the tests came first and took their place: on an irreversible production deletion, Codex named a backup or a way back 1 time in 3, against 3 in 3 with 4.2.0 (`evals/results/2026-11-13.json`).
+- **Acceptance tests before approval**: to fail on their assertion rather than on a missing class, they may rely on an empty stub in a new file; no existing file changes before the person approves them. Seen on a real project: the agent edited an existing repository class to get there.
+- **Evals**: the criteria of `java-api-change-is-not-quick`, `review-flags-weakened-test` and `build-shows-the-acceptance-test-first` follow the agents' real answers (a full-level build that waits for the test's approval, "100 erreurs d'unicité", a test inside `total(get_order(1), …)`).
+
 ## 4.5.0 (2026-11-13)
 
 A setting to work with several agents at once, off by default. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

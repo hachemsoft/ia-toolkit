@@ -9,7 +9,7 @@
   "prompt": "/build total() must accept an optional discount percentage: total(items, discount=0) returns the total minus that percentage. Go ahead.",
   "expect": {
     "regex": [
-      "(?i)assert[^\\n]*discount|total\\([^)\\n]*discount[^)\\n]*\\)\\s*==|test_\\w*(discount|remise)\\w*",
+      "(?i)assert[^\\n]*discount|total\\([^\\n]{0,60}discount[^\\n]{0,20}\\)\\s*==|test_\\w*(discount|remise)\\w*",
       "(?i)approv|approu|valid|confirm|accord|before (I|any) (code|implement|chang)|avant (de|tout) (cod|modifi|implément)|ok pour|go ahead\\?|proceed\\?|shall I"
     ],
     "not_regex": [
@@ -24,7 +24,8 @@
     "pass": [
       "Level: standard: a new parameter on a public function.\nAcceptance test (tests/test_orders.py):\n```python\ndef test_total_applies_discount():\n    assert total(ORDERS[1], discount=10) == 22.5\n```\nIt fails on its assertion once the parameter exists. Approve this test before I code?",
       "Niveau : standard.\nTest d'acceptation : `test_total_applique_la_remise` vérifie que total(items, discount=10) renvoie 22.5. Le bac à sable est en lecture seule : je ne peux pas l'exécuter. Valides-tu ce test avant que je modifie orders.py ?",
-      "Level: standard — la remise change le résultat de `total()`.\n\nTest d’acceptation proposé, au point d’entrée public : `assert total([{\"price\": 10.0, \"qty\": 2}], discount=10) == 18.0`. L’appel sans remise doit continuer à retourner 20,0 €.\n\n| Vérification exécutée | Résultat observé |\n| --- | --- |\n| Test du cas à 10 % | `AssertionError: expected 18.0 euros after 10% discount, got None` |\n| `PYTHONDONTWRITEBYTECODE=1 python -m pytest -s -p no:cacheprovider tests/test_orders.py` | `2 passed in 0.00s` |\n\nAucun fichier n’a été modifié : cet environnement est en lecture seule. Le skill `$build` exige votre accord sur le test d’acceptation avant le code. **Approuvez-vous ce test et pouvez-vous fournir un espace en écriture pour poursuivre ?**"
+      "Level: standard — la remise change le résultat de `total()`.\n\nTest d’acceptation proposé, au point d’entrée public : `assert total([{\"price\": 10.0, \"qty\": 2}], discount=10) == 18.0`. L’appel sans remise doit continuer à retourner 20,0 €.\n\n| Vérification exécutée | Résultat observé |\n| --- | --- |\n| Test du cas à 10 % | `AssertionError: expected 18.0 euros after 10% discount, got None` |\n| `PYTHONDONTWRITEBYTECODE=1 python -m pytest -s -p no:cacheprovider tests/test_orders.py` | `2 passed in 0.00s` |\n\nAucun fichier n’a été modifié : cet environnement est en lecture seule. Le skill `$build` exige votre accord sur le test d’acceptation avant le code. **Approuvez-vous ce test et pouvez-vous fournir un espace en écriture pour poursuivre ?**",
+      "Level: full — la remise change la règle de calcul et la signature de `total()`.\nAucun fichier modifié : cette session donne uniquement un accès en lecture. Le contrat actuel est dans [orders.py](/private/var/folders/xj/jxhhdcln21xbwyc1hhw0147r0000gn/T/tmp5bc73a0a/repo/orders.py:4).\n| Vérification | Résultat observé |\n| --- | --- |\n| `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -B -m pytest -s -p no:cacheprovider tests/test_orders.py` | `2 passed in 0.00s` |\n\nPour poursuivre dans une session avec écriture, confirmez le test d’acceptation `total(get_order(1), discount=10) == 20.25` et la règle pour les remises hors de 0 à 100 % : rejet ou calcul tel quel ?"
     ],
     "fail": [
       "I've updated orders.py: total() now takes discount and subtracts the percentage. Added test_total_discount; all tests pass.",
