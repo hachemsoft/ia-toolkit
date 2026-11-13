@@ -166,7 +166,7 @@ class ReleaseFilesTests(unittest.TestCase):
                                r'|\.zshrc|\.bashrc|\.bash_profile|\.zprofile|/etc/|launchctl|defaults write', re.I)
         # Second exception (2.0.0, ADR 0015): installer/config.py reads managed.toml from the administered path (/etc/ai-kit on
         # Linux) and never writes anything; asserted below.
-        sources = [p for p in (ROOT/'installer').rglob('*.py') if p.name not in ('command.py', 'config.py')] + [ROOT/'Installer.cmd', ROOT/'scripts/bootstrap.sh', ROOT/'scripts/launcher.py', ROOT/'runtime/friction.py']
+        sources = [p for p in (ROOT/'installer').rglob('*.py') if p.name not in ('command.py', 'config.py')] + [ROOT/'Installer.cmd', ROOT/'scripts/bootstrap.sh', ROOT/'scripts/launcher.py', ROOT/'runtime/friction.py', ROOT/'runtime/weakened_tests.py']
         managed = (ROOT/'installer/config.py').read_text(encoding='utf-8')
         self.assertFalse(re.search(r'write_text|write_bytes|atomic_write|os\.replace|os\.remove|unlink|rmtree|mkdir|winreg|\bsetx\b|\bsudo\b', managed))
         self.assertFalse(re.search(r"open\([^)]*['\"](w|a|x)", managed))  # 'r+b' only probes whether the user could write it

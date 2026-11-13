@@ -167,6 +167,11 @@ class RunnerTests(unittest.TestCase):
         code, out = self.run_cases('--stand-in', str(self.stand_in), STAND_IN_GIT='1')
         self.assertEqual(code, 0, out)
 
+    def test_git_case_can_delete_a_committed_file(self):
+        self.case(cwd='py-api-mini', git={'commit': True, 'uncommitted': {'tests/test_orders.py': None}}, expect={'contains': [' D tests/test_orders.py']})
+        code, out = self.run_cases('--stand-in', str(self.stand_in), STAND_IN_GIT='1')
+        self.assertEqual(code, 0, out)
+
     def test_every_prepared_case_is_valid_and_its_fixture_exists(self):
         cases = evals_run.load_cases(ROOT/'evals/cases')
         self.assertGreaterEqual(len(cases), 12)

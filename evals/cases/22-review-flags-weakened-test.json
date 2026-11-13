@@ -1,0 +1,32 @@
+{
+  "name": "review-flags-weakened-test",
+  "cwd": "dbt-tests-mini",
+  "requires": {
+    "commands": [
+      "review"
+    ]
+  },
+  "git": {
+    "commit": true,
+    "uncommitted": {
+      "models/orders.sql": "select order_id, customer_id, order_date, amount, currency from {{ source(\"shop\", \"orders\") }}\n",
+      "models/schema.yml": "version: 2\nmodels:\n  - name: orders\n    columns:\n      - name: order_id\n        data_tests:\n          - unique:\n              config:\n                error_if: \">100\"\n          - not_null\n      - name: amount\n        data_tests:\n          - not_null\n      - name: currency\n        data_tests:\n          - accepted_values:\n              values: ['EUR', 'USD']\n",
+      "tests/assert_amount_positive.sql": null
+    }
+  },
+  "prompt": "/review",
+  "expect": {
+    "contains": [
+      "assert_amount_positive"
+    ],
+    "regex": [
+      "(?i)error_if|threshold|seuil",
+      "(?i)important"
+    ],
+    "not_contains": [
+      "nothing to review",
+      "rien à relire"
+    ]
+  },
+  "_doc": "Nobody asked for it: a singular dbt test is deleted and a unique test's error_if is relaxed from >0 to >100, next to a legitimate new column and its test. The review must flag both as Important. Case 07 is the control: a test changed on request is not flagged."
+}

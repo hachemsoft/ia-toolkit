@@ -157,10 +157,12 @@ class ShellTests(Base):
 
 
 class KitToolTests(Base):
-    """/friction runs the kit's own script under ~/.ai-kit/bin: that must stay possible, and only that."""
+    """/friction and /review run the kit's own scripts under ~/.ai-kit/bin: that must stay possible, and only that."""
     ALLOWED = (
         "python3 ~/.ai-kit/bin/friction.py --category tool --command none --cli claude <<'AI_KIT_FRICTION_END'\nfive tags pushed at once started no release\nAI_KIT_FRICTION_END",
         "@'\nfive tags\n'@ | py -3 $HOME/.ai-kit/bin/friction.py --category tool --command none --cli claude",
+        'python3 ~/.ai-kit/bin/weakened_tests.py --base main',
+        'py -3 $HOME/.ai-kit/bin/weakened_tests.py --base origin/main',
     )
     BLOCKED = (
         'python3 ~/.ai-kit/bin/friction.py --category tool > ~/.ai-kit/aikit.toml',
@@ -168,6 +170,8 @@ class KitToolTests(Base):
         'python3 ~/.ai-kit/bin/other.py',
         'python3 -c "x" ~/.ai-kit/bin/friction.py',
         'python3 ~/.ai-kit/bin/friction.py && rm ~/.ai-kit/state.json',
+        'python3 ~/.ai-kit/bin/weakened_tests.py --base main > ~/.ai-kit/lock.toml',
+        'python3 ~/.ai-kit/bin/weakened_tests.py --repo ~/.ai-kit/sources',
     )
 
     def test_friction_script_runs(self):

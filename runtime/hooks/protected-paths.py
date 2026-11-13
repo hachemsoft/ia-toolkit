@@ -229,7 +229,7 @@ def only_reads(program, words, mentions_in):
     return True
 
 PYTHONS = re.compile(r'(python[0-9.]*|py)(\.exe)?')
-KIT_TOOLS = ('/.ai-kit/bin/friction.py',)  # run by the kit's own /friction command: it writes only outside the protected paths
+KIT_TOOLS = ('/.ai-kit/bin/friction.py', '/.ai-kit/bin/weakened_tests.py')  # run by /friction (writes only outside the protected paths) and /review (reads only)
 
 # The kit's own subcommands that change the installation or bill a model call: the agent tells the person, it does not run them
 # (0.52.0). Reading ones (doctor, usage, friction logging, --version, managed-settings into an empty folder) stay allowed.

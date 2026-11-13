@@ -31,3 +31,4 @@ says when a decision was superseded. A change that reverses a decision comes wit
 | [0024](0024-user-md-and-adaptive-interview.md) | `USER.md` and an adaptive interview | accepted |
 | [0025](0025-cli-surface-with-one-offline-reapply.md) | the CLI surface, with one offline re-apply | accepted |
 | [0026](0026-analysis-and-research-entry-points.md) | Analysis and Research workflows, entered by `/explain` and `/research` | accepted |
+| [0027](0027-a-deterministic-signal-feeds-the-review-it-never-blocks.md) | a deterministic signal feeds the review; it never blocks | accepted |

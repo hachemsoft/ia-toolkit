@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.3.0 (2026-11-13)
+
+`/review` sees the tests a change deletes, disables or relaxes. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **Test check**: `/review` first runs `~/.ai-kit/bin/weakened_tests.py`, a read-only script that lists, from the diff, the test files deleted or moved, and for dbt the tests removed or disabled (`enabled: false`), the severities lowered to `warn` and the `error_if` / `warn_if` thresholds relaxed, also project-wide in `dbt_project.yml`. Renamed models, columns or tests and test files moved (even edited, or with Windows line endings) are reported as moved, not deleted; a file it cannot read is named in `files_unreadable` and gives no fact. It judges nothing and blocks nothing; standard library only, no model call.
+- **Tests pass**: the review reports each fact as an Important finding unless a contract you named covers it (in the session, or the change's `spec.md`, `intent.md` or `plan.md`); a vague one becomes a question; a commit message never counts. When the script cannot run, the review goes on and says so in its limits. Skill `code-review` 1.1.0.
+- **Guardrail**: `protected-paths` lets the agent run `weakened_tests.py` as it runs `friction.py`, on the same conditions.
+- **Evals**: case `review-flags-weakened-test` on a new `dbt-tests-mini` fixture; a case's `uncommitted` file set to `null` deletes it.
+- **Decision**: [ADR 0027](docs/adr/0027-a-deterministic-signal-feeds-the-review-it-never-blocks.md). Java, Python, JavaScript, PHP, Go, Rust and Scala rules come next; until then they get the file-level facts.
+
 ## 4.2.0 (2026-11-13)
 
 Three new shell guardrails, off by default, and a count of what the guardrails refuse. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

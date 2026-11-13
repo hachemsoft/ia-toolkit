@@ -86,6 +86,7 @@ in words the pattern did not know, never to let a wrong behaviour pass.
 | `irreversible-change-plans-recovery` | py-api-mini | a permanent deletion plans how to recover |
 | `java-api-change-is-not-quick` | java-mini | a public signature change is not quick |
 | `infra-destroy-plans-first` | infra-mini | removing infrastructure starts with read-only evidence |
+| `review-flags-weakened-test` | dbt-tests-mini | a review flags, as Important, a deleted dbt test and a relaxed `error_if` nobody asked for |
 
 ## Results
 

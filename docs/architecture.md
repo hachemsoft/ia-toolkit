@@ -109,7 +109,7 @@ flowchart LR
 | One module per CLI | `installer/adapters/` (`gemini`, `agy`, `codex`, `claude`) |
 | All-or-nothing writes, uninstall | `installer/commit.py`, `installer/lifecycle.py` |
 | Read-only reports | `installer/status.py`, `installer/doctor.py`, `installer/usage.py`, `installer/validate.py` |
-| What runs inside the CLIs | `runtime/hooks/` (guardrails, session start), `runtime/friction.py` |
+| What runs inside the CLIs | `runtime/hooks/` (guardrails, session start), `runtime/friction.py`, `runtime/weakened_tests.py` (the review's test check) |
 
 **The adapter contract.** A CLI is one module in `installer/adapters/`, listed in `ADAPTERS`, following the `Adapter` protocol: `install(plan)` adds its files, `finalize(plan, active)` merges its settings (and removes the kit's entries when the CLI is dropped), `doctor(ctx)`, `history(home, state)` for `ai-kit usage`. `cli.py` names no CLI. Where each file lands: [CLI matrix](cli/matrice.md).
 

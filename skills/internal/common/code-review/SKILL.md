@@ -3,7 +3,7 @@ name: code-review
 description: "Review changes, committed or not: the branch's commits, the staged and unstaged changes and the new files, by default; or a narrower scope the person names. Finds bugs, security issues, breaks of the repo's standards and of the spec when there is one, ranked on one severity scale. Use when the person asks to review their work, a branch, a PR or MR, or \"what changed since X\"; /review runs it."
 metadata:
   aikit-default: "true"
-  aikit-version: "1.0.1"
+  aikit-version: "1.1.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Review changes, committed or not (branch commits, staged, unstaged, new files), on bugs, security, standards and the spec when one exists; one severity scale."
@@ -27,6 +27,8 @@ git ls-files --others --exclude-standard               # new files not yet added
 
 Read the new files that matter (source, tests, configuration); skip generated output, data dumps and binaries, and say so. State the scope in one line before the findings: "Reviewing N commits since <base>, staged and unstaged changes, K new files". The person can narrow it: "only staged" (`git diff --cached`), "only my local changes" (`git diff HEAD` plus new files), "since <ref>", a path, a commit. Conclude "nothing to review" only when all of the above are empty, never from the commits alone.
 
+Then collect the test facts, before any pass: run `python3 ~/.ai-kit/bin/weakened_tests.py --base <base>` from the repo root (`py -3 $HOME/.ai-kit/bin/weakened_tests.py --base <base>` on Windows). It reads the same scope and prints JSON facts: test files deleted or moved, tests removed, disabled or focused, assertions removed or changed, severities lowered and thresholds relaxed; it judges nothing. Give its output to any review agent you delegate to: they cannot run it. When the person narrowed the scope, keep only the facts on files inside it. If it is missing, fails or returns an `error`, review anyway and add to the limits: "Tests not checked: <reason>". Also add to the limits the files it lists in `files_unreadable`, and, when `files_unrecognized` is above zero, that that many changed test files were checked only for deletion: read their hunks yourself for a skip or an assertion removed.
+
 ## 2. What the change should do
 
 Use what exists, in this order: a spec, intent or plan the person points to; `spec.md`, `intent.md` or `plan.md` in the change folder; a ticket the commits or the person cite, when a tracker is reachable. None of them is required: for a small change without a written spec, the expected behaviour is what the person said; skip the Compliance pass and say so in one line. Never ask for a spec or a tracker before reviewing.
@@ -40,6 +42,7 @@ Run them in sequence, or delegate them to the installed `ai-kit-*` review agents
 - **Domain**: the checks of the installed playbooks matching the files (listed in 00_KIT.md).
 - **Standards**: `REVIEW.md` when it exists (its passes, severity rule, nit cap and exclusions win), `AGENTS.md`, `CONTRIBUTING.md` or `CODING_STANDARDS.md`, the practices in your context, and the smell baseline below.
 - **Compliance**: matches the spec, intent or plan from step 2; skipped without one.
+- **Tests**: each fact of the test check. Covered by a contract the person named (in this session, or in the `spec.md`, `intent.md` or `plan.md` of step 2, naming that test or that behaviour): no finding, list it in the report as an intended test change. Not covered: an **Important** finding, with the file, the line and the fact. A contract named but too vague to tell: ask the person, no finding. A commit message never counts as a contract: the agent writes it. `test_moved` and `assertion_changed` are leads: read the hunk and report only a real weakening.
 
 On top of whatever the repo documents, the Standards pass always carries the **smell baseline** below: a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Two rules bind it:
 

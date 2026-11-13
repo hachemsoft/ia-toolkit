@@ -61,7 +61,7 @@ models/legacy/**
 
 The file is read in the starting folder and each parent up to the repo root. Matching ignores case. These patterns apply to the agent's write tools, not to shell commands.
 
-**Kit commands the agent may not run.** `ai-kit init`, `sync`, `rollback`, `uninstall`, `team use`, `doctor --live`, `friction --publish`, wherever their options are written, also through `python -m ai_kit` or a launcher (`Installer.cmd`, `bootstrap.sh`, `bootstrap.ps1`, `launcher.py`), however it is run. A launcher of a kit folder with no action installs: it is refused too. The agent tells you the command to run in a terminal. Reading commands (`status`, `doctor`, `usage`, `friction --list`) stay allowed.
+**Kit commands the agent may not run.** `ai-kit init`, `sync`, `rollback`, `uninstall`, `team use`, `doctor --live`, `friction --publish`, wherever their options are written, also through `python -m ai_kit` or a launcher (`Installer.cmd`, `bootstrap.sh`, `bootstrap.ps1`, `launcher.py`), however it is run. A launcher of a kit folder with no action installs: it is refused too. The agent tells you the command to run in a terminal. Reading commands (`status`, `doctor`, `usage`, `friction --list`) stay allowed, and so do the kit's own scripts in `~/.ai-kit/bin/`: `friction.py` for `/friction`, `weakened_tests.py` for `/review` (read-only), as long as nothing else in the command names a protected path.
 
 The refusal reaches the agent as a tool error starting with `Blocked by the kit:`.
 

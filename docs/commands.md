@@ -31,7 +31,7 @@ The SDLC commands. `workflows/sdlc.md` is the same table, generated from `comman
 | Build | `/build` | default | diff and tests; `plan.md` for a full change | test-first, one slice at a time (tdd), then a review of the whole change (code-review) |
 | Build | `/design` | optional | interface sketch or prototype | module shapes compared (codebase-design), or a throwaway prototype |
 | Test | `/test` | default | real output of the checks | what changed and what depends on it; pastes the output (tdd) |
-| Deploy | `/review` | default | ranked findings | committed and uncommitted changes, one severity scale; `quick` or `full` (code-review) |
+| Deploy | `/review` | default | ranked findings | committed and uncommitted changes, one severity scale; a Tests pass on the facts of the kit's test check (tests deleted, disabled or relaxed); `quick` or `full` (code-review) |
 | Deploy | `/ship` | default | merge request description | visual summary, evidence, merge danger; pushes nothing (mr) |
 | Maintain | `/diagnose` | default | root cause and regression test | red/green signal before any fix (diagnosing-bugs) |
 | Maintain | `/triage` | optional | agent-ready issues | triage state machine for incoming tickets (ticket-sorting) |

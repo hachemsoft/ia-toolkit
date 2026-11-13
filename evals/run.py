@@ -8,7 +8,7 @@ Usage: python3 evals/run.py [--home DIR] [--cases evals/cases] [--only name] [--
        [--cli gemini|agy|codex|claude] [--model NAME] [--approval-mode MODE] [--timeout S] [--retries N] [--confirm-paid-run | --stand-in PATH]
 Each case is a JSON file: {"name", "prompt", "cwd" (fixture relative to evals/fixtures, optional), "subdir" (launch subfolder, optional),
 "requires": {"commands": [...], "skills": [...]} (optional, checked against the installed kit),
-"git": {"commit": true, "uncommitted": {"path": "text"}} (optional: a real repository, the fixture committed, then these files changed),
+"git": {"commit": true, "uncommitted": {"path": "text" | null}} (optional: a real repository, the fixture committed, then these files changed; null deletes one),
 "expect": {"contains": [...], "not_contains": [...], "regex": [...], "files_absent": [...], "files_present": [...]}}.
 files_absent and files_present are paths relative to the repo; a bare name (intent.md) matches at any depth, where the
 commands really write (docs/sdlc/<date>-<slug>/intent.md).
@@ -122,7 +122,7 @@ def unmet_preconditions(case, state):
     return missing
 
 def prepare_git(repo, setup):
-    """A real repository: the fixture committed, then the "uncommitted" files written over it and left uncommitted."""
+    """A real repository: the fixture committed, then the "uncommitted" files written over it (null: deleted) and left uncommitted."""
     def git(*args):
         subprocess.run(['git', '-c', 'user.name=Evals', '-c', 'user.email=evals@example.org', *args], cwd=repo, check=True, capture_output=True)
     git('init', '--quiet')
@@ -130,6 +130,9 @@ def prepare_git(repo, setup):
         git('add', '-A')
         git('commit', '--quiet', '--allow-empty', '-m', 'fixture')
     for rel, text in setup.get('uncommitted', {}).items():
+        if text is None:
+            (repo / rel).unlink()
+            continue
         (repo / rel).parent.mkdir(parents=True, exist_ok=True)
         (repo / rel).write_text(text, encoding='utf-8')
 

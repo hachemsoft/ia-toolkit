@@ -9,6 +9,9 @@ class FrictionTests(unittest.TestCase):
   self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.home=Path(self.temp.name)
  def run_kit(self,role='data-analyst'):
   with contextlib.redirect_stdout(io.StringIO()):apply_as(role,self.home,False,None,'gemini')
+ def test_review_script_installed(self):
+  self.run_kit();self.assertTrue((self.home/'.ai-kit/bin/weakened_tests.py').is_file())
+  self.assertIn('.ai-kit/bin/weakened_tests.py',read_json(self.home/'.ai-kit/state.json')['files'])
  def test_script_installed_and_command_present(self):
   self.run_kit();script=self.home/'.ai-kit/bin/friction.py';self.assertTrue(script.is_file())
   self.assertTrue((self.home/'.gemini/commands/friction.toml').is_file());self.assertIn('.ai-kit/bin/friction.py',read_json(self.home/'.ai-kit/state.json')['files'])
