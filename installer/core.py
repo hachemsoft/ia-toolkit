@@ -159,9 +159,28 @@ def cli_event(event):
 def is_guardrail(spec):
     return spec.get('event') == 'BeforeTool'
 
-def hook_command(script):
-    """Command a CLI runs for a kit guardrail: this Python, isolated (-I: no PYTHON* variables, no current folder on the import path)."""
-    return quote_path(sys.executable)+' -I '+quote_path(script)
+def hook_command(script, names=()):
+    """Command a CLI runs for a kit guardrail: this Python, isolated (-I: no PYTHON* variables, no current folder on the import path).
+    names: the guardrails turned on, for a script that serves several (hook_identity)."""
+    return quote_path(sys.executable)+' -I '+quote_path(script)+''.join(' '+n for n in names)
+
+def hook_identity(manifest, name, enabled):
+    """(the name a CLI knows the hook by, the guardrail names its script receives). A script marked by_name serves several
+    guardrails: the CLIs get one hook for all of them, named after the script, told which ones are on. Any other hook is itself."""
+    spec = manifest[name]
+    if not spec.get('by_name'):
+        return name, []
+    return Path(spec['script']).stem, [n for n, s in manifest.items() if s['script'] == spec['script'] and n in enabled]
+
+def hook_parts(command):
+    """(script, guardrail names) of a hook_command. The script is quoted when its path needs it: read up to its closing quote,
+    not up to a space, so that a home folder with spaces gives the right path."""
+    rest = command.split(' -I ', 1)[-1].strip()
+    if rest[:1] in ('"', "'"):
+        end = rest.find(rest[0], 1)
+        return Path(rest[1:end]), rest[end+1:].split()
+    parts = rest.split()
+    return Path(parts[0]) if parts else None, parts[1:]
 
 def split_block(text, markers, label):
     """Text before, managed block (markers included) and text after; error if the markers are damaged."""

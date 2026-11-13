@@ -1,7 +1,7 @@
 """The steps of a neutral plan, before any adapter: the settings that apply, what is selected, the personal file, the
 practices, skills, agents and guardrails, and the old files to remove. apply (installer/cli.py) runs them in order."""
 
-from .core import content_root, ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, adopt_user_copy
+from .core import content_root, ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, hook_identity, adopt_user_copy
 from .toml_files import set_schema, set_section_key
 from .config import AIKIT_FILE
 from .adapters import ADAPTERS
@@ -110,16 +110,17 @@ def guardrails(overrides, hooks_dir, managed_locked=(), managed_off=()):
     locked = [n for n in dict.fromkeys(managed_locked) if n not in managed_off]
     turned_off = [n for n in locked if wanted_hooks.get(n) is False]
     wanted_hooks.update({n: True for n in locked})
-    enabled_hooks = {}
-    for name, flag in wanted_hooks.items():
+    for name in wanted_hooks:
         safe_id(name)
         if name not in hook_manifest:
             raise KitError('Unknown guardrail: '+name+'. Available: '+', '.join(sorted(hook_manifest)))
-        if not flag:
-            continue
+    on = [n for n, flag in wanted_hooks.items() if flag]
+    enabled_hooks = {}
+    for name in on:
         spec = hook_manifest[name]
-        script = hooks_dir/spec['script']
-        enabled_hooks[name] = {'event': spec['event'], 'group': {**({'matcher': spec['matcher']} if spec['matcher'] else {}), 'hooks': [{'name': 'ai-kit-'+name, 'type': 'command', 'command': hook_command(script), 'timeout': 20000}]}}  # ms (Gemini CLI); the other adapters write their own form
+        # Guardrails served by one script share one hook: the same group for each, written once by the adapters.
+        hook_name, names = hook_identity(hook_manifest, name, on)
+        enabled_hooks[name] = {'event': spec['event'], 'group': {**({'matcher': spec['matcher']} if spec['matcher'] else {}), 'hooks': [{'name': 'ai-kit-'+hook_name, 'type': 'command', 'command': hook_command(hooks_dir/spec['script'], names), 'timeout': 20000}]}}  # ms (Gemini CLI); the other adapters write their own form
     return hook_manifest, enabled_hooks, turned_off
 
 

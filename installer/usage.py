@@ -44,6 +44,7 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
         return out
     frictions, fixed_own = read_frictions(home, cutoff)
     frictions_by_category = Counter(str(f.get('category')) for f in frictions)
+    refusals = read_refusals(home, cutoff)
     enough = sessions >= min_sessions and prompts >= min_prompts
     report = {'window_days': since_days, 'sessions': sessions, 'prompts': prompts, 'errors': c.errors, 'unreadable_logs': c.unread,
               'sessions_with_the_kit': len(c.kit_sessions),
@@ -53,7 +54,7 @@ def usage(home, since_days=42, as_json=None, min_sessions=10, min_prompts=50):
               'commands': dict(commands), 'skills': dict(skills), 'agents': dict(agents),
               'unused_commands': unused_commands, 'unused_skills': unused_skills, 'unused_agents': unused_agents,
               'core_candidates_to_demote': core_candidates() if enough and measurable('skill') else [], 'enough_data': enough,
-              'frictions': frictions, 'frictions_by_category': dict(frictions_by_category),
+              'frictions': frictions, 'frictions_by_category': dict(frictions_by_category), 'guardrail_refusals': refusals,
               'unknown_commands': dict(c.unknown_commands), 'repeated_prompts': c.repeated, 'frictions_fixed': fixed_own}
     print_report(report, c, not_observable, used_clis, observing, min_sessions, min_prompts)
     if as_json:
@@ -159,6 +160,22 @@ def read_frictions(home, cutoff):
     return frictions, fixed_own
 
 
+def read_refusals(home, cutoff):
+    """Refusals of the guardrails within the window, by guardrail (~/.ai-kit/refusals.jsonl, written by the guardrails
+    themselves: a date and a name, never the command). A count says how often a guardrail stepped in, not whether it was right."""
+    counts = {}
+    path = home/'.ai-kit/refusals.jsonl'
+    if path.is_file():
+        for line in path.read_text(encoding='utf-8', errors='replace').splitlines():
+            try:
+                entry = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(entry, dict) and _ts(entry.get('ts')) >= cutoff:
+                counts[str(entry.get('guardrail'))] = counts.get(str(entry.get('guardrail')), 0) + 1
+    return counts
+
+
 def print_report(report, c, not_observable, used_clis, observing, min_sessions, min_prompts):
     """The report as the person reads it; the same figures as the JSON."""
     since_days, sessions, prompts, errors = report['window_days'], report['sessions'], report['prompts'], report['errors']
@@ -185,6 +202,9 @@ def print_report(report, c, not_observable, used_clis, observing, min_sessions, 
     if fixed_own:
         print('Your frictions fixed by the kit: '+', '.join(fid+' in '+str(version) for fid, version in fixed_own.items()))
     print('Frictions logged: '+str(len(frictions))+(' ('+', '.join(k+' ×'+str(v) for k,v in sorted(frictions_by_category.items(), key=lambda kv: -kv[1]))+')' if frictions else '')+'; /friction to log one.')
+    refusals = report['guardrail_refusals']
+    print('Guardrail refusals: '+str(sum(refusals.values()))+(' ('+', '.join(k+' ×'+str(v) for k, v in sorted(refusals.items(), key=lambda kv: -kv[1]))+')' if refusals else '')
+          + '; a refusal that was wrong is a friction (/friction, category guardrail).')
     if not enough:
         print('Not enough data to recommend (threshold: '+str(min_sessions)+' sessions and '+str(min_prompts)+' prompts in the window; --min-sessions and --min-prompts to adjust it). No recommendation.')
     elif report['core_candidates_to_demote']:

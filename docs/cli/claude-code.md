@@ -22,7 +22,7 @@ the permissions.
   skills or commands has the name, the kit's is `/ai-kit-<name>`, and the installer and the block say so.
 - **Agents** in `~/.claude/agents/ai-kit-<name>.md`; Claude Code applies their tool list (reviewers `Read` and `Grep`, the
   verifier also `Glob` and `Bash`). They inherit the session's model.
-- **Guardrails** that are on: groups under `hooks.PreToolUse` of `~/.claude/settings.json` (`Bash` for `dbt-prod-guard`;
+- **Guardrails** that are on: groups under `hooks.PreToolUse` of `~/.claude/settings.json` (`Bash` for the shell guardrails, one group for all of them;
   `Bash|Write|Edit|MultiEdit|NotebookEdit` for `protected-paths`), next to your own hooks; no approval step. The
   `whats-new` hook: a group under `hooks.SessionStart`, no matcher.
 - **MCP servers** that are on: `ai-kit-<name>` entries in `mcpServers` of `~/.claude.json`, translated from the kit's form

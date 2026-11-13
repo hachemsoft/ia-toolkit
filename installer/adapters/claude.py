@@ -13,7 +13,7 @@ import shutil
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (content_root, ROOT, USER_CONTEXT, KitError, digest, hook_command, cli_event, split_block, place_block, json_bytes, read_json, _ts, live_call, LIVE_PROMPT, DEFAULT_PREFIX, skill_prefix, rename_references, renamed_skill_file)
+from ..core import (content_root, ROOT, USER_CONTEXT, KitError, digest, cli_event, split_block, place_block, json_bytes, read_json, _ts, live_call, LIVE_PROMPT, DEFAULT_PREFIX, skill_prefix, rename_references, renamed_skill_file)
 
 CLAUDE_DIR = '.claude'
 # The marker text is an identifier: changing it would orphan the blocks already installed.
@@ -221,10 +221,11 @@ def finalize(p: Plan, active: bool = True) -> None:
     if active:
         for name, spec in p.hook_manifest.items():
             if name in p.enabled_hooks:
-                group = {'hooks': [{'type': 'command', 'command': hook_command(p.hooks_dir/spec['script']), 'timeout': 20}]}
+                group = {'hooks': [{'type': 'command', 'command': p.enabled_hooks[name]['group']['hooks'][0]['command'], 'timeout': 20}]}
                 if spec['matcher']:  # a guardrail runs on some tools; whats-new on every session start (it reads `source` itself)
                     group = {'matcher': hook_matcher(spec['matcher']), **group}
-                new_groups[cli_event(spec['event'])].append(group)
+                if group not in new_groups[cli_event(spec['event'])]:  # guardrails served by one script: one hook
+                    new_groups[cli_event(spec['event'])].append(group)
     if mine or any(new_groups.values()):
         for event in events:
             groups = hooks.get(event, [])

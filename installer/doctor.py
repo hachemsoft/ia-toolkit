@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import sys
 
-from .core import (_PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitError, read_json, digest,
+from .core import (hook_parts, _PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitError, read_json, digest,
                    inside, load_commands, run_timed)
 from . import versions
 from .adapters import ADAPTERS
@@ -21,6 +21,9 @@ from .settings import core_selection, context_folder, managed_context_names, mer
 # A known case each guardrail must block; doctor runs it to prove the guardrail works, not just that its file exists.
 GUARDRAIL_PROBES = {
     'dbt-prod-guard': lambda home: {'tool_name': 'run_shell_command', 'tool_input': {'command': 'dbt run --target prod'}, 'cwd': str(home)},
+    'git-guard': lambda home: {'tool_name': 'run_shell_command', 'tool_input': {'command': 'git reset --hard'}, 'cwd': str(home)},
+    'bq-cost-guard': lambda home: {'tool_name': 'run_shell_command', 'tool_input': {'command': 'bq query "select 1"'}, 'cwd': str(home)},
+    'infra-prod-guard': lambda home: {'tool_name': 'run_shell_command', 'tool_input': {'command': 'kubectl --context prod delete pod x'}, 'cwd': str(home)},
     'protected-paths': lambda home: {'tool_name': 'write_file', 'tool_input': {'file_path': str(home/'.ai-kit'/'aikit.toml')}, 'cwd': str(home)},
 }
 # whats-new on a /clear: answers {} and writes nothing (a startup probe would mark the real news as announced).
@@ -37,16 +40,17 @@ def proc_ok(proc):
 
 
 def command_parts(command):
-    """Interpreter and script of a kit guardrail command (hook_command: "<python>" -I "<script>")."""
+    """Interpreter, script and guardrail names of a kit guardrail command (core.hook_command)."""
     parts = [part.strip('"\'') for part in (shlex.split(command, posix=(os.name != 'nt')) or [])]
-    return (Path(parts[0]), Path(parts[-1])) if len(parts) >= 2 else (None, None)
+    script, names = hook_parts(command)
+    return (Path(parts[0]), script, names) if len(parts) >= 2 and script else (None, None, [])
 
 
 def guardrail_checks(home, state, status):
     """Each enabled guardrail: its Python and script exist, and it really blocks a known case. A guardrail that cannot run lets everything through."""
     for name, hook in sorted(state.get('hooks', {}).items()):
         kind = 'Guardrail' if hook.get('event') == 'BeforeTool' else 'Hook'
-        interpreter, script = command_parts(hook['group']['hooks'][0]['command'])
+        interpreter, script, names = command_parts(hook['group']['hooks'][0]['command'])
         if not interpreter or not interpreter.is_file():
             status(False, kind+' '+name+': Python not found ('+str(interpreter)+'); run ai-kit sync --offline to point to the current Python')
             continue
@@ -57,10 +61,10 @@ def guardrail_checks(home, state, status):
         if not probe:
             continue
         env = {k: v for k, v in os.environ.items() if k != 'AI_KIT_ALLOW_PROD'}
-        env.update({'HOME': str(home), 'USERPROFILE': str(home)})
+        env.update({'HOME': str(home), 'USERPROFILE': str(home), 'AI_KIT_PROBE': '1'})  # a probe is not counted as a refusal
         proc = None
         try:
-            proc = subprocess.run([str(interpreter), '-I', str(script)], input=json.dumps(probe(home)), capture_output=True, text=True,
+            proc = subprocess.run([str(interpreter), '-I', str(script)]+names, input=json.dumps(probe(home)), capture_output=True, text=True,
                                   encoding='utf-8', errors='replace', timeout=20, env=env)
             answer = json.loads(proc.stdout or '{}')
         except (OSError, ValueError, subprocess.SubprocessError):

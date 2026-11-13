@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (USER_CONTEXT, KitError, digest, hook_command, cli_event, split_block, place_block, command_skill_text, redact, user_context_refusal,
+from ..core import (USER_CONTEXT, KitError, digest, cli_event, split_block, place_block, command_skill_text, redact, user_context_refusal,
                     skill_prefix, free_name, rename_references, renamed_skill_file, renamed_notice, _ts, live_call, LIVE_PROMPT, skills_read)
 
 CODEX_DIR = '.codex'
@@ -180,7 +180,8 @@ def finalize(p: Plan, active: bool = True) -> None:
                 raise KitError('~/.codex/config.toml already defines hooks.PreToolUse or hooks.SessionStart in another form: the kit cannot add its hooks without rewriting it.')
             if re.search(r'^\s*\[\s*(agents|mcp_servers)\.ai-kit-', outside, re.M):
                 raise KitError('~/.codex/config.toml already contains ai-kit- entries outside the kit block: remove them, then ai-kit sync --offline.')
-            hook_commands = [(cli_event(p.hook_manifest[name]['event']), hook_command(p.hooks_dir/p.hook_manifest[name]['script'])) for name in p.enabled_hooks]
+            # Guardrails served by one script give the same pair: written once.
+            hook_commands = list(dict.fromkeys((cli_event(spec['event']), spec['group']['hooks'][0]['command']) for spec in p.enabled_hooks.values()))
             block = codex_config_block(p.adapter_data.get(NAME, {}).get('agents', {}), hook_commands, p.enabled_mcp)
         if block is not None:
             # Normalised line endings: a USER.md edited on Windows (CRLF) must not change the digest of the block read back.

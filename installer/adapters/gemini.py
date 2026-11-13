@@ -11,7 +11,7 @@ from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
 from .. import resolve
-from ..core import (content_root, user_context_refusal, adopt_user_copy, LIVE_PROMPT, network_problem, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
+from ..core import (hook_parts, content_root, user_context_refusal, adopt_user_copy, LIVE_PROMPT, network_problem, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
                     rename_references, renamed_skill_file, renamed_notice, kit_name,
                     digest, merge_defaults, run_timed,
                     record_auto_friction, _ts)
@@ -285,7 +285,7 @@ def remove_kit_settings(p: Plan) -> None:
         if isinstance(hooks, dict):
             for name, old in p.state.get('hooks', {}).items():
                 groups = hooks.get(old['event'], [])
-                if isinstance(groups, list) and any(any(h.get('name') == 'ai-kit-'+name for h in g.get('hooks', [])) and g != old['group'] for g in (groups[i] for i in kit_hook_groups(groups))):
+                if isinstance(groups, list) and any(any(h.get('name') == old['group']['hooks'][0].get('name') for h in g.get('hooks', [])) and g != old['group'] for g in (groups[i] for i in kit_hook_groups(groups))):
                     raise KitError('Kit guardrail modified in settings.json: '+name)
             for event, groups in list(hooks.items()):
                 if isinstance(groups, list) and kit_hook_groups(groups):
@@ -333,7 +333,7 @@ def finalize(p: Plan, active: bool = True) -> None:
         if not isinstance(groups, list):
             raise KitError('settings.json: hooks.'+old['event']+' must be a list.')
         for i in kit_hook_groups(groups):
-            if any(h.get('name') == 'ai-kit-'+name for h in groups[i].get('hooks', [])) and groups[i] != old['group']:
+            if any(h.get('name') == old['group']['hooks'][0].get('name') for h in groups[i].get('hooks', [])) and groups[i] != old['group']:
                 raise KitError('Kit guardrail modified in settings.json: '+name)
     merged_hooks = {}
     for event, groups in original_hooks.items():
@@ -344,7 +344,8 @@ def finalize(p: Plan, active: bool = True) -> None:
         if kept or not groups:
             merged_hooks[event] = kept
     for name, spec in p.enabled_hooks.items():
-        merged_hooks.setdefault(spec['event'], []).append(spec['group'])
+        if spec['group'] not in merged_hooks.setdefault(spec['event'], []):  # guardrails served by one script: one hook
+            merged_hooks[spec['event']].append(spec['group'])
     if merged_hooks or ('hooks' in settings and not any(kit_hook_groups(g) for g in original_hooks.values() if isinstance(g, list))):
         settings['hooks'] = merged_hooks
     else:
@@ -419,12 +420,10 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
             print('[Info] Skills that delegate to subagents, degraded without them: '+', '.join(needing))
     for name,hook in state.get('hooks',{}).items():
         groups = (settings.get('hooks') or {}).get(hook['event'], [])
-        # The command is "<python> -I <script>" (core.hook_command), each part quoted: split on " -I ", not on spaces,
-        # so that a home folder with spaces ("Home à") gives the right path.
-        script = Path(hook['group']['hooks'][0]['command'].split(' -I ', 1)[-1].strip().strip('"\''))
+        script = hook_parts(hook['group']['hooks'][0]['command'])[0]
         status(isinstance(groups,list) and hook['group'] in groups and script.is_file(),('Guardrail' if hook.get('event') == 'BeforeTool' else 'Hook')+' configured in settings.json: '+name)
     if not any(h.get('event') == 'BeforeTool' for h in state.get('hooks',{}).values()):
-        print('[Info] No guardrail enabled; see docs/hooks.md (dbt-prod-guard, protected-paths).')
+        print('[Info] No guardrail enabled; see docs/hooks.md (protected-paths, dbt-prod-guard, git-guard, bq-cost-guard, infra-prod-guard).')
     for name,server in state.get('mcp',{}).items():
         status(settings.get('mcpServers',{}).get(name)==server,'MCP configuration: '+name)
         if server.get('command'):

@@ -25,7 +25,7 @@ Categories: `command`, `skill`, `guardrail`, `rule` (the agent went against a wr
 
 ## The local file
 
-Frictions go to `~/.ai-kit/frictions.jsonl`, one line each, readable by you only. Each line carries the date, category, command, CLI, the kit version, team and system. Before a friction is stored, secrets, emails, home paths and internal host names are redacted. The same friction told twice has the same fingerprint.
+Guardrail refusals are counted apart, by the guardrails themselves ([guardrails](hooks.md#counting-refusals)). Frictions go to `~/.ai-kit/frictions.jsonl`, one line each, readable by you only. Each line carries the date, category, command, CLI, the kit version, team and system. Before a friction is stored, secrets, emails, home paths and internal host names are redacted. The same friction told twice has the same fingerprint.
 
 | Command | Shows |
 | --- | --- |

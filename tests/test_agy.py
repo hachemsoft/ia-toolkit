@@ -7,7 +7,7 @@ from personal import write_personal  # noqa: E402
 from presets import apply_as  # noqa: E402
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload,env=None):
- proc=subprocess.run([sys.executable,'-I',str(H/script)],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8',env={**os.environ,**(env or {})});return json.loads(proc.stdout or '{}')
+ proc=subprocess.run([sys.executable,'-I',str(H/script.split()[0])]+script.split()[1:],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8',env={**os.environ,**(env or {})});return json.loads(proc.stdout or '{}')
 
 class AgyAdapterTests(unittest.TestCase):
  def setUp(self):
@@ -26,7 +26,7 @@ class AgyAdapterTests(unittest.TestCase):
   self.assertEqual(read_json(p/'plugin.json')['name'],'ai-kit');rules=(p/'rules/AGENTS.md').read_text(encoding='utf-8')
   for n in ('00_kit','10_company','20_team','user'):self.assertIn('@['+n+'](~/.ai-kit/context/'+n.upper()+'.md)',rules)
   self.assertTrue((p/'agents/ai-kit-verifier.md').is_file());self.assertTrue((p/'agents/ai-kit-sql-reviewer.md').is_file())
-  hooks=read_json(p/'hooks.json');self.assertEqual(hooks['ai-kit-dbt-prod-guard']['enabled'],False);self.assertEqual(hooks['ai-kit-dbt-prod-guard']['PreToolUse'][0]['matcher'],'run_command')
+  hooks=read_json(p/'hooks.json');self.assertEqual(hooks['ai-kit-shell-guard']['enabled'],False);self.assertEqual(hooks['ai-kit-shell-guard']['PreToolUse'][0]['matcher'],'run_command')
   self.assertFalse((p/'mcp_config.json').exists());self.assertIn('.gemini/config/plugins/ai-kit/plugin.json',read_json(self.home/'.ai-kit/state.json')['files'])
  def test_command_skills_only_when_no_homonym(self):
   self.run_kit('data-developer');base=self.plugin()/'skills'
@@ -47,13 +47,13 @@ class AgyAdapterTests(unittest.TestCase):
   core={'defaults':{'mcp':{'dbt':{'server':{'command':'dbt-mcp'}}}}}  # the Core's mcp/servers.toml
   self.overrides({'hooks':{'dbt-prod-guard':True},'mcp':{'dbt':True}})
   with mock.patch('installer.plan.core_settings',return_value=core):self.run_kit()
-  self.assertTrue(read_json(self.plugin()/'hooks.json')['ai-kit-dbt-prod-guard']['enabled']);self.assertIn('ai-kit-dbt',read_json(self.plugin()/'mcp_config.json')['mcpServers'])
+  self.assertTrue(read_json(self.plugin()/'hooks.json')['ai-kit-shell-guard']['enabled']);self.assertTrue(read_json(self.plugin()/'hooks.json')['ai-kit-shell-guard']['PreToolUse'][0]['hooks'][0]['command'].endswith(' dbt-prod-guard'));self.assertIn('ai-kit-dbt',read_json(self.plugin()/'mcp_config.json')['mcpServers'])
  def test_modified_plugin_file_blocks(self):
   self.run_kit();(self.plugin()/'rules/AGENTS.md').write_text('mine',encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit('data-developer')
  def test_hook_scripts_accept_agy_payload(self):
-  self.assertEqual(run_hook('dbt-prod-guard.py',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt run --target prod'}},'workspacePaths':['/x']}).get('decision'),'deny')
-  self.assertNotIn('decision',run_hook('dbt-prod-guard.py',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt test -t dev'}}}))
+  self.assertEqual(run_hook('shell-guard.py dbt-prod-guard',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt run --target prod'}},'workspacePaths':['/x']}).get('decision'),'deny')
+  self.assertNotIn('decision',run_hook('shell-guard.py dbt-prod-guard',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt test -t dev'}}}))
   with tempfile.TemporaryDirectory() as tmp:
    (Path(tmp)/'.ai-kit').mkdir();(Path(tmp)/'.ai-kit/protected-paths').write_text('target/**\n',encoding='utf-8')
    self.assertEqual(run_hook('protected-paths.py',{'toolCall':{'name':'write_to_file','args':{'TargetFile':tmp+'/target/a.sql'}},'workspacePaths':[tmp]}).get('decision'),'deny')

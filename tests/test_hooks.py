@@ -6,30 +6,30 @@ from personal import write_personal  # noqa: E402
 from presets import apply_as  # noqa: E402
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload,env=None):
- proc=subprocess.run([sys.executable,'-I',str(H/script)],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8',env={**os.environ,**(env or {})});return json.loads(proc.stdout or '{}')
+ proc=subprocess.run([sys.executable,'-I',str(H/script.split()[0])]+script.split()[1:],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8',env={**os.environ,**(env or {})});return json.loads(proc.stdout or '{}')
 
 class HookScriptTests(unittest.TestCase):
  def test_dbt_prod_denied(self):
   for cmd in ('dbt run --target prod','dbt build -t prd','cd x && dbt test --target=production','DBT_TARGET=prod dbt run',"dbt run --target 'prod'",'dbt run --target="prod"','dbt run -tprod','./dbt run -t prod','/usr/local/bin/dbt run --target prod','DBT run -t prod','dbt.exe run -t prod'):
-   self.assertEqual(run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}).get('decision'),'deny',cmd)
+   self.assertEqual(run_hook('shell-guard.py dbt-prod-guard',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}).get('decision'),'deny',cmd)
  def test_hook_output_is_utf8_whatever_the_console(self):
   # Windows console (cp1252): the refusal must arrive as UTF-8, which is what the CLIs read.
-  for script,payload in (('dbt-prod-guard.py',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt run --target prod'}}}),('dbt-prod-guard.py',{'hook_event_name':'PreToolUse','tool_name':'shell','tool_input':{'command':['bash','-lc','dbt run -t prod']}})):
+  for script,payload in (('shell-guard.py dbt-prod-guard',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt run --target prod'}}}),('shell-guard.py dbt-prod-guard',{'hook_event_name':'PreToolUse','tool_name':'shell','tool_input':{'command':['bash','-lc','dbt run -t prod']}})):
    # Without -I, so that PYTHONIOENCODING simulates the Windows console.
-   proc=subprocess.run([sys.executable,str(H/script)],input=json.dumps(payload).encode('utf-8'),capture_output=True,env={**os.environ,'PYTHONIOENCODING':'cp1252'})
+   proc=subprocess.run([sys.executable,str(H/script.split()[0])]+script.split()[1:],input=json.dumps(payload).encode('utf-8'),capture_output=True,env={**os.environ,'PYTHONIOENCODING':'cp1252'})
    text=proc.stdout.decode('utf-8');self.assertIn('Blocked by the kit',text,proc.stderr)
  def test_dbt_guard_closes_audit_bypasses(self):
   # Contournements relevés par l'audit de sécurité : sh -c, cible connue seulement à l'exécution.
   for cmd in ('sh -c "dbt run --target prod"',"bash -lc 'dbt build -t prd'",'T=prod; dbt run --target $T','dbt run --target ${TARGET:-prod}','dbt run --target pr""od',"dbt run --target 'p'rod",'dbt run --target $(echo prod)','dbt run --target `echo prod`','DBT_TARGET=$X dbt run'):
-   self.assertEqual(run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}).get('decision'),'deny',cmd)
+   self.assertEqual(run_hook('shell-guard.py dbt-prod-guard',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}).get('decision'),'deny',cmd)
   for cmd in ('dbt run --threads 4 --target dev','dbt run --target "dev"','dbt run --select tag:$TAG --target dev','python prod.py --target $X','echo $HOME && dbt test -t dev'):
-   self.assertNotIn('decision',run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}),cmd)
+   self.assertNotIn('decision',run_hook('shell-guard.py dbt-prod-guard',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}),cmd)
  def test_dbt_allow_ignored_when_set_in_env_file(self):
   with tempfile.TemporaryDirectory() as tmp:
    payload={'tool_name':'run_shell_command','tool_input':{'command':'dbt run --target prod'},'cwd':tmp}
-   self.assertNotIn('decision',run_hook('dbt-prod-guard.py',payload,{'AI_KIT_ALLOW_PROD':'1'}))
+   self.assertNotIn('decision',run_hook('shell-guard.py dbt-prod-guard',payload,{'AI_KIT_ALLOW_PROD':'1'}))
    Path(tmp,'.env').write_text('AI_KIT_ALLOW_PROD=1\n',encoding='utf-8')
-   self.assertEqual(run_hook('dbt-prod-guard.py',payload,{'AI_KIT_ALLOW_PROD':'1'}).get('decision'),'deny')
+   self.assertEqual(run_hook('shell-guard.py dbt-prod-guard',payload,{'AI_KIT_ALLOW_PROD':'1'}).get('decision'),'deny')
  def test_protected_paths_symlink_and_config(self):
   # Audit : un lien vers un dossier protégé, et la configuration du kit et des CLI, protégée même sans motif du repo.
   with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as fake_home:
@@ -76,15 +76,15 @@ class HookScriptTests(unittest.TestCase):
   self.assertEqual(r['hookSpecificOutput']['permissionDecision'],'deny')
  def test_dbt_dev_allowed_and_non_dbt_ignored(self):
   for cmd in ('dbt test -t dev','dbt run','ls prod','python prod.py --target prod','dbt run -t prod-like','dbt run --target production_dev','mydbt run -t prod'):
-   self.assertNotIn('decision',run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}),cmd)
-  self.assertEqual(run_hook('dbt-prod-guard.py',{'tool_name':'write_file','tool_input':{'file_path':'x'}}),{})
+   self.assertNotIn('decision',run_hook('shell-guard.py dbt-prod-guard',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}),cmd)
+  self.assertEqual(run_hook('shell-guard.py dbt-prod-guard',{'tool_name':'write_file','tool_input':{'file_path':'x'}}),{})
  def test_dbt_prod_allowed_with_env_and_custom_targets(self):
-  self.assertNotIn('decision',run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':'dbt run -t prod'}},{'AI_KIT_ALLOW_PROD':'1'}))
-  self.assertEqual(run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','tool_input':{'command':'dbt run -t live'}},{'AI_KIT_PROD_TARGETS':'live,prod'}).get('decision'),'deny')
+  self.assertNotIn('decision',run_hook('shell-guard.py dbt-prod-guard',{'tool_name':'run_shell_command','tool_input':{'command':'dbt run -t prod'}},{'AI_KIT_ALLOW_PROD':'1'}))
+  self.assertEqual(run_hook('shell-guard.py dbt-prod-guard',{'tool_name':'run_shell_command','tool_input':{'command':'dbt run -t live'}},{'AI_KIT_PROD_TARGETS':'live,prod'}).get('decision'),'deny')
  def test_dbt_default_target_from_profiles(self):
   with tempfile.TemporaryDirectory() as tmp:
    (Path(tmp)/'profiles.yml').write_text('my_project:\n  target: prod\n  outputs:\n    prod: {type: bigquery}\n    dev: {type: bigquery}\n',encoding='utf-8')
-   run=lambda cmd,env=None:run_hook('dbt-prod-guard.py',{'tool_name':'run_shell_command','cwd':tmp,'tool_input':{'command':cmd}},{'DBT_PROFILES_DIR':tmp,'HOME':tmp,**(env or {})})
+   run=lambda cmd,env=None:run_hook('shell-guard.py dbt-prod-guard',{'tool_name':'run_shell_command','cwd':tmp,'tool_input':{'command':cmd}},{'DBT_PROFILES_DIR':tmp,'HOME':tmp,**(env or {})})
    self.assertEqual(run('dbt run').get('decision'),'deny');self.assertIn('profiles.yml',run('dbt run')['reason'])
    self.assertNotIn('decision',run('dbt run -t dev'));self.assertNotIn('decision',run('dbt run',{'AI_KIT_ALLOW_PROD':'1'}))
    (Path(tmp)/'profiles.yml').write_text('my_project:\n  target: dev\n',encoding='utf-8');self.assertNotIn('decision',run('dbt run'))
@@ -112,14 +112,14 @@ class HookScriptTests(unittest.TestCase):
    home=Path(tmp);write_personal(home,{'hooks':{'dbt-prod-guard':True}})
    with contextlib.redirect_stdout(io.StringIO()):apply_as('data-analyst',home,False,None,'gemini')
    # A hook script the state tracks at a place this installation no longer writes.
-   old=home/'.gemini/hooks/ai-kit/dbt-prod-guard.py';old.parent.mkdir(parents=True);old.write_bytes((H/'dbt-prod-guard.py').read_bytes())
+   old=home/'.gemini/hooks/ai-kit/dbt-prod-guard.py';old.parent.mkdir(parents=True);old.write_bytes((H/'shell-guard.py').read_bytes())
    state=read_json(home/'.ai-kit/state.json');state['files']['.gemini/hooks/ai-kit/dbt-prod-guard.py']=hashlib.sha256(old.read_bytes()).hexdigest()
    (home/'.ai-kit/state.json').write_text(json.dumps(state),encoding='utf-8')
    with contextlib.redirect_stdout(io.StringIO()):apply_as('data-analyst',home,False,None,'gemini')
-   self.assertFalse(old.exists());self.assertFalse((home/'.gemini/hooks/ai-kit').exists());self.assertTrue((home/'.ai-kit/hooks/dbt-prod-guard.py').is_file())
+   self.assertFalse(old.exists());self.assertFalse((home/'.gemini/hooks/ai-kit').exists());self.assertTrue((home/'.ai-kit/hooks/shell-guard.py').is_file())
    command=read_json(home/'.gemini/settings.json')['hooks']['BeforeTool'][0]['hooks'][0]['command'];self.assertIn('.ai-kit',command)
  def test_malformed_input_never_breaks(self):
-  for s in ('dbt-prod-guard.py','protected-paths.py'):
+  for s in ('shell-guard.py','protected-paths.py'):
    proc=subprocess.run([sys.executable,'-I',str(H/s)],input='not json',capture_output=True,text=True);self.assertEqual(proc.returncode,0);self.assertEqual(proc.stdout.strip(),'{}')
 
 class HookInstallTests(unittest.TestCase):
@@ -178,8 +178,8 @@ class HookInstallTests(unittest.TestCase):
   self.overrides({'hooks':{'protected-paths':False,'whats-new':False}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertEqual(read_json(self.home/'.ai-kit/state.json')['hooks'],{})
  def test_enable_then_disable(self):
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':True}});self.run_kit()
-  groups=self.settings()['hooks']['BeforeTool'];self.assertEqual(len(groups),2);names={g['hooks'][0]['name'] for g in groups};self.assertEqual(names,{'ai-kit-dbt-prod-guard','ai-kit-protected-paths'})
-  self.assertEqual({g['hooks'][0]['name']:g['matcher'] for g in groups}['ai-kit-dbt-prod-guard'],'run_shell_command');groups=[g for g in groups if g['hooks'][0]['name']=='ai-kit-dbt-prod-guard'];self.assertTrue((self.home/'.ai-kit/hooks/dbt-prod-guard.py').is_file());self.assertIn(str(self.home.resolve()),groups[0]['hooks'][0]['command'])  # Windows: the temporary folder has a short name (RUNNER~1)
+  groups=self.settings()['hooks']['BeforeTool'];self.assertEqual(len(groups),2);names={g['hooks'][0]['name'] for g in groups};self.assertEqual(names,{'ai-kit-shell-guard','ai-kit-protected-paths'})
+  self.assertEqual({g['hooks'][0]['name']:g['matcher'] for g in groups}['ai-kit-shell-guard'],'run_shell_command');groups=[g for g in groups if g['hooks'][0]['name']=='ai-kit-shell-guard'];self.assertTrue(groups[0]['hooks'][0]['command'].endswith(' dbt-prod-guard'));self.assertTrue((self.home/'.ai-kit/hooks/shell-guard.py').is_file());self.assertIn(str(self.home.resolve()),groups[0]['hooks'][0]['command'])  # Windows: the temporary folder has a short name (RUNNER~1)
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':False}});self.run_kit()
   groups=self.settings()['hooks']['BeforeTool'];self.assertEqual(len(groups),1);self.assertFalse((self.home/'.ai-kit/hooks/protected-paths.py').exists())
   self.overrides({'hooks':{'protected-paths':False,'whats-new':False}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertFalse((self.home/'.gemini/hooks/ai-kit').exists())

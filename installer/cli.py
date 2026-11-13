@@ -204,8 +204,8 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
             managed_write(kit/'news'/name, source.read_bytes(), 'Kit news')
     command_state, command_after = plan_command(p, managed_write, command)
     managed_write(kit/'schemas'/'aikit.schema.json', (ROOT/'schemas/aikit.schema.json').read_bytes(), 'Kit schema')  # what aikit.toml points to
-    for name in enabled_hooks:
-        managed_write(hooks_dir/hook_manifest[name]['script'], (ROOT/'runtime/hooks'/hook_manifest[name]['script']).read_bytes(), 'Guardrail' if is_guardrail(hook_manifest[name]) else 'Kit hook')
+    for script, name in {hook_manifest[n]['script']: n for n in enabled_hooks}.items():  # a script that serves several guardrails is written once
+        managed_write(hooks_dir/script, (ROOT/'runtime/hooks'/script).read_bytes(), 'Guardrail' if is_guardrail(hook_manifest[name]) else 'Kit hook')
     # Context layers and USER.md, in the context folder (see context_location).
     # The rule layers (00, 10, 20) are company and team rules, not personal settings: a hand edit is restored, not kept.
     managed_write(context_dir/KIT_CONTEXT, kit_text.encode('utf-8'), 'Context file', restore=True)

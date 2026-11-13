@@ -3,7 +3,7 @@ workstation. Generated from the Core's guardrails and MCP servers and from manag
 import json
 from pathlib import Path
 
-from .core import ROOT, KitError, read_json, is_guardrail
+from .core import ROOT, KitError, read_json, is_guardrail, hook_identity
 from .toml_files import toml_value
 from .settings import core_settings
 
@@ -25,10 +25,20 @@ def locked(org, manifest):
     return [n for n, spec in manifest.items() if spec.get('default') and is_guardrail(spec)]
 
 
-def command(spec, windows=False):
+def command(spec, windows=False, served=()):
+    served = ''.join(' '+n for n in served)
     if windows:
-        return WINDOWS_PYTHON+' -I '+WINDOWS_HOOKS+spec['script']+'"'
-    return POSIX_PYTHON+' -I '+POSIX_HOOKS+spec['script']+'"'
+        return WINDOWS_PYTHON+' -I '+WINDOWS_HOOKS+spec['script']+'"'+served
+    return POSIX_PYTHON+' -I '+POSIX_HOOKS+spec['script']+'"'+served
+
+
+def declared(names, manifest):
+    """(hook name, spec, guardrail names its script receives) for each hook to write: guardrails served by one script share one."""
+    found = {}
+    for n in names:
+        hook_name, served = hook_identity(manifest, n, names)
+        found.setdefault(hook_name, (hook_name, manifest[n], served))
+    return list(found.values())
 
 
 def org_servers(org):
@@ -71,8 +81,8 @@ def claude(names, manifest, hooks_only, mcp=None, windows=False):
     from .adapters.claude import hook_matcher
     shell = {'shell': 'powershell'} if windows else {}
     settings = {'permissions': {'deny': ['Edit('+p+')' for p in KIT_FILES + CLAUDE_FILES]},
-                'hooks': {'PreToolUse': [{'matcher': hook_matcher(manifest[n]['matcher']),
-                                          'hooks': [{'type': 'command', 'command': command(manifest[n], windows), **shell, 'timeout': 20}]} for n in names]}}
+                'hooks': {'PreToolUse': [{'matcher': hook_matcher(spec['matcher']),
+                                          'hooks': [{'type': 'command', 'command': command(spec, windows, served), **shell, 'timeout': 20}]} for _, spec, served in declared(names, manifest)]}}
     if hooks_only:
         settings['allowManagedHooksOnly'] = True
     if mcp is not None:
@@ -84,10 +94,9 @@ def claude(names, manifest, hooks_only, mcp=None, windows=False):
 def gemini(names, manifest, windows=False):
     """On Windows, Gemini CLI's docs do not say which shell runs a hook: no hook is written there, YOLO mode stays off."""
     settings = {'hooks': {}, 'security': {'disableYoloMode': True}}
-    for n in ([] if windows else names):
-        spec = manifest[n]
+    for n, spec, served in ([] if windows else declared(names, manifest)):
         settings['hooks'].setdefault(spec['event'], []).append(
-            {'matcher': spec['matcher'], 'hooks': [{'name': 'ai-kit-'+n, 'type': 'command', 'command': command(spec)}]})
+            {'matcher': spec['matcher'], 'hooks': [{'name': 'ai-kit-'+n, 'type': 'command', 'command': command(spec, served=served)}]})
     if not settings['hooks']:
         settings.pop('hooks')
     return json.dumps(settings, indent=2)+'\n'

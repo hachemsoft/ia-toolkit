@@ -10,7 +10,7 @@
 # skill_prefix = "ai-kit-"
 #
 # [hooks]
-# dbt-prod-guard = true
+# dbt-prod-guard = true            # also: git-guard, bq-cost-guard, infra-prod-guard (docs/hooks.md)
 #
 # [mcp]
 # enabled = ["docs"]                   # a server of the Core or your Team, turned on

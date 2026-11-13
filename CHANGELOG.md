@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.2.0 (2026-11-13)
+
+Three new shell guardrails, off by default, and a count of what the guardrails refuse. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`git-guard`**: refuses `git reset --hard`, `git clean -f`, a checkout or restore of the whole tree, `git branch -D`, and a forced push or a deletion of `main` or `master` (more branches with `AI_KIT_PROTECTED_BRANCHES`).
+- **`bq-cost-guard`**: refuses `bq query` without `--dry_run` and without `--maximum_bytes_billed`.
+- **`infra-prod-guard`**: refuses `terraform apply` and `destroy` and the `kubectl` commands that change a cluster when the workspace, folder, variable file, context or namespace names production; `AI_KIT_ALLOW_PROD=1` allows it, as for dbt.
+- **Turning one on**: `git-guard = true` under `[hooks]` in `aikit.toml`, then `ai-kit sync --offline`; IT can lock or set each one in `managed.toml`. They read the programs a command runs, so a command that only talks about an action passes (`echo "git reset --hard"`).
+- **One hook for the shell guardrails**: `dbt-prod-guard` and the three new ones are rules of one script; each CLI gets one hook, `ai-kit-shell-guard`, instead of one per guardrail. The names in `aikit.toml` and `managed.toml` do not change. Files generated earlier by `ai-kit managed-settings` name the old script: generate them again.
+- **Refusals counted**: each refusal adds a date and the guardrail's name to `~/.ai-kit/refusals.jsonl`, never the command; `ai-kit usage` prints `Guardrail refusals: …`.
+- `ai-kit doctor` proves each guardrail turned on; a test holds each guardrail script under half a second per call.
+
 ## 4.1.3 (2026-11-13)
 
 Documentation aligned with the code, and dead code removed; nothing changes in what is installed. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

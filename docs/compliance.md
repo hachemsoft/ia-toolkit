@@ -30,7 +30,7 @@ kit, governs them.
 | Topic | What | Where |
 | --- | --- | --- |
 | Human oversight | the person starts each command; commit, push, deployment or an infrastructure apply only with their agreement; ceremony matched to the stakes | [commands](commands.md) |
-| Anti-error guardrails | `protected-paths` (on by default) and `dbt-prod-guard`; defaults against honest mistakes, not a sandbox | [guardrails](hooks.md) |
+| Anti-error guardrails | `protected-paths` (on by default) and the shell guardrails a person or IT turns on (`dbt-prod-guard`, `git-guard`, `bq-cost-guard`, `infra-prod-guard`); defaults against honest mistakes, not a sandbox | [guardrails](hooks.md) |
 | Review | read-only review agents and a doubter agent for high-stakes changes | [commands](commands.md#agents) |
 | Measured behaviour | eval cases replayable on every change | [evals](evals.md) |
 | Open code | readable sources, MIT licence, provenance of reused skills | `LICENSE`, [sources](sources.md) |

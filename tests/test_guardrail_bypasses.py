@@ -365,12 +365,12 @@ class KitCloneTests(Base):
                 self.assertIsNone(self.run_in(command, self.other))
 
 
-DBT = Path(__file__).resolve().parents[1]/'runtime'/'hooks'/'dbt-prod-guard.py'
+DBT = Path(__file__).resolve().parents[1]/'runtime'/'hooks'/'shell-guard.py'
 
 
 class DbtTests(unittest.TestCase):
     def decide(self, command, env=None, cwd=None):
-        proc = subprocess.run([sys.executable, '-I', str(DBT)], capture_output=True, text=True, encoding='utf-8',
+        proc = subprocess.run([sys.executable, '-I', str(DBT), 'dbt-prod-guard'], capture_output=True, text=True, encoding='utf-8',
                               input=json.dumps({'tool_name': 'Bash', 'tool_input': {'command': command}, 'cwd': cwd or os.getcwd()}),
                               env={**os.environ, 'AI_KIT_ALLOW_PROD': '', 'DBT_TARGET': '', **(env or {})})
         return 'deny' if 'deny' in proc.stdout else None

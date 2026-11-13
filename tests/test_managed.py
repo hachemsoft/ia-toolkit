@@ -62,7 +62,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertTrue(claude['allowManagedHooksOnly'])
         self.assertEqual(len(claude['hooks']['PreToolUse']), 2)
         gemini = json.loads((self.out/'gemini-cli/settings.json').read_text(encoding='utf-8'))
-        self.assertEqual(sorted(h['name'] for g in gemini['hooks']['BeforeTool'] for h in g['hooks']), ['ai-kit-dbt-prod-guard', 'ai-kit-protected-paths'])
+        self.assertEqual(sorted(h['name'] for g in gemini['hooks']['BeforeTool'] for h in g['hooks']), ['ai-kit-protected-paths', 'ai-kit-shell-guard'])
         codex = parse_toml((self.out/'codex/requirements.toml').read_text(encoding='utf-8'))
         self.assertNotIn('danger-full-access', codex['allowed_sandbox_modes'])
         self.assertNotIn('never', codex['allowed_approval_policies'])

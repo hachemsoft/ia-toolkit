@@ -10,9 +10,14 @@ From `runtime/hooks/hooks.json`:
 | --- | --- | --- | --- |
 | `protected-paths` | before a write or shell tool | on | agent writes to the configuration of the kit and of the CLIs, and under a repo's protected paths |
 | `dbt-prod-guard` | before a shell tool | off | a dbt command on a production target |
+| `git-guard` | before a shell tool | off | the git commands that discard work for good, and a forced push to a main branch |
+| `bq-cost-guard` | before a shell tool | off | `bq query` without a dry run or a cap on the bytes billed |
+| `infra-prod-guard` | before a shell tool | off | `terraform apply` or `destroy` and the `kubectl` commands that change a cluster, on production |
 | `whats-new` | at session start | on | nothing: not a guardrail, it tells the agent what is new |
 
 The scripts are copied to `~/.ai-kit/hooks/` and declared to each CLI in its own format ([CLI pages](cli/matrice.md)). They run with the kit's private Python, isolated with `-I`. Your own hooks are kept.
+
+The four shell guardrails (`dbt-prod-guard`, `git-guard`, `bq-cost-guard`, `infra-prod-guard`) are rules of one script, `shell-guard.py`: each CLI gets one hook, `ai-kit-shell-guard`, told which rules are on. Turning on four costs one program start per shell command, as one does. Measured on one macOS workstation: about 15 ms per guardrail script and per command, more than half of it the start of Python; not measured on Windows.
 
 ## Turning one on or off
 
@@ -20,6 +25,7 @@ The scripts are copied to `~/.ai-kit/hooks/` and declared to each CLI in its own
 # ~/.ai-kit/aikit.toml
 [hooks]
 dbt-prod-guard = true
+git-guard = true
 protected-paths = true
 ```
 
@@ -30,7 +36,7 @@ Then `ai-kit sync --offline`. IT decides above you in `managed.toml`:
 | `[hooks] locked = ["protected-paths"]` | stays on, whatever you write; the run says `[Info] Guardrail <name> stays on` |
 | `[hooks] <guardrail> = true` or `false` | on or off for everyone; your value is ignored, and the run says so |
 
-Only `protected-paths` and `dbt-prod-guard` are guardrails IT can name.
+IT can name every guardrail of the list; `whats-new` is not one.
 
 ## `protected-paths`
 
@@ -65,6 +71,44 @@ Blocks a `dbt` command whose target is `prod`, `production` or `prd` (or the com
 
 An authorised person exports `AI_KIT_ALLOW_PROD=1` in the shell that starts the CLI. The same variable in a `.env` file the agent could write is ignored.
 
+## `git-guard`
+
+Blocks the git commands that lose work with no way back:
+
+| Refused | Passes |
+| --- | --- |
+| `git reset --hard` | `git reset`, `git reset --soft` |
+| `git clean -f` (`-fd`, `-xdf`, `--force`) | `git clean -n`, `git clean --dry-run` |
+| `git checkout .`, `git checkout -- .`, `git checkout -f` | `git checkout <branch>`, `git checkout -- <file>` |
+| `git restore .` | `git restore <file>`, `git restore --staged .` |
+| `git branch -D`, `git branch --delete --force` | `git branch -d` |
+| a forced push, or a branch deletion, on `main` or `master` (`--force`, `-f`, `+main`, `--force-with-lease`, `--delete`, `:main`) | `git push`, a forced push that names another branch |
+
+Add main branches with `AI_KIT_PROTECTED_BRANCHES` (comma-separated, for example `develop,release`). A forced push that names no branch reads the branch checked out (`.git/HEAD`); when it cannot be read, a plain `--force` is refused and `--force-with-lease` passes. There is no permission variable: the refusal tells the agent to let you run the command. The branch protection of your Git host stays the real barrier.
+
+## `bq-cost-guard`
+
+Blocks `bq query` that has neither `--dry_run` nor `--maximum_bytes_billed=<bytes>`. The other `bq` commands pass. A default set in `.bigqueryrc` is not read: write the flag on the command.
+
+## `infra-prod-guard`
+
+Blocks `terraform apply` and `terraform destroy` (also `tofu`, `terragrunt`), and the `kubectl` commands that change a cluster (`delete`, `apply`, `replace`, `patch`, `scale`, `drain`, `edit`, `set`, `create`, `rollout restart|undo|pause|resume`), when something names production: `prod`, `production`, `prd` or the `AI_KIT_PROD_TARGETS` list, as one word of the name (`gke_project_prod_eu`, `envs/prod`, `app-prod`; not `product-api`).
+
+| Program | What is read |
+| --- | --- |
+| terraform | `-chdir`, `-var-file`, `TF_WORKSPACE`, the workspace selected (`.terraform/environment`), the folder names below the repository root |
+| kubectl | `--context`, `--cluster`, `-n`/`--namespace`; without `--context`, the `current-context` of the kubeconfig (`--kubeconfig`, `KUBECONFIG`, `~/.kube/config`); a context only known at run time (`$CTX`) is refused |
+
+`plan`, `get`, `describe`, `logs`, `rollout status` pass. An environment whose name does not say production is not recognised: this guardrail catches the named case, not every production system. `helm`, `gcloud` and the cloud consoles are not covered. The one-off permission is the one of `dbt-prod-guard`: `AI_KIT_ALLOW_PROD=1` exported in the shell that starts the CLI.
+
+## How the shell guardrails read a command
+
+`git-guard`, `bq-cost-guard` and `infra-prod-guard` look at the programs the command runs, not at its text: each command of the line (`;`, `&&`, `|`, new lines), after `sudo`, `env`, `xargs`, inside `sh -c "…"`, `eval`, `$(…)` and backticks. A command that only talks about an action passes: `echo "git reset --hard"`, `grep -r "kubectl delete" docs`, `git commit -m "bq query"`, a heredoc written to a file. A rule that fails on a command lets it through.
+
+## Counting refusals
+
+Each refusal adds one line to `~/.ai-kit/refusals.jsonl`: the date and the guardrail's name, never the command. `ai-kit usage` prints the count over its window (`Guardrail refusals: 3 (protected-paths ×2, git-guard ×1)`) and puts it in its JSON report (`guardrail_refusals`). The file stays on your machine and keeps its last 1000 lines; `ai-kit doctor`'s probes are not counted. The count says how often a guardrail stepped in, not whether it was right: a refusal that was wrong is a friction (`/friction`, category guardrail).
+
 ## `whats-new`
 
 At the start of a new or resumed session, tells the agent once, so that it says it in its first reply:
@@ -94,6 +138,7 @@ The generated `README.txt` says where each file goes, per system and per CLI. Wi
 ## Limits
 
 - A rule on the text of a command is defeated by an alias, a wrapper script or a program the hook does not know.
+- The shell guardrails do not follow a `cd`: a folder or a branch is read from where the CLI started the command (`git -C` and `terraform -chdir` are read). `$(…)` inside single quotes is read as if it ran.
 - A path or a command built at run time (a variable, `base64`, `eval`, a script written then run) is not seen: the hook reads the text it is given, before it runs.
 - A tool renamed or added by a CLI release is matched only once the kit's matchers name it; `doctor` probes each guardrail, the weekly drift check reads each CLI's help.
 - A guardrail calls a script and a Python under your home folder; a hook that cannot start blocks nothing.

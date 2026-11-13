@@ -3,8 +3,30 @@
     "dbt-prod-guard": {
       "event": "BeforeTool",
       "matcher": "run_shell_command",
-      "script": "dbt-prod-guard.py",
+      "script": "shell-guard.py",
+      "by_name": true,
       "description": "Blocks a dbt command on a production target (prod, production, prd or AI_KIT_PROD_TARGETS) unless AI_KIT_ALLOW_PROD=1."
+    },
+    "git-guard": {
+      "event": "BeforeTool",
+      "matcher": "run_shell_command",
+      "script": "shell-guard.py",
+      "by_name": true,
+      "description": "Blocks the git commands that discard work for good (reset --hard, clean -f, checkout or restore of the whole tree, branch -D) and a forced push to a main branch (main, master or AI_KIT_PROTECTED_BRANCHES)."
+    },
+    "bq-cost-guard": {
+      "event": "BeforeTool",
+      "matcher": "run_shell_command",
+      "script": "shell-guard.py",
+      "by_name": true,
+      "description": "Blocks bq query without --dry_run and without --maximum_bytes_billed."
+    },
+    "infra-prod-guard": {
+      "event": "BeforeTool",
+      "matcher": "run_shell_command",
+      "script": "shell-guard.py",
+      "by_name": true,
+      "description": "Blocks terraform apply or destroy and the kubectl commands that change a cluster, when the workspace, folder, variable file, context or namespace names production (prod, production, prd or AI_KIT_PROD_TARGETS), unless AI_KIT_ALLOW_PROD=1."
     },
     "protected-paths": {
       "event": "BeforeTool",

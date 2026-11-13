@@ -8,7 +8,7 @@ from personal import write_personal  # noqa: E402
 from presets import apply_as  # noqa: E402
 H=ROOT/'runtime/hooks'
 def run_hook(script,payload):
- p=subprocess.run([sys.executable,'-I',str(H/script)],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8');return json.loads(p.stdout or '{}')
+ p=subprocess.run([sys.executable,'-I',str(H/script.split()[0])]+script.split()[1:],input=json.dumps(payload),capture_output=True,text=True,encoding='utf-8');return json.loads(p.stdout or '{}')
 
 class CodexAdapterTests(unittest.TestCase):
  def setUp(self):
@@ -82,7 +82,7 @@ class CodexAdapterTests(unittest.TestCase):
  def test_hooks_declared_and_mcp(self):
   core={'defaults':{'mcp':{'documentation':{'server':{'httpUrl':'https://docs.example.org/mcp'}}}}}  # the Core's mcp/servers.toml
   with mock.patch('installer.plan.core_settings',return_value=core):out=self.run_kit(overrides={'hooks':{'dbt-prod-guard':True},'mcp':{'documentation':True}})
-  c=self.config.read_text(encoding='utf-8');self.assertIn('[[hooks.PreToolUse]]',c);self.assertIn('dbt-prod-guard.py',c);self.assertIn('[mcp_servers.ai-kit-documentation]',c);self.assertIn('url = "https://docs.example.org/mcp"',c);self.assertIn('Trust',out)
+  c=self.config.read_text(encoding='utf-8');self.assertIn('[[hooks.PreToolUse]]',c);self.assertIn('shell-guard.py',c);self.assertIn(' dbt-prod-guard"',c);self.assertIn('[mcp_servers.ai-kit-documentation]',c);self.assertIn('url = "https://docs.example.org/mcp"',c);self.assertIn('Trust',out)
  def test_conflicting_hooks_refused(self):
   self.config.write_text('hooks.PreToolUse = []\n',encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit(overrides={'hooks':{'dbt-prod-guard':True}})
@@ -100,9 +100,9 @@ class CodexAdapterTests(unittest.TestCase):
 
 class CodexHookPayloadTests(unittest.TestCase):
  def test_dbt_guard_codex_shell_list_and_output_format(self):
-  r=run_hook('dbt-prod-guard.py',{'hook_event_name':'PreToolUse','tool_name':'shell','tool_input':{'command':['bash','-lc','dbt run -t prod']},'cwd':'/tmp'})
+  r=run_hook('shell-guard.py dbt-prod-guard',{'hook_event_name':'PreToolUse','tool_name':'shell','tool_input':{'command':['bash','-lc','dbt run -t prod']},'cwd':'/tmp'})
   self.assertEqual(r['hookSpecificOutput']['permissionDecision'],'deny');self.assertEqual(r['hookSpecificOutput']['hookEventName'],'PreToolUse');self.assertNotIn('decision',r)
-  self.assertEqual(run_hook('dbt-prod-guard.py',{'hook_event_name':'PreToolUse','tool_name':'exec_command','tool_input':{'cmd':'dbt run -t dev'}}),{})
+  self.assertEqual(run_hook('shell-guard.py dbt-prod-guard',{'hook_event_name':'PreToolUse','tool_name':'exec_command','tool_input':{'cmd':'dbt run -t dev'}}),{})
  def test_protected_paths_apply_patch(self):
   with tempfile.TemporaryDirectory() as tmp:
    (Path(tmp)/'.git').mkdir();(Path(tmp)/'.ai-kit').mkdir();(Path(tmp)/'.ai-kit/protected-paths').write_text('target/**\n',encoding='utf-8')

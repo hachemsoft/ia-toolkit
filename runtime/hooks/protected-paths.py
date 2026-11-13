@@ -12,6 +12,7 @@ import json
 import os
 import re
 import sys
+import time
 
 # Protected-paths file of a folder: .ai-kit/protected-paths (neutral, all CLIs).
 PATTERN_FILES = (os.path.join('.ai-kit', 'protected-paths'),)
@@ -561,6 +562,25 @@ def check(file_path, cwd, content=''):
             return 'Blocked by the kit: "' + relative + '" matches the protected path "' + pattern + '" declared in the repo protected paths (.ai-kit/protected-paths). Propose the change to a person instead of writing it.'
     return None
 
+def record_refusal(guardrail):
+    """One line per refusal in ~/.ai-kit/refusals.jsonl: when, and which guardrail; never the command, so no path and no
+    secret is kept. `ai-kit usage` counts them. Only the installed copy records (the one in ~/.ai-kit/hooks), not a
+    doctor probe; the file keeps its last 1000 lines. A failure to record never changes the answer."""
+    folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if os.path.basename(folder) != '.ai-kit' or os.environ.get('AI_KIT_PROBE') == '1':
+        return
+    path = os.path.join(folder, 'refusals.jsonl')
+    try:
+        if os.path.exists(path) and os.path.getsize(path) > 200000:
+            with open(path, encoding='utf-8', errors='replace') as handle:
+                kept = handle.readlines()[-1000:]
+            with open(path, 'w', encoding='utf-8') as handle:
+                handle.writelines(kept)
+        with open(path, 'a', encoding='utf-8') as handle:
+            handle.write(json.dumps({'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'guardrail': guardrail}) + '\n')
+    except OSError:
+        pass
+
 def main():
     use_utf8()
     try:
@@ -575,6 +595,8 @@ def main():
         text = normalised(json.dumps(payload))
         name = mention(text, [e.lower() for e in CONFIG_PATHS])
         decision = BLOCKED.format(name) if name else None
+    if decision:
+        record_refusal('protected-paths')
     print(json.dumps(deny_output(payload, decision), ensure_ascii=False) if decision else '{}')
 
 def decide(payload):

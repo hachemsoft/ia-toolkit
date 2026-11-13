@@ -277,7 +277,7 @@ class DoctorAndUsageTests(Base):
 class GuardrailPayloadTests(unittest.TestCase):
     """The kit's scripts with the JSON Claude Code sends: tool_name and tool_input."""
     def run_hook(self, script, payload, home):
-        proc = subprocess.run([sys.executable, '-I', str(H/script)], input=json.dumps(payload), capture_output=True, text=True,
+        proc = subprocess.run([sys.executable, '-I', str(H/script.split()[0])]+script.split()[1:], input=json.dumps(payload), capture_output=True, text=True,
                               encoding='utf-8', env={**os.environ, 'HOME': str(home), 'USERPROFILE': str(home)})
         return json.loads(proc.stdout or '{}')
 
@@ -288,8 +288,8 @@ class GuardrailPayloadTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             base = {'hook_event_name': 'PreToolUse', 'cwd': str(home), 'session_id': 'x'}
-            self.assertTrue(self.denied(self.run_hook('dbt-prod-guard.py', {**base, 'tool_name': 'Bash', 'tool_input': {'command': 'dbt run --target prod'}}, home)))
-            self.assertFalse(self.denied(self.run_hook('dbt-prod-guard.py', {**base, 'tool_name': 'Bash', 'tool_input': {'command': 'dbt run --target dev'}}, home)))
+            self.assertTrue(self.denied(self.run_hook('shell-guard.py dbt-prod-guard', {**base, 'tool_name': 'Bash', 'tool_input': {'command': 'dbt run --target prod'}}, home)))
+            self.assertFalse(self.denied(self.run_hook('shell-guard.py dbt-prod-guard', {**base, 'tool_name': 'Bash', 'tool_input': {'command': 'dbt run --target dev'}}, home)))
             for tool, key in (('Write', 'file_path'), ('Edit', 'file_path'), ('MultiEdit', 'file_path'), ('NotebookEdit', 'notebook_path')):
                 for target in ('.claude/settings.json', '.claude.json', '.ai-kit/aikit.toml'):
                     answer = self.run_hook('protected-paths.py', {**base, 'tool_name': tool, 'tool_input': {key: str(home/target)}}, home)
