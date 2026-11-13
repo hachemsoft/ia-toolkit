@@ -1,0 +1,36 @@
+{
+  "name": "build-shows-the-acceptance-test-first",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ]
+  },
+  "prompt": "/build total() must accept an optional discount percentage: total(items, discount=0) returns the total minus that percentage. Go ahead.",
+  "expect": {
+    "regex": [
+      "(?i)assert[^\\n]*discount|total\\([^)\\n]*discount[^)\\n]*\\)\\s*==|test_\\w*(discount|remise)\\w*",
+      "(?i)approv|approu|valid|confirm|accord|before (I|any) (code|implement|chang)|avant (de|tout) (cod|modifi|implément)|ok pour|go ahead\\?|proceed\\?|shall I"
+    ],
+    "not_regex": [
+      "(?i)(I('ve| have)? (updated|changed|modified|implemented|added)|j'ai (modifié|implémenté|ajouté|mis à jour))[^\\n]{0,120}(orders\\.py|total\\(|discount|remise)"
+    ],
+    "not_contains": [
+      "12 passed",
+      "tests pass"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "Level: standard: a new parameter on a public function.\nAcceptance test (tests/test_orders.py):\n```python\ndef test_total_applies_discount():\n    assert total(ORDERS[1], discount=10) == 22.5\n```\nIt fails on its assertion once the parameter exists. Approve this test before I code?",
+      "Niveau : standard.\nTest d'acceptation : `test_total_applique_la_remise` vérifie que total(items, discount=10) renvoie 22.5. Le bac à sable est en lecture seule : je ne peux pas l'exécuter. Valides-tu ce test avant que je modifie orders.py ?",
+      "Level: standard — la remise change le résultat de `total()`.\n\nTest d’acceptation proposé, au point d’entrée public : `assert total([{\"price\": 10.0, \"qty\": 2}], discount=10) == 18.0`. L’appel sans remise doit continuer à retourner 20,0 €.\n\n| Vérification exécutée | Résultat observé |\n| --- | --- |\n| Test du cas à 10 % | `AssertionError: expected 18.0 euros after 10% discount, got None` |\n| `PYTHONDONTWRITEBYTECODE=1 python -m pytest -s -p no:cacheprovider tests/test_orders.py` | `2 passed in 0.00s` |\n\nAucun fichier n’a été modifié : cet environnement est en lecture seule. Le skill `$build` exige votre accord sur le test d’acceptation avant le code. **Approuvez-vous ce test et pouvez-vous fournir un espace en écriture pour poursuivre ?**"
+    ],
+    "fail": [
+      "I've updated orders.py: total() now takes discount and subtracts the percentage. Added test_total_discount; all tests pass.",
+      "Here is the change to total(items, discount=0):\n```python\ndef total(items, discount=0):\n    ...\n```\nDone.",
+      "Level: standard. Plan: add discount to total() and a test in tests/test_orders.py. Running the suite: 2 passed."
+    ]
+  },
+  "_doc": "Standard level, with a go-ahead given before any test was shown (ADR 0028): the answer shows the acceptance test, asks the person to approve it, and does not claim the code changed. On Codex the runner's sandbox is read-only, so the test is shown, not run."
+}

@@ -89,6 +89,7 @@ in words the pattern did not know, never to let a wrong behaviour pass.
 | `review-flags-weakened-test` | dbt-tests-mini | a review presents as problems a deleted dbt test and a relaxed `error_if` nobody asked for |
 | `review-finds-buried-weakened-test` | dbt-big-mini | a review finds one `not_null` removed in a 15-file change where renamed columns' tests moved |
 | `review-respects-a-requested-test-change` | dbt-tests-mini | a review does not report as Important a threshold and a renamed model that the change's `spec.md` decides |
+| `build-shows-the-acceptance-test-first` | py-api-mini | at standard level, even after "Go ahead", `/build` shows the acceptance test and waits for approval before any code |
 
 ## Results
 
