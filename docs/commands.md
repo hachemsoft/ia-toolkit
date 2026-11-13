@@ -3,6 +3,7 @@
 Plain sentences work; commands are shortcuts to a step or a tool. Each command is written once in `commands/<name>.md` and
 activates one or more skills; agents take bounded missions in a separate context. Skills and agents describe themselves in
 their own front matter ([extending](extending.md)). `/guide <question>` says which command fits.
+New to the workflow? Start with [the SDLC workflow, explained](sdlc-workflow.md), with diagrams.
 
 ## Ceremony matches the stakes
 
