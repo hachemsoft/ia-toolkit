@@ -78,6 +78,11 @@ class RunnerTests(unittest.TestCase):
                 with self.subTest(case=case['name'], answer=answer):
                     self.assertNotEqual(evals_run.check(answer, case['expect']), [])
 
+    def test_not_regex_forbids_a_pattern(self):
+        expect = {'not_regex': ['(?i)important[^\\n]{0,40}error_if']}
+        self.assertEqual(evals_run.check('- Minor: error_if raised, as the spec asks', expect), [])
+        self.assertEqual(evals_run.check('- **Important** · Tests: error_if relaxed', expect), ['forbidden pattern: (?i)important[^\\n]{0,40}error_if'])
+
     def test_real_run_needs_explicit_consent(self):
         self.case()
         code, out = self.run_cases()
@@ -179,7 +184,7 @@ class RunnerTests(unittest.TestCase):
             self.assertIn('requires', case, case['name'])
             if case.get('cwd'):
                 self.assertTrue((ROOT/'evals/fixtures'/case['cwd']).is_dir(), case['name'])
-            for kind in ('contains', 'not_contains', 'regex', 'files_absent', 'files_present'):
+            for kind in ('contains', 'not_contains', 'regex', 'not_regex', 'files_absent', 'files_present'):
                 self.assertIsInstance(case['expect'].get(kind, []), list, case['name'])
 
     def test_unmet_precondition_skips_without_calling(self):

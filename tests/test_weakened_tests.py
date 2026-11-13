@@ -322,6 +322,24 @@ class ReviewFindingsTests(Base):
         repo.write({'models/schema.yml': SCHEMA.replace('          - unique\n', '          - name: uq_order_id\n            test_name: unique\n', 1)})
         self.assertEqual([f[0] for f in repo.facts()], ['test_moved'])
 
+    def test_a_removed_test_is_not_taken_for_another_renamed_one(self):
+        """A column renamed elsewhere must not hide a test removed on a column that still exists."""
+        before = ('version: 2\nmodels:\n  - name: orders\n    columns:\n      - name: customer_email\n        tests:\n          - not_null\n'
+                  '      - name: total\n        tests:\n          - not_null\n  - name: payments\n    columns:\n      - name: amount\n        tests:\n          - not_null\n')
+        after = before.replace('      - name: customer_email\n        tests:\n          - not_null\n', '      - name: customer_email\n')
+        after = after.replace('name: total', 'name: total_eur').replace('name: amount', 'name: amount_eur')
+        repo = self.repo({'dbt_project.yml': DBT_PROJECT, 'models/schema.yml': before})
+        repo.write({'models/schema.yml': after})
+        self.assertEqual(sorted((f[0], f[2]) for f in repo.facts()),
+                         [('test_moved', 'orders.total.not_null'), ('test_moved', 'payments.amount.not_null'), ('test_removed', 'orders.customer_email.not_null')])
+
+    def test_a_renamed_model_whose_test_is_also_relaxed(self):
+        repo = self.dbt()
+        repo.write({'models/schema.yml': SCHEMA.replace('  - name: orders\n', '  - name: fct_orders\n').replace('error_if: ">0"', 'error_if: ">100"')})
+        facts = [(f[0], f[2]) for f in repo.facts()]
+        self.assertNotIn('test_removed', [k for k, _ in facts])
+        self.assertIn(('threshold_relaxed', 'orders.amount.not_null'), facts)
+
     def test_test_file_moved_and_edited_without_git_is_moved(self):
         body = ''.join('def test_%d():\n    assert %d == %d\n' % (i, i, i) for i in range(8))
         repo = self.repo({'tests/test_a.py': body})

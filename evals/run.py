@@ -9,7 +9,7 @@ Usage: python3 evals/run.py [--home DIR] [--cases evals/cases] [--only name] [--
 Each case is a JSON file: {"name", "prompt", "cwd" (fixture relative to evals/fixtures, optional), "subdir" (launch subfolder, optional),
 "requires": {"commands": [...], "skills": [...]} (optional, checked against the installed kit),
 "git": {"commit": true, "uncommitted": {"path": "text" | null}} (optional: a real repository, the fixture committed, then these files changed; null deletes one),
-"expect": {"contains": [...], "not_contains": [...], "regex": [...], "files_absent": [...], "files_present": [...]}}.
+"expect": {"contains": [...], "not_contains": [...], "regex": [...], "not_regex": [...], "files_absent": [...], "files_present": [...]}}.
 files_absent and files_present are paths relative to the repo; a bare name (intent.md) matches at any depth, where the
 commands really write (docs/sdlc/<date>-<slug>/intent.md).
 Statuses: OK; FAIL (behaviour); ERROR (infrastructure: CLI exit code, API, quota, timeout); SKIP (precondition not met).
@@ -50,6 +50,9 @@ def check(output, expect):
     for pattern in expect.get('regex', []):
         if not re.search(pattern, output, re.I | re.S):
             failures.append('pattern not found: ' + pattern)
+    for pattern in expect.get('not_regex', []):
+        if re.search(pattern, output, re.I | re.S):
+            failures.append('forbidden pattern: ' + pattern)
     return failures
 
 def api_error(returncode, output):

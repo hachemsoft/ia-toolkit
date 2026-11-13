@@ -338,6 +338,24 @@ def dbt_tests(doc):
     return found
 
 
+def dbt_nodes(doc):
+    """Every named node of a properties file (model, source, table, column) as a tuple of names."""
+    found = set()
+    def walk(node, context):
+        if isinstance(node, dict):
+            here = context+[node['name']] if isinstance(node.get('name'), str) else context
+            if here is not context:
+                found.add(tuple(here))
+            for key, value in node.items():
+                if key not in ('tests', 'data_tests') and isinstance(value, (dict, list)):
+                    walk(value, here)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item, context)
+    walk(doc, [])
+    return found
+
+
 def project_test_config(doc):
     """{section path: {setting: value}} of the '+' settings under tests: / data_tests: in dbt_project.yml."""
     found = {}
@@ -558,7 +576,7 @@ def dbt_facts(repo, merge_base, dbt, root, changed, files, unreadable):
                 facts.append(fact(kind, project, 'dbt', where, section,
                                   setting+': '+str(old_value) if setting else None, setting+': '+str(new_value) if setting else None))
 
-    old_tests, new_tests, texts = {}, {}, {}
+    old_tests, new_tests, texts, old_nodes, new_nodes = {}, {}, {}, set(), set()
     for s, old, new in changed:
         sides = [] if s == 'A' else [('old', old)]
         sides += [] if s == 'D' else [('new', new)]
@@ -569,12 +587,14 @@ def dbt_facts(repo, merge_base, dbt, root, changed, files, unreadable):
         try:
             for side, path in sides:
                 text = old_text(repo, merge_base, path) if side == 'old' else new_text(repo, path)
-                read[(side, path)] = (text, dbt_tests(parse_yaml(text)))
+                doc = parse_yaml(text)
+                read[(side, path)] = (text, dbt_tests(doc), dbt_nodes(doc))
         except YamlError:
             unreadable.extend(path for _, path in sides)
             continue  # this file only: both of its sides are left out, the others still count
-        for (side, path), (text, tests) in read.items():
+        for (side, path), (text, tests, nodes) in read.items():
             texts[(side, path)] = text
+            (old_nodes if side == 'old' else new_nodes).update(nodes)
             for test in tests:
                 (old_tests if side == 'old' else new_tests).setdefault(test['key'], dict(test, path=path))
 
@@ -593,22 +613,35 @@ def dbt_facts(repo, merge_base, dbt, root, changed, files, unreadable):
                         continue
         return elsewhere.get(key)
 
-    def same_test(a, b):
-        return a['type'] == b['type'] and json.dumps(a['args'], sort_keys=True) == json.dumps(b['args'], sort_keys=True)
+    def renamed(a, b):
+        """True when b is test a under a new name: the test itself renamed in place, or the one model, source, table or
+        column that held it renamed (the old node is gone, the new one did not exist). Same type and arguments; its
+        settings (severity, thresholds…) may change too, and are then compared like any kept test's."""
+        if a['type'] != b['type'] or json.dumps(split_args(a['args'])[1], sort_keys=True) != json.dumps(split_args(b['args'])[1], sort_keys=True):
+            return False
+        old_context, new_context = tuple(a['context']), tuple(b['context'])
+        if old_context == new_context:
+            return a['name'] != b['name']
+        if len(old_context) != len(new_context) or a['name'] != b['name']:
+            return False
+        differ = [i for i in range(len(old_context)) if old_context[i] != new_context[i]]
+        if len(differ) != 1:
+            return False
+        level = differ[0]+1
+        return old_context[:level] not in new_nodes and new_context[:level] not in old_nodes
     appeared = [new_tests[k] for k in sorted(new_tests) if k not in old_tests]
     for key in sorted(old_tests):
         old = old_tests[key]
         current = new_tests.get(key) or find_elsewhere(key)
         if current is None:
-            match = next((t for t in sorted(appeared, key=lambda t: (t['path'] != old['path'], t['key'])) if same_test(old, t)), None)
-            if match:
-                appeared.remove(match)
-                facts.append(fact('test_moved', old['path'], 'dbt', locate(texts.get(('old', old['path']), ''), old['context']+[old['name']]),
-                                  key, key, match['key'], moved_to=match['path']))
-            else:
-                facts.append(fact('test_removed', old['path'], 'dbt', locate(texts.get(('old', old['path']), ''), old['context']+[old['name']]), key))
-            continue
-        if current['path'] != old['path']:
+            current = next((t for t in sorted(appeared, key=lambda t: (t['path'] != old['path'], t['key'])) if renamed(old, t)), None)
+            old_line = locate(texts.get(('old', old['path']), ''), old['context']+[old['name']])
+            if current is None:
+                facts.append(fact('test_removed', old['path'], 'dbt', old_line, key))
+                continue
+            appeared.remove(current)
+            facts.append(fact('test_moved', old['path'], 'dbt', old_line, key, key, current['key'], moved_to=current['path']))
+        elif current['path'] != old['path']:
             facts.append(fact('test_moved', old['path'], 'dbt', test=key, moved_to=current['path']))
         old_config, old_rest = split_args(old['args'])
         new_config, new_rest = split_args(current['args'])
@@ -617,7 +650,7 @@ def dbt_facts(repo, merge_base, dbt, root, changed, files, unreadable):
         for kind, setting, before, after in config_facts:
             if kind != 'assertion_changed':
                 facts.append(fact(kind, current['path'], 'dbt', line, key, setting+': '+str(before), setting+': '+str(after)))
-        if old_rest != new_rest or old['type'] != current['type'] or any(kind == 'assertion_changed' for kind, *_ in config_facts):
+        if old_rest != new_rest or any(kind == 'assertion_changed' for kind, *_ in config_facts):
             facts.append(fact('assertion_changed', current['path'], 'dbt', line, key, old['args'], current['args']))
     return facts
 

@@ -1,0 +1,45 @@
+{
+  "name": "review-respects-a-requested-test-change",
+  "cwd": "dbt-tests-mini",
+  "requires": {
+    "commands": [
+      "review"
+    ]
+  },
+  "git": {
+    "commit": true,
+    "uncommitted": {
+      "models/orders.sql": null,
+      "models/fct_orders.sql": "select order_id, customer_id, order_date, amount from {{ source(\"shop\", \"orders\") }}\n",
+      "models/schema.yml": "version: 2\nmodels:\n  - name: fct_orders\n    columns:\n      - name: order_id\n        data_tests:\n          - unique:\n              config:\n                error_if: \">100\"\n          - not_null\n      - name: amount\n        data_tests:\n          - not_null\n",
+      "tests/assert_amount_positive.sql": "select order_id, amount from {{ ref(\"fct_orders\") }} where amount < 0\n",
+      "docs/sdlc/2026-11-12-orders-rename/spec.md": "# Spec: orders becomes fct_orders, duplicates tolerated until upstream deduplication\n\nStatus: accepted · Decided by the data owner on 2026-11-12\n\n## Requirements\n1. The model `orders` is renamed `fct_orders`; its tests follow it.\n2. The uniqueness test of `order_id` tolerates up to 100 duplicate ids (`error_if: \">100\"`) until the upstream deduplication ships; this is decided and temporary.\n"
+    }
+  },
+  "prompt": "/review",
+  "expect": {
+    "regex": [
+      "(?i)error_if|>100|seuil|threshold|doublon|duplicat"
+    ],
+    "not_regex": [
+      "(?i)(important|\\bP[0-1]\\b|bloquant|blocking)[^\\n]{0,300}(error_if|>\\s*100|seuil|threshold|doublon|duplicat|uniq)",
+      "(?i)(important|\\bP[0-1]\\b|bloquant|blocking)[^\\n]{0,300}(supprim|delet|remov|lost|perdu)[^\\n]{0,120}test"
+    ],
+    "not_contains": [
+      "nothing to review",
+      "rien à relire"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "Scope: 4 changed files and a new spec.md.\n- Intended test change: `error_if` of order_id's unique test raised to >100, as spec.md requirement 2 decides (temporary).\n- The tests of `orders` moved with the rename to `fct_orders`.\nNo Important finding.",
+      "- Minor · Compliance — spec.md says the >100 threshold is temporary: add a date or ticket to restore `>0`."
+    ],
+    "fail": [
+      "- **Important** · Tests — models/schema.yml:9: `error_if` relaxed from >0 to >100 lets duplicate orders pass; restore `>0`.",
+      "- **[P1] Restore strict uniqueness** — raising error_if to >100 allows duplicates.",
+      "- **Important** · Tests — the tests of model orders were deleted."
+    ]
+  },
+  "_doc": "The control: the threshold is relaxed and the model renamed (its tests move), but a spec.md the change carries decides both. The review must not report them as Important (or P0/P1); mentioning them as intended is right. Without the kit a review may well flag them: this case measures the kit's false alarms, not a gain."
+}

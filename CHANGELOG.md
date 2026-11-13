@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.3.1 (2026-11-13)
+
+The review's test check no longer mistakes a removed dbt test for a renamed one. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **Renames**: a dbt test counts as moved only when the model, source, table or column that held it is renamed (the old one gone, the new one new) or the test itself is renamed; a test removed from a column that still exists is reported as removed even when another column of the change is renamed. A renamed model whose test is also relaxed gives the move and the relaxed threshold, not a removal.
+- **Evals**: case `review-flags-weakened-test` is judged on substance (each problem named and presented as one to fix), not on the kit's word Important: measured on Codex, the CLI finds both of its traps without the kit too. Two cases measure what the test check adds: `review-finds-buried-weakened-test` (one `not_null` removed in a 15-file change, new `dbt-big-mini` fixture) and `review-respects-a-requested-test-change` (no Important finding on a change a `spec.md` decides). Criteria can forbid a pattern with `not_regex`.
+
 ## 4.3.0 (2026-11-13)
 
 `/review` sees the tests a change deletes, disables or relaxes. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

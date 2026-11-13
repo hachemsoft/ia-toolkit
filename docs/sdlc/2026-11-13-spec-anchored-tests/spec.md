@@ -96,3 +96,6 @@ Reconnaissance par chemin, puis marques lues dans le diff. « Assertion » ne va
 - Assumption : les fichiers de test suivent les conventions de la table « Familles ». À vérifier sur des dépôts réels pendant `/build` ; un dépôt hors convention ne profite que du niveau 1 sur ce que les dossiers `test/`, `tests/`, `__tests__/`, `spec/` désignent.
 - Assumption : la détection de renommage de git (seuil par défaut) suffit pour la plupart des déplacements de fichiers ; sinon le rapprochement par nom de test (exigence 3) prend le relais.
 - Le découpage en tranches (socle et dbt, puis Java, Python, JavaScript, puis PHP, Go, Rust, Scala) est fait par `/build` ; `to-tickets` peut en faire des tickets sur demande.
+- Décidé le 2026-11-13, pour la tranche 2 (après la revue de la tranche 1) :
+  - Filtres git : vérifier d'abord si `git diff` contre l'arbre de travail lance les filtres `clean` du dépôt (git-lfs) ; si oui, les neutraliser pour tenir l'exigence 10 (lecture seule).
+  - Dossiers génériques : dans une famille connue, un fichier sous `test/`, `tests/`, `__tests__/` ou `spec/` n'est un test que s'il suit les noms de la famille (table « Familles ») ; les données (`.json`, `.csv`, `.yml` hors dbt…) n'y sont plus des tests. La règle large du dossier reste pour les langages sans famille.
