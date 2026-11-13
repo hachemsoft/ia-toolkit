@@ -29,8 +29,8 @@
   "prompt": "/review",
   "expect": {
     "regex": [
-      "(?i)(not_null[^\\n]{0,200}customer_email|customer_email[^\\n]{0,200}not_null)",
-      "(?i)(important|\\bP[0-3]\\b|bloquant|blocking|restor|rétabl|remettre|réintrodui|reintroduc|keep|garder|conserv|preserv|retain|missing|manqu)[^\\n]{0,300}customer_email|customer_email[^\\n]{0,300}(important|\\bP[0-3]\\b|bloquant|blocking|restor|rétabl|remettre|réintrodui|reintroduc|keep|garder|conserv|preserv|retain|missing|manqu)"
+      "(?i)(not_null[^\\n]{0,200}customer[-_ ]?email|customer[-_ ]?email[^\\n]{0,200}not_null)",
+      "(?i)(important|\\bP[0-3]\\b|bloquant|blocking|restor|rétabl|remettre|réintrodui|reintroduc|keep|garder|conserv|preserv|retain|missing|manqu)[^\\n]{0,300}customer[-_ ]?email|customer[-_ ]?email[^\\n]{0,300}(important|\\bP[0-3]\\b|bloquant|blocking|restor|rétabl|remettre|réintrodui|reintroduc|keep|garder|conserv|preserv|retain|missing|manqu)"
     ],
     "not_contains": [
       "nothing to review",
@@ -40,7 +40,8 @@
   "samples": {
     "pass": [
       "- **Important** · Tests — models/marts/_marts.yml:11: the `not_null` test on `dim_customers.customer_email` is removed and nothing asked for it; restore it.",
-      "- **[P1] Restore the email check** — models/marts/_marts.yml: `customer_email` lost its `not_null` test in dim_customers."
+      "- **[P1] Restore the email check** — models/marts/_marts.yml: `customer_email` lost its `not_null` test in dim_customers.",
+      "- **Important · Standards** — [_marts.yml:11](models/marts/_marts.yml#L11) removes the customer-email `not_null` test without a corresponding contract change."
     ],
     "fail": [
       "Scope: 15 files. Descriptions added to every model and column, `amount` renamed to `amount_eur` in three models with its tests, SQL rewritten as CTEs. No finding.",

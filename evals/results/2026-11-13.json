@@ -1,0 +1,194 @@
+{
+ "_doc": "Runs of the review's test check (ADR 0027), on Codex 0.167.0, model: the CLI default, three runs per case and configuration: without the kit (baseline home), kit 4.2.0 (the rule 'never weaken a test' only), kit 4.3.0 or 4.3.1 (with weakened_tests.py). Statuses judged with the criteria of evals/cases as committed with this file; review-flags-weakened-test and review-finds-buried-weakened-test were re-judged on the stored answers after their criteria were corrected (substance, not the word Important; customer-email written with a hyphen or a space). In review-finds-buried-weakened-test, kit 4.2.0 found the removed test 3/3 but rated it Important 2/3 (Minor once); kit 4.3.1 rated it Important 3/3.",
+ "runs": [
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": null,
+   "case": "review-flags-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": null,
+   "case": "review-flags-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": null,
+   "case": "review-flags-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.2.0",
+   "case": "review-flags-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.2.0",
+   "case": "review-flags-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.2.0",
+   "case": "review-flags-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.3.0",
+   "case": "review-flags-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.3.0",
+   "case": "review-flags-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.3.0",
+   "case": "review-flags-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": null,
+   "case": "review-finds-buried-weakened-test",
+   "status": "FAIL"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": null,
+   "case": "review-finds-buried-weakened-test",
+   "status": "FAIL"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": null,
+   "case": "review-finds-buried-weakened-test",
+   "status": "FAIL"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": null,
+   "case": "review-respects-a-requested-test-change",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": null,
+   "case": "review-respects-a-requested-test-change",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": null,
+   "case": "review-respects-a-requested-test-change",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.2.0",
+   "case": "review-finds-buried-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.2.0",
+   "case": "review-finds-buried-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.2.0",
+   "case": "review-finds-buried-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.2.0",
+   "case": "review-respects-a-requested-test-change",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.2.0",
+   "case": "review-respects-a-requested-test-change",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.2.0",
+   "case": "review-respects-a-requested-test-change",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.3.1",
+   "case": "review-finds-buried-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.3.1",
+   "case": "review-finds-buried-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.3.1",
+   "case": "review-finds-buried-weakened-test",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.3.1",
+   "case": "review-respects-a-requested-test-change",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.3.1",
+   "case": "review-respects-a-requested-test-change",
+   "status": "OK"
+  },
+  {
+   "date": "2026-11-13",
+   "cli": "Codex 0.167.0",
+   "kit": "4.3.1",
+   "case": "review-respects-a-requested-test-change",
+   "status": "OK"
+  }
+ ]
+}

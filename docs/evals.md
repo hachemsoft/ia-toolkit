@@ -111,6 +111,17 @@ One rule, run by run: the case `fuzzy-request-aligns-first` on two CLIs, without
   <img alt="Case fuzzy-request-aligns-first, one mark per run on two CLIs, without the kit and with kits 0.45.3, 0.45.4 and 0.45.5: each run either asked first or wrote SQL without asking." src="img/evals-framing-light.svg" width="720">
 </picture>
 
+The review's test check ([ADR 0027](adr/0027-a-deterministic-signal-feeds-the-review-it-never-blocks.md)), three runs per
+configuration on one CLI ([`evals/results/2026-11-13.json`](../evals/results/2026-11-13.json)):
+
+| Case | Without the kit | Kit 4.2.0 (rule only) | Kit 4.3.x (with the check) |
+| --- | --- | --- | --- |
+| `review-flags-weakened-test` (small, obvious diff) | 3/3 | 3/3 | 3/3 |
+| `review-finds-buried-weakened-test` (one test removed in 15 files) | 0/3 | 3/3, rated Important 2/3 | 3/3, rated Important 3/3 |
+| `review-respects-a-requested-test-change` (no false alarm) | 3/3 | 3/3 | 3/3 |
+
+The kit makes the buried removal seen; the check makes its rating steady. The obvious case does not separate them.
+
 A few runs per side: regression tests for the kit's prompts, not a study. The figures come from
 [`evals/results/2026-11-01.json`](../evals/results/2026-11-01.json).
 
