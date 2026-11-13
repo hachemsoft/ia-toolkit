@@ -14,10 +14,23 @@ follows what the change can break and whether that can be undone, not its size.
 | --- | --- | --- |
 | quick | local, obvious behaviour, no contract changed | no artifact; do it, run the check that covers it |
 | standard | small feature, a few files | short alignment, then a failing acceptance test approved before code |
-| full | large or fuzzy; production, a shared contract, irreversible or personal data | useful artifacts, acceptance before code, risks: how a failure shows and how to undo it |
+| full | large or fuzzy; production, a shared contract, irreversible or personal data | useful artifacts; risks first: how a failure shows and how to undo it (for an irreversible operation, the backup or way back); acceptance before code, then as standard |
 
 A request that changes a business rule or a KPI, or says people disagree on one, is full: the deciding question comes
 before code or a query. Tests are never weakened, skipped or deleted to hide a regression.
+
+**The acceptance tests come before the code** at standard and full levels ([ADR 0028](adr/0028-test-first-where-a-person-looks-at-the-test.md)):
+
+- The agent writes them from the acceptance criteria of `spec.md` when there is one (a named manual check where no test
+  can), three at most; with more criteria it proposes to split the change.
+- It runs them and shows them failing on their assertion, not on an import or compile error, with why and what each
+  asserts, then waits for your approval. A go-ahead you gave before seeing them does not cover them; "do not stop for
+  the tests", said explicitly, does, and the agent notes it.
+- Before your approval, only the tests, an empty stub in a new file and a change to the test configuration
+  (`phpunit.xml.dist`, `pytest.ini`…) are written; no other existing file changes.
+- Without a test runner, the acceptance is the check the matching playbook names (an assertion query, a plan or a diff).
+  A docs-only change or a pure refactor needs no new test.
+- Once approved, the implementation is free; the tests stay as approved and nothing is committed while they fail.
 
 ## Steps
 

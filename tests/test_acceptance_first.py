@@ -28,7 +28,8 @@ class AcceptanceFirstTests(unittest.TestCase):
             self.assertIn(words, build)
         for words in ('except for the acceptance tests of step 2', 'at most three', 'not on an import or compile error',
                       'do not stop for the tests', 'no test runner', 'needs no new test',
-                      'an empty stub in a new file', 'no existing file changes before approval'):
+                      'an empty stub in a new file', 'a test-config change', 'no other existing file changes before approval',
+                      'for an irreversible operation the backup or way back'):
             self.assertIn(words, build)
         self.assertNotIn('red test first', build)
 

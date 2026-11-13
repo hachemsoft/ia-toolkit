@@ -31,6 +31,12 @@ own loop: the failing reproduction is its evidence and the person asked for the 
 `/build` reads only the kit context, which does not repeat the docs and refactor exemption: accepted, `/build` says it.
 The extra stop shows in frictions if it costs more than it saves.
 
+**Amended**: 4.5.1, a full-level change states its risks first, then its tests (the 4.4.0 wording put the tests first and
+the recovery plan of an irreversible deletion dropped from 3/3 to 1/3 on Codex); before approval, an empty stub in a new
+file is allowed so that a test fails on its assertion, and no existing file changes (seen on a real project: an agent
+edited a repository class to get there). 4.6.1, a change to the test configuration is allowed too (a new test suite had
+to be declared), and an irreversible operation's plan names the backup or way back.
+
 **Considered**: keeping the red test before every slice (the contested part, paid at every step); dropping test-first
 altogether (nothing then proves the test checks what the person wanted); one criterion at a time, each test shown and
 approved before its code, as the research note proposes (one stop per criterion: the limit of three tests per change keeps

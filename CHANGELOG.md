@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.6.1 (2026-11-14)
+
+`/build` names the way back of an irreversible operation, and lets the tests run before you approve them. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **Irreversible operations**: a full-level plan puts its risks first and, for an irreversible operation, names the backup or the way back. With 4.5.1, Codex named it in 4 runs of 6 on an irreversible production deletion, against 3 of 3 before 4.4.0.
+- **Before you approve the acceptance tests**: besides an empty stub in a new file, a change to the test configuration (`phpunit.xml.dist`, `pytest.ini`…) is allowed so that the tests run; no other existing file changes. Seen on a real project: a new test suite had to be declared.
+- **Docs**: the size budgets of the kit context (3,800 characters) and of each command (4,000), the tests that enforce them and how to raise one, in [extending](docs/extending.md#size-budgets); the rules of the acceptance tests in [commands](docs/commands.md); ADR 0028 lists its amendments.
+
 ## 4.6.0 (2026-11-13)
 
 A repo's protected paths now hold in shell commands too. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

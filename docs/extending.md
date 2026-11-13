@@ -70,6 +70,23 @@ context replaces the team layer). `templates/kit-context.md` becomes `00_KIT.md`
 **News**: `NEWS.md` entries are `## <YYYY-MM-DD> <id> : <title>`, then optional `teams: <names>` and `until: <date>` lines,
 then the text; `python3 scripts/check_news.py` checks them.
 
+## Size budgets
+
+Some texts load in every session, for everyone: each character costs tokens every time. They have a budget, enforced by
+a test.
+
+| Text | Budget | Test | Why this size |
+| --- | --- | --- | --- |
+| kit context (`templates/kit-context.md`, installed as `00_KIT.md`) | under 3,800 characters | `tests/test_context_layers.py` | loaded at every session; 3,700 at 0.17.0, raised to 3,800 on 2026-10-31 for the `Level:` line |
+| each command prompt (`commands/*.md`, after its front matter) | under 4,000 characters | `tests/test_commands.py` | loaded when the command runs, on every CLI |
+| an `installer/` module | under 800 lines | `tests/test_invariants.py` | readable in one sitting ([architecture](architecture.md)) |
+
+When a change does not fit, move detail out before raising a budget: what only one domain needs goes to its playbook,
+what only one step needs goes to the skill that step activates (loaded on demand). Raise a budget only on purpose: in the
+same change, update the test and this table, and say why in the CHANGELOG. Never pass a test by deleting a rule another
+test or an eval relies on: `tests/test_workflow_content.py` and `tests/test_acceptance_first.py` lock the wording the
+evals measure.
+
 ## Add or change a component
 
 1. Write the skill, agent or command as above. A domain playbook stays optional and ends with `## In the kit commands`,
