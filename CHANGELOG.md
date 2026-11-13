@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.1.3 (2026-11-13)
+
+Documentation aligned with the code, and dead code removed; nothing changes in what is installed. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **README**: shows a session, describes each component (context, commands, skills, playbooks, agents, workflows, guardrails, MCP, frictions, evals, engine) and what the kit writes per CLI.
+- **Evals page**: shows the with-and-without chart and the run-by-run chart of `fuzzy-request-aligns-first`.
+- **Docs fixed**: `status --verbose` labels the Core layer `Core`; Claude Code always prefixes the kit skills; `doctor --live` fetches the tags of a cloned kit folder; `sync` falls back to the Core recorded at the first install; the Core content lists `templates/`, `mcp/`, `CHANGELOG.md` and `NEWS.md`; Linux is named with Mac and Windows.
+- **Dead code**: unused functions and methods removed from the engine and the `whats-new` hook; the `aikit.toml` template no longer mentions the removed choices screen.
+
 ## 4.1.2 (2026-11-12)
 
 Installing and updating say what to do next, and the first session offers `/me`. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
