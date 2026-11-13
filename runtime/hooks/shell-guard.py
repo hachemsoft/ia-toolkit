@@ -463,6 +463,15 @@ def record_refusal(guardrail):
     except OSError:
         pass
 
+def passes(payload, note=None):
+    """The answer that lets a tool call through. agy requires a decision in every answer (its hooks docs: `decision`,
+    required) and refuses an empty object without a reason; "allow" hands the call to agy's own permissions. The other
+    CLIs read an empty object as nothing to say."""
+    answer = dict(note or {})
+    if isinstance(payload, dict) and 'toolCall' in payload:
+        answer['decision'] = 'allow'
+    return json.dumps(answer, ensure_ascii=False)
+
 # The rules this script knows, by the guardrail name a person writes in aikit.toml.
 RULES = {'dbt-prod-guard': dbt_prod_guard, 'git-guard': git_guard, 'bq-cost-guard': bq_cost_guard, 'infra-prod-guard': infra_prod_guard}
 
@@ -478,7 +487,7 @@ def main():
     call = payload.get('toolCall') or {}
     tool = payload.get('tool_name') or call.get('name')
     if tool not in SHELL_TOOLS:
-        print('{}')
+        print(passes(payload))
         return
     args = payload.get('tool_input') or call.get('args') or {}
     if not isinstance(args, dict):
@@ -498,7 +507,7 @@ def main():
             print(json.dumps(answer, ensure_ascii=False))
             return
         note = note or answer
-    print(json.dumps(note, ensure_ascii=False) if note else '{}')
+    print(passes(payload, note))
 
 if __name__ == '__main__':
     main()

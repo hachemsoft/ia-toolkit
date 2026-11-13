@@ -581,6 +581,15 @@ def record_refusal(guardrail):
     except OSError:
         pass
 
+def passes(payload, note=None):
+    """The answer that lets a tool call through. agy requires a decision in every answer (its hooks docs: `decision`,
+    required) and refuses an empty object without a reason; "allow" hands the call to agy's own permissions. The other
+    CLIs read an empty object as nothing to say."""
+    answer = dict(note or {})
+    if isinstance(payload, dict) and 'toolCall' in payload:
+        answer['decision'] = 'allow'
+    return json.dumps(answer, ensure_ascii=False)
+
 def main():
     use_utf8()
     try:
@@ -597,7 +606,7 @@ def main():
         decision = BLOCKED.format(name) if name else None
     if decision:
         record_refusal('protected-paths')
-    print(json.dumps(deny_output(payload, decision), ensure_ascii=False) if decision else '{}')
+    print(json.dumps(deny_output(payload, decision), ensure_ascii=False) if decision else passes(payload))
 
 def decide(payload):
     # Input shapes: Gemini CLI (tool_name / tool_input.file_path), Antigravity (toolCall.name / toolCall.args.TargetFile...),

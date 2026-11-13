@@ -187,6 +187,40 @@ class SharedScriptTests(Folder):
             self.assertTrue(denied(answer) or answer.get('hookSpecificOutput', {}).get('permissionDecision') == 'deny', payload)
 
 
+class AgyAnswerTests(Folder):
+    """agy requires a decision in every answer of a hook that runs before a tool: an empty object is refused, with no reason
+    shown. The other CLIs read an empty object as nothing to say."""
+    def answer(self, script, rules, payload, env=None):
+        proc = subprocess.run([sys.executable, '-I', str(GUARD.parent/script), *rules], input=json.dumps(payload), capture_output=True, text=True, encoding='utf-8',
+                              env={**os.environ, **self.env, **(env or {})})
+        return json.loads(proc.stdout)
+
+    def test_agy_gets_an_explicit_allow(self):
+        shell = {'toolCall': {'name': 'run_command', 'args': {'CommandLine': 'git status', 'WaitMsBeforeAsync': 5000}}, 'workspacePaths': [str(self.home)], 'stepIdx': 0}
+        write = {'toolCall': {'name': 'write_to_file', 'args': {'TargetFile': str(self.home/'notes.md')}}, 'workspacePaths': [str(self.home)]}
+        other = {'toolCall': {'name': 'read_file', 'args': {'Path': str(self.home/'notes.md')}}, 'workspacePaths': [str(self.home)]}
+        for payload in (shell, write, other):
+            self.assertEqual(self.answer('protected-paths.py', [], payload), {'decision': 'allow'}, payload)
+            self.assertEqual(self.answer('shell-guard.py', list(ALL), payload), {'decision': 'allow'}, payload)
+        self.assertEqual(self.answer('shell-guard.py', [], shell), {'decision': 'allow'})  # no rule on: still an answer agy accepts
+
+    def test_agy_refusals_and_notes_keep_their_shape(self):
+        refused = self.answer('shell-guard.py', ['git-guard'], {'toolCall': {'name': 'run_command', 'args': {'CommandLine': 'git reset --hard'}}})
+        self.assertEqual(refused['decision'], 'deny')
+        self.assertIn('Blocked by the kit', refused['reason'])
+        noted = self.answer('shell-guard.py', ['dbt-prod-guard'], {'toolCall': {'name': 'run_command', 'args': {'CommandLine': 'dbt run --target prod'}}, 'workspacePaths': [str(self.home)]},
+                            {'AI_KIT_ALLOW_PROD': '1'})
+        self.assertEqual(noted['decision'], 'allow')
+        self.assertIn('allowed by AI_KIT_ALLOW_PROD=1', noted['systemMessage'])
+
+    def test_the_other_clis_keep_the_empty_answer(self):
+        for payload in ({'tool_name': 'run_shell_command', 'tool_input': {'command': 'git status'}, 'cwd': str(self.home)},
+                        {'hook_event_name': 'PreToolUse', 'tool_name': 'Bash', 'tool_input': {'command': 'git status'}, 'cwd': str(self.home)},
+                        {'hook_event_name': 'PreToolUse', 'tool_name': 'shell', 'tool_input': {'command': ['bash', '-lc', 'git status']}, 'cwd': str(self.home)}):
+            self.assertEqual(self.answer('protected-paths.py', [], payload), {}, payload)
+            self.assertEqual(self.answer('shell-guard.py', list(ALL), payload), {}, payload)
+
+
 class RefusalCountTests(Folder):
     """Each refusal leaves one line, a date and a guardrail name, written by the installed copy only; ai-kit usage counts them."""
     def installed(self, script):

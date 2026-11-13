@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.3.2 (2026-11-13)
+
+The guardrails no longer stop every shell command and file write in agy. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **agy**: a guardrail that lets a tool call through now answers `{"decision": "allow"}` to agy, whose hooks require a decision; it answered an empty object, which agy refused with `tool call denied by pre-tool hook:` and no reason. With `protected-paths` on, as it is by default, this refused every shell command and every file write. `allow` leaves the call to agy's own permissions. The other CLIs keep the empty answer.
+
 ## 4.3.1 (2026-11-13)
 
 The review's test check no longer mistakes a removed dbt test for a renamed one. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
