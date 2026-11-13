@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.4.0 (2026-11-13)
+
+`/build` asks for test-first where you look at the test. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **Quick**: no test written first; the existing checks that cover the change prove it.
+- **Standard and full**: before any code, the agent writes the acceptance tests of the change (one per criterion of `spec.md` that can be automated, a named check for the others; three at most, else it proposes to split the change), shows them failing on their assertion with why and what each asserts, and waits for your approval. A go-ahead you gave before seeing them does not cover them; "do not stop for the tests", said explicitly, does, and the agent notes it. Without a test runner, the acceptance is the check the playbook names (an assertion query, a `terraform plan`, a reproduction script). Then the implementation is free (the tdd skill's red-green loop is optional below those tests), the tests stay as you approved them, and nothing is committed while they fail.
+- **Texts**: kit context, `/build`, `/test`, skill `tdd` 1.1.0, playbooks `dbt-model-change`, `java-change`, `python-js-change` and `infra-change` 1.1.0. Decision and sources: [ADR 0028](docs/adr/0028-test-first-where-a-person-looks-at-the-test.md).
+
 ## 4.3.2 (2026-11-13)
 
 The guardrails no longer stop every shell command and file write in agy. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

@@ -3,7 +3,7 @@ name: infra-change
 description: "Prepare or review an infrastructure or delivery change: Terraform, Kubernetes, Helm, CI/CD pipeline, Dockerfile, cloud configuration. Triggers: modify the pipeline, add a resource, change a deployment, open a port, bump an image version, review this Terraform plan. Not for: application code."
 metadata:
   aikit-default: "false"
-  aikit-version: "1.0.0"
+  aikit-version: "1.1.0"
   aikit-origin: "internal"
   aikit-summary: "Prepare or review an infrastructure or delivery change: Terraform, Kubernetes, Helm, CI/CD pipeline, Dockerfile, cloud configuration."
   aikit-category: "domain"
@@ -23,5 +23,5 @@ Read `AGENTS.md`, the environment layout (folders, workspaces, overlays, Helm va
 | "Rollback, we'll see if it breaks" | Without a written rollback, the incident lasts as long as it takes to invent one. |
 
 ## In the kit commands
-- `/build`: infrastructure or delivery (Terraform, Kubernetes, Helm, a CI/CD pipeline, a Dockerfile) follows this playbook; never apply or deploy yourself.
+- `/build`: infrastructure or delivery (Terraform, Kubernetes, Helm, a CI/CD pipeline, a Dockerfile) follows this playbook; never apply or deploy yourself. The acceptance to show and get approved before the change is read-only evidence: the `terraform plan`, the rendered manifest diff or the pipeline lint you expect after it, and what it must and must not change.
 - `/diagnose`: a failed deployment, pipeline or infrastructure change is investigated with read-only evidence only.

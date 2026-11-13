@@ -13,7 +13,7 @@ follows what the change can break and whether that can be undone, not its size.
 | Level | When | What happens |
 | --- | --- | --- |
 | quick | local, obvious behaviour, no contract changed | no artifact; do it, run the check that covers it |
-| standard | small feature, a few files | short alignment, then test-first |
+| standard | small feature, a few files | short alignment, then a failing acceptance test approved before code |
 | full | large or fuzzy; production, a shared contract, irreversible or personal data | useful artifacts, acceptance before code, risks: how a failure shows and how to undo it |
 
 A request that changes a business rule or a KPI, or says people disagree on one, is full: the deciding question comes
@@ -28,7 +28,7 @@ The SDLC commands. `workflows/sdlc.md` is the same table, generated from `comman
 | Plan | `/intent` | default | `intent.md` | interview in rounds (grilling), glossary terms and decisions (domain-modeling) |
 | Plan | `/map` | optional | decision tickets | work too large for one session, decisions first (wayfinder) |
 | Design | `/spec` | default | `spec.md` | from the accepted intent, no new interview; one file, never a ticket (to-spec) |
-| Build | `/build` | default | diff and tests; `plan.md` for a full change | test-first, one slice at a time (tdd), then a review of the whole change (code-review) |
+| Build | `/build` | default | diff and tests; `plan.md` for a full change | quick: the existing checks; standard and full: a failing acceptance test you approve before any code, then free slices (tdd's loop optional), then a review of the whole change (code-review) |
 | Build | `/design` | optional | interface sketch or prototype | module shapes compared (codebase-design), or a throwaway prototype |
 | Test | `/test` | default | real output of the checks | what changed and what depends on it; pastes the output (tdd) |
 | Deploy | `/review` | default | ranked findings | committed and uncommitted changes, one severity scale; a Tests pass on the facts of the kit's test check (tests deleted, disabled or relaxed); `quick` or `full` (code-review) |
@@ -102,7 +102,7 @@ the steps below, and a rationalizations table. The commands name no domain: `/bu
 | bigquery-query-review | `/build`, `/diagnose` | preserved semantics, partitions, execution plan |
 | bigquery-cost-review | `/build`, `/diagnose` | bytes, slots, frequency, budget before running |
 | perimeter-brief | `/learn` | HTML brief of a data perimeter, quiz, candidate glossary terms |
-| python-js-change | `/build` | repo conventions, test-first, interface before implementation |
+| python-js-change | `/build` | repo conventions, the approved acceptance test first, interface before implementation |
 | java-change | `/build` | Maven or Gradle conventions, JUnit, public contracts |
 | infra-change | `/build`, `/diagnose` | blast radius, read-only evidence (plan, diff), never an apply, rollback |
 | architecture-decision | none (activated by the task) | options, criteria, consequences, reversibility, ADR |

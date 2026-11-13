@@ -33,6 +33,8 @@ You talk to your CLI as usual. The kit's context makes the agent size the change
 
 Level: standard: a small feature in two files, no contract changed.
 Plan: 1. a failing test for an archived customer  2. filter in export_customers()  3. run the suite.
+Test written: test_export_skips_archived fails (customer 42 is archived and still exported). Approve it before I code?
+> Yes
 …
 | Check                       | Result         |
 | pytest tests/test_export.py | 12 passed      |

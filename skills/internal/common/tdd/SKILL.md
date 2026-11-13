@@ -3,7 +3,7 @@ name: tdd
 description: Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests.
 metadata:
   aikit-default: "true"
-  aikit-version: "1.0.0"
+  aikit-version: "1.1.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Test-first development: red, green, refactor; integration tests preferred."
@@ -16,6 +16,10 @@ metadata:
 TDD is the red → green loop. This skill is the reference that makes that loop produce tests worth keeping: what a good test is, where tests go, the anti-patterns, and the rules of the loop. Every section applies on every cycle: consult them before and during the loop, not after.
 
 When exploring the codebase, read `GLOSSARY.md` (if it exists) so test names and interface vocabulary match the project's domain language, and respect ADRs in the area you're touching.
+
+## In the kit
+
+The acceptance test the person approved is the contract: written first, failing on its assertion, shown with why, approved before any code (`/build`, standard and full levels; ADR 0028). The acceptance tests of one change, three at most, are shown and approved together: a deliberate exception to "Horizontal slicing" and "Red before green" below, limited to the few tests the person reads; more criteria means a smaller change. Below them, the red → green loop of this skill is optional: use it when it helps find the design or pin a bug, skip it for code the acceptance tests already drive. Everything below applies to every test you write, the acceptance tests first.
 
 ## What a good test is
 

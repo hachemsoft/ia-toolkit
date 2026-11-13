@@ -9,8 +9,8 @@
       "digest": "aee9bd7e09991590"
     },
     "dbt-model-change": {
-      "version": "1.0.0",
-      "digest": "954a5d46790dd368"
+      "version": "1.1.0",
+      "digest": "08ccc192615d1214"
     },
     "incremental-replay": {
       "version": "1.0.0",
@@ -113,8 +113,8 @@
       "digest": "f9ce06861b513d88"
     },
     "tdd": {
-      "version": "1.0.0",
-      "digest": "f7f68257a969b36d"
+      "version": "1.1.0",
+      "digest": "7738417f9a9f8979"
     },
     "teach": {
       "version": "1.1.0",
@@ -165,16 +165,16 @@
       "digest": "fbb060a6a07e5a9c"
     },
     "java-change": {
-      "version": "1.0.0",
-      "digest": "03eca5f654fe0dbb"
+      "version": "1.1.0",
+      "digest": "e62668266c24d3b3"
     },
     "python-js-change": {
-      "version": "1.0.0",
-      "digest": "321ad16186f64ca3"
+      "version": "1.1.0",
+      "digest": "c8602eb9a3fe849b"
     },
     "infra-change": {
-      "version": "1.0.0",
-      "digest": "0af3858178215e18"
+      "version": "1.1.0",
+      "digest": "eca338a55cac6426"
     }
   },
   "agents": {
