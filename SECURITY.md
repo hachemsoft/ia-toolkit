@@ -19,5 +19,3 @@ In scope: the installer, the launchers, the release ZIP (including the Core bund
 The guardrails are anti-error defaults, not a security barrier. A way around them is a security report only if it breaks what [their limits](docs/hooks.md#limits) say holds. See also [compliance](docs/compliance.md).
 
 Out of scope: the agent CLIs and the models themselves (report those to their vendors), and the content of a Core or Team repository an organization publishes: its owners review and protect it (tag protection is an operating requirement, see [Core and Team sources](docs/repositories.md)).
-
-Supported versions: the latest release only.

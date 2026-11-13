@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ai-kit"
 version = "4.1.2"
-description = "AI Kit: layered context, a six-step workflow, domain playbooks and review agents for Gemini CLI, Antigravity CLI, Codex CLI and Claude Code, on Mac and Windows."
+description = "AI Kit: layered context, a six-step workflow, domain playbooks and review agents for Gemini CLI, Antigravity CLI, Codex CLI and Claude Code, on Mac, Windows and Linux."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -49,7 +49,7 @@ include = ["LICENSE", "installer", "runtime", "agents", "commands", "context", "
 dev = ["ruff"]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py311"
 line-length = 140
 
 [tool.ruff.lint.per-file-ignores]

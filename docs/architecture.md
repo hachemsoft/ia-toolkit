@@ -118,7 +118,7 @@ flowchart LR
 | Folder | Content | Shipped as |
 | --- | --- | --- |
 | `installer/`, `runtime/`, `schemas/`, `templates/` | the engine | the Python package (wheel) |
-| `aikit.toml`, `context/`, `commands/`, `skills/`, `agents/`, `workflows/` | the Core content | Git tags of this repository; `core/ai-kit-core.bundle` in the ZIP |
+| `aikit.toml`, `context/`, `commands/`, `skills/`, `agents/`, `workflows/`, `templates/`, `mcp/`, `CHANGELOG.md`, `NEWS.md` | the Core content | Git tags of this repository; `core/ai-kit-core.bundle` in the ZIP |
 | `examples/team-repo/` | a Team repository to copy | — |
 | `tests/`, `evals/`, `scripts/` | offline tests, paid model evals, build and check scripts | the source only |
 
@@ -129,7 +129,7 @@ A test guards each.
 - **No byte changes by accident**: `tests/golden/install-snapshot.json` holds the digest of every file of 16 scenarios; `python3 tests/snapshot.py --update` after an intended change.
 - **A file you edited is never overwritten**: managed files are tracked by digest; an edit stops the run (a rule layer is put back, your copy kept in `~/.ai-kit/backups/`).
 - **All or nothing**: atomic writes; an error or Ctrl+C restores every file.
-- **No model call** in `init`, `sync`, `status`, `doctor`, `uninstall` or the tests (`scripts/offline_tests.py` takes the CLIs off the PATH); only `doctor --live --yes` calls one. **No network** except `init`, `sync` and `team` towards allowed Git hosts.
+- **No model call** in `init`, `sync`, `status`, `doctor`, `uninstall` or the tests (`scripts/offline_tests.py` takes the CLIs off the PATH); only `doctor --live --yes` calls one. **No network** except `init`, `sync` and `team` towards allowed Git hosts, and `doctor --live`, which fetches the tags of a cloned kit folder.
 - **No administrator rights**: everything under the home folder; the only change outside the kit's files is your own PATH, when you choose the `ai-kit` command.
 - **Every skill and agent has a version**, raised at each change (`versions.lock.json`).
 - **Small and readable**: no `installer/` module over 800 lines; the kit context under 3,800 characters and each command under 4,000, because they load at every session.

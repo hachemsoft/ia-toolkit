@@ -338,13 +338,6 @@ def extract(kit, cache, commit, dest, home=None):
     return hashlib.sha256('\n'.join(sorted(lines)).encode('utf-8')).hexdigest()
 
 
-def tree_digest(folder):
-    """The digest extract() returns, recomputed from a folder."""
-    folder = Path(folder)
-    lines = [p.relative_to(folder).as_posix()+'\0'+hashlib.sha256(p.read_bytes()).hexdigest() for p in folder.rglob('*') if p.is_file()]
-    return hashlib.sha256('\n'.join(sorted(lines)).encode('utf-8')).hexdigest()
-
-
 def prune_cache(kit, url, keep_tags):
     """Only the tags cited by lock.toml stay in the cache; unreachable objects go."""
     cache = cache_dir(kit, url)

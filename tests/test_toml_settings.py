@@ -9,7 +9,7 @@ from unittest import mock
 
 from installer import cli
 from installer.core import KitError
-from installer.toml_files import dump_toml, parse_toml, read_toml, set_list
+from installer.toml_files import dump_toml, parse_toml, read_toml, set_key
 
 
 class Base(unittest.TestCase):
@@ -52,10 +52,10 @@ class ChoicesTests(Base):
                          {'schema': 1, 'user': {'extra_commands': ['ask', 'handoff'], 'disabled_commands': ['retro']}, 'hooks': {'dbt-prod-guard': True}})
         self.assertLess(text.index('disabled_commands'), text.index('[hooks]'))  # a new list goes in its own section [user]
 
-    def test_set_list_never_changes_another_value(self):
+    def test_set_key_never_changes_another_value(self):
         text = 'a = ["x # not a comment", "]"]  # c\nb = 1\n'
-        self.assertEqual(parse_toml(set_list(text, 'a', ['y'])), {'a': ['y'], 'b': 1})
-        self.assertEqual(parse_toml(set_list(text, 'c', ['z'])), {'a': ['x # not a comment', ']'], 'b': 1, 'c': ['z']})
+        self.assertEqual(parse_toml(set_key(text, 'a', ['y'])), {'a': ['y'], 'b': 1})
+        self.assertEqual(parse_toml(set_key(text, 'c', ['z'])), {'a': ['x # not a comment', ']'], 'b': 1, 'c': ['z']})
 
 
 class LineEndingTests(unittest.TestCase):

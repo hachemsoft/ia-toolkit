@@ -3,7 +3,6 @@ Never modifies a project repo."""
 import argparse
 import os
 from pathlib import Path
-import shutil
 import sys
 
 from . import resolve
@@ -299,15 +298,6 @@ def friction_action(argv):
     parser.add_argument('--publish', action='store_true')
     args, rest = parser.parse_known_args(argv)
     return friction_module().main([*rest, *(['--sync'] if args.publish else []), '--home', str(args.home.resolve())])
-
-
-def text_editor(path):
-    """(name, command) of the system's plain-text editor for this file, or None: nothing to install, nothing to configure."""
-    if sys.platform == 'darwin' and shutil.which('open'):
-        return 'your text editor (TextEdit unless you chose another)', ['open', '-t', str(path)]
-    if os.name == 'nt':
-        return 'Notepad', ['notepad.exe', str(path)]
-    return None
 
 
 def older_tag(tag, version):

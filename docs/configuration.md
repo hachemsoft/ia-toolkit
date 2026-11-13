@@ -11,7 +11,7 @@ With this page you know which file to change for what, who wins when two files d
 | `aikit.toml` of the person | you | `~/.ai-kit/aikit.toml`, created by `init` from `templates/user-aikit.toml` |
 | `USER.md` | you (or `/me`) | `~/.ai-kit/context/USER.md` |
 
-The Core's choices are not a file you write: its default selection is the `aikit-default: "true"` metadata of each skill and agent (`default: false` hides a command), and its MCP servers are in its `mcp/servers.toml` ([MCP](mcp.md)). After a change, run `ai-kit sync --offline`, then start a new CLI session.
+The Core's choices are not a file you write: its default selection is the `aikit-default: "true"` metadata of each skill and agent (a command with `default: false` is optional, turned on with `extra_commands`), and its MCP servers are in its `mcp/servers.toml` ([MCP](mcp.md)). After a change, run `ai-kit sync --offline`, then start a new CLI session.
 
 ## Precedence
 
@@ -22,7 +22,7 @@ The Core's choices are not a file you write: its default selection is the `aikit
 | Your `aikit.toml` | your additions and removals, guardrails, MCP on or off, frictions, sources | lists add up; a `disabled_*` name or a `denied` server wins |
 | `managed.toml` | what IT imposes | every key present wins, whatever its value; its restrictions add to the others and nobody lifts them |
 
-`ai-kit status --verbose` (or `doctor`) prints where each effective setting comes from (`organization`, `team`, `you`, `IT`).
+`ai-kit status --verbose` (or `doctor`) prints where each effective setting comes from (`Core`, `team`, `you`, `IT`).
 
 ## Your `~/.ai-kit/aikit.toml`
 
@@ -32,7 +32,7 @@ The Core's choices are not a file you write: its default selection is the `aikit
 | --- | --- | --- |
 | `[user] extra_skills`, `extra_commands`, `extra_agents` | list of names | add to the selection; a command added also installs its skills |
 | `[user] disabled_skills`, `disabled_commands`, `disabled_agents` | list of names | remove from the selection |
-| `[user] skill_prefix` | up to 20 of `a-z0-9-`, or `""` | prefix given to a kit skill or command whose name you already use (default `ai-kit-`) |
+| `[user] skill_prefix` | up to 20 of `a-z0-9-`, or `""` | prefix of the kit skills in Claude Code (always), and in the other CLIs of a kit skill or command whose name you already use (default `ai-kit-`) |
 | `[user] active_team` | name or `none` | written by `team use` and `rollback`; editing it does not switch Team |
 | `[hooks] <guardrail>` | `true` or `false` | turns a guardrail on or off ([guardrails](hooks.md)) |
 | `[mcp] enabled`, `denied` | list of server names | turns a Core or Team server on, or off ([MCP](mcp.md)) |

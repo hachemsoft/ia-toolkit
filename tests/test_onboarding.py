@@ -3,6 +3,7 @@ CLIs are simulated (shutil.which); no call to a model or an MCP server."""
 import contextlib
 import io
 import re
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -38,7 +39,7 @@ class SummaryTests(unittest.TestCase):
 
     def summary(self, which, live=None, problems=()):
         out = io.StringIO()
-        with mock.patch.object(cli.shutil, 'which', side_effect=which), mock.patch.object(doctor_module, 'core_settings', return_value=self.org), \
+        with mock.patch.object(shutil, 'which', side_effect=which), mock.patch.object(doctor_module, 'core_settings', return_value=self.org), \
              contextlib.redirect_stdout(out):
             cli.print_summary(self.home, read_json(self.home/'.ai-kit/state.json'), live, problems)
         return out.getvalue()
@@ -108,7 +109,7 @@ class SetupAndDoctorOutputTests(unittest.TestCase):
 
     def run_main(self, *args, which=found()):
         out = io.StringIO()
-        with mock.patch.object(cli.shutil, 'which', side_effect=which), contextlib.redirect_stdout(out):
+        with mock.patch.object(shutil, 'which', side_effect=which), contextlib.redirect_stdout(out):
             code = cli.main(list(args)+['--home', self.home])
         return code, out.getvalue()
 

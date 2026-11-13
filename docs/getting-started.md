@@ -50,7 +50,7 @@ What is installed: the Core's default selection for everyone; a Team turns on mo
 | **Optional** (a Team's `[defaults]`, or `extra_*`) | `/design` `/map` `/triage` `/ask` `/handoff` `/wizard` `/audit` | bigquery-cost-review bigquery-query-review dbt-model-change incremental-replay kpi-definition perimeter-brief sql-review architecture-decision codebase-design grill-me handover implement-spec improve-codebase-architecture manual-steps prototype ticket-sorting to-questionnaire to-tickets wayfinder workflow-guide write-a-skill writing-great-skills java-change python-js-change infra-change | dbt-reviewer sql-reviewer architecture-reviewer security-reviewer infra-reviewer |
 <!-- selection-table:end -->
 
-`00_KIT.md` in `~/.ai-kit/context` lists what your installation has. The flow: [workflow](commands.md); the tools: [tools](commands.md).
+`00_KIT.md` in `~/.ai-kit/context` lists what your installation has. The flow: [steps](commands.md#steps); the tools: [tools](commands.md#tools).
 
 ## Run the kit
 
@@ -83,7 +83,7 @@ ai-kit team use none                                                          # 
 | `ai-kit sync --from-bundle <file>` | the Core from a Git bundle file, such as `core/ai-kit-core.bundle` of a newer ZIP | no |
 | `ai-kit status` | what is active, and whether a newer tag was seen at the last sync | no |
 
-`sync` needs a Core repository: `[core] repo` in your `aikit.toml`, or `enterprise.core` set by IT. A new engine version comes as a new ZIP (or `git pull` in a clone): run its installer the same way.
+`sync` uses the Core repository of `[core] repo` in your `aikit.toml`, or `enterprise.core` set by IT, else the one recorded at the first install. A new engine version comes as a new ZIP (or `git pull` in a clone): run its installer the same way.
 
 ## Go back
 

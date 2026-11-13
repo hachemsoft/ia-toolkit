@@ -117,11 +117,6 @@ def aimed_at(entry, team, today):
     return True
 
 
-class Run:
-    def __init__(self, returncode, stdout, stderr):
-        self.returncode, self.stdout, self.stderr = returncode, stdout, stderr
-
-
 def whats_new(state, marker, news_dir, today, user_text=''):
     """Lines to announce, and the marker updated. Pure: reads the copies in news_dir only; user_text is USER.md's text."""
     items, team = [], str(state.get('team') or '')

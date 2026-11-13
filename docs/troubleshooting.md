@@ -62,7 +62,7 @@ The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) add: 2 when Python or th
 - **`ai-kit` not recognised after `init`**: open a new terminal. On a shell the kit does not recognise, `init` prints the line to add to your startup file.
 - **`ai-kit` runs an old version**: another copy comes first on your PATH. `ai-kit --version` says which copy runs; `doctor` lists every copy.
 - **A command from the docs is missing**: it is optional. Add it with `extra_commands` in your `aikit.toml`, then `ai-kit sync --offline`. `00_KIT.md` lists what is installed.
-- **A kit skill or command is named `ai-kit-<name>`**: one of yours already had the name; yours is kept. Rename yours, then `ai-kit sync --offline`.
+- **A kit skill or command is named `ai-kit-<name>`**: in Claude Code every kit skill is, so it never shadows yours or a bundled one. In the other CLIs, one of yours already had the name; yours is kept. Rename yours, then `ai-kit sync --offline`.
 - **`USER.md` not applied**: it must be plain UTF-8 text under that exact name; `doctor` says what is wrong.
 - **A friction issue was not created**: the friction is kept locally. Install and sign in to `glab` or `gh`, then `ai-kit friction --publish`.
 - **The questions show odd characters**: add `--plain`.

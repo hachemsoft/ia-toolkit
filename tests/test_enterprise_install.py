@@ -225,7 +225,6 @@ class PersonalContextTests(unittest.TestCase):
     def test_init_at_a_terminal_with_user_asks_nothing(self):
         # AI Kit 3: init installs without questions once --user is given, even at a terminal (no editor step any more).
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(cli.sys.stdin, 'isatty', return_value=True), \
-             mock.patch.object(cli, 'text_editor', return_value=('Editor', ['editor'])), \
              mock.patch('builtins.input', side_effect=EOFError) as asked, contextlib.redirect_stdout(Console()):
             code = cli.main(['init', '--home', tmp, '--user', 'a@example.org', '--target', 'gemini'])
         self.assertEqual(code, 0)
@@ -238,13 +237,6 @@ class PersonalContextTests(unittest.TestCase):
             code = cli.main(['init', '--home', tmp, '--target', 'gemini'])
         self.assertEqual(code, 0)
         asked.assert_not_called()
-
-    def test_native_editor_or_none(self):
-        found = cli.text_editor(self.file)
-        if WINDOWS:
-            self.assertEqual(found[1][0], 'notepad.exe')
-        elif os.uname().sysname == 'Darwin':
-            self.assertEqual(found[1][:2], ['open', '-t'])  # plain-text editor: no rich text
 
 
 class SecretsAndNetworkTests(unittest.TestCase):

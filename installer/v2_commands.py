@@ -1,4 +1,4 @@
-"""AI Kit 2 commands and helpers kept out of cli.py (size): migrate_config (update --migrate-config), user_edit (user edit),
+"""AI Kit 2 commands and helpers kept out of cli.py (size): user_edit (user edit),
 the source of each installed resource, whether a Core is synced or configured."""
 import os
 import shlex

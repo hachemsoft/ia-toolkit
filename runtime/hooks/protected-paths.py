@@ -231,7 +231,7 @@ PYTHONS = re.compile(r'(python[0-9.]*|py)(\.exe)?')
 KIT_TOOLS = ('/.ai-kit/bin/friction.py',)  # run by the kit's own /friction command: it writes only outside the protected paths
 
 # The kit's own subcommands that change the installation or bill a model call: the agent tells the person, it does not run them
-# (0.52.0). Reading ones (doctor, usage, news, friction logging, --version, managed-settings into an empty folder) stay allowed.
+# (0.52.0). Reading ones (doctor, usage, friction logging, --version, managed-settings into an empty folder) stay allowed.
 KIT_REFUSED = {'init', 'sync', 'rollback', 'uninstall'}
 # Every action of the command (installer/cli.py; a test compares the two lists).
 KIT_ACTIONS = {'init', 'sync', 'team', 'status', 'doctor', 'rollback', 'user', 'uninstall', 'usage', 'friction', 'managed-settings', 'validate'}

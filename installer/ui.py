@@ -51,14 +51,6 @@ class PlainUI:
         for label, value, state in rows:
             self.print('  '+STATE_MARK[state][1]+' '+label+': '+value)
 
-    def panel(self, title, lines):
-        self.title(title)
-        for line in lines:
-            self.print('  '+line)
-
-    def warn(self, text):
-        self.print('[Check] '+text)
-
     def error(self, text):
         self.print('Error: '+text)
 
@@ -114,9 +106,6 @@ class PlainUI:
                 return answer
             self.print(problem)
 
-    def pause(self, message):
-        self._input(message)
-
     @contextlib.contextmanager
     def progress(self, label):
         """A callback(step, done, total) for apply(): one line per step, as the files are really written."""
@@ -169,16 +158,6 @@ class RichUI(PlainUI):
             table.add_row('['+styles[state]+']'+mark+'[/]', label, value)
         self.console.print(table)
 
-    def panel(self, title, lines):
-        from rich.panel import Panel
-        from rich.text import Text
-        from rich import box
-        self.console.print(Panel(Text('\n'.join(lines)), title=title, title_align='left', box=box.ROUNDED if self.unicode else box.ASCII, expand=False))
-
-    def warn(self, text):
-        self.console.print('[yellow]'+('!' if self.unicode else '[Check]')+'[/] ', end='')
-        self.console.print(text, markup=False)
-
     def error(self, text):
         self.console.print('[bold red]Error:[/] ', end='')
         self.console.print(text, markup=False)
@@ -213,9 +192,6 @@ class RichUI(PlainUI):
             problem = validate(value.strip()) if validate else None
             return problem or True
         return self._ask(self.q.text(message, default=default, validate=check, **self.io)).strip()
-
-    def pause(self, message):
-        self._ask(self.q.text(message, **self.io))
 
     @contextlib.contextmanager
     def progress(self, label):

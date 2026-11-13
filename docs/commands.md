@@ -88,14 +88,14 @@ No skill shares a command's name, because some CLIs make a command of every skil
 
 ## Domain playbooks
 
-All optional, turned on by a Team or a person. Each ends with a `## In the kit commands` section saying what it changes in
+All optional, turned on by a Team or a person. Each, except architecture-decision, ends with a `## In the kit commands` section saying what it changes in
 the steps below, and a rationalizations table. The commands name no domain: `/build`, `/diagnose`, `/intent`, `/review` and
 `/learn` tell the agent to follow the installed playbook matching the files or the task
 ([ADR 0021](adr/0021-workflow-extensions-reuse-the-playbook-section.md)).
 
 | Playbook | Extends | Role |
 | --- | --- | --- |
-| kpi-definition | `/intent`, `/build`, `/guide` | grain, population, period, exclusions, source of truth, owner, before any query |
+| kpi-definition | `/intent`, `/guide` | grain, population, period, exclusions, source of truth, owner, before any query |
 | sql-review | `/diagnose`, `/review` | grain, join cardinalities, NULL, dates, suspicious results |
 | dbt-model-change | `/build`, `/test`, `/review` | test-first on the development target; downstream models as cross-area impact |
 | incremental-replay | `/build`, `/diagnose` | unique key, late data, reprocessing window, idempotence |

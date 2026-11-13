@@ -1,6 +1,7 @@
 """V2 slice 2 (ADR 0016, docs/v2/git-sync.md): Git sources, lock.toml, sync, rollback, resume. Local bare repositories only:
 installer.sources.LOCAL_FOR_TESTS lets file:// through, by patching, never from the environment. No network."""
 import contextlib
+import hashlib
 import io
 import json
 import os
@@ -21,6 +22,12 @@ CONTENT = ('skills', 'agents', 'commands', 'context', 'templates')
 GIT_ENV = {**os.environ, 'GIT_CONFIG_NOSYSTEM': '1', 'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_AUTHOR_NAME': 't', 'GIT_AUTHOR_EMAIL': 't@example.org',
            'GIT_COMMITTER_NAME': 't', 'GIT_COMMITTER_EMAIL': 't@example.org'}
 HAS_GIT = shutil.which('git') is not None
+
+
+def tree_digest(folder):
+    """The digest sources.extract() returns, recomputed from the extracted folder."""
+    lines = [f.relative_to(folder).as_posix()+'\0'+hashlib.sha256(f.read_bytes()).hexdigest() for f in Path(folder).rglob('*') if f.is_file()]
+    return hashlib.sha256('\n'.join(sorted(lines)).encode('utf-8')).hexdigest()
 
 
 def remove_repository(path):
@@ -289,7 +296,7 @@ class ExtractionTests(Base):
 
     def test_digest_is_the_same_from_the_tree_and_from_the_folder(self):
         digest = self.extract_from(lambda r: (r/'a.txt').write_text('hello\r\n', encoding='utf-8'))
-        self.assertEqual(digest, sources.tree_digest(self.base/'out'))
+        self.assertEqual(digest, tree_digest(self.base/'out'))
 
 
 class OriginTests(unittest.TestCase):

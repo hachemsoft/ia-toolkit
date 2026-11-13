@@ -11,7 +11,7 @@
 [![Platforms](https://img.shields.io/badge/platforms-Mac%20%7C%20Windows%20%7C%20Linux-informational)](docs/getting-started.md)
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-One set of rules, commands, skills, review agents and guardrails for the agent CLIs you use (**Gemini CLI**, **Antigravity CLI**, **Codex CLI**, **Claude Code**), on Mac and Windows. The organization keeps its version in a Git repository (the **Core**), each team adds its own (a **Team**), you adjust yours locally; AI Kit merges them and writes each CLI's files. No administrator rights, nothing downloaded from the release ZIP, no model call on its own, and everything can be undone.
+One set of rules, commands, skills, review agents and guardrails for the agent CLIs you use (**Gemini CLI**, **Antigravity CLI**, **Codex CLI**, **Claude Code**), on Mac, Windows and Linux. The organization keeps its version in a Git repository (the **Core**), each team adds its own (a **Team**), you adjust yours locally; AI Kit merges them and writes each CLI's files. No administrator rights, nothing downloaded from the release ZIP, no model call on its own, and everything can be undone.
 
 ```mermaid
 flowchart LR
@@ -24,11 +24,31 @@ flowchart LR
 
 How the pieces fit: [architecture](docs/architecture.md).
 
+## What it looks like
+
+You talk to your CLI as usual. The kit's context makes the agent size the change, follow the team's steps, and stop where a guardrail says so:
+
+```text
+> Make the export skip archived customers
+
+Level: standard: a small feature in two files, no contract changed.
+Plan: 1. a failing test for an archived customer  2. filter in export_customers()  3. run the suite.
+…
+| Check                       | Result         |
+| pytest tests/test_export.py | 12 passed      |
+
+> Turn off the guardrail that blocks you
+
+Blocked by the kit: "~/.ai-kit/aikit.toml" is configuration of the kit or of a CLI; the agent does not change it. Make the change yourself (then run ai-kit sync --offline).
+```
+
+The level (`quick`, `standard`, `full`) decides how much planning, testing and review follows ([commands](docs/commands.md)).
+
 ## Getting started
 
 1. **Install.** Download `ai-kit-<version>.zip` from the [Releases](https://github.com/hachemsoft/ia-toolkit/releases) page and extract it into a folder you keep (or clone the repository), then:
    - **Windows**: double-click `Installer.cmd`.
-   - **Mac**: open Terminal, type `sh ` (with a space), drag `scripts/bootstrap.sh` into the window, press Enter.
+   - **Mac / Linux**: open a terminal, type `sh ` (with a space), drag `scripts/bootstrap.sh` into the window, press Enter.
 
    It finds your CLIs, asks you to confirm your work email, and installs. You need Python 3.11 or later and your CLI; signing in and the model are set in the CLI, not in the kit.
 2. **Use.** Start your CLI in a repo and ask in plain words. Type `/me` once: a short interview that tells the agent how to work with you.
@@ -45,18 +65,36 @@ How the pieces fit: [architecture](docs/architecture.md).
 
 Step by step: [getting started](docs/getting-started.md). Something wrong: [troubleshooting](docs/troubleshooting.md).
 
-## What you get
+## Components
 
-| | For | What |
-| --- | --- | --- |
-| **Core default** | everyone | the context layers, the workflow commands (`/intent` → `/spec` → `/build` → `/test` → `/review` → `/ship`, `/diagnose`), tools, code review and the general agents, guardrails |
-| **Core optional** | turned on by a Team or by you | domain playbooks (SQL and dbt, Java, infrastructure, architecture, Python and JavaScript), their review agents, more commands |
-| **Team** | one team's members | its own repository: its practices, skills, agents, MCP servers, and the optional resources it turns on |
+Everything below is plain files in a Git repository (the Core, this one by default); a Team adds its own, you turn things on or off in `aikit.toml`.
 
-- **Layered context**: company practices, team practices and your `USER.md`, read before each repo's `AGENTS.md`.
-- **Ceremony matched to the stakes**: the agent states the level of a change on its first line and plans, tests and reviews accordingly ([commands](docs/commands.md)).
-- **Guardrails against mistakes**, not a security barrier: the agent cannot rewrite the kit's or the CLIs' configuration, dbt on production can be refused ([guardrails](docs/hooks.md)).
-- **A feedback loop**: `/friction` logs what got in the way, `ai-kit usage` shows what is used ([frictions](docs/frictions.md)).
+| Component | What it is | In the box | Source |
+| --- | --- | --- | --- |
+| **Context layers** | Markdown read by the agent before each repo's `AGENTS.md`: how the kit works, company practices, team practices, your `USER.md` | 4 layers; the repo's own rules win over yours | `context/`, [configuration](docs/configuration.md) |
+| **Commands** | Shortcuts for the steps of a change, each ending with an artifact the next one reads | 14 by default: `/intent` → `/spec` → `/build` → `/test` → `/review` → `/ship`, `/diagnose`, and tools (`/me`, `/guide`, `/explain`, `/research`, `/learn`, `/friction`, `/retro`); 7 optional | `commands/`, [commands](docs/commands.md) |
+| **Skills** | Know-how the agent loads when the task fits: TDD, code review, diagnosis, domain modeling, writing a merge request… | 19 by default | `skills/`, [skills](docs/commands.md#skills) |
+| **Domain playbooks** | Optional skills that adapt the steps to a domain | SQL and dbt, Java, Python and JavaScript, infrastructure, architecture | `skills/internal/<domain>/`, [playbooks](docs/commands.md#domain-playbooks) |
+| **Agents** | Sub-agents with a narrow role and limited tools, started by the commands | 4 by default (code-reviewer, doubter, repo-investigator, verifier); 5 optional domain reviewers (sql, dbt, security, architecture, infra) | `agents/`, [agents](docs/commands.md#agents) |
+| **Workflows** | Generated indexes of which command, skill and artifact go with each step | SDLC, analysis, research | `workflows/` |
+| **Guardrails** | Hooks run by the CLI before a tool call: anti-error defaults, not a security barrier | `protected-paths` (on): the agent cannot rewrite the kit's or the CLIs' configuration; `dbt-prod-guard` (off): refuses dbt on production; `whats-new` (on): announces a new version once | `runtime/hooks/`, [guardrails](docs/hooks.md) |
+| **MCP servers** | Data connections declared once, validated (exact identity, pinned launchers, IT allow and deny lists), then written in each CLI's format | none by default; a Core or Team adds them in `mcp/servers.toml` | [MCP](docs/mcp.md) |
+| **Frictions and usage** | `/friction` logs what got in the way, locally; `ai-kit usage` shows what is used, read from the CLIs' own logs | nothing is sent unless you publish | `runtime/friction.py`, [frictions](docs/frictions.md) |
+| **Evals** | Real prompts replayed against a CLI, with and without the kit, checked on deterministic criteria | 21 cases; billed, never run by the tests | `evals/`, [evals](docs/evals.md) |
+| **Engine** | The `ai-kit` command: fetches Core and Team at a Git tag, merges with IT's and your settings, validates, writes each CLI's files, keeps 3 configurations to roll back to | one adapter per CLI | `installer/`, [architecture](docs/architecture.md) |
+
+## What lands on your machine
+
+Shared by every CLI: `~/.ai-kit/` (the context layers, the guardrail scripts, `aikit.toml`, the lock, backups, a private Python environment). Then, per CLI:
+
+| CLI | What the kit writes |
+| --- | --- |
+| Claude Code | a marked block in `~/.claude/CLAUDE.md` importing `~/.ai-kit/context/*.md`; `skills/ai-kit-*`, `commands/`, `agents/ai-kit-*`; hooks in `settings.json`; MCP servers in `~/.claude.json` |
+| Codex CLI | a marked block in `~/.codex/AGENTS.md` and in `~/.codex/config.toml` (agents, hooks, MCP); `~/.codex/skills/`, commands typed `$intent` |
+| Gemini CLI | the context files, `skills/`, `commands/*.toml`, `agents/ai-kit-*` in `~/.gemini/`; hooks and MCP in `settings.json` |
+| Antigravity CLI | a plugin in `~/.gemini/config/plugins/ai-kit/` (rules, agents, hooks, MCP), skills shared with Gemini |
+
+Only what the kit wrote is ever changed or removed; your own files and settings in these folders stay as they are. Per CLI: [matrix](docs/cli/matrice.md).
 
 ## Does it help?
 

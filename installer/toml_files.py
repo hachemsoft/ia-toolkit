@@ -132,12 +132,6 @@ def dump_toml(data, schema=None):
         raise KitError('The conversion to TOML would change a value: nothing was converted. Please report it.')
     return text
 
-def set_list(text, key, values, path='aikit.toml'):
-    """The document with the top-level key set to a list of names, everything else untouched (comments, order, other
-    keys); the key is added before the first [section] when absent. Checked by reading the result back."""
-    return set_key(text, key, list(values), path, 'the list ')
-
-
 def set_key(text, key, value, path='aikit.toml', label=''):
     """The document with the top-level key set to a value (a list or a plain value), everything else untouched."""
     lines = text.split('\n')

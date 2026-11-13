@@ -64,7 +64,7 @@ Every command reads the locked content from the cache, without network. `sync --
 
 ## Offline bundle
 
-The release ZIP ships the Core as a Git bundle, `core/ai-kit-core.bundle`. A first install from the ZIP activates it offline, recorded under the configured Core URL (IT's `enterprise.core`, your `[core] repo`, else this kit's repository). Later, `ai-kit sync --from-bundle <file>` installs the highest tag of a bundle offline; it needs a Core repository set (`[core] repo` or `enterprise.core`).
+The release ZIP ships the Core as a Git bundle, `core/ai-kit-core.bundle`. A first install from the ZIP activates it offline, recorded under the configured Core URL (IT's `enterprise.core`, your `[core] repo`, else this kit's repository). Later, `ai-kit sync --from-bundle <file>` installs the highest tag of a bundle offline; it uses the configured Core repository, else the one recorded at the first install.
 
 ## Signed tags
 

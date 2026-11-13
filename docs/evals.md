@@ -93,6 +93,24 @@ in words the pattern did not know, never to let a wrong behaviour pass.
 the answer text. `scripts/eval_charts.py` draws the README charts from them into `docs/img/`, without a model call. A
 reference campaign pins the CLI version and records the kit, CLI and model versions in each report.
 
+The same tasks with and without the kit, as a share of runs passed per case (also on the README):
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="img/evals-with-without-dark.svg">
+  <img alt="Plain-words tasks passed with and without the kit: asks the deciding question before SQL 4/4 with the kit, 0/4 without; keeps an API key out of the code 3/3 with, 1/4 without; keeps a failing test 3/3 with, 4/4 without." src="img/evals-with-without-light.svg" width="720">
+</picture>
+
+One rule, run by run: the case `fuzzy-request-aligns-first` on two CLIs, without the kit and with kits
+0.45.3 to 0.45.5. Kit 0.45.4 added the rule that a request changing a business rule asks the deciding question first:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="img/evals-framing-dark.svg">
+  <img alt="Case fuzzy-request-aligns-first, one mark per run on two CLIs, without the kit and with kits 0.45.3, 0.45.4 and 0.45.5: each run either asked first or wrote SQL without asking." src="img/evals-framing-light.svg" width="720">
+</picture>
+
+A few runs per side: regression tests for the kit's prompts, not a study. The figures come from
+[`evals/results/2026-11-01.json`](../evals/results/2026-11-01.json).
+
 ## In CI
 
 `.github/workflows/agent-evals.yml` never runs on its own: no trigger on push, merge request or schedule. A person starts it
