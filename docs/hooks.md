@@ -59,7 +59,21 @@ models/legacy/**
 *.lock
 ```
 
-The file is read in the starting folder and each parent up to the repo root. Matching ignores case. These patterns apply to the agent's write tools, not to shell commands.
+The file is read in the starting folder and each parent up to the repo root. Matching ignores case. The patterns apply to the agent's write tools and to its shell commands; your own terminal is never concerned.
+
+In a shell command, the guardrail refuses a command that names a protected file and changes or deletes it:
+
+| The agent's command | Result |
+| --- | --- |
+| `echo x > poetry.lock`, `… \| tee poetry.lock` | refused: a redirection to the file |
+| `sed -i … poetry.lock`, `perl -pi … poetry.lock`, `truncate`, `touch`, `chmod` | refused |
+| `rm`, `rmdir`, `unlink`, `mv` (either side), `cp` or `ln` to the file | refused |
+| `git checkout -- poetry.lock`, `git restore`, `git rm`, `git mv`, `git clean target` | refused: they replace or delete the file |
+| `Remove-Item`, `Set-Content`, `Out-File`, `del`, `move`… | refused |
+| `cat`, `grep`, `ls`, `diff`, `git diff`, `git add`, `cp poetry.lock elsewhere` | runs: the file is read, not changed |
+| `poetry lock`, `npm install`, `dbt run`, `terraform init` | runs: the tool that generates the file does not name it |
+
+So a pattern protects a file against a direct change, not against the tool whose job is to write it. The programs read are a closed list; `sudo`, `xargs`, `sh -c` in front of them change nothing.
 
 **Kit commands the agent may not run.** `ai-kit init`, `sync`, `rollback`, `uninstall`, `team use`, `doctor --live`, `friction --publish`, wherever their options are written, also through `python -m ai_kit` or a launcher (`Installer.cmd`, `bootstrap.sh`, `bootstrap.ps1`, `launcher.py`), however it is run. A launcher of a kit folder with no action installs: it is refused too. The agent tells you the command to run in a terminal. Reading commands (`status`, `doctor`, `usage`, `friction --list`) stay allowed, and so do the kit's own scripts in `~/.ai-kit/bin/`: `friction.py` for `/friction`, `weakened_tests.py` for `/review` (read-only), as long as nothing else in the command names a protected path.
 
@@ -139,6 +153,7 @@ The generated `README.txt` says where each file goes, per system and per CLI. Wi
 ## Limits
 
 - A rule on the text of a command is defeated by an alias, a wrapper script or a program the hook does not know.
+- A repo's protected paths in shell: only a file the command names is seen. A path kept in a variable (`f=poetry.lock; rm $f`), a wildcard (`rm *.lock`), a `cd target` followed by `rm a.sql`, a program outside the list or a script that writes the file all run.
 - The shell guardrails do not follow a `cd`: a folder or a branch is read from where the CLI started the command (`git -C` and `terraform -chdir` are read). `$(…)` inside single quotes is read as if it ran.
 - A path or a command built at run time (a variable, `base64`, `eval`, a script written then run) is not seen: the hook reads the text it is given, before it runs.
 - A tool renamed or added by a CLI release is matched only once the kit's matchers name it; `doctor` probes each guardrail, the weekly drift check reads each CLI's help.

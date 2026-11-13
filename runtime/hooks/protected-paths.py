@@ -506,6 +506,78 @@ def shell_config_write(command, cwd=None):
             return BLOCKED.format(name)
     return None
 
+# --- A repo's protected paths in shell commands ------------------------------------------------------------------------
+
+# Programs that change or delete the files they name. A closed list: a tool that regenerates a file without naming it
+# (poetry lock, dbt run) is not read, and neither is a path kept in a variable, a wildcard or a script that writes.
+WRITES_ALL = {'tee', 'rm', 'rmdir', 'unlink', 'shred', 'truncate', 'touch', 'chmod', 'chown', 'mv', 'rename',
+              # cmd and PowerShell
+              'del', 'erase', 'rd', 'move', 'ren', 'remove-item', 'ri', 'set-content', 'add-content', 'clear-content', 'out-file',
+              'new-item', 'ni', 'move-item', 'mi', 'rename-item', 'rni'}
+WRITES_LAST = {'cp', 'ln', 'install', 'rsync', 'copy', 'copy-item', 'cpi'}  # the destination is the last name
+GIT_WRITES = {'checkout', 'restore', 'rm', 'mv', 'clean'}  # they replace or delete the files they name
+REPO_BLOCKED = ('Blocked by the kit: this command changes or deletes "{}", which matches the protected path "{}" declared in the repo '
+                'protected paths (.ai-kit/protected-paths). Reading it is fine. Propose the change to a person instead.')
+
+def written_names(program, words):
+    """The names a program of the closed list writes, among its words (lower case, quotes removed)."""
+    names = [w for w in words if not w.startswith('-')]
+    if program in WRITES_ALL:
+        return names
+    if program in WRITES_LAST:
+        return names[-1:]
+    if program == 'sed' and any(w.startswith(('-i', '--in-place')) or re.fullmatch(r'-[a-z]+i', w) for w in words):
+        return names
+    if program == 'perl' and any(re.fullmatch(r'-[a-z0-9]*i[a-z0-9.]*', w) for w in words):
+        return names
+    if program == 'dd':
+        return [w[3:] for w in words if w.startswith('of=')]
+    if program == 'git':
+        _, subcommand, rest = git_call(words)
+        return [w for w in rest if not w.startswith('-')] if subcommand in GIT_WRITES else []
+    return []
+
+def repo_pattern_of(name, cwd, directories):
+    """(path relative to the folder, pattern) when this name, read from cwd, falls under a pattern a folder declares."""
+    if name.startswith('~'):
+        name = os.path.expanduser(name)
+    absolute = os.path.normpath(name if os.path.isabs(name) else os.path.join(cwd, name)).replace(os.sep, '/').lower()
+    for directory in directories:
+        declared = patterns(directory)
+        if not declared:
+            continue
+        for root in dict.fromkeys((real(directory), os.path.abspath(directory))):  # a temp folder behind a link (macOS /var)
+            root = root.replace(os.sep, '/').lower().rstrip('/')
+            if not absolute.startswith(root + '/'):
+                continue
+            relative = absolute[len(root) + 1:]
+            for pattern in declared:
+                if matches(relative, pattern):
+                    return relative, pattern
+    return None
+
+def repo_shell_reason(command, cwd):
+    """Reason for refusal when a shell command changes or deletes a file it names that the repo declares protected
+    (.ai-kit/protected-paths): a redirection to it, or a program of the closed list. Anything unexpected lets it run."""
+    try:
+        if len(command) > MAX_COMMAND:
+            return None
+        directories = pattern_dirs(cwd)
+        if not any(patterns(d) for d in directories):
+            return None
+        for pipeline in shell_segments(command):
+            text = normalised(pipeline)
+            targets = [m.group(1) for m in REDIRECTION.finditer(text)]
+            for program, words in command_words(text):
+                targets += written_names(program, words)
+            for name in targets:
+                found = repo_pattern_of(name, cwd, directories)
+                if found:
+                    return REPO_BLOCKED.format(*found)
+    except Exception:
+        return None
+    return None
+
 # --- Write tools -------------------------------------------------------------------------------------------------------
 
 def real(path):
@@ -620,7 +692,8 @@ def decide(payload):
         if not isinstance(args, dict):
             args = {'command': args}
         command = as_text(args.get('command') or args.get('cmd') or args.get('CommandLine'))
-        return shell_config_write(command, (args.get('workdir') or args.get('cwd') or cwd) if isinstance(args, dict) else cwd)
+        folder = (args.get('workdir') or args.get('cwd') or cwd) if isinstance(args, dict) else cwd
+        return shell_config_write(command, folder) or repo_shell_reason(command, folder)
     if not re.search(r'write|replace|edit|patch', tool, re.I):
         return None
     paths = target_paths(tool, args)

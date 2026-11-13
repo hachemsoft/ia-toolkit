@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.6.0 (2026-11-13)
+
+A repo's protected paths now hold in shell commands too. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`protected-paths`**: a shell command of the agent that names a file matching a pattern of `<repo>/.ai-kit/protected-paths` and changes or deletes it is refused: a redirection or `tee` to it, `sed -i`, `perl -pi`, `rm`, `mv`, `cp` or `ln` to it, `truncate`, `touch`, `chmod`, `git checkout --`, `git restore`, `git rm`, and their PowerShell and cmd forms. Until now the patterns held for the write tools only.
+- **What still runs**: reading the file (`cat`, `grep`, `git diff`, `git add`), copying it elsewhere, and the tool that generates it without naming it (`poetry lock`, `dbt run`). A repo with no `protected-paths` file sees no change.
+- **Limits**, listed in [guardrails](docs/hooks.md#limits): a path in a variable, a wildcard, a `cd` into the folder, a script that writes the file.
+
 ## 4.5.1 (2026-11-13)
 
 A full-level change names its risks and how to undo them before its tests again. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
