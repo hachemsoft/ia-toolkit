@@ -24,7 +24,7 @@ class States(unittest.TestCase):
         self.hooks = self.home/'.ai-kit'/'hooks'
         self.hooks.mkdir(parents=True)
         self.guard = self.hooks/'shell-guard.py'
-        self.guard.write_text('print(1)\n', encoding='utf-8')
+        self.guard.write_bytes(b'print(1)\n')  # bytes: no newline translation on Windows
         self.installed = self.hooks/'integrity.py'
         shutil.copy(HOOK, self.installed)
         self.files = {'.ai-kit/hooks/shell-guard.py': hashlib.sha256(b'print(1)\n').hexdigest(),
@@ -57,15 +57,16 @@ class States(unittest.TestCase):
         self.state({'version': '4.8.0', 'files': self.files})
         os.chmod(self.guard, 0)
         self.addCleanup(os.chmod, self.guard, 0o644)
-        unreadable = self.run_hook()
-        self.assertIn('could not check', unreadable.get('systemMessage', ''))
-        self.assertIn('shell-guard.py', unreadable.get('systemMessage', ''))
-        self.assertNotIn('changed outside the kit', unreadable.get('systemMessage', ''))
-        self.assertEqual(self.run_hook(), {})  # said once
+        if not os.access(self.guard, os.R_OK):  # where a mode can take reading away (not Windows, not root)
+            unreadable = self.run_hook()
+            self.assertIn('could not check', unreadable.get('systemMessage', ''))
+            self.assertIn('shell-guard.py', unreadable.get('systemMessage', ''))
+            self.assertNotIn('changed outside the kit', unreadable.get('systemMessage', ''))
+            self.assertEqual(self.run_hook(), {})  # said once
         os.chmod(self.guard, 0o644)
         # A shared file to judge while the adapters cannot load (the installed copy, with no kit package on this Python).
         (self.home/'.claude').mkdir()
-        (self.home/'.claude'/'settings.json').write_text('{}', encoding='utf-8')
+        (self.home/'.claude'/'settings.json').write_bytes(b'{}')
         self.state({'version': '4.8.0', 'files': self.files, 'targets': ['claude'], 'blocks': {'.claude/settings.json': 'x'}, 'hooks': {}})
         shared = self.run_hook()
         self.assertIn('could not check', shared.get('systemMessage', ''))

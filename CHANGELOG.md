@@ -6,7 +6,7 @@ The integrity check tells "could not check" apart from "nothing changed". Update
 
 - **State of the installation**: when the installed check runs and `~/.ai-kit/state.json` is missing, has no installed files, or does not record the check itself (an interrupted update), it says so instead of staying silent. A machine where the kit was never installed says nothing.
 - **Could not check**: a file it cannot read is reported as "could not check", not as changed; the kit's adapters that cannot load, while a CLI's settings are to be judged, are reported the same way, with `ai-kit doctor` to look further. Each set is said once.
-- **Windows**: an edit that keeps a file's size and sets its modification time back is seen only at session start there (Windows gives no change time); documented in [guardrails](docs/hooks.md#limits). The test of this case runs on macOS and Linux. 4.8.0 was not tagged: its CI failed on this test under Windows.
+- **Windows**: an edit that keeps a file's size and sets its modification time back is seen only at session start there (Windows gives no change time); documented in [guardrails](docs/hooks.md#limits). The test of this case runs on macOS and Linux, and the unreadable-file case is tested where a file mode can take reading away (not on Windows). 4.8.0 was not tagged: its CI failed on this test under Windows.
 - **Not done, on purpose**: a check before each tool call that would block the agent after a change. Measured at about 15 ms more per call for little gain, since the agent is told right after the change, and with a risk of blocking every tool until the person restores the files, the agent being refused `ai-kit sync`.
 
 ## 4.8.0 (2026-11-14)
