@@ -93,8 +93,8 @@
       "digest": "3771d3fc9c70433a"
     },
     "mr": {
-      "version": "1.0.2",
-      "digest": "416cb107fee44c07"
+      "version": "1.1.0",
+      "digest": "192dade18df29d4b"
     },
     "prototype": {
       "version": "1.0.0",
@@ -203,8 +203,8 @@
       "digest": "0d0eeb676b0da3b6"
     },
     "verifier": {
-      "version": "1.1.0",
-      "digest": "2ba0e3730c5c230e"
+      "version": "1.2.0",
+      "digest": "577d10bc70df7bb7"
     },
     "code-reviewer": {
       "version": "1.1.0",

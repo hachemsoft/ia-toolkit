@@ -4,7 +4,7 @@ description: "Use when writing a merge request (MR) body."
 metadata:
   aikit-default: "true"
   credits: "show-me by Dex Horthy (Humanlayer), https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
-  aikit-version: "1.0.2"
+  aikit-version: "1.1.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Write a merge request description: visual summary, evidence, merge risk."
@@ -164,6 +164,8 @@ Concrete evidence that the change works. Show a before and after.
 Screenshots are S-tier - when the environment is set up for it and the change is visual.
 
 Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode.
+
+When the verifier proved the acceptance tests (kit script `prove_test.py`), say so: "fails without the code (proof)", or "not proven, accepted by <person>" when the person accepted a test that passes without the code.
 
 ### Merge Danger
 

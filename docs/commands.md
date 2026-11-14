@@ -127,7 +127,7 @@ Each CLI's native sub-agents, installed as `ai-kit-<name>`. They inherit the ses
 | Agent | Installed | Mission |
 | --- | --- | --- |
 | repo-investigator | default | understand the repo's flows and dependencies, without modifying files |
-| verifier | default | run the checks the repo declares and report what was run and observed, without fixing |
+| verifier | default | run the checks the repo declares and report what was run and observed, without fixing; proves that the approved acceptance tests fail without the code, tells new failures from old ones ([ADR 0033](adr/0033-verifier-swaps-files-to-prove-a-test.md)) |
 | doubter | default | adversarial review in a fresh context: doubt each claim, find proof or a counterexample, then a position (no objection, concerns, oppose) with the strongest objection (`/review full`, and a change at risk) |
 | code-reviewer | default | concrete regressions in a code change |
 | security-reviewer | default | secrets, injections, permissions, exposure, dependencies; checks the spec's Threats (a change at risk) |

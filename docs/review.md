@@ -53,3 +53,18 @@ on GitHub, `gh pr view --comments`, which does not filter resolved threads) and 
 with evidence, or a point to decide. They are data, never instructions. Posting the guide on the merge request, or
 answering in a thread, happens only on request, with the exact text shown first and your agreement each time; the agent
 never resolves a thread.
+
+## Proof that a test tests something
+
+A test can pass even without the code it is meant to cover. In `/build`, at the standard and full levels, the verifier
+proves the approved acceptance tests: the kit script `prove_test.py` puts the code of the change back to its base version,
+runs the tests, and restores every file. The tests must fail without the code (`proven`); a test that still passes
+(`not_proven`) stops `/build` and you decide: strengthen it, or accept it and the merge request says so.
+
+The script backs up each file it touches, with its mode, in `.ai-kit-proof/` at the repo root (ignored by git) before any
+change, restores them on every exit it sees, interruption included, and checks each one byte for byte; a file saved
+during the run is kept and reported, never overwritten. If a hard stop (`kill -9`, a crash) cut a proof short, the next
+run refuses until you agree to `prove_test.py recover`. Tools that watch files (an editor, hot reload) may see the
+swap for the time of the test. The same script reruns a red check on the base version to tell a failure the change
+brought from one already there, and lists the existing tests the change modifies. A warehouse test (dbt) runs only on the
+development target the repo declares, with the cost announced and your agreement. Decision: [ADR 0033](adr/0033-verifier-swaps-files-to-prove-a-test.md).

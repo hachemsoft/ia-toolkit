@@ -37,3 +37,4 @@ says when a decision was superseded. A change that reverses a decision comes wit
 | [0030](0030-check-the-result-not-the-command.md) | check the result, not the command: protected-paths reads no shell command but the kit's own | accepted |
 | [0031](0031-one-code-change-playbook-for-any-language.md) | one code-change playbook for any language, language pitfalls in references | accepted |
 | [0032](0032-project-context-adds-to-the-kit.md) | a project's context adds to the kit: REVIEW.md never removes a pass, AGENTS.md per layer, no CLAUDE.md by default | accepted |
+| [0033](0033-verifier-swaps-files-to-prove-a-test.md) | the verifier may swap files for a moment to prove an acceptance test fails without the code, with a verified backup | accepted |

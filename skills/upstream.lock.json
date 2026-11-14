@@ -36,6 +36,7 @@
     "wait-what": "Model-invocable with a guard in its description (0.52.0): no longer disable-model-invocation, because a kit command chains it and Claude Code and Codex hide user-only skills from the model.",
     "handover": "Model-invocable with a guard in its description (0.52.0): no longer disable-model-invocation, because a kit command chains it and Claude Code and Codex hide user-only skills from the model.",
     "tdd": "An 'In the kit' section (4.4.0, ADR 0028): the acceptance tests the person approved are the contract, three at most, shown and approved together (a stated exception to horizontal slicing and red before green); the red-green loop below them is optional. Offers init-project-context once when AGENTS.md has no \"Verifying your work\" block (4.10.0).",
-    "setup-workflow": "Writes the Agent skills block into AGENTS.md, never into CLAUDE.md, which Claude Code no longer needs (4.10.0, ADR 0032)."
+    "setup-workflow": "Writes the Agent skills block into AGENTS.md, never into CLAUDE.md, which Claude Code no longer needs (4.10.0, ADR 0032).",
+    "mr": "Evidence cites the verifier's proof that the acceptance tests fail without the code, or that a test not proven was accepted (4.12.0, ADR 0033)."
   }
 }
