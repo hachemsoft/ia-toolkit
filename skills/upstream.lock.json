@@ -19,7 +19,7 @@
   ],
   "note": "Skills marked origin: upstream in skills/catalog.json, adapted for the kit. Original commit not recorded: note it at the next upstream sync.",
   "local_adaptations": {
-    "code-review": "Rewritten as the kit's single review behaviour (0.34): scope = branch commits, staged, unstaged and new files; spec and tracker optional; passes and one severity scale. The upstream smell baseline is kept verbatim. A repo's REVIEW.md adds to the passes and never removes one (4.10.0, ADR 0032).",
+    "code-review": "Rewritten as the kit's single review behaviour (0.34): scope = branch commits, staged, unstaged and new files; spec and tracker optional; passes and one severity scale. The upstream smell baseline is kept verbatim. A repo's REVIEW.md adds to the passes and never removes one (4.10.0, ADR 0032). Cold review for its agents (raw diff and references, never the author's narrative), the doubter's position in the report, the unresolved discussions of an open merge request, a `review:` mark left in the diff as a Minor finding (4.11.0).",
     "implement": "Commit only with the person's agreement in the session or the repo's instructions (0.34); upstream committed unconditionally.",
     "prototype": "Committing the prototype needs the person's agreement (0.34).",
     "manual-steps": "Committing the wizard is proposed, with the person's agreement (0.34).",

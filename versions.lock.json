@@ -37,8 +37,8 @@
       "digest": "927daac85c224e96"
     },
     "code-review": {
-      "version": "1.3.0",
-      "digest": "e6038452967fb6ec"
+      "version": "1.4.0",
+      "digest": "34380f6917adac69"
     },
     "codebase-design": {
       "version": "1.0.0",
@@ -103,6 +103,10 @@
     "retrospective": {
       "version": "1.1.0",
       "digest": "15ebacab6d1e8ab1"
+    },
+    "review-guide": {
+      "version": "1.0.0",
+      "digest": "202ea9bace3691a9"
     },
     "routing": {
       "version": "1.0.2",
@@ -175,40 +179,40 @@
   },
   "agents": {
     "dbt-reviewer": {
-      "version": "1.0.0",
-      "digest": "db789bec43cb6d8a"
+      "version": "1.1.0",
+      "digest": "c3d292b194cd0e7e"
     },
     "sql-reviewer": {
-      "version": "1.0.0",
-      "digest": "10ac6c5bad9654f6"
+      "version": "1.1.0",
+      "digest": "94ae8b9c0a02f299"
     },
     "architecture-reviewer": {
-      "version": "1.0.0",
-      "digest": "7afbe84844834e8a"
+      "version": "1.1.0",
+      "digest": "9b2846bd8b54f2eb"
     },
     "doubter": {
-      "version": "1.0.0",
-      "digest": "7f150b1cdea33c15"
+      "version": "1.1.0",
+      "digest": "3022c92fc5e08f08"
     },
     "repo-investigator": {
       "version": "1.0.0",
       "digest": "c8f8ae9bfe1193a7"
     },
     "security-reviewer": {
-      "version": "1.1.0",
-      "digest": "ff937686136ae0b6"
+      "version": "1.2.0",
+      "digest": "0d0eeb676b0da3b6"
     },
     "verifier": {
       "version": "1.1.0",
       "digest": "2ba0e3730c5c230e"
     },
     "code-reviewer": {
-      "version": "1.0.0",
-      "digest": "310c26c9069f2c52"
+      "version": "1.1.0",
+      "digest": "6b100b1889eb4fa8"
     },
     "infra-reviewer": {
-      "version": "1.0.0",
-      "digest": "1d1a632b46e06bd7"
+      "version": "1.1.0",
+      "digest": "a9714a699bb1bb36"
     }
   }
 }

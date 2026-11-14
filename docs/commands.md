@@ -88,7 +88,7 @@ utility behind a command), `domain` (a playbook activated by the task), `referen
 
 | Category | Core default | Optional |
 | --- | --- | --- |
-| workflow | analysis, code-review, diagnosing-bugs, grilling, grill-with-docs\*, implement\*, mr, tdd, to-spec | grill-me\*, implement-spec\*, prototype, ticket-sorting, to-tickets\*, wayfinder |
+| workflow | analysis, code-review, diagnosing-bugs, grilling, grill-with-docs\*, implement\*, mr, review-guide, tdd, to-spec | grill-me\*, implement-spec\*, prototype, ticket-sorting, to-tickets\*, wayfinder |
 | tool | investigation, retrospective, routing, teach, wait-what, zoom-out | handover, improve-codebase-architecture, manual-steps, to-questionnaire, workflow-guide\*, write-a-skill |
 | reference | domain-modeling, writing-for-agents | codebase-design, writing-great-skills\* |
 | setup | init-project-context, setup-workflow\* | |
@@ -122,13 +122,13 @@ the steps below, and a rationalizations table. The commands name no domain: `/bu
 
 ## Agents
 
-Each CLI's native sub-agents, installed as `ai-kit-<name>`. They inherit the session's model; the kit names none.
+Each CLI's native sub-agents, installed as `ai-kit-<name>`. They inherit the session's model; the kit names none. The reviewers work as a [cold review](review.md): the raw diff and references, never the author's narrative.
 
 | Agent | Installed | Mission |
 | --- | --- | --- |
 | repo-investigator | default | understand the repo's flows and dependencies, without modifying files |
 | verifier | default | run the checks the repo declares and report what was run and observed, without fixing |
-| doubter | default | adversarial review in a fresh context: doubt each claim, find proof or a counterexample (`/review full`, and a change at risk) |
+| doubter | default | adversarial review in a fresh context: doubt each claim, find proof or a counterexample, then a position (no objection, concerns, oppose) with the strongest objection (`/review full`, and a change at risk) |
 | code-reviewer | default | concrete regressions in a code change |
 | security-reviewer | default | secrets, injections, permissions, exposure, dependencies; checks the spec's Threats (a change at risk) |
 | infra-reviewer | optional | blast radius, destructions, permissions, rollback of an infrastructure change |

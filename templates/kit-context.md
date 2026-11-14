@@ -37,6 +37,6 @@ Base skills target other tools; map silently:
 - Bash on Windows: PowerShell or manual steps.
 
 ## Artifacts and git
-AGENTS.md conventions first; otherwise one folder per change, `docs/sdlc/<YYYY-MM-DD>-<slug>/`; `spec.md`, `REVIEW.md` committed; `intent.md`, `plan.md` local, git-ignored.
+AGENTS.md conventions first; else one folder per change, `docs/sdlc/<YYYY-MM-DD>-<slug>/`; `spec.md`, `REVIEW.md` committed; `intent.md`, `plan.md`, `review-guide.md` local, git-ignored.
 
 {frictions}Read the project's context before acting; never invent its business rules. Monorepo with an AGENTS.md per area, started at the root: ask which area unless the task names one, follow its AGENTS.md, write artifacts there.

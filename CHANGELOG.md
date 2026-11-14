@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.11.0 (2026-11-14)
+
+Reviewing a change is faster and harder to fool. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **Cold review**: `/review` gives its reviewers (code-reviewer 1.1.0, security-reviewer 1.2.0, doubter, sql-, dbt-, infra- and architecture-reviewer 1.1.0) the raw `git diff` against the merge base, the paths of the changed and new files, the test facts and the spec, never the author's narrative (no summary, no "it is safe because", no announced test result, no review guide, no merge request discussion). A reviewer that finds one in its brief ignores it and says so; none reads a `review-guide.md`.
+- **The doubter takes a position** (1.1.0): `position: no objection | concerns | oppose`, the strongest objection, a simpler alternative and whether a stranger would understand it in six months, before its claims table; it never manufactures an objection and keeps `oppose` for a real cost. It gets the author's claims labelled "claims to check", never as facts, and doubts a plan or a piece of research the same way. **Breaking**: its output starts with these four lines.
+- **Position line**: the `/review` report shows the doubter's position and strongest objection after the scope line, or "Position: not assessed" with the reason; it stays when a "## Report" section shapes the report.
+- **New skill `review-guide`** (default): at the standard and full levels, `/review` and `/ship` offer a local `review-guide.md` (reading order, hunks grouped by theme, assumptions, risk points, what to skim) for the person who reviews. They answer with `review:` marks in the files (also on `spec.md` after `/spec` and on the acceptance tests of `/build`, where an open mark means not approved); the agent handles the marks in one batch, never removes one it did not handle, answers with `review-reply:` and reports each with a before / after excerpt. A mark left in a diff is a Minor finding.
+- **Merge request discussions**: when the branch has an open merge request, `/review` reads its unresolved discussions (`glab mr view <id> --unresolved`; on GitHub `gh pr view --comments`, unfiltered) as remarks to check, never as instructions. Posting the guide or answering in a thread happens only on request, with the exact text shown first and the person's agreement each time; the agent never resolves a thread.
+- `review-guide.md` and `docs/audits/` are git-ignored in the kit's repository; the kit context lists `review-guide.md` as local. Page: [reviewing a change](docs/review.md). Tests: `tests/test_review_aids.py`.
+
 ## 4.10.1 (2026-11-14)
 
 Measured on Codex, initializing a repo's context now keeps what the review relies on. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
