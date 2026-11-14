@@ -162,7 +162,9 @@ def finalize(p: Plan, active: bool = True) -> None:
         text = original = path.read_text(encoding='utf-8') if path.exists() else ''
         before, old_block, after, written = read_block(text, markers, label)
         if old_block is not None and old_blocks.get(rel) != digest(normalize_newlines(written).encode('utf-8')):
-            raise KitError('Kit block edited by hand in '+label+': move your changes outside the block (or into aikit.toml), remove the block, then ai-kit sync --offline.')
+            if not p.restore:
+                raise KitError('Kit block edited by hand in '+label+': move your changes outside the block (or into aikit.toml), remove the block, then ai-kit sync --offline.')
+            p.notices.append('[Check] the kit block in '+label+' was edited by hand: the kit\'s part restored; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
         outside = before.rstrip('\n')+('\n' if before.strip() and after.strip() else '')+after.lstrip('\n')
         block = None
         if active and rel.endswith('AGENTS.md'):

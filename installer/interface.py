@@ -45,6 +45,7 @@ class Plan:
     agent_markdown: Dict[str, str] = field(default_factory=dict)  # agents rendered by Gemini, reused by agy
     blocks: Dict[str, str] = field(default_factory=dict)  # digests of the managed blocks in user files
     notices: List[str] = field(default_factory=list)  # lines for the person: a refused synchronisation, a moved file
+    restore: bool = False  # sync --restore: the kit's files and parts edited outside the kit are put back, the edited copy kept in the backup
     adapter_data: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # private data of an adapter, by NAME
     skill_notes: Dict[str, str] = field(default_factory=dict)  # appended to a skill's SKILL.md: optional skills not installed
 

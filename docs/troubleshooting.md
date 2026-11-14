@@ -51,7 +51,7 @@ The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) add: 2 when Python or th
 | `The content … needs AI Kit X.Y.Z or newer; this one is …` | install the newer AI Kit (new ZIP, or `git pull` in a clone) first |
 | `<path>: refused because it is not owned by root; …` (any `managed.toml` refusal) | exit code 3; IT fixes the file |
 | `MCP server <name> is required … nothing was changed.` | see [MCP](mcp.md); approve it in a terminal, or ask IT |
-| `… modified locally: <path>` | a file the kit installed was edited: move your change to `USER.md` or your `aikit.toml`, restore the file, run again |
+| `… modified locally: <path>` | a file the kit installed was edited: move your change to `USER.md` or your `aikit.toml`, then run `ai-kit sync --offline --restore` (the edited copy is kept in `~/.ai-kit/backups/`) |
 | `[Check] <file> was modified by hand: restored to the kit version; your copy: …` | normal for a rule layer (`00_KIT.md`, `10_…`, `20_…`): personal preferences go in `USER.md` |
 | `Blocked by the kit: …` (in the agent) | a guardrail refused the action ([guardrails](hooks.md)); do it yourself if it is right |
 | `doctor --live makes a real call to the model, refused because AI_KIT_NO_LIVE=1 is set.` | unset the variable if you accept the call |

@@ -198,7 +198,9 @@ def finalize(p: Plan, active: bool = True) -> None:
     original = path.read_text(encoding='utf-8') if path.exists() else ''
     before, old_block, after = split_block(original, CLAUDE_MD, '~/.claude/CLAUDE.md')
     if old_block is not None and old_blocks.get(rel) != digest(old_block.encode('utf-8')):
-        raise KitError('Kit block edited by hand in ~/.claude/CLAUDE.md: move your changes outside the block, remove the block, then ai-kit sync --offline.')
+        if not p.restore:
+            raise KitError('Kit block edited by hand in ~/.claude/CLAUDE.md: move your changes outside the block, remove the block, then ai-kit sync --offline.')
+        p.notices.append('[Check] the kit block in ~/.claude/CLAUDE.md was edited by hand: the kit\'s part restored; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
     outside = before.rstrip('\n')+('\n' if before.strip() and after.strip() else '')+after.lstrip('\n')
     block = block_text(p, p.adapter_data[NAME]['prefix'], p.adapter_data[NAME]['renamed']) if active else None
     if block is not None:
@@ -216,7 +218,9 @@ def finalize(p: Plan, active: bool = True) -> None:
         raise KitError('~/.claude/settings.json: hooks.'+' and hooks.'.join(events)+' must be lists; configuration left untouched.')
     mine = kit_hook_groups(hooks, events)
     if mine and old_blocks.get(rel) != digest(json_bytes(mine)):
-        raise KitError('Kit hook edited by hand in ~/.claude/settings.json (hooks.'+' or hooks.'.join(events)+'): put it back or remove it, then ai-kit sync --offline.')
+        if not p.restore:
+            raise KitError('Kit hook edited by hand in ~/.claude/settings.json (hooks.'+' or hooks.'.join(events)+'): put it back or remove it, then ai-kit sync --offline.')
+        p.notices.append('[Check] a kit hook in ~/.claude/settings.json was edited by hand: the kit\'s part restored; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
     new_groups = {event: [] for event in events}
     if active:
         for name, spec in p.hook_manifest.items():
@@ -251,7 +255,9 @@ def finalize(p: Plan, active: bool = True) -> None:
         raise KitError('~/.claude.json: mcpServers must be an object; configuration left untouched.')
     current = {name: servers[name] for name in previous if name in servers}
     if current and old_blocks.get(rel) != digest(json_bytes(current)):
-        raise KitError('Kit MCP server edited by hand in ~/.claude.json: put it back or remove it, then ai-kit sync --offline.')
+        if not p.restore:
+            raise KitError('Kit MCP server edited by hand in ~/.claude.json: put it back or remove it, then ai-kit sync --offline.')
+        p.notices.append('[Check] a kit MCP server in ~/.claude.json was edited by hand: the kit\'s part restored; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
     wanted = {name: claude_server(name, server) for name, server in p.enabled_mcp.items()} if active else {}
     for name in wanted:
         if name in servers and name not in previous:

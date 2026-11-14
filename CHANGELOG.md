@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.9.1 (2026-11-14)
+
+The integrity check's repair command works. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`ai-kit sync --offline --restore`**: puts back the kit's files and its parts of the files it shares with a CLI (its block in `CLAUDE.md` or `AGENTS.md`, its hooks in a CLI's settings) that were changed outside the kit, and keeps the changed copy in `~/.ai-kit/backups/`; your own settings in those files stay. Without `--restore`, `sync` still refuses to overwrite a changed kit file. Since 4.8.0 the integrity check said "To restore: ai-kit sync --offline", which refused (seen on a real install): it now gives this command. The agent cannot run `sync`, with or without the option.
+- **The kit folder's git settings**: a change there is reported with `git -C <kit folder> remote -v` to check where the next update comes from, since `sync` does not manage them.
+
 ## 4.9.0 (2026-11-14)
 
 One code-change playbook for any language replaces `python-js-change` and `java-change`. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

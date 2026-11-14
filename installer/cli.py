@@ -128,7 +128,7 @@ def kit_git_digests(folder):
     return module.kit_git_digests(str(folder))
 
 
-def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None, command=None, managed_file=None, extra_writes=None):
+def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None, command=None, managed_file=None, extra_writes=None, restore_edited=False):
     """Full prevalidation, neutral plan, adapters, backup, then atomic write file by file.
     target: a --target value or a list of CLI names; None keeps the CLIs recorded by the previous installation.
     choices: new values for keys of the person's aikit.toml (CHOICE_KEYS), written with the rest of the installation,
@@ -147,7 +147,7 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
         # A first installation from the release ZIP activates the Core it ships (lock.toml written with the files).
         with activation(home, 'sync' if first_shipped else 'update', dry_run, managed_file=managed_file,
                         bundle=SHIPPED[0] if first_shipped else None, shipped=first_shipped) as act:
-            return apply(home, dry_run, user, target, act.team or team, choices, report, progress, command, managed_file, act.writes)
+            return apply(home, dry_run, user, target, act.team or team, choices, report, progress, command, managed_file, act.writes, restore_edited)
     state = read_json(kit/'state.json')
     check_state_schema(state, kit/'state.json')
     check_source(content_root(), (ROOT/'VERSION').read_text(encoding='utf-8').strip())  # min_engine of the content (2.0)
@@ -182,7 +182,7 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
             previous = target.read_bytes()
             if rel in old_files:
                 if digest(previous) != old_files[rel] and not replace_edited:
-                    if not restore:
+                    if not (restore or restore_edited):
                         raise KitError(label+' modified locally: '+str(target)+'. Nothing was changed. Keep your copy elsewhere, delete this file '
                                        '(the previous kit version is in ~/.ai-kit/backups/), then run the command again.')
                     restored.append(target)
@@ -218,7 +218,7 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
         catalog=catalog, selected=selected, skill_sources=sources, commands=commands, context_names=context_names,
         kit_text=kit_text, practice_names=practice_names, practice_texts=practice_texts, user_file=context_dir/USER_CONTEXT, context_dir=context_dir,
         user_context_text=user_context_text(identity), agents=agents, hooks_dir=hooks_dir,
-        hook_manifest=hook_manifest, enabled_hooks=enabled_hooks, enabled_mcp=enabled_mcp, writes=writes, deletes=deletes,
+        restore=restore_edited, hook_manifest=hook_manifest, enabled_hooks=enabled_hooks, enabled_mcp=enabled_mcp, writes=writes, deletes=deletes,
         managed_write=managed_write, 
         agent_body=lambda definition: practices+'\n'+agent_instruction(definition)+'\n'+definition['instructions']+'\n')
     # Scripts shared by all CLIs: frictions, the review's test facts (ADR 0027) and enabled guardrails.
@@ -433,6 +433,7 @@ def command_main(argv):
     parser.add_argument('--command-on-path', choices=['yes', 'no'], help='init: add the ai-kit command to your terminal (your own PATH only); default yes the first time')
     parser.add_argument('--dry-run', action='store_true', help='init, sync, uninstall: show what would change, write nothing')
     parser.add_argument('--offline', action='store_true', help='sync: re-apply the locked Core and Team from the cache, without network')
+    parser.add_argument('--restore', action='store_true', help='sync: put back the kit\'s files and its parts of shared files changed outside the kit; the changed copy is kept in ~/.ai-kit/backups/')
     parser.add_argument('--from-bundle', type=Path, help='sync: the Core from a git bundle file (offline), as the release ZIP ships it')
     parser.add_argument('--url', help='team use: the repository URL of a Team not known yet')
     parser.add_argument('--verbose', action='store_true', help='status: where each setting comes from, installed resources, capabilities')
@@ -451,8 +452,8 @@ def command_main(argv):
     args = parser.parse_args(argv)
     if args.rest and args.action not in ('team', 'user'):
         parser.error('unexpected argument: '+' '.join(args.rest))
-    if (args.offline or args.from_bundle) and args.action != 'sync':
-        parser.error('--offline and --from-bundle go with sync')
+    if (args.offline or args.from_bundle or args.restore) and args.action != 'sync':
+        parser.error('--offline, --from-bundle and --restore go with sync')
     if args.offline and args.from_bundle:
         parser.error('--offline re-applies what is installed; --from-bundle installs a Core: choose one')
     if args.version:
@@ -533,7 +534,7 @@ def command_main(argv):
                             team_name=args.rest[1] if args.action == 'team' else None, team_url=args.url, ask_url=ask_url,
                             bundle=args.from_bundle or (SHIPPED[0] if first_shipped else None), shipped=first_shipped) as act:
                 apply(home, args.dry_run, identity, args.target, act.team or state.get('team'),
-                      command={'yes': True, 'no': False}.get(args.command_on_path), extra_writes=act.writes)
+                      command={'yes': True, 'no': False}.get(args.command_on_path), extra_writes=act.writes, restore_edited=args.restore)
             if not args.dry_run:
                 print_summary(home, read_json(home/'.ai-kit/state.json'), None)
             return 0

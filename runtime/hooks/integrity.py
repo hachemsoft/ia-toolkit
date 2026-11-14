@@ -20,7 +20,8 @@ import tempfile
 
 MARKER = 'integrity.json'
 SELF = '.ai-kit/hooks/integrity.py'  # the check itself, recorded by every installation
-RESTORE = 'ai-kit sync --offline'
+RESTORE = 'ai-kit sync --offline --restore'
+GIT_CHECK = 'git -C <kit folder> remote -v'  # sync does not manage the kit folder's git configuration
 SAFE_NAME = re.compile(r'[A-Za-z0-9._/@-]{1,160}')  # a name shown in a message: nothing else reaches the agent or the person
 MAX_BYTES = 32 * 1024 * 1024  # a file the kit installed is far smaller: a bigger one counts as changed, unread
 SHOWN = 10
@@ -248,10 +249,17 @@ def announce(marker, changes, failed):
     if not key or key == announced:
         return None, None, marker
     agent, person = [], []
-    if changes:
-        listed = shown([name for name, _ in changes])
+    files = [c for c in changes if not c[0].startswith('kit folder')]
+    git = [c for c in changes if c[0].startswith('kit folder')]
+    if files:
+        listed = shown([name for name, _ in files])
         agent.append(message(listed))
         person.append(person_message(listed))
+    if git:  # sync does not manage the kit folder's git configuration: the person checks where the next update comes from
+        listed = shown([name for name, _ in git])
+        agent.append('AI Kit integrity: the kit folder\'s git settings changed: ' + listed + '. Say it to the person; the next update could '
+                     'come from elsewhere. They check the remotes with: ' + GIT_CHECK)
+        person.append('AI Kit: the kit folder\'s git settings changed: ' + listed + '. Check its remotes: ' + GIT_CHECK)
     if failed:
         listed = shown([name for name, _ in failed])
         reasons = sorted({reason for _, reason in failed})

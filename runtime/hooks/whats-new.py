@@ -161,7 +161,7 @@ def answer(payload, text, person=None):
 
 CHECK_MISSING = ('AI Kit integrity: the kit\'s integrity check (~/.ai-kit/hooks/integrity.py) is missing or was changed, so changes to '
                  'what the kit installed are no longer reported. Say it to the person in the first line of your reply; they restore it '
-                 'with: ai-kit sync --offline')
+                 'with: ai-kit sync --offline --restore')
 
 
 def integrity(home, state):
@@ -183,7 +183,7 @@ def integrity(home, state):
         return module.checked(home, full=True)
     except Exception:
         if expected:
-            return CHECK_MISSING, 'AI Kit: the integrity check ~/.ai-kit/hooks/integrity.py is missing or changed. To restore: ai-kit sync --offline'
+            return CHECK_MISSING, 'AI Kit: the integrity check ~/.ai-kit/hooks/integrity.py is missing or changed. To restore: ai-kit sync --offline --restore'
         return None, None
 
 

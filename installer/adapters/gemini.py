@@ -286,7 +286,10 @@ def remove_kit_settings(p: Plan) -> None:
             for name, old in p.state.get('hooks', {}).items():
                 groups = hooks.get(old['event'], [])
                 if isinstance(groups, list) and any(any(h.get('name') == old['group']['hooks'][0].get('name') for h in g.get('hooks', [])) and g != old['group'] for g in (groups[i] for i in kit_hook_groups(groups))):
-                    raise KitError('Kit guardrail modified in settings.json: '+name)
+                    if not p.restore:  # sync --restore: the kit's entry is replaced
+                        raise KitError('Kit guardrail modified in settings.json: '+name)
+                    else:
+                        p.notices.append('[Check] a kit entry in ~/.gemini/settings.json was edited by hand: restored; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
             for event, groups in list(hooks.items()):
                 if isinstance(groups, list) and kit_hook_groups(groups):
                     kept = [g for i, g in enumerate(groups) if i not in kit_hook_groups(groups)]
@@ -300,7 +303,10 @@ def remove_kit_settings(p: Plan) -> None:
         if isinstance(servers, dict):
             for name, old in p.state.get('mcp', {}).items():
                 if name in servers and servers[name] != old:
-                    raise KitError('Kit MCP modified in settings.json: '+name)
+                    if not p.restore:  # sync --restore: the kit's entry is replaced
+                        raise KitError('Kit MCP modified in settings.json: '+name)
+                    else:
+                        p.notices.append('[Check] a kit entry in ~/.gemini/settings.json was edited by hand: restored; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
                 servers.pop(name, None)
         context = settings.get('context')
         if isinstance(context, dict) and isinstance(context.get('fileName'), list):
@@ -334,7 +340,10 @@ def finalize(p: Plan, active: bool = True) -> None:
             raise KitError('settings.json: hooks.'+old['event']+' must be a list.')
         for i in kit_hook_groups(groups):
             if any(h.get('name') == old['group']['hooks'][0].get('name') for h in groups[i].get('hooks', [])) and groups[i] != old['group']:
-                raise KitError('Kit guardrail modified in settings.json: '+name)
+                if not p.restore:  # sync --restore: the kit's entry is replaced
+                    raise KitError('Kit guardrail modified in settings.json: '+name)
+                else:
+                    p.notices.append('[Check] a kit entry in ~/.gemini/settings.json was edited by hand: restored; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
     merged_hooks = {}
     for event, groups in original_hooks.items():
         if not isinstance(groups, list):
@@ -356,7 +365,10 @@ def finalize(p: Plan, active: bool = True) -> None:
     old_mcp = state.get('mcp',{})
     for name,old in old_mcp.items():
         if name in servers and servers[name] != old:
-            raise KitError('Kit MCP modified in settings.json: '+name)
+            if not p.restore:  # sync --restore: the kit's entry is replaced
+                raise KitError('Kit MCP modified in settings.json: '+name)
+            else:
+                p.notices.append('[Check] a kit entry in ~/.gemini/settings.json was edited by hand: restored; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
         servers.pop(name,None)
     for name,server in p.enabled_mcp.items():
         if name in servers and servers[name] != server:

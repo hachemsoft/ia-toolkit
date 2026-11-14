@@ -141,6 +141,10 @@ def remove_stale_files(p, files, user_file):
                     if adopt_user_copy(p, target_path, previous_hash):
                         p.deletes.append(target_path)
                     continue
+                if p.restore:
+                    p.deletes.append(target_path)  # sync --restore: removed, its copy kept in the backup
+                    p.notices.append('[Check] '+str(target_path)+' was modified by hand and is no longer part of the kit: removed; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
+                    continue
                 raise KitError('Old managed file modified locally: '+str(target_path)+'. Nothing was changed. Keep your copy elsewhere, '
                                'delete this file, then run the command again.')
             p.deletes.append(target_path)

@@ -80,6 +80,7 @@ ai-kit team use none                                                          # 
 | `ai-kit sync` | installs the highest stable tag of your Core and your Team | yes |
 | `ai-kit sync --dry-run` | shows what would change, writes nothing | yes |
 | `ai-kit sync --offline` | re-applies the locked Core and Team from the cache | no |
+| `ai-kit sync --offline --restore` | also puts back the kit's files and its parts of shared files that were changed outside the kit (what the integrity check reports); the changed copy is kept in `~/.ai-kit/backups/` | no |
 | `ai-kit sync --from-bundle <file>` | the Core from a Git bundle file, such as `core/ai-kit-core.bundle` of a newer ZIP | no |
 | `ai-kit status` | what is active, and whether a newer tag was seen at the last sync | no |
 
