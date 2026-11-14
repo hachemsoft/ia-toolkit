@@ -28,6 +28,8 @@ if os.environ.get('STAND_IN_GIT'):
 if os.environ.get('STAND_IN_WRITE'):
     target = Path.cwd() / os.environ['STAND_IN_WRITE']; target.parent.mkdir(parents=True, exist_ok=True); target.write_text('x', encoding='utf-8')
 print(os.environ.get('STAND_IN_ANSWER', 'Which customers count as active?'))
+if os.environ.get('STAND_IN_STDERR'):
+    sys.stderr.write(os.environ['STAND_IN_STDERR'])
 raise SystemExit(int(os.environ.get('STAND_IN_CODE', '0')))
 '''
 
@@ -77,6 +79,20 @@ class RunnerTests(unittest.TestCase):
             for answer in case['samples'].get('fail', []):
                 with self.subTest(case=case['name'], answer=answer):
                     self.assertNotEqual(evals_run.check(answer, case['expect']), [])
+
+    def test_tokens_are_read_before_the_output_is_cut(self):
+        # Codex writes its token count last, on stderr; the report keeps it even when the output is cut to 12,000 characters.
+        self.case(expect={'regex': ['active']})
+        code, out = self.run_cases('--stand-in', str(self.stand_in), STAND_IN_ANSWER='Which customers count as active? ' + 'x' * 13000,
+                                   STAND_IN_STDERR='codex\nDone.\ntokens used\n7\u202f615\n')
+        report = json.loads((self.base/'r.json').read_text(encoding='utf-8'))
+        self.assertEqual(report['results'][0]['tokens'], 7615, out)
+        self.assertIn('7615 tokens', out)
+
+    def test_tokens_are_null_when_the_cli_does_not_print_them(self):
+        self.case(expect={'regex': ['active']})
+        self.run_cases('--stand-in', str(self.stand_in))
+        self.assertIsNone(json.loads((self.base/'r.json').read_text(encoding='utf-8'))['results'][0]['tokens'])
 
     def test_not_regex_forbids_a_pattern(self):
         expect = {'not_regex': ['(?i)important[^\\n]{0,40}error_if']}

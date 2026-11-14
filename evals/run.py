@@ -39,6 +39,17 @@ def load_cases(folder, only=None):
         cases.append(case)
     return cases
 
+TOKENS = re.compile(r'tokens used\s*\n?\s*(\d[\d\s\u202f\u00a0,.]*)', re.I)
+
+
+def tokens_used(output):
+    """The token count a CLI prints at the end of a run (Codex: "tokens used" on stderr), or None. Read on the whole
+    output, before the report cuts it to 12,000 characters."""
+    found = TOKENS.findall(output)
+    digits = ''.join(ch for ch in found[-1] if ch.isdigit()) if found else ''
+    return int(digits) if digits else None
+
+
 def check(output, expect):
     failures = []
     for needle in expect.get('contains', []):
@@ -265,7 +276,7 @@ def main(argv=None):
         unmet = blocked(case, state, args.baseline)
         if unmet:
             print('[SKIP] ' + case['name'] + ' — precondition: ' + '; '.join(unmet))
-            results.append({'name': case['name'], 'status': 'SKIP', 'failures': unmet, 'attempts': 0, 'output': ''})
+            results.append({'name': case['name'], 'status': 'SKIP', 'failures': unmet, 'attempts': 0, 'tokens': None, 'output': ''})
             continue
         attempts = 0
         while True:
@@ -276,8 +287,9 @@ def main(argv=None):
                 break
         status = 'OK' if not failures else ('ERROR' if failures[0].startswith('ERROR') else 'FAIL')
         failed += bool(failures)
-        print('[' + status + '] ' + case['name'] + ('' if not failures else ' — ' + ' ; '.join(failures)) + (' (' + str(attempts) + ' attempts)' if attempts > 1 else ''))
-        results.append({'name': case['name'], 'status': status, 'failures': failures, 'attempts': attempts, 'output': output[:12000]})
+        tokens = tokens_used(output)
+        print('[' + status + '] ' + case['name'] + ('' if not failures else ' — ' + ' ; '.join(failures)) + (' (' + str(attempts) + ' attempts)' if attempts > 1 else '') + (' · ' + str(tokens) + ' tokens' if tokens is not None else ''))
+        results.append({'name': case['name'], 'status': status, 'failures': failures, 'attempts': attempts, 'tokens': tokens, 'output': output[:12000]})
     if args.report:
         args.report.write_text(json.dumps({'meta': meta, 'results': results}, ensure_ascii=False, indent=2), encoding='utf-8')
     ran = [r for r in results if r['status'] != 'SKIP']
