@@ -1,0 +1,38 @@
+{
+  "name": "review-finds-loose-hash-comparison",
+  "cwd": "php-auth-mini",
+  "requires": {
+    "commands": [
+      "review"
+    ]
+  },
+  "git": {
+    "commit": true,
+    "uncommitted": {
+      "src/TokenVerifier.php": "<?php\n\ndeclare(strict_types=1);\n\nnamespace App;\n\nfinal class TokenVerifier\n{\n    private const TTL_SECONDS = 3600;\n\n    /**\n     * @param array<string, string> $storedHashes   token id => sha256 of the token\n     * @param array<string, int>    $issuedAt       token id => unix time the token was issued\n     * @param array<string, string> $legacyHashes   token id => md5 of tokens issued before the sha256 migration\n     */\n    public function __construct(\n        private array $storedHashes,\n        private array $issuedAt = [],\n        private array $legacyHashes = [],\n    ) {\n    }\n\n    public function verify(string $tokenId, string $token, ?int $now = null): bool\n    {\n        if ($this->isExpired($tokenId, $now ?? time())) {\n            return false;\n        }\n        $stored = $this->storedHashes[$tokenId] ?? null;\n        if ($stored === null) {\n            return $this->verifyLegacy($tokenId, $token);\n        }\n\n        return hash_equals($stored, hash('sha256', $token));\n    }\n\n    /** Tokens issued before the migration were stored as md5; they stay valid until they expire. */\n    private function verifyLegacy(string $tokenId, string $token): bool\n    {\n        $legacy = $this->legacyHashes[$tokenId] ?? null;\n\n        return $legacy !== null && md5($token) == $legacy;\n    }\n\n    private function isExpired(string $tokenId, int $now): bool\n    {\n        $issued = $this->issuedAt[$tokenId] ?? null;\n\n        return $issued !== null && $now - $issued > self::TTL_SECONDS;\n    }\n}\n",
+      "tests/TokenVerifierTest.php": "<?php\n\ndeclare(strict_types=1);\n\nuse App\\TokenVerifier;\nuse PHPUnit\\Framework\\TestCase;\n\nfinal class TokenVerifierTest extends TestCase\n{\n    public function testAcceptsTheRightToken(): void\n    {\n        $verifier = new TokenVerifier(['t1' => hash('sha256', 'secret')]);\n        self::assertTrue($verifier->verify('t1', 'secret'));\n    }\n\n    public function testRejectsAnExpiredToken(): void\n    {\n        $verifier = new TokenVerifier(['t1' => hash('sha256', 'secret')], ['t1' => 1000]);\n        self::assertFalse($verifier->verify('t1', 'secret', 1000 + 3601));\n    }\n\n    public function testAcceptsALegacyToken(): void\n    {\n        $verifier = new TokenVerifier([], [], ['old' => md5('legacy')]);\n        self::assertTrue($verifier->verify('old', 'legacy'));\n    }\n}\n"
+    }
+  },
+  "prompt": "/review",
+  "expect": {
+    "regex": [
+      "(?i)((==|loose|l[âa]che|faible|non stricte|type juggling|jonglage|hash_equals|\\b0e|magic hash|===|timing|temps constant|constant[- ]time)[^\\n]{0,250}(md5|legacy|h[ée]rit|hach|hash|jeton|token)|(md5|legacy|h[ée]rit|hach|hash|jeton|token)[^\\n]{0,250}(==|loose|l[âa]che|faible|non stricte|type juggling|jonglage|hash_equals|\\b0e|magic hash|===|timing|temps constant|constant[- ]time))",
+      "(?i)(important|\\bP[0-2]\\b|bloquant|blocking|security|s[ée]curit[ée]|use|utilis|replace|remplac|instead|à la place|fix|corrig|must|doit)[^\\n]{0,300}(md5|legacy|h[ée]rit)|(md5|legacy|h[ée]rit)[^\\n]{0,300}(important|\\bP[0-2]\\b|bloquant|blocking|security|s[ée]curit[ée]|use|utilis|replace|remplac|instead|à la place|fix|corrig|must|doit)"
+    ],
+    "not_contains": [
+      "nothing to review",
+      "rien à relire"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "- **Important · Security** — src/TokenVerifier.php:41 — `md5($token) == $legacy` is a loose comparison: two different md5 strings like \"0e…\" compare equal, so a wrong legacy token can pass. Use `hash_equals($legacy, md5($token))`.",
+      "- **[P1] Comparaison non stricte des jetons hérités** — `md5($token) == $legacy` : en PHP, deux hachages « 0e… » sont égaux avec `==` ; utiliser `hash_equals`."
+    ],
+    "fail": [
+      "- **Minor · Standards** — src/TokenVerifier.php: the TTL constant could be configurable.\n- Nit: docblock alignment.",
+      "- **Important · Security** — md5 is a weak hash for tokens; migrate the legacy tokens to sha256."
+    ]
+  },
+  "_doc": "A PHP change that adds token expiry and a legacy check for tokens issued before a hash migration; the legacy check compares md5 strings with `==`, so two different \"0e…\" hashes compare equal and a wrong token can pass. Judged on substance: the loose comparison of the legacy hash is named and presented as a problem (hash_equals, strict comparison). Measures whether a review catches a classic PHP trap, with and without the code-change playbook's PHP reference."
+}
