@@ -3,17 +3,16 @@
 <One sentence: what this repo does and for whom.>
 
 ## Commands
+- Versions: `<language and version, framework and version, build tool>`
 - Install: `<command>`
 - Run: `<command>`
-- Test: `<command>`
-- Lint: `<command>`
 
 ## Verifying your work
 Test what changed and what depends on it, whoever owns it. The full suite runs in CI.
 
 1. Changed files: `git diff --name-only <base branch>...HEAD` plus `git status --short`. Base branch: `<main>`.
 2. Run the "Changed" command of each stack touched. Run its "Full" command instead when a shared file changed: `<shared files: lockfiles, shared config, shared test setup such as conftest.py; for dbt, macros/, dbt_project.yml, packages.yml, seeds/>`.
-3. Say in one line which scope you ran and why. Paste the real output. If a test fails, fix the code; never weaken, skip or delete a test to hide a regression. When the expected behaviour changes on purpose, update the test to the new contract and say why.
+3. Say in one line which scope you ran and why. Paste the real output.
 4. Never run against production: development target `<dev target or environment>` only.
 
 | Stack | Changed | Full |
@@ -21,7 +20,11 @@ Test what changed and what depends on it, whoever owns it. The full suite runs i
 | Python | `pytest <tests of the changed modules>` | `pytest` |
 | JS / TS | `npx vitest run --changed <base branch>` or `npx jest --changedSince=<base branch>` | `npm test` |
 | Java (Maven) | `mvn -pl <changed modules> -am test` | `mvn verify` |
-| dbt | `dbt build --select state:modified+ --defer --state <production manifest dir> --target <dev>` (only what changed, the rest read from production); without a manifest: `dbt build --select <model>+ --target <dev>` | `dbt build --target <dev>` |
+| Java (Gradle) | `./gradlew :<changed module>:test` | `./gradlew check` |
+| PHP | `vendor/bin/phpunit <tests of the changed classes>` | `composer test` or `vendor/bin/phpunit` |
+| Go | `go test ./<changed packages>/...` | `go test ./...` |
+| Scala (sbt) | `sbt "<changed project>/test"` | `sbt test` |
+| dbt | `dbt build --select state:modified+ --defer --state <production manifest dir> --target <dev>` (only what changed; reads the production manifest, never writes there); without a manifest: `dbt build --select <model>+ --target <dev>` | `dbt build --target <dev>` |
 | Terraform | `terraform plan` in each changed root module | `terraform validate` and `plan` in every root module |
 | Lint and types | `<linter> <changed files>` | `<lint and type-check command>` |
 | Build | `<build command>` (must end with "<success marker>") | same |
@@ -35,7 +38,6 @@ Delete the rows of stacks this repo does not use; add one per other stack, same 
 ## Conventions
 - Vocabulary: `GLOSSARY.md`; use its terms in code, models and messages.
 - Decisions: `docs/adr/`; propose one for any decision that is hard to reverse.
-- Artifacts: one folder per change, `docs/sdlc/<YYYY-MM-DD>-<slug>/` with `intent.md`, `spec.md`, `plan.md`; `REVIEW.md` at the root for review passes. `spec.md` and `REVIEW.md` are committed; `intent.md` and `plan.md` are local working notes ignored by git (change this line if the team decides otherwise). Never commit without being asked.
 - Commits and MR: `<convention>`
 
 ## Architecture
@@ -49,6 +51,8 @@ Delete the rows of stacks this repo does not use; add one per other stack, same 
 - <Rule that prevents the mistake> (since <YYYY-MM>: <what the agent did>)
 
 ## Where the rest lives
+- Review rules: `REVIEW.md`
+- Repo skills: `<.agents/skills/<name>/>`, what each is for
 - Architecture: `docs/<file>`
 - Domain reference (APIs, models, KPIs): `<path>`
 - Runbooks: `<path>`

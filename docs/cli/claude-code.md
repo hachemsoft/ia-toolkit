@@ -39,9 +39,11 @@ collides with a skill shipped with Claude Code or one of yours, and lists them. 
 
 ## The repository's AGENTS.md
 
-Claude Code reads a repository's `AGENTS.md` when the repository has no `CLAUDE.md`. When it has one, Claude Code reads
-that instead, and the block of `~/.claude/CLAUDE.md` asks it to read `AGENTS.md` (and the one of the area it works in).
-"Initialize the project context" proposes a one-line `CLAUDE.md`, `@AGENTS.md`, so the context loads on its own.
+Claude Code reads a repository's `AGENTS.md` when the repository has no `CLAUDE.md` (its memory documentation: version
+2.1.277 or later, the "Project instructions" setting, on by default), and a subfolder's `AGENTS.md` when it opens a file
+there. When the repository has a `CLAUDE.md`, Claude Code reads that instead, and the block of `~/.claude/CLAUDE.md` asks
+it to read `AGENTS.md` (and the one of the area it works in). The kit never creates a `CLAUDE.md`: "Initialize the
+project context" proposes `@AGENTS.md` at the top of an existing one, and `setup-workflow` writes into `AGENTS.md`.
 
 ## Close Claude Code before an activation
 

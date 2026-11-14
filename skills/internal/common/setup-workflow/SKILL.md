@@ -4,7 +4,7 @@ description: "Configure this repo for the engineering skills: set up its issue t
 disable-model-invocation: true
 metadata:
   aikit-default: "true"
-  aikit-version: "1.0.0"
+  aikit-version: "1.1.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Configure a repo for the flow: ticket tracker (GitHub, GitLab, local), triage labels, location of the glossary and the ADRs. Run once per repo."
@@ -38,7 +38,7 @@ This is a prompt-driven skill, not a deterministic script. Explore, present what
 Look at the current repo to understand its starting state. Read whatever exists; don't assume:
 
 - `git remote -v` and `.git/config`: is this a GitHub repo? Which one?
-- `AGENTS.md` and `CLAUDE.md` at the repo root: does either exist? Is there already an `## Agent skills` section in either?
+- `AGENTS.md` and `CLAUDE.md` at the repo root: does either exist? Is there already an `## Agent skills` section in either? One in `CLAUDE.md`: propose moving it to `AGENTS.md`, not a second copy.
 - `GLOSSARY.md` and `GLOSSARY-MAP.md` at the repo root
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/`: does this skill's prior output already exist?
@@ -81,7 +81,7 @@ Offer **multi-context** (a root `GLOSSARY-MAP.md` pointing to per-context `GLOSS
 
 Show the user a draft of:
 
-- The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
+- The `## Agent skills` block to add to `AGENTS.md` (see step 4)
 - The contents of `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and `docs/agents/triage-labels.md` (the last only when `triage` is installed)
 
 Let them edit before writing.
@@ -90,11 +90,8 @@ Let them edit before writing.
 
 **Pick the file to edit:**
 
-- If `CLAUDE.md` exists, edit it.
-- Else if `AGENTS.md` exists, edit it.
-- If neither exists, ask the user which one to create; don't pick for them.
-
-Never create `AGENTS.md` when `CLAUDE.md` already exists (or vice versa); always edit the one that's already there.
+- Edit `AGENTS.md`, which every CLI reads (Claude Code too, when the repo has no `CLAUDE.md`); create it if missing.
+- Never write the block into `CLAUDE.md`; if the repo has a `CLAUDE.md` that does not import `AGENTS.md`, propose `@AGENTS.md` as its first line.
 
 If an `## Agent skills` block already exists in the chosen file, update its contents in-place rather than appending a duplicate. Don't overwrite user edits to the surrounding sections.
 

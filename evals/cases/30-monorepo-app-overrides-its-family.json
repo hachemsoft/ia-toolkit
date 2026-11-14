@@ -1,0 +1,27 @@
+{
+  "name": "monorepo-app-overrides-its-family",
+  "cwd": "apis-mono-mini",
+  "requires": {
+    "commands": [
+      "test"
+    ]
+  },
+  "prompt": "/test Ne lance rien : liste la commande de vérification que tu lancerais pour un changement dans apis/billing/src/Invoice.php.",
+  "expect": {
+    "contains": [
+      "make test-billing"
+    ],
+    "not_regex": [
+      "(?i)(lancerais|lance|would run|i'd run|je lancerai)[^\\n]{0,60}vendor/bin/phpunit"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "Dans `apis/billing`, `apis/billing/AGENTS.md` remplace la commande de `apis/` : je lancerais `make test-billing` (il démarre le stub du prestataire de paiement)."
+    ],
+    "fail": [
+      "Je lancerais `vendor/bin/phpunit tests/InvoiceTest.php`, la commande Changed de `apis/AGENTS.md`."
+    ]
+  },
+  "_doc": "A monorepo with layered AGENTS.md: the family apis/ says vendor/bin/phpunit, the app apis/billing overrides it with make test-billing on its Extends line. Launched at the root, the agent must read the area's file and follow the app's rule, not the family's (ADR 0032)."
+}

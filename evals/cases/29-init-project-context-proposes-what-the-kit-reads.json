@@ -1,0 +1,39 @@
+{
+  "name": "init-project-context-proposes-what-the-kit-reads",
+  "cwd": "php-noctx-mini",
+  "requires": {
+    "skills": [
+      "init-project-context"
+    ]
+  },
+  "prompt": "Initialise le contexte de ce dépôt pour l'agent (AGENTS.md, REVIEW.md…). Montre-moi la proposition complète, n'écris aucun fichier et ne lance aucune commande.",
+  "expect": {
+    "contains": [
+      "composer test",
+      "REVIEW.md"
+    ],
+    "regex": [
+      "(?i)(never removes|n'en retire|ne retire (jamais|aucune)|ajoute[^\\n]{0,80}pass|adds?[^\\n]{0,80}pass|passes du kit[^\\n]{0,80}(toujours|always)|always run)"
+    ],
+    "not_contains": [
+      "Never commit without being asked",
+      "never weaken, skip or delete",
+      "Run four passes"
+    ],
+    "not_regex": [
+      "(?im)^#+\\s*`?CLAUDE\\.md"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "## AGENTS.md\n| PHP | `vendor/bin/phpunit tests/CartTest.php` | `composer test` |\n## REVIEW.md\nThe kit's review passes always run; this file adds what is specific to this repo; it never removes a pass.",
+      "### AGENTS.md\n| PHP | `vendor/bin/phpunit tests/CartTest.php` | `composer test` |\n- `CLAUDE.md` : pas créé, Claude Code lit `AGENTS.md`.\n### REVIEW.md\nLes passes du kit s'appliquent toujours ; ce fichier ajoute les règles du dépôt et n'en retire aucune."
+    ],
+    "fail": [
+      "## CLAUDE.md\n`@AGENTS.md`\n## AGENTS.md\n| PHP | `composer test` | `composer test` |\n## REVIEW.md\nThe kit's passes always run; this file adds rules.",
+      "## AGENTS.md\n- Test: `composer test`\n- Artifacts: Never commit without being asked.\n## REVIEW.md\nRun four passes.",
+      "## AGENTS.md\n| PHP | `vendor/bin/phpunit` | `vendor/bin/phpunit` |\n## REVIEW.md\nThe kit's passes always run; this file adds rules."
+    ]
+  },
+  "_doc": "A PHP repo with no agent context, a composer script and a CI job: the proposal uses the repo's real command (composer test, from CI), a REVIEW.md that adds to the kit's passes, no CLAUDE.md import (there is no CLAUDE.md or GEMINI.md), and no copy of the kit's own rules (ADR 0032)."
+}

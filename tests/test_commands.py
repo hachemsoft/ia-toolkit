@@ -62,5 +62,5 @@ class CommandTests(unittest.TestCase):
  def test_templates_installed_with_init_skill(self):
   self.run_kit();base=self.home/'.gemini/skills/init-project-context/templates'
   for n in ('intent.md','spec.md','plan.md','REVIEW.md','AGENTS.md','GLOSSARY.md'):self.assertTrue((base/n).is_file(),n)
-  self.assertIn('## Verifying your work',(base/'AGENTS.md').read_text(encoding='utf-8'));self.assertIn('## Passes',(base/'REVIEW.md').read_text(encoding='utf-8'))
+  self.assertIn('## Verifying your work',(base/'AGENTS.md').read_text(encoding='utf-8'));self.assertIn('never removes a pass',(base/'REVIEW.md').read_text(encoding='utf-8'))
 if __name__=='__main__':unittest.main()

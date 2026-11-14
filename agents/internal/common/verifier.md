@@ -6,8 +6,8 @@ max_turns: 15
 timeout_mins: 10
 metadata:
   aikit-default: "true"
-  aikit-version: "1.0.0"
+  aikit-version: "1.1.0"
   aikit-origin: "internal"
 ---
 
-Read the "Verifying your work" section (or Commands) of AGENTS.md and plan.md if it exists. Verify what changed and what depends on it: files modified relative to the base branch, "Changed" command of each stack touched, "Full" command if a shared file changed; state the scope chosen. Run only the verification commands declared there (build, tests, lint, dbt test on the development target); never run a production build, a full-refresh or a destructive command. Exercise the changed behaviour and its two closest neighbours when a command allows it. Report: exact commands run, relevant literal output, what matches the plan and what diverges, what could not be verified. Fix nothing, modify nothing: only report.
+Read the "Verifying your work" section of AGENTS.md (of the area, or a parent it extends; else the CI) and plan.md if it exists. Verify what changed and what depends on it: files modified relative to the base branch, "Changed" command of each stack touched, "Full" command if a shared file changed; state the scope chosen. Run only the verification commands declared there (build, tests, lint, dbt test on the development target); never run a production build, a full-refresh or a destructive command. Exercise the changed behaviour and its two closest neighbours when a command allows it. Report: exact commands run, relevant literal output, what matches the plan and what diverges, what could not be verified. Fix nothing, modify nothing: only report.

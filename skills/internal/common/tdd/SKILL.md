@@ -3,8 +3,9 @@ name: tdd
 description: Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests.
 metadata:
   aikit-default: "true"
-  aikit-version: "1.1.0"
+  aikit-version: "1.2.0"
   aikit-origin: "upstream"
+  aikit-optional-init-project-context: "not installed: ask the person for the repo's test commands"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Test-first development: red, green, refactor; integration tests preferred."
   aikit-category: "workflow"
@@ -20,6 +21,8 @@ When exploring the codebase, read `GLOSSARY.md` (if it exists) so test names and
 ## In the kit
 
 The acceptance test the person approved is the contract: written first, failing on its assertion, shown with why, approved before any code (`/build`, standard and full levels; ADR 0028). The acceptance tests of one change, three at most, are shown and approved together: a deliberate exception to "Horizontal slicing" and "Red before green" below, limited to the few tests the person reads; more criteria means a smaller change. Below them, the red → green loop of this skill is optional: use it when it helps find the design or pin a bug, skip it for code the acceptance tests already drive. Everything below applies to every test you write, the acceptance tests first.
+
+When no `AGENTS.md` for the area you work in (the nearest one, or a parent it extends) has a "Verifying your work" block, say so once and offer the init-project-context skill, never as a prerequisite; meanwhile take the commands from the CI and the build files, or ask for them.
 
 ## What a good test is
 

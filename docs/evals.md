@@ -92,6 +92,8 @@ in words the pattern did not know, never to let a wrong behaviour pass.
 | `build-shows-the-acceptance-test-first` | py-api-mini | at standard level, even after "Go ahead", `/build` shows the acceptance test and waits for approval before any code |
 | `review-finds-logged-personal-data` | py-leads-mini | a review of a change at risk names, as a problem, a phone number logged indirectly in a six-file change, and says the dedicated review ran |
 | `review-without-risk-stays-in-the-main-pass` | py-api-mini | a review of a change without risk stays in its main pass and says so |
+| `init-project-context-proposes-what-the-kit-reads` | php-noctx-mini | initializing a repo's context proposes its real test command and a `REVIEW.md` that adds to the kit's passes, without a `CLAUDE.md` import or a copy of the kit's rules |
+| `monorepo-app-overrides-its-family` | apis-mono-mini | in a layered monorepo, the app's `AGENTS.md` overrides its family's test command, and the agent follows the app |
 
 ## Results
 

@@ -8,7 +8,7 @@ artifact: "MR description"
 order: 60
 ---
 
-State in one line the level of ceremony this change had (tweak, small feature, large change, production) so the reviewer knows what evidence to expect.
+State in one line the level of ceremony this change had (quick, standard or full) so the reviewer knows what evidence to expect.
 Activate the mr skill (if this skill is not installed here, follow the instructions below directly).
 
 Stage: Deploy. Goal: a merge request description that reads without opening the diff.

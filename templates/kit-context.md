@@ -30,7 +30,7 @@ Activated when the task fits.
 Base skills target other tools; map silently:
 - "Skill tool", "activate the X skill": the skill activation tool, never `invoke_agent`; if missing, follow the command directly.
 - "sub-agent", "dispatch": the `ai-kit-*` agents, or do it yourself.
-- `CLAUDE.md`: read and write `AGENTS.md` (or the repo's `GEMINI.md`); never create one, except the one-line `@AGENTS.md` init-project-context proposes.
+- `CLAUDE.md`: read and write `AGENTS.md` (or the repo's `GEMINI.md`); never create one; propose `@AGENTS.md` atop an existing one.
 - "PR", "pull request", "GitHub": the repo's own flow and host (GitLab merge request, or per AGENTS.md); none is needed.
 - `/setup-workflow`, `/pr` (`mr`), `/tdd`, `/code-review`, `/implement-spec`: skills, not commands.
 - `disable-model-invocation: true`: only if the person asks.
@@ -39,4 +39,4 @@ Base skills target other tools; map silently:
 ## Artifacts and git
 AGENTS.md conventions first; otherwise one folder per change, `docs/sdlc/<YYYY-MM-DD>-<slug>/`; `spec.md`, `REVIEW.md` committed; `intent.md`, `plan.md` local, git-ignored.
 
-{frictions}Read the project's context before acting; never invent its business rules. Monorepo with an AGENTS.md per area, started at the root: ask which area, follow its AGENTS.md, write artifacts there.
+{frictions}Read the project's context before acting; never invent its business rules. Monorepo with an AGENTS.md per area, started at the root: ask which area unless the task names one, follow its AGENTS.md, write artifacts there.

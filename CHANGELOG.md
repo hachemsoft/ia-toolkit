@@ -1,5 +1,19 @@
 # Changelog
 
+## 4.10.0 (2026-11-14)
+
+Initializing a project's context matches what the kit reads in it again. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`REVIEW.md` adds, never removes**: a repo's `REVIEW.md` adds its domain rules, severity rule, nit cap and exclusions to the kit's six review passes (Bugs, Security, Domain, Standards, Compliance, Tests); it never removes a pass, and its exclusions and severity rule never lower a Security or Tests finding. Its template lists the six passes instead of four. **Breaking** for a repo that removed a pass through `REVIEW.md`: the review now runs it and says so in its limits.
+- **No `CLAUDE.md` by default**: Claude Code reads a repo's `AGENTS.md` when the repo has no `CLAUDE.md`, so init-project-context no longer creates one; an existing `CLAUDE.md` gets `@AGENTS.md` at its top, on confirmation. `setup-workflow` writes into `AGENTS.md`.
+- **Monorepo**: init-project-context finds the applications (workspace files, build files, CI, `CODEOWNERS`), shows a map first, and proposes a root `AGENTS.md` that is the map, one per family of applications, and one per application only when it differs, each nested file naming what it overrides. One application can be added later on its own.
+- **Lighter `AGENTS.md`**: only what belongs to the repo (with the language and framework versions, and PHP, Go, Scala and Gradle rows in "Verifying your work"); the kit's own rules on artifacts, tests and commits are no longer copied. The repo's skills are listed; a personal or kit skill is never named in a repo file.
+- **Git rule for local notes** that holds in a monorepo: `**/docs/sdlc/**/intent.md`, `plan.md` and `handoff-*.md`.
+- **Artifact templates**: `plan.md` uses quick, standard and full and puts Risks first; `intent.md` has a Risks section for the full level.
+- **Offered when it helps**: `/review` offers init-project-context once when a standard or full change meets a repo without `REVIEW.md`; `tdd` when no `AGENTS.md` of the area has a "Verifying your work" block. `/ship` names the level as quick, standard or full.
+- **Contract tests** keep the templates aligned with what the kit reads: review passes, level vocabulary, files a skill cites, retired names.
+- Two eval cases: initializing a repo's context, and a monorepo application overriding its family. Decision: [ADR 0032](docs/adr/0032-project-context-adds-to-the-kit.md).
+
 ## 4.9.1 (2026-11-14)
 
 The integrity check's repair command works. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

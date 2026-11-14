@@ -170,13 +170,15 @@ outside it ([guardrails](hooks.md)).
 | `AGENTS.md` | short map: commands, verifying your work, conventions, architecture, what the agent gets wrong | writing-for-agents |
 | `GLOSSARY.md` | one term, one definition, synonyms to avoid | domain-modeling |
 | `docs/adr/NNNN-slug.md` | decisions costly to undo or surprising without context | domain-modeling |
-| `REVIEW.md` | review passes, meaning of Important, cap on nits | init-project-context, `/review` |
+| `REVIEW.md` | what the repo adds to the kit's review passes (never removes one), meaning of Important, cap on nits | init-project-context, `/review` |
 | `docs/sdlc/<date>-<slug>/` | `intent.md`, `spec.md`, `plan.md` of one change | `/intent`, `/spec`, `/build` |
 | `docs/agents/issue-tracker.md` | tracker and triage labels, only after setup-workflow | setup-workflow |
 | `.agents/skills/<name>/` | repo skills, with names of their own | the repo team |
 
 "Initialize the project context" runs init-project-context: it reads the repo, proposes `AGENTS.md`, `GLOSSARY.md`,
-`REVIEW.md` and the `.gitignore` lines for local notes, asks per file and never replaces one. For a CLI that reads another
-file than `AGENTS.md`, it proposes a one-line pointer (`@AGENTS.md`). In a monorepo, each area has its own `AGENTS.md`;
-started at the root, the agent asks which area and writes artifacts there. A repo skill named like a kit skill behaves
+`REVIEW.md` and the `.gitignore` lines for local notes in one grouped proposal, and never replaces a file. It never creates
+a CLI's own context file; an existing one gets `@AGENTS.md` at its top ([per CLI](cli/matrice.md)). In a monorepo, it shows a map first:
+a root `AGENTS.md` that lists the families, one per family (`ui/`, `apis/`) for what its apps share, one per app only
+when it differs, each nested file naming what it overrides. Started at the root, the agent asks which area and writes
+artifacts there. A repo skill named like a kit skill behaves
 differently per CLI ([matrix](cli/matrice.md)): give it a name of its own and say in `AGENTS.md` when to use it.

@@ -23,6 +23,7 @@ with `--version` and `--help` only, that the latest CLIs still offer what the ki
 | Context layers (`00_KIT`, `10_COMPANY`, `20_TEAM`) | copies in `~/.gemini/`, declared in `context.fileName` | included by path from the plugin's `rules/AGENTS.md` | managed block at the top of `~/.codex/AGENTS.md` | imported by path from a managed block in `~/.claude/CLAUDE.md` |
 | `USER.md` (always `~/.ai-kit/context/USER.md`) | a copy in `~/.gemini/USER.md` | included by path | copied into the block | imported by path |
 | Repository context | `AGENTS.md` or `GEMINI.md`, root and folders traversed | `AGENTS.md`, `GEMINI.md`, `.agents/rules/` | `AGENTS.md` (and `AGENTS.override.md`) | `AGENTS.md` when the repo has no `CLAUDE.md`; otherwise `CLAUDE.md`, and the block asks to read `AGENTS.md` |
+| Nested `AGENTS.md` (monorepo) | every one found under the launch folder and on demand, all concatenated | not verified | root down to the current folder, concatenated, the closest last (32 KiB by default) | a subfolder's when it opens a file there |
 | Kit skills | `~/.gemini/skills/<name>/` | the same | `~/.codex/skills/<name>/`, user-only honoured | `~/.claude/skills/<prefix><name>/` (`ai-kit-` by default), user-only honoured |
 | Name taken by one of your skills or commands | the kit's installed as `<prefix><name>`, yours kept | the same | the same; the block says which name to type | skills always prefixed; commands only when taken |
 | Your own skills | `~/.gemini/skills/<name>/` | the same | `~/.codex/skills/<name>/` | `~/.claude/skills/<name>/` |

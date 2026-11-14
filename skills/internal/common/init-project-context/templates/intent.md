@@ -16,6 +16,9 @@ Status: draft | accepted
 ## Constraints
 <What does not move: invariants to keep, access rights, personal data, scopes, deadlines, mandated tools.>
 
+## Risks
+<Delete this section when the level is quick or standard. Production data, irreversible operations, personal data: how a failure would show and how to undo or mitigate it.>
+
 ## Open questions
 - <Question that blocks acceptance, and who can answer it.>
 - Assumption: <what is taken as true without proof, and how to check it.>

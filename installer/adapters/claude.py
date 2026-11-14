@@ -81,8 +81,8 @@ def block_text(p: Plan, prefix, renamed):
         lines.append('- Kit commands renamed because one of your own skills or commands has the same name: '
                      + ', '.join('/'+old+' is /'+new for old, new in sorted(renamed.items()))+'.')
     lines.append('- A repo\'s AGENTS.md: Claude Code reads it itself when the repo has no CLAUDE.md; when it has one that does not import'
-                 ' AGENTS.md, read the AGENTS.md at its root, and the one of the area you work in, before working. The only CLAUDE.md the'
-                 ' kit allows in a repo is one line, `@AGENTS.md`, which init-project-context proposes.')
+                 ' AGENTS.md, read the AGENTS.md at its root, and the one of the area you work in, before working. The kit never creates a CLAUDE.md'
+                 ' in a repo; it proposes `@AGENTS.md` atop an existing one.')
     lines.append(CLAUDE_MD[1])
     return '\n'.join(lines)
 
