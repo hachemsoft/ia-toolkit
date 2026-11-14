@@ -1,6 +1,6 @@
 # Guardrails
 
-With this page you know which guardrails run, how to turn one on or off, what IT can lock, and what the agent is refused. A guardrail is a script the CLI runs before a tool call: it blocks some mistakes in the forms it recognises. It is not a sandbox. Concepts: [architecture](architecture.md).
+With this page you know which guardrails run, how to turn one on or off, what IT can lock, and what the agent is refused. A guardrail is a script the CLI runs before a tool call: it blocks some mistakes in the forms it recognises. It is not a sandbox. Two other hooks block nothing: `integrity` reports, after a tool call, a change to what the kit installed; `whats-new` speaks at session start. Concepts: [architecture](architecture.md).
 
 ## The list
 
@@ -37,7 +37,7 @@ Then `ai-kit sync --offline`. IT decides above you in `managed.toml`:
 | `[hooks] locked = ["protected-paths"]` | stays on, whatever you write; the run says `[Info] Guardrail <name> stays on` |
 | `[hooks] <guardrail> = true` or `false` | on or off for everyone; your value is ignored, and the run says so |
 
-IT can name every guardrail of the list; `whats-new` is not one.
+IT can name the five guardrails that run before a tool call. `integrity` and `whats-new` are not guardrails in `managed.toml`: IT can neither lock nor turn them off there, and a person can turn `integrity` off in `aikit.toml`. The CLI policy files below do not carry them either ([limits](#limits)).
 
 ## `protected-paths`
 
@@ -139,7 +139,7 @@ ai-kit managed-settings --out <empty folder> [--managed-hooks-only] [--managed-m
 | Option | Adds |
 | --- | --- |
 | (none) | deny rules on the kit's and the CLI's configuration, the guardrails on by default plus IT's `locked`, a sandbox requirement where the CLI has one |
-| `--managed-hooks-only` | the CLI ignores hooks from any other source |
+| `--managed-hooks-only` | the CLI ignores hooks from any other source, so also the kit's `integrity` and `whats-new` hooks, which these files do not carry |
 | `--managed-mcp-only` | only the Core's MCP servers are allowed |
 
 The generated `README.txt` says where each file goes, per system and per CLI. Windows has its own files under `windows/`, where the guardrails run through PowerShell; for a CLI whose docs do not say which shell runs a hook on Windows, that file writes no guardrail (`README.txt` names it).
@@ -149,6 +149,7 @@ The generated `README.txt` says where each file goes, per system and per CLI. Wi
 - A rule on the text of a command is defeated by an alias, a wrapper script or a program the hook does not know.
 - The kit's own commands are recognised in the text of a command: a commit message that quotes one (`git commit -m "run ai-kit sync"`) is refused too; reword it.
 - On Windows, which gives no change time for a file, an edit that keeps a file's size and sets its modification time back is seen only at session start, when every digest is recomputed.
+- IT can lock the guardrails, not the integrity check: a person can turn it off in `aikit.toml`, and the policy files of `ai-kit managed-settings` do not carry it (with `--managed-hooks-only`, the CLI then ignores it).
 - The integrity check reports, it does not prevent. A command that rewrites the check's own marker with the right values silences the report after a tool call until the next session start, which recomputes everything; one that removes the hooks with a switch outside the kit's part of a CLI's settings (a setting that turns all hooks off) is not seen; the kit's MCP servers in a CLI's settings and `~/.ai-kit/lock.toml` are not checked; a tool call during an `ai-kit sync` can report a change that the sync is making. `ai-kit doctor` checks what the hook cannot.
 - `protected-paths` does not prevent a shell command from changing the configuration: the change is reported after the call, not refused. Until it is restored, the next actions run with it. A classifier model was measured once as an alternative: [research note](research/classifier-model-for-guardrails.md).
 - The other shell guardrails do not follow a `cd`: a folder or a branch is read from where the CLI started the command (`git -C` and `terraform -chdir` are read). `$(…)` inside single quotes is read as if it ran.

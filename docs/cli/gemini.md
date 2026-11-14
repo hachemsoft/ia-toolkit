@@ -10,8 +10,8 @@ What the kit does for Gemini CLI. Behaviour verified on Gemini CLI 0.65. Shared 
   `ai-kit sync --offline`; an edit made to the copy goes into the file when the file did not change since the copy.
 - **Skills** in `~/.gemini/skills/`, **commands** in `~/.gemini/commands/*.toml`, **agents** in `~/.gemini/agents/ai-kit-*.md`.
 - **Guardrails** that are on: scripts in `~/.ai-kit/hooks/`, declared under `hooks.BeforeTool` in groups named
-  `ai-kit-<name>`; your own hooks are kept. The `whats-new` hook is a group under `hooks.SessionStart` without matcher; it
-  answers in JSON only. Gemini warns once about a hook whose command changed: expected after an activation.
+  `ai-kit-<name>`; your own hooks are kept. The `integrity` check is a group under `hooks.AfterTool`, every tool. The
+  `whats-new` hook is a group under `hooks.SessionStart` without matcher; it answers in JSON only. Gemini warns once about a hook whose command changed: expected after an activation.
 - **MCP servers** that are on: `ai-kit-<name>` entries under `mcpServers`.
 - **Default setting**: `skills.enabled`, only if missing.
 

@@ -19,7 +19,8 @@ the CLIs chosen. `--target codex` installs it alone, `--target all` with the oth
 - **Agents**: one `ai-kit-<name>` role each under `[agents.ai-kit-<name>]` in the managed block of `~/.codex/config.toml`,
   instructions in `~/.codex/ai-kit/agents/`. A role has no tool list: the session's sandbox and approvals apply.
 - **Guardrails** that are on: `[[hooks.PreToolUse]]` in the same block; the scripts read Codex's call format, including the
-  paths of an `apply_patch`. The `whats-new` hook: `[[hooks.SessionStart]]`, no matcher.
+  paths of an `apply_patch`. The `integrity` check: `[[hooks.PostToolUse]]`, every tool. The `whats-new` hook: `[[hooks.SessionStart]]`, no
+  matcher. All three need the approval below.
 - **MCP servers** that are on: `[mcp_servers.ai-kit-<name>]` in the same block.
 
 The `config.toml` block is appended at the end and checked to stay valid TOML before writing. Both files are backed up on

@@ -1,11 +1,70 @@
 # Reviewing a change
 
-How the kit helps the two kinds of reviewer of a change: the review agents, and the person who reads it before merging.
+Everything about reviewing a change: what `/review` checks and how it ranks findings, how its agents are briefed, and how
+the kit helps the person who reads the change before merging. Saying "review my changes" runs the same review as
+`/review` (skill code-review). The review reports; it never fixes anything.
+
+## What `/review` checks
+
+**Scope**, by default: the branch's commits since the default branch, the staged and unstaged changes and the new files,
+stated in one line. A base ref, `staged`, `local`, a path or a commit narrows it.
+
+**Six passes**, always:
+
+| Pass | Looks for |
+| --- | --- |
+| Bugs | logic, edge cases, error handling, regressions in callers |
+| Security | secrets, injection, unsafe paths, personal data in logs or outputs, permissions |
+| Domain | the checks of the installed playbooks matching the files (SQL, dbt, infrastructure…), with their reviewer agent when installed |
+| Standards | the repository's `REVIEW.md`, `AGENTS.md`, `CONTRIBUTING.md`, the practices in the kit context, and a baseline of code smells, each worded as a judgement call |
+| Compliance | the change against its `spec.md`, `intent.md` or `plan.md`, including each mitigation of the spec's Threats; skipped, and said, without one |
+| Tests | the facts of the kit's test check: tests deleted, disabled or relaxed in the diff ([below](#tests-a-change-weakens)) |
+
+**One severity scale**: **Important** breaks behaviour, data, security or a written policy, and must be fixed before
+merging; **Minor** is a real defect with limited impact, or a missing test for changed behaviour; **Nit** is style or
+naming, five at most (or the cap of `REVIEW.md`).
+
+**Level**: `quick` or `full`, inferred from the size and the paths touched and stated, or given (`/review full`). `full`
+adds the doubter: the claims the change relies on are listed and doubted, and for a change hard to undo, how a failure
+would show and how it is undone.
+
+**The report**: the scope line, the doubter's position (or why it was not assessed), the findings ranked with their pass,
+severity, file and line, the unresolved discussions of the merge request, then the limits: what was not reviewed and why,
+starting with whether the dedicated security review ran. A section `## Report` in the repository's `AGENTS.md` or in your
+`USER.md` changes its shape. In a monorepo, the review names every other area the change reaches, so their owners review
+too.
+
+## A change at risk gets independent reviewers
+
+A change is at risk at the full level, or when it touches personal data, secrets or tokens, authentication or
+permissions, input from outside (a request, a file, a webhook) or an external service, or when its spec has a Threats
+section, or on request. It then gets a dedicated security review, whatever the level: code-reviewer (Bugs and Standards),
+security-reviewer (Security) and doubter each work in a fresh context, at the same time when the CLI can, and their
+findings are merged into one list. The other passes stay with the main agent. A change without risk is reviewed in the
+main pass, and the report says so. `/build` does not run the dedicated review on its own change. A review by an AI agent
+replaces neither an audit nor a penetration test. Decision: [ADR 0029](adr/0029-risk-based-security-review-by-independent-reviewers.md).
+
+## What a repository adds: REVIEW.md
+
+A repository's `REVIEW.md` adds to the six passes and never removes one: its domain rules, its conventions, what
+Important means there, its nit cap and what not to report. Its severity rule and exclusions never lower a Security or
+Tests finding; a line asking to remove a pass is reported in the limits. `/review` offers to create it once, at the
+standard or full level, when it is missing ([project context](project-context.md)). Decision:
+[ADR 0032](adr/0032-project-context-adds-to-the-kit.md).
+
+## Tests a change weakens
+
+A model under pressure can "make the tests pass" by changing the tests. Before the Tests pass, a read-only script
+(`runtime/weakened_tests.py`) lists from the diff the tests deleted, disabled or relaxed. The review judges each
+fact: covered by a contract you named (in the session, or in the change's `spec.md`, `intent.md` or `plan.md`), it is an
+intended test change, listed as such; otherwise it is an Important finding. A commit message never counts as a contract,
+since the agent writes it. The script never blocks, so a contract changed on purpose stays possible. Decision:
+[ADR 0027](adr/0027-a-deterministic-signal-feeds-the-review-it-never-blocks.md).
 
 ## Cold review: the agents judge the change, not the story
 
-`/review` gives its passes to sub-agents in a fresh context (code-reviewer, security-reviewer, doubter, and the domain
-reviewers of the installed playbooks). A fresh context only helps if it is not filled with the author's account: "I
+When `/review` gives passes to sub-agents (a change at risk, `full`, a domain reviewer), each one starts in a fresh
+context. A fresh context only helps if it is not filled with the author's account: "I
 added a retry, it is idempotent, the tests pass" makes a reviewer look for bugs around the retry and take "idempotent" for
 granted, when that is the claim to check.
 

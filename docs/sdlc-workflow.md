@@ -25,9 +25,9 @@ The commands (`/intent`, `/build`…) are shortcuts.
 | Artifact | a file a step produces and the next one reads: `intent.md`, `spec.md`, `plan.md`, the diff, the review |
 | Level | `quick`, `standard` or `full`: how much process a change gets |
 | Acceptance test | a test, written before the code, that says what "done" means; a person approves it |
-| Guardrail | a script the CLI runs before the agent's tool call; it can refuse the call |
+| Guardrail | a script the CLI runs around the agent's tool calls: before one, it can refuse it; after one, it reports a change to the kit's files |
 | Sub-agent | a second agent with a narrow mission and limited tools, in a fresh context (reviewer, verifier, doubter) |
-| Playbook | an optional skill that adapts the steps to a domain (SQL and dbt, Java, infrastructure…) |
+| Playbook | an optional skill that adapts the steps to a domain (SQL and dbt, application code, infrastructure…) |
 
 ## The six steps
 
@@ -72,7 +72,7 @@ flowchart LR
     You["You: a plain sentence<br/>or a /command"] --> Agent(("Agent"))
     Agent -->|"picks the step<br/>(or /guide tells you)"| C["<b>Command</b><br/>goal · level · artifact"]
     C -->|activates| S["<b>Skills</b><br/>method of the step"]
-    PB["<b>Domain playbook</b><br/>SQL · dbt · Java · infra…"] -.->|"adapts the step<br/>when the files match"| C
+    PB["<b>Domain playbook</b><br/>SQL · dbt · code · infra…"] -.->|"adapts the step<br/>when the files match"| C
     S -->|delegates a bounded job| SA["<b>Sub-agents</b><br/>reviewer · doubter · verifier"]
     S --> A["<b>Artifact</b><br/>intent.md · spec.md · diff…"]
     SA -->|report| S
@@ -82,9 +82,9 @@ flowchart LR
 | --- | --- | --- |
 | `/intent` | grilling (interview in rounds), domain-modeling (glossary, decisions) | none |
 | `/spec` | to-spec (synthesis, no new interview) | none |
-| `/build` | tdd (acceptance tests), code-review (on the whole change) | verifier (final checks) |
+| `/build` | tdd (acceptance tests), code-review (on the whole change) | verifier (final checks, and the proof that the acceptance tests fail without the code) |
 | `/test` | tdd | none |
-| `/review` | code-review | code-reviewer, security-reviewer and doubter on a change at risk (ADR 0029); doubter in `full` mode; domain reviewers when installed |
+| `/review` | code-review | code-reviewer, security-reviewer and doubter on a change at risk; doubter in `full` mode; domain reviewers when installed ([review](review.md)) |
 | `/ship` | mr (merge request text) | none |
 | `/diagnose` | diagnosing-bugs | none |
 
@@ -189,18 +189,25 @@ flowchart TB
     end
     subgraph Outside["Run outside the model: checks"]
         G["<b>guardrails</b> before each tool call<br/>protected paths, git, production"]
+        I["<b>integrity check</b> after each tool call<br/>the kit's files changed?"]
         W["<b>test check</b> in /review<br/>tests deleted, disabled, relaxed"]
-        V["<b>verifier</b> sub-agent<br/>runs the checks, reports the output"]
+        V["<b>verifier</b> sub-agent<br/>runs the checks, proves the tests"]
     end
     Prompt --> Agent(("Agent"))
     Agent -->|tool call| G
+    Agent -->|after the call| I
     Agent -->|change| W
     Agent -->|"done?"| V
 ```
 
-- **Guardrails** ([guardrails](hooks.md)): a write tool aimed at the kit's or the CLI's configuration is refused; a change
-  made by a shell command is reported to the agent and to you right after it, with the command that restores it.
-  Optional ones refuse git commands that discard work, dbt or terraform on production, an uncapped BigQuery query.
+- **Guardrails** ([guardrails](hooks.md)): a write tool aimed at the kit's or the CLI's configuration is refused, and so are
+  the kit's own commands that change the installation. Optional ones refuse git commands that discard work, dbt or terraform on production, an uncapped BigQuery query.
+- **The integrity check** ([guardrails](hooks.md#integrity)): after each tool call and at session start, the files the
+  kit installed are compared with what it recorded; a change is reported to the agent and to you, with the command that
+  restores it. It reports; it does not prevent.
+- **Proof that a test tests something** ([review](review.md#proof-that-a-test-tests-something)): in `/build`, the
+  verifier puts the change's code back to its base version and runs the approved acceptance tests; a test that still
+  passes stops `/build` and you decide.
 - **The review's test check** ([ADR 0027](adr/0027-a-deterministic-signal-feeds-the-review-it-never-blocks.md)): a
   read-only script lists, from the diff, the tests deleted, disabled or relaxed. The review judges: covered by a contract
   you named, it is an intended change; otherwise an Important finding. It never blocks, so a contract changed on purpose
@@ -220,30 +227,16 @@ flowchart TB
 | Full level: risks and the way back before the tests | tests first | measured: with tests first, the recovery plan of an irreversible deletion was dropped 2 times in 3 |
 | One human approval of the acceptance tests | test-first at every slice, or no test-first | the person checks what "done" means once; the agent stays free below it |
 | A deterministic test check feeds the review | a prompt rule "never weaken a test" alone | a script is reproducible and costs no token; the review keeps the judgement |
+| An approved test must fail without the code | trusting a green test | a test that passes either way proves nothing |
 | Artifacts in files, per change | decisions in the chat | the next step, session and reviewer read them |
 | Sub-agents with narrow tools (reviewer, doubter, verifier) | one agent judging its own work | a fresh context doubts claims the author takes for granted |
 | Every prompt rule measured by [evals](evals.md) | trusting the wording | real tasks replayed with and without the kit; a wording that regresses is caught |
 
-## What changed recently
-
-| Version | What it adds to the workflow |
-| --- | --- |
-| 4.3 | `/review` sees the tests a change deletes, disables or relaxes (deterministic test check) |
-| 4.4 | test-first where a person looks at the test: quick has none, standard and full get one approval of the acceptance tests |
-| 4.5 | `[agents] parallel = true`: independent parts go to sub-agents at once, each writer in its own git worktree ([parallel agents](parallel-agents.md)) |
-| 4.5.1 | full level puts risks and how to undo them before the tests again; an empty stub may make a test fail on its assertion |
-| 4.6 | a repo's protected paths hold in shell commands too, not only in write tools |
-| 4.6.1 | a full-level plan names the backup or way back of an irreversible operation; a test-configuration change is allowed before approval |
-| 4.7.0 | a change at risk gets a security review by independent reviewers ([ADR 0029](adr/0029-risk-based-security-review-by-independent-reviewers.md)) |
-| 4.7.1 | the protected-paths guardrail stops refusing a `cd` into a configuration folder followed by reads and a commit message that cites a protected file; agy keeps its own permission prompts |
-| 4.8.0 | the kit checks what changed instead of guessing what a command will do: a write tool on its configuration is refused, any other command runs, and a change is reported right after it |
-| 4.8.1 | the integrity check says when it could not check, and reports a missing or incomplete installation state |
-
-Details in the [changelog](../CHANGELOG.md).
-
 ## Where to go next
 
 - Try it: [getting started](getting-started.md), then ask "which command fits?" with `/guide`.
-- The exact rules of each command, skill and agent: [commands](commands.md).
+- The exact rules of each command, skill and agent: [commands](commands.md); the review in detail: [review](review.md).
+- What a repository keeps for the agent (`AGENTS.md`, `REVIEW.md`, monorepo): [project context](project-context.md).
+- What changed in each version: [changelog](../CHANGELOG.md).
 - Adapt it to your domain or team: [extending](extending.md), [Core and Team repositories](repositories.md).
 - Why each choice was made: [decisions (ADR)](adr/README.md).

@@ -132,7 +132,7 @@ a script not listed in its `KIT_ALLOWED`. It finds obvious forms only: review st
 ## Releasing
 
 1. Set the version in `VERSION` and `pyproject.toml` (a test checks they match), and `min_engine` in `aikit.toml` when the
-   content needs a newer engine. Write the CHANGELOG section `## <version>`; a fixed friction is cited by id,
+   content needs a newer engine. Write the CHANGELOG section `## <version> (<YYYY-MM-DD>)`, which CI copies into the release notes; a fixed friction is cited by id,
    `(frictions: <id>)`.
 2. To try a build before committing: `python3 scripts/build_release.py --worktree` (a test ZIP; never publish it).
 3. Merge, then push the tag `v<version>` alone. On a tag, CI builds the ZIP from the committed files (the engine wheel,
@@ -148,7 +148,7 @@ organization that keeps its Core apart from the engine.
 
 ## Contributing
 
-- Read `AGENTS.md` and the ADRs ([index](adr/README.md)) first; a change that reverses one comes with a new ADR.
+- Read this page, [architecture](architecture.md) and the ADRs ([index](adr/README.md)) first; a change that reverses one comes with a new ADR.
 - The repository is generic and public, in English: no organization, project or person names, no competing products.
 - `CODEOWNERS` names who approves `skills/`, `agents/`, `commands/`, `templates/`, `runtime/`; an organization's copy
   fills it in and requires the code owners' review on the default branch.

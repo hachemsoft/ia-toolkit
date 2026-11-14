@@ -135,7 +135,7 @@ jobs:
         shell: bash
         run: |
           version="${GITHUB_REF_NAME#v}"
-          python3 -c "import re,sys; t=open('CHANGELOG.md',encoding='utf-8').read(); m=re.search(r'^## '+re.escape(sys.argv[1])+r'\n(.*?)(?=^## |\Z)', t, re.S|re.M); print(m.group(1).strip() if m else '')" "$version" > notes.md
+          python3 -c "import re,sys; t=open('CHANGELOG.md',encoding='utf-8').read(); m=re.search(r'^## '+re.escape(sys.argv[1])+r'(?: \([0-9-]+\))?\n(.*?)(?=^## |\Z)', t, re.S|re.M); print(m.group(1).strip() if m else '')" "$version" > notes.md
           # A published asset is never overwritten: a second run for the same tag fails instead of replacing what people downloaded.
           (cd release && sha256sum *.zip > SHA256SUMS.txt)
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then

@@ -44,7 +44,7 @@ Test written: test_export_skips_archived fails (customer 42 is archived and stil
 Blocked by the kit: "~/.ai-kit/aikit.toml" is configuration of the kit or of a CLI; the agent does not change it. Make the change yourself (then run ai-kit sync --offline).
 ```
 
-The level (`quick`, `standard`, `full`) decides how much planning, testing and review follows ([commands](docs/commands.md)).
+The level (`quick`, `standard`, `full`) decides how much planning, testing and review follows ([the workflow, explained](docs/sdlc-workflow.md)).
 
 ## Getting started
 
@@ -75,15 +75,15 @@ Everything below is plain files in a Git repository (the Core, this one by defau
 | --- | --- | --- | --- |
 | **Context layers** | Markdown read by the agent before each repo's `AGENTS.md`: how the kit works, company practices, team practices, your `USER.md` | 4 layers; the repo's own rules win over yours | `context/`, [configuration](docs/configuration.md) |
 | **Commands** | Shortcuts for the steps of a change, each ending with an artifact the next one reads | 14 by default: `/intent` → `/spec` → `/build` → `/test` → `/review` → `/ship`, `/diagnose`, and tools (`/me`, `/guide`, `/explain`, `/research`, `/learn`, `/friction`, `/retro`); 7 optional | `commands/`, [commands](docs/commands.md) |
-| **Skills** | Know-how the agent loads when the task fits: TDD, code review, diagnosis, domain modeling, writing a merge request… | 19 by default | `skills/`, [skills](docs/commands.md#skills) |
-| **Domain playbooks** | Optional skills that adapt the steps to a domain | SQL and dbt, Java, Python and JavaScript, infrastructure, architecture | `skills/internal/<domain>/`, [playbooks](docs/commands.md#domain-playbooks) |
+| **Skills** | Know-how the agent loads when the task fits: TDD, code review, diagnosis, domain modeling, writing a merge request… | 20 by default | `skills/`, [skills](docs/commands.md#skills) |
+| **Domain playbooks** | Optional skills that adapt the steps to a domain | SQL and dbt, application code (one playbook, with notes for Python, JavaScript and TypeScript, Java, PHP, Go, Scala), infrastructure, architecture | `skills/internal/<domain>/`, [playbooks](docs/commands.md#domain-playbooks) |
 | **Agents** | Sub-agents with a narrow role and limited tools, started by the commands | 5 by default (code-reviewer, security-reviewer, doubter, repo-investigator, verifier); 4 optional domain reviewers (sql, dbt, architecture, infra) | `agents/`, [agents](docs/commands.md#agents) |
 | **Workflows** | Generated indexes of which command, skill and artifact go with each step | SDLC, analysis, research | `workflows/` |
-| **Guardrails** | Hooks run by the CLI before a tool call: anti-error defaults, not a security barrier | `protected-paths` (on): refuses a write tool aimed at the kit's or the CLIs' configuration and the kit's own install commands; a change made by a command is reported right after it; `dbt-prod-guard`, `git-guard`, `bq-cost-guard`, `infra-prod-guard` (off): refuse dbt on production, git commands that discard work, an uncapped `bq query`, terraform and kubectl on production; `whats-new` (on): announces a new version once | `runtime/hooks/`, [guardrails](docs/hooks.md) |
+| **Guardrails** | Hooks run by the CLI around a tool call: anti-error defaults, not a security barrier | `protected-paths` (on): refuses a write tool aimed at the kit's or the CLIs' configuration and the kit's own install commands; a change made by a command is reported right after it; `dbt-prod-guard`, `git-guard`, `bq-cost-guard`, `infra-prod-guard` (off): refuse dbt on production, git commands that discard work, an uncapped `bq query`, terraform and kubectl on production; `integrity` (on): after each tool call, reports a change to what the kit installed, with the command that restores it; `whats-new` (on): announces a new version once | `runtime/hooks/`, [guardrails](docs/hooks.md) |
 | **MCP servers** | Data connections declared once, validated (exact identity, pinned launchers, IT allow and deny lists), then written in each CLI's format | none by default; a Core or Team adds them in `mcp/servers.toml` | [MCP](docs/mcp.md) |
 | **Frictions and usage** | `/friction` logs what got in the way, locally; `ai-kit usage` shows what is used, read from the CLIs' own logs | nothing is sent unless you publish | `runtime/friction.py`, [frictions](docs/frictions.md) |
-| **Evals** | Real prompts replayed against a CLI, with and without the kit, checked on deterministic criteria | 21 cases; billed, never run by the tests | `evals/`, [evals](docs/evals.md) |
-| **Engine** | The `ai-kit` command: fetches Core and Team at a Git tag, merges with IT's and your settings, validates, writes each CLI's files, keeps 3 configurations to roll back to | one adapter per CLI | `installer/`, [architecture](docs/architecture.md) |
+| **Evals** | Real prompts replayed against a CLI, with and without the kit, checked on deterministic criteria | 31 cases; billed, never run by the tests | `evals/`, [evals](docs/evals.md) |
+| **Engine** | The `ai-kit` command: fetches Core and Team at a Git tag, merges with IT's and your settings, validates, writes each CLI's files, keeps the previous configuration to roll back to | one adapter per CLI | `installer/`, [architecture](docs/architecture.md) |
 
 ## What lands on your machine
 
@@ -113,7 +113,8 @@ A few runs per side on 3 cases: regression tests for the kit's prompts, not a st
 
 | | |
 | --- | --- |
-| **Use** | [getting started](docs/getting-started.md) · [the SDLC workflow, explained](docs/sdlc-workflow.md) · [commands, skills and agents](docs/commands.md) · [frictions and usage](docs/frictions.md) · [troubleshooting](docs/troubleshooting.md) |
+| **Use** | [getting started](docs/getting-started.md) · [the SDLC workflow, explained](docs/sdlc-workflow.md) · [commands, skills and agents](docs/commands.md) · [review](docs/review.md) · [frictions and usage](docs/frictions.md) · [troubleshooting](docs/troubleshooting.md) |
+| **In a repository** | [project context](docs/project-context.md): `AGENTS.md`, `REVIEW.md`, glossary, monorepo |
 | **Configure** | [configuration](docs/configuration.md) (managed.toml, aikit.toml, USER.md) · [Core and Team repositories](docs/repositories.md) · [MCP](docs/mcp.md) · [guardrails](docs/hooks.md) · [parallel agents](docs/parallel-agents.md) |
 | **Per CLI** | [matrix](docs/cli/matrice.md) · [Gemini CLI](docs/cli/gemini.md) · [Antigravity CLI](docs/cli/agy.md) · [Codex CLI](docs/cli/codex.md) · [Claude Code](docs/cli/claude-code.md) |
 | **Maintain** | [architecture](docs/architecture.md) · [extending](docs/extending.md) · [evals](docs/evals.md) · [compliance](docs/compliance.md) · [decisions (ADR)](docs/adr/README.md) · [changelog](CHANGELOG.md) |

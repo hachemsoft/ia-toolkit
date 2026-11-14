@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.12.1 (2026-11-14)
+
+The documentation has one page per subject and matches what the kit does; the release notes are filled again. Nothing changes in what the kit installs or how it behaves.
+
+- **New page [project context](docs/project-context.md)**: what the agent reads in a repository and what wins, the files a repository keeps (`AGENTS.md`, `REVIEW.md`, glossary, ADRs, change folders), init-project-context, `CLAUDE.md` and `GEMINI.md`, monorepos (ADR 0032).
+- **[Review](docs/review.md)** is the page for the review: the six passes, the severity scale, quick and full, the change at risk (ADR 0029), `REVIEW.md`, the tests a change weakens (ADR 0027). Corrected: sub-agents review only a change at risk, `full` or a domain pass, not every review. [Commands](docs/commands.md) is a reference again and links to these pages.
+- **[The SDLC workflow](docs/sdlc-workflow.md)**: the integrity check and the proof that a test tests something join the safety nets; the dated "what changed recently" table is replaced by the changelog.
+- **Integrity check, documented where it applies**: [guardrails](docs/hooks.md) say IT locks the five guardrails that run before a tool call, not `integrity` or `whats-new`, which a person can turn off and which the files of `ai-kit managed-settings` do not carry (with `--managed-hooks-only` a CLI ignores them); its three messages in [troubleshooting](docs/troubleshooting.md); its hook per CLI (Claude Code `PostToolUse`, Codex `[[hooks.PostToolUse]]`, Gemini CLI `AfterTool`); [compliance](docs/compliance.md) lists it with its limits.
+- **Corrected facts**: Claude Code's guardrail matchers (`Bash|PowerShell`, and for `protected-paths` also `Write|Edit|MultiEdit|NotebookEdit|mcp__.*`); the README counts (20 skills, 31 eval cases, one code playbook for Python, JavaScript and TypeScript, Java, PHP, Go and Scala, `integrity` among the guardrails, the previous configuration kept for rollback); [extending](docs/extending.md) no longer points to a root `AGENTS.md` and gives the changelog heading `## <version> (<YYYY-MM-DD>)`.
+- **Release notes**: since the changelog headings carry a date, CI copied an empty body into each GitHub release (v4.10.1 and v4.12.0 checked); it now reads `## X.Y.Z (date)`.
+
 ## 4.12.0 (2026-11-14)
 
 An approved acceptance test now has to prove something. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

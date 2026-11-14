@@ -53,6 +53,9 @@ The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) add: 2 when Python or th
 | `MCP server <name> is required … nothing was changed.` | see [MCP](mcp.md); approve it in a terminal, or ask IT |
 | `… modified locally: <path>` | a file the kit installed was edited: move your change to `USER.md` or your `aikit.toml`, then run `ai-kit sync --offline --restore` (the edited copy is kept in `~/.ai-kit/backups/`) |
 | `[Check] <file> was modified by hand: restored to the kit version; your copy: …` | normal for a rule layer (`00_KIT.md`, `10_…`, `20_…`): personal preferences go in `USER.md` |
+| `AI Kit: changed outside the kit: <files>. To restore: ai-kit sync --offline --restore` | a file the kit installed, or its part of a CLI's settings, changed outside the kit. If you did not mean it, run the command: the changed copy is kept in `~/.ai-kit/backups/` ([integrity](hooks.md#integrity)) |
+| `AI Kit: could not check <files> (<reason>). Run ai-kit doctor; …` | the integrity check could not read a file or the installation state; run `ai-kit doctor`, then the restore command if it reports a problem |
+| `AI Kit: the kit folder's git settings changed: …` | the remotes of the kit folder may point elsewhere: check them with `git -C <kit folder> remote -v` before the next update |
 | `Blocked by the kit: …` (in the agent) | a guardrail refused the action ([guardrails](hooks.md)); do it yourself if it is right |
 | `doctor --live makes a real call to the model, refused because AI_KIT_NO_LIVE=1 is set.` | unset the variable if you accept the call |
 | `uninstall needs a confirmation: add --yes, or --dry-run to see what would be removed.` | add `--yes` |
