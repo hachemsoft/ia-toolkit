@@ -1,0 +1,89 @@
+{
+  "_doc": "Runs on Codex 0.167.0, model: the CLI default, three runs per case. review-finds-loose-hash-comparison without the kit (baseline home): the review catches the loose md5 comparison 3/3, so the PHP reference of code-change is not enriched. init-project-context-proposes-what-the-kit-reads and monorepo-app-overrides-its-family with kit 4.10.0 installed. Statuses judged with the criteria of evals/cases as committed with this file: the criterion on REVIEW.md adding to the kit's passes was widened after the first run, whose answer said 'the six passes of the kit apply; this file adds the repo's rules'. An earlier run of case 29 against kit 4.9.1 with a prompt forbidding any command (the agent read nothing) is not recorded. With kit 4.10.0, two runs out of three dropped or rewrote the REVIEW.md first paragraph; kit 4.10.1 asks to keep it word for word: three more runs.",
+  "runs": [
+    {
+      "date": "2026-11-14",
+      "cli": "Codex 0.167.0",
+      "kit": null,
+      "case": "review-finds-loose-hash-comparison",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-14",
+      "cli": "Codex 0.167.0",
+      "kit": null,
+      "case": "review-finds-loose-hash-comparison",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-14",
+      "cli": "Codex 0.167.0",
+      "kit": null,
+      "case": "review-finds-loose-hash-comparison",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-14",
+      "cli": "Codex 0.167.0",
+      "kit": "4.10.0",
+      "case": "init-project-context-proposes-what-the-kit-reads",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-14",
+      "cli": "Codex 0.167.0",
+      "kit": "4.10.0",
+      "case": "init-project-context-proposes-what-the-kit-reads",
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-11-14",
+      "cli": "Codex 0.167.0",
+      "kit": "4.10.0",
+      "case": "init-project-context-proposes-what-the-kit-reads",
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-11-14",
+      "cli": "Codex 0.167.0",
+      "kit": "4.10.0",
+      "case": "monorepo-app-overrides-its-family",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-14",
+      "cli": "Codex 0.167.0",
+      "kit": "4.10.0",
+      "case": "monorepo-app-overrides-its-family",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-14",
+      "cli": "Codex 0.167.0",
+      "kit": "4.10.0",
+      "case": "monorepo-app-overrides-its-family",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-14",
+      "cli": "Codex 0.167.0",
+      "kit": "4.10.1",
+      "case": "init-project-context-proposes-what-the-kit-reads",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-14",
+      "cli": "Codex 0.167.0",
+      "kit": "4.10.1",
+      "case": "init-project-context-proposes-what-the-kit-reads",
+      "status": "OK"
+    },
+    {
+      "date": "2026-11-14",
+      "cli": "Codex 0.167.0",
+      "kit": "4.10.1",
+      "case": "init-project-context-proposes-what-the-kit-reads",
+      "status": "OK"
+    }
+  ]
+}

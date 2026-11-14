@@ -1,7 +1,7 @@
 # Review instructions
 
 The kit's review passes always run: Bugs, Security, Domain, Standards, Compliance, Tests. This file adds what is specific to
-this repo; it never removes a pass. Delete the lines that do not apply.
+this repo; it never removes a pass.
 
 ## Domain
 What a change in this repo must preserve. Keep the lines that apply:

@@ -6,14 +6,14 @@
       "init-project-context"
     ]
   },
-  "prompt": "Initialise le contexte de ce dépôt pour l'agent (AGENTS.md, REVIEW.md…). Montre-moi la proposition complète, n'écris aucun fichier et ne lance aucune commande.",
+  "prompt": "Initialise le contexte de ce dépôt pour l'agent (AGENTS.md, REVIEW.md…). Lis le dépôt autant que nécessaire, mais n'écris aucun fichier : montre-moi la proposition complète.",
   "expect": {
     "contains": [
       "composer test",
       "REVIEW.md"
     ],
     "regex": [
-      "(?i)(never removes|n'en retire|ne retire (jamais|aucune)|ajoute[^\\n]{0,80}pass|adds?[^\\n]{0,80}pass|passes du kit[^\\n]{0,80}(toujours|always)|always run)"
+      "(?i)(never removes|n'en retire|ne retire (jamais|aucune)|ajoute[^\\n]{0,80}pass|adds?[^\\n]{0,80}pass|passes[^\\n]{0,80}(toujours|always|s.appliquent|apply)|six (review )?passes|six passes|always run)"
     ],
     "not_contains": [
       "Never commit without being asked",

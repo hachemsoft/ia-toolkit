@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.10.1 (2026-11-14)
+
+Measured on Codex, initializing a repo's context now keeps what the review relies on. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`REVIEW.md` keeps its first paragraph**: init-project-context copies it word for word, so the file a repo receives says that the kit's six review passes always run and that it only adds to them; two runs out of three had dropped or rewritten it.
+- Eval results of 2026-11-14 recorded: a review catches the loose md5 comparison in PHP without the kit (3/3), a monorepo application's rule wins over its family's (3/3), initializing a repo's context (see `evals/results/2026-11-14.json`).
+
 ## 4.10.0 (2026-11-14)
 
 Initializing a project's context matches what the kit reads in it again. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

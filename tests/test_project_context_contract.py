@@ -85,6 +85,7 @@ class ProjectContextContractTests(unittest.TestCase):
         self.assertNotIn('only when the repo is used with Claude Code', skill)
         self.assertIn('references/monorepo.md', skill)
         self.assertIn('never name a personal skill or a kit skill in a repo file', skill)
+        self.assertIn('first paragraph kept word for word', skill)
         self.assertIn('An existing `GEMINI.md` stays as it is', skill)
 
     def test_monorepo_layers_are_shown_before_writing(self):
