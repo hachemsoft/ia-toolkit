@@ -7,7 +7,7 @@
     ],
     "skills": [
       "dbt-model-change",
-      "python-js-change"
+      "code-change"
     ]
   },
   "prompt": "/build add a currency column to the orders model and return it from the orders API",

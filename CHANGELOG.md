@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.9.0 (2026-11-14)
+
+One code-change playbook for any language replaces `python-js-change` and `java-change`. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`code-change`** (optional): a change to application code in any language (PHP, Java, Go, Scala, Python, JavaScript or TypeScript…): the repo's conventions and two neighbouring files, public contracts, no new library or implicit framework migration, secrets out of code, test-first through tdd, the repo's verification commands, a table of excuses and rebuttals.
+- **Per language**, in `references/<language>.md`, read only for a change in that language: the community standard (PEP 8, PSR-12, Effective Go…), the tools that enforce it when the repo already declares them (never added by the agent), and a few classic traps. Python, JavaScript and TypeScript, Java (the former `java-change`), PHP, Go, Scala. A repo's own conventions stay in its `AGENTS.md`.
+- **Breaking**: `python-js-change` and `java-change` no longer exist; list `code-change` in `extra_skills` instead.
+- Decision and sources: [ADR 0031](docs/adr/0031-one-code-change-playbook-for-any-language.md): skills split by task, not by language; generic content the model already follows adds little; near-duplicate descriptions confuse the agent.
+
 ## 4.8.1 (2026-11-14)
 
 The integrity check tells "could not check" apart from "nothing changed". Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

@@ -35,3 +35,4 @@ says when a decision was superseded. A change that reverses a decision comes wit
 | [0028](0028-test-first-where-a-person-looks-at-the-test.md) | test-first where a person looks at the test | accepted |
 | [0029](0029-risk-based-security-review-by-independent-reviewers.md) | a change at risk gets a security review by independent reviewers | accepted |
 | [0030](0030-check-the-result-not-the-command.md) | check the result, not the command: protected-paths reads no shell command but the kit's own | accepted |
+| [0031](0031-one-code-change-playbook-for-any-language.md) | one code-change playbook for any language, language pitfalls in references | accepted |

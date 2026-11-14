@@ -118,7 +118,7 @@
    "codebase-design",
    "ticket-sorting",
    "wayfinder",
-   "python-js-change",
+   "code-change",
    "incremental-replay",
    "bigquery-cost-review",
    "perimeter-brief",
@@ -241,7 +241,7 @@
    "codebase-design",
    "ticket-sorting",
    "wayfinder",
-   "java-change",
+   "code-change",
    "analysis"
   ]
  }

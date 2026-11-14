@@ -102,14 +102,14 @@ class InstallTests(unittest.TestCase):
         return read_json(self.home/'.ai-kit/state.json')['installed']['skills'], notices
 
     def test_playbook_added_alone_brings_what_it_requires_and_says_what_is_missing(self):
-        skills, _ = self.install({'extra_skills': ['python-js-change']})
+        skills, _ = self.install({'extra_skills': ['code-change']})
         self.assertIn('tdd', skills)
         self.assertNotIn('codebase-design', skills)
-        text = (self.home/'.gemini/skills/python-js-change/SKILL.md').read_text(encoding='utf-8')
+        text = (self.home/'.gemini/skills/code-change/SKILL.md').read_text(encoding='utf-8')
         self.assertIn('## Not installed here', text)
         self.assertIn('`codebase-design`: before adding an interface', text)
-        skills, _ = self.install({'extra_skills': ['python-js-change', 'codebase-design']})
-        self.assertNotIn('`codebase-design`:', (self.home/'.gemini/skills/python-js-change/SKILL.md').read_text(encoding='utf-8'))
+        skills, _ = self.install({'extra_skills': ['code-change', 'codebase-design']})
+        self.assertNotIn('`codebase-design`:', (self.home/'.gemini/skills/code-change/SKILL.md').read_text(encoding='utf-8'))
 
     def test_each_playbook_installs_alone_on_general_without_duplicates(self):
         general = core_selection()
@@ -124,7 +124,7 @@ class InstallTests(unittest.TestCase):
 
     def test_disabled_required_skill_is_refused_not_reactivated(self):
         with self.assertRaises(KitError) as caught:
-            self.install({'extra_skills': ['python-js-change'], 'disabled_skills': ['tdd']}, profile='general')
+            self.install({'extra_skills': ['code-change'], 'disabled_skills': ['tdd']}, profile='general')
         self.assertIn('tdd', str(caught.exception))
 
     def test_disabled_optional_skill_stays_disabled(self):

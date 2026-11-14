@@ -116,8 +116,7 @@ the steps below, and a rationalizations table. The commands name no domain: `/bu
 | bigquery-query-review | `/build`, `/diagnose` | preserved semantics, partitions, execution plan |
 | bigquery-cost-review | `/build`, `/diagnose` | bytes, slots, frequency, budget before running |
 | perimeter-brief | `/learn` | HTML brief of a data perimeter, quiz, candidate glossary terms |
-| python-js-change | `/build` | repo conventions, the approved acceptance test first, interface before implementation |
-| java-change | `/build` | Maven or Gradle conventions, JUnit, public contracts |
+| code-change | `/build` | a change to application code in any language: the repo's conventions, public contracts, no new library or implicit framework migration, the approved acceptance test first; per language, the community standard, the repo's own tools and classic traps in `references/<language>.md` (Python, JavaScript and TypeScript, Java, PHP, Go, Scala), read only for that language |
 | infra-change | `/build`, `/diagnose` | blast radius, read-only evidence (plan, diff), never an apply, rollback |
 | architecture-decision | none (activated by the task) | options, criteria, consequences, reversibility, ADR |
 

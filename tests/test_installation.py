@@ -22,8 +22,8 @@ class InstallationTests(unittest.TestCase):
  def test_existing_settings_and_context(self):
   self.write('.gemini/settings.json','{"theme":"custom","skills":{"enabled":false}}');p=self.write('.gemini/GEMINI.md','My instructions\n');self.run_kit();self.assertEqual(p.read_text(encoding='utf-8'),'My instructions\n');self.assertNotIn(START,p.read_text(encoding='utf-8'));u=self.path('.gemini/USER.md');self.assertTrue(u.exists());u.write_text('English',encoding='utf-8');self.run_kit();self.assertEqual(u.read_text(encoding='utf-8'),'English');self.assertFalse(read_json(self.path('.gemini/settings.json'))['skills']['enabled'])
  def test_switch(self):
-  # the resources of a role are personal lines; taking python-js-change off the person's list removes it.
-  self.run_kit('data-developer');note=self.write('.gemini/skills/python-js-change/notes.txt','personal');self.overrides({});self.run_kit();self.assertTrue(note.exists());self.assertFalse((note.parent/'SKILL.md').exists());self.assertTrue(self.path('.gemini/skills/sql-review/SKILL.md').exists())
+  # the resources of a role are personal lines; taking code-change off the person's list removes it.
+  self.run_kit('data-developer');note=self.write('.gemini/skills/code-change/notes.txt','personal');self.overrides({});self.run_kit();self.assertTrue(note.exists());self.assertFalse((note.parent/'SKILL.md').exists());self.assertTrue(self.path('.gemini/skills/sql-review/SKILL.md').exists())
  def test_modified_skill_blocks(self):
   self.run_kit();self.write('.gemini/skills/sql-review/SKILL.md','personal')
   with self.assertRaises(KitError):self.run_kit('data-developer')

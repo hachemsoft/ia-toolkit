@@ -32,7 +32,7 @@ class PlaybookTests(unittest.TestCase):
   domain=re.compile(r'(?i)\b(bigquery|kpi|incremental|terraform|kubernetes|helm|java)\b|dbt test|dbt build|kpi-definition|sql-review|dbt-model-change')
   for name,prompt in cmds.items():self.assertIsNone(domain.search(prompt),name)
   catalog=skill_catalog(ROOT)
-  for skill in ('sql-review','dbt-model-change','bigquery-query-review','bigquery-cost-review','kpi-definition','incremental-replay','perimeter-brief','infra-change','java-change','python-js-change'):
+  for skill in ('sql-review','dbt-model-change','bigquery-query-review','bigquery-cost-review','kpi-definition','incremental-replay','perimeter-brief','infra-change','code-change'):
    self.assertIn('## In the kit commands',(ROOT/catalog[skill]['path']/'SKILL.md').read_text(encoding='utf-8'),skill)
   self.assertIn('ai-kit-doubter',cmds['review']);self.assertIn('ai-kit-verifier',cmds['build'])
 

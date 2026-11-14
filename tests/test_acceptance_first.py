@@ -34,7 +34,7 @@ class AcceptanceFirstTests(unittest.TestCase):
         self.assertNotIn('red test first', build)
 
     def test_playbooks_and_test_follow_the_levels(self):
-        for rel in ('skills/internal/development/python-js-change/SKILL.md', 'skills/internal/development/java-change/SKILL.md'):
+        for rel in ('skills/internal/development/code-change/SKILL.md',):
             self.assertIn('quick: the existing checks', read(rel))
         self.assertIn('At standard and full levels, no change to the model', read('skills/internal/analytics/dbt-model-change/SKILL.md'))
         self.assertIn('The acceptance to show and get approved before the change is read-only evidence', read('skills/internal/operations/infra-change/SKILL.md'))
