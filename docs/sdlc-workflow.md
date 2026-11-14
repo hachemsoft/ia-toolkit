@@ -234,6 +234,8 @@ flowchart TB
 | 4.5.1 | full level puts risks and how to undo them before the tests again; an empty stub may make a test fail on its assertion |
 | 4.6 | a repo's protected paths hold in shell commands too, not only in write tools |
 | 4.6.1 | a full-level plan names the backup or way back of an irreversible operation; a test-configuration change is allowed before approval |
+| 4.7.0 | a change at risk gets a security review by independent reviewers ([ADR 0029](adr/0029-risk-based-security-review-by-independent-reviewers.md)) |
+| 4.7.1 | the protected-paths guardrail stops refusing a `cd` into a configuration folder followed by reads and a commit message that cites a protected file; agy keeps its own permission prompts |
 
 Details in the [changelog](../CHANGELOG.md).
 

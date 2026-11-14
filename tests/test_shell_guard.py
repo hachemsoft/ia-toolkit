@@ -197,14 +197,14 @@ class AgyAnswerTests(Folder):
                               env={**os.environ, **self.env, **(env or {})})
         return json.loads(proc.stdout)
 
-    def test_agy_gets_an_explicit_allow(self):
+    def test_agy_gets_its_own_permission_flow_back(self):
         shell = {'toolCall': {'name': 'run_command', 'args': {'CommandLine': 'git status', 'WaitMsBeforeAsync': 5000}}, 'workspacePaths': [str(self.home)], 'stepIdx': 0}
         write = {'toolCall': {'name': 'write_to_file', 'args': {'TargetFile': str(self.home/'notes.md')}}, 'workspacePaths': [str(self.home)]}
         other = {'toolCall': {'name': 'read_file', 'args': {'Path': str(self.home/'notes.md')}}, 'workspacePaths': [str(self.home)]}
         for payload in (shell, write, other):
-            self.assertEqual(self.answer('protected-paths.py', [], payload), {'decision': 'allow'}, payload)
-            self.assertEqual(self.answer('shell-guard.py', list(ALL), payload), {'decision': 'allow'}, payload)
-        self.assertEqual(self.answer('shell-guard.py', [], shell), {'decision': 'allow'})  # no rule on: still an answer agy accepts
+            self.assertEqual(self.answer('protected-paths.py', [], payload), {'decision': 'ask'}, payload)
+            self.assertEqual(self.answer('shell-guard.py', list(ALL), payload), {'decision': 'ask'}, payload)
+        self.assertEqual(self.answer('shell-guard.py', [], shell), {'decision': 'ask'})  # no rule on: still an answer agy accepts
 
     def test_agy_refusals_and_notes_keep_their_shape(self):
         refused = self.answer('shell-guard.py', ['git-guard'], {'toolCall': {'name': 'run_command', 'args': {'CommandLine': 'git reset --hard'}}})
@@ -212,7 +212,7 @@ class AgyAnswerTests(Folder):
         self.assertIn('Blocked by the kit', refused['reason'])
         noted = self.answer('shell-guard.py', ['dbt-prod-guard'], {'toolCall': {'name': 'run_command', 'args': {'CommandLine': 'dbt run --target prod'}}, 'workspacePaths': [str(self.home)]},
                             {'AI_KIT_ALLOW_PROD': '1'})
-        self.assertEqual(noted['decision'], 'allow')
+        self.assertEqual(noted['decision'], 'ask')
         self.assertIn('allowed by AI_KIT_ALLOW_PROD=1', noted['systemMessage'])
 
     def test_the_other_clis_keep_the_empty_answer(self):

@@ -467,11 +467,11 @@ def record_refusal(guardrail):
 
 def passes(payload, note=None):
     """The answer that lets a tool call through. agy requires a decision in every answer (its hooks docs: `decision`,
-    required) and refuses an empty object without a reason; "allow" hands the call to agy's own permissions. The other
+    required) and refuses an empty object without a reason. "ask" hands the call to agy's own permission flow; "allow" would approve it on the person's behalf (4.7.1). The other
     CLIs read an empty object as nothing to say."""
     answer = dict(note or {})
     if isinstance(payload, dict) and 'toolCall' in payload:
-        answer['decision'] = 'allow'
+        answer['decision'] = 'ask'
     return json.dumps(answer, ensure_ascii=False)
 
 # The rules this script knows, by the guardrail name a person writes in aikit.toml.

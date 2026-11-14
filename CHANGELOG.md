@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.7.1 (2026-11-14)
+
+agy asks for your approval again, and the `protected-paths` guardrail stops refusing two kinds of reads. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **agy**: a guardrail that lets a tool call through now answers `{"decision": "ask"}`, which hands the call to agy's own permission flow: your `permissions.allow` rules and agy's prompt apply as without the kit. Since 4.3.2 it answered `allow`, which approves the call on your behalf: in `agy -p`, a `touch` outside your rules ran (agy 1.5.8). The 4.3.2 entry below said `allow` left the call to agy's permissions: it did not. A refusal stays `deny`.
+- **`cd` into a configuration folder**: no longer refused on its own. After a `cd` into `~/.claude`, `~/.ai-kit`… or a folder that holds a protected file, readers run (`cd ~/.claude && ls`) and any other program or a redirection stays refused (`cd ~/.claude && rm settings.json`). A subfolder that holds no protected file, such as the one where a CLI keeps the agent's notes, is an ordinary folder; a `..` or a second `cd` from inside a configuration folder counts as its root, and so does a call the CLI starts in one.
+- **Commit messages**: the text of `git commit -m` or `--message` is no longer read as a path, unless it holds `$(` or a backtick.
+- **Tests**: the answer to agy moves from `allow` to `ask` in `tests/test_agy.py`, `tests/test_shell_guard.py` and `tests/test_repo_paths_shell.py`, an intended contract change; `tests/test_agy_defers.py` and `tests/test_protected_paths_reads.py` prove the new behaviour. Rules and limits in [guardrails](docs/hooks.md#protected-paths); ADR 0006 amended.
+
 ## 4.7.0 (2026-11-14)
 
 A change at risk gets a security review by independent reviewers. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

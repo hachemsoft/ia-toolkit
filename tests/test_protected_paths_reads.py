@@ -1,4 +1,4 @@
-"""4.6.2: protected-paths no longer refuses shell commands that only read (spec docs/sdlc/2026-11-14-protected-paths-false-refusals,
+"""4.7.1: protected-paths no longer refuses shell commands that only read (spec docs/sdlc/2026-11-14-protected-paths-false-refusals,
 R1 to R3): a cd into a configuration folder followed by reads, a cd into a subfolder that holds no protected file, and the
 message of a git commit. Each refused command below is a write that must stay refused."""
 import unittest
@@ -43,7 +43,7 @@ class ReadsAreNotRefused(Base):
 
 
 class ACdAfterACdIntoAConfigurationFolder(Base):
-    """Found while writing 4.6.2: after a cd into an ordinary subfolder, a second cd (.., -, a variable) can lead back to a
+    """Found while writing 4.7.1: after a cd into an ordinary subfolder, a second cd (.., -, a variable) can lead back to a
     protected file; it is judged as a cd into the folder root."""
     def test_a_second_cd_keeps_the_writes_refused(self):
         for command in ('cd ~/.claude/projects/p && cd ../.. && rm settings.json', 'cd ~/.claude/projects/p; cd -; rm settings.json',

@@ -334,7 +334,7 @@ def cd_scope(target, names):
     """What a cd to this (normalised) target allows afterwards: None outside the configuration folders; 'ordinary' for a
     subfolder of one that holds no protected name (~/.claude/projects/p/memory, where the agent keeps its notes); else
     'reads', the root of a configuration folder or a folder that holds a protected file: only readers may follow, since
-    the relative names they use cannot be judged (4.6.2)."""
+    the relative names they use cannot be judged (4.7.1)."""
     value = '/' + target.strip('/') + '/'
     start = max(value.rfind('/' + f + '/') for f in CONFIG_FOLDERS)  # the innermost: .ai-kit inside .claude is judged as .ai-kit
     if start < 0:
@@ -349,7 +349,7 @@ def cd_scope(target, names):
 def without_commit_messages(command):
     """The command with the message of each git commit (-m, --message) replaced by a neutral word: a message is text, not a
     path, and its ; or && must not split the command. A message holding $( or a backtick is kept: a substitution runs inside
-    double quotes; so is a quote that does not close (4.6.2)."""
+    double quotes; so is a quote that does not close (4.7.1)."""
     out, position = [], 0
     for match in COMMIT_MESSAGE.finditer(command):
         value = match.group(2)
@@ -708,11 +708,11 @@ def record_refusal(guardrail):
 
 def passes(payload, note=None):
     """The answer that lets a tool call through. agy requires a decision in every answer (its hooks docs: `decision`,
-    required) and refuses an empty object without a reason; "allow" hands the call to agy's own permissions. The other
+    required) and refuses an empty object without a reason. "ask" hands the call to agy's own permission flow; "allow" would approve it on the person's behalf (4.7.1). The other
     CLIs read an empty object as nothing to say."""
     answer = dict(note or {})
     if isinstance(payload, dict) and 'toolCall' in payload:
-        answer['decision'] = 'allow'
+        answer['decision'] = 'ask'
     return json.dumps(answer, ensure_ascii=False)
 
 def main():

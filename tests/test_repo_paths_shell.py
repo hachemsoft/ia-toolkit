@@ -90,7 +90,7 @@ class RepoPathsInShellTests(unittest.TestCase):
             self.assertTrue(self.refused(payload), cli)
         for cli, payload in shell_payloads('cat poetry.lock', str(self.repo)).items():
             self.assertFalse(self.refused(payload), cli)
-        self.assertEqual(self.answer(shell_payloads('cat poetry.lock', str(self.repo))['agy']), {'decision': 'allow'})
+        self.assertEqual(self.answer(shell_payloads('cat poetry.lock', str(self.repo))['agy']), {'decision': 'ask'})
         sub = self.repo/'models'
         sub.mkdir()
         # Started from a subfolder: paths are read from that folder, patterns from the repo root.

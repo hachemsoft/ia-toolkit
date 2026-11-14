@@ -26,7 +26,7 @@ commands, artifacts, `USER.md`, repositories and `~/.ai-kit/aikit.toml` stay the
 | `plugin.json` | name, description, kit version |
 | `rules/AGENTS.md` | always-on rules that include the layers and `USER.md` by path (`@[00_kit](~/.ai-kit/context/00_KIT.md)`, …): no copy |
 | `agents/ai-kit-*.md` | the installed agents, with agy's tool names (`view_file`, `grep_search`, `list_dir`, `run_command`) |
-| `hooks.json` | the guardrails and the `whats-new` hook; the scripts read agy's payload (`toolCall.args.CommandLine`) and always answer with a `decision`, `allow` or `deny`, which agy requires (an answer without one is refused, with no reason shown); `SessionStart` answers in agy's own contract, `{"injectSteps": [{"systemMessage": {"systemMessage": "…"}}]}`, recognised by the input's `conversationId` |
+| `hooks.json` | the guardrails and the `whats-new` hook; the scripts read agy's payload (`toolCall.args.CommandLine`) and always answer with a `decision`, which agy requires (an answer without one is refused, with no reason shown): `deny` to refuse, `ask` to let the call through, which hands it to agy's own permission flow (`allow` would approve it without your rules or prompt: seen with agy 1.5.8, fixed in 4.7.1); `SessionStart` answers in agy's own contract, `{"injectSteps": [{"systemMessage": {"systemMessage": "…"}}]}`, recognised by the input's `conversationId` |
 | `mcp_config.json` | the MCP servers that are on |
 | `skills/<name>/` | one command skill per installed command: agy has no command files, but every skill is a `/<name>` command; they live in the plugin because Gemini CLI would show each kit command twice |
 
