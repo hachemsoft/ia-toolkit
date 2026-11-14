@@ -22,7 +22,7 @@
     "regex": [
       "(?i)(\\blog(s|ged|ger|ging)?\\b|logu|journal|debug)[^\\n]{0,250}(phone|t[ée]l[ée]phone|num[ée]ro|personal data|donn[ée]es? personnelles?|PII)|(phone|t[ée]l[ée]phone|num[ée]ro|personal data|donn[ée]es? personnelles?|PII)[^\\n]{0,250}(\\blog(s|ged|ger|ging)?\\b|logu|journal|debug)",
       "(?i)((important|\\bP[0-2]\\b|bloquant|blocking|remove|retir|supprim|mask|masqu|redact|anonymi|pseudonymi|never|jamais|leak|fuite|expos|instead|à la place|should not|ne doit pas|fix|corrig|sensitive|sensible|GDPR|RGPD|only log|ne loguer que|uniquement|seulement)[^\\n]{0,300}(phone|t[ée]l[ée]phone|num[ée]ro|personal data|donn[ée]es? personnelles?|PII)|(phone|t[ée]l[ée]phone|num[ée]ro|personal data|donn[ée]es? personnelles?|PII)[^\\n]{0,300}(important|\\bP[0-2]\\b|bloquant|blocking|remove|retir|supprim|mask|masqu|redact|anonymi|pseudonymi|never|jamais|leak|fuite|expos|instead|à la place|should not|ne doit pas|fix|corrig|sensitive|sensible|GDPR|RGPD|only log|ne loguer que|uniquement|seulement))",
-      "Security review: dedicated"
+      "(?i)Security review: dedicated|revue (de )?s[ée]curit[ée] d[ée]di[ée]e"
     ],
     "not_regex": [
       "(?i)\\bno (personal data )?leak|aucune fuite"
@@ -35,13 +35,15 @@
   "samples": {
     "pass": [
       "- **Important · Security** — leads.py:21 — `logger.debug` logs the whole lead with `%r`, its phone number included (personal data); log the lead id instead. (security-reviewer, code-reviewer)\n\nLimits: Security review: dedicated (personal data, external sender); code-reviewer, security-reviewer and doubter ran at the same time.",
-      "**Important**\n- leads.py:21 — le `logger.debug(\"... %r\", lead)` écrit le numéro de téléphone du prospect dans les logs ; ne loguer que l'identifiant. (security-reviewer)\n\nLimites : Security review: dedicated (données personnelles)."
+      "**Important**\n- leads.py:21 — le `logger.debug(\"... %r\", lead)` écrit le numéro de téléphone du prospect dans les logs ; ne loguer que l'identifiant. (security-reviewer)\n\nLimites : Security review: dedicated (données personnelles).",
+      "- **Important · Sécurité** — leads.py:21 — le `logger.debug` écrit toute la fiche, numéro de téléphone compris ; ne loguer que l'identifiant. (relecteur sécurité)\n\n## Limites\n- **Revue sécurité dédiée** (données personnelles, service externe) : les trois relecteurs ont tourné en parallèle."
     ],
     "fail": [
       "Scope: 6 files. Statuses and texts moved to their own modules, reminders sent and tested. No finding.\nSecurity review: dedicated (personal data).",
       "- **Important · Security** — leads.py:22 — the phone number is exposed to the external sender without consent. (security-reviewer)\nSecurity review: dedicated (personal data).",
       "No personal data leak found. Bugs: logic OK.\nSecurity review: dedicated (personal data).",
-      "- **Important · Security** — leads.py:21 — the lead's phone number goes to the logs; log the id instead."
+      "- **Important · Security** — leads.py:21 — the lead's phone number goes to the logs; log the id instead.",
+      "- **Important · Sécurité** — leads.py:22 : le journal `debug` écrit toute la fiche, dont le numéro de téléphone. Retirer les données personnelles du message.\n\nSécurité revue dans la passe principale : l'agent dédié était indisponible."
     ]
   },
   "_doc": "A change at risk (personal data, an external sender) with one indirect flaw, buried in a six-file change: logger.debug logs the whole lead with %r, its phone number included. Judged on substance: the log of the phone number or personal data is named and presented as a problem, and the report says the dedicated review ran (ADR 0029). Without the kit the line cannot appear: the case measures the kit's review; its sibling review-without-risk-stays-in-the-main-pass checks the absence of a false trigger."

@@ -18,7 +18,7 @@
       "(?i)Security review: in the main pass|passe principale"
     ],
     "not_regex": [
-      "Security review: dedicated"
+      "(?i)Security review: dedicated|revue (de )?s[ée]curit[ée] d[ée]di[ée]e"
     ],
     "not_contains": [
       "nothing to review",
