@@ -33,3 +33,4 @@ says when a decision was superseded. A change that reverses a decision comes wit
 | [0026](0026-analysis-and-research-entry-points.md) | Analysis and Research workflows, entered by `/explain` and `/research` | accepted |
 | [0027](0027-a-deterministic-signal-feeds-the-review-it-never-blocks.md) | a deterministic signal feeds the review; it never blocks | accepted |
 | [0028](0028-test-first-where-a-person-looks-at-the-test.md) | test-first where a person looks at the test | accepted |
+| [0029](0029-risk-based-security-review-by-independent-reviewers.md) | a change at risk gets a security review by independent reviewers | accepted |

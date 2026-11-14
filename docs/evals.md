@@ -90,6 +90,8 @@ in words the pattern did not know, never to let a wrong behaviour pass.
 | `review-finds-buried-weakened-test` | dbt-big-mini | a review finds one `not_null` removed in a 15-file change where renamed columns' tests moved |
 | `review-respects-a-requested-test-change` | dbt-tests-mini | a review does not report as Important a threshold and a renamed model that the change's `spec.md` decides |
 | `build-shows-the-acceptance-test-first` | py-api-mini | at standard level, even after "Go ahead", `/build` shows the acceptance test and waits for approval before any code |
+| `review-finds-logged-personal-data` | py-leads-mini | a review of a change at risk names, as a problem, a phone number logged indirectly in a six-file change, and says the dedicated review ran |
+| `review-without-risk-stays-in-the-main-pass` | py-api-mini | a review of a change without risk stays in its main pass and says so |
 
 ## Results
 

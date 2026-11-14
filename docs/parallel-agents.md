@@ -6,7 +6,7 @@ With this page you know what the `parallel` setting does, when it is worth turni
 
 One setting adds one short rule to the kit context (`00_KIT.md`), which every CLI reads. The rule tells the agent when to give parts of a task to sub-agents at the same time, and how the ones that write files stay out of each other's way. Nothing else is installed: no hook, no script, no new agent.
 
-Without the setting, the agent works as each CLI does by default.
+Without the setting, the agent works as each CLI does by default. One exception: `/review` runs the read-only reviewers of a change at risk at once, whatever the setting ([ADR 0029](adr/0029-risk-based-security-review-by-independent-reviewers.md)); their cost is that of three reviewers, at once or not.
 
 ## When it is worth it
 

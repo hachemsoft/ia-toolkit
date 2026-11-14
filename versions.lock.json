@@ -37,8 +37,8 @@
       "digest": "927daac85c224e96"
     },
     "code-review": {
-      "version": "1.1.0",
-      "digest": "8737f8216e937b93"
+      "version": "1.2.0",
+      "digest": "f699f3f02f8c95e3"
     },
     "codebase-design": {
       "version": "1.0.0",
@@ -81,8 +81,8 @@
       "digest": "520ef079ce23173b"
     },
     "init-project-context": {
-      "version": "1.1.1",
-      "digest": "bd8776c96f5d08bb"
+      "version": "1.2.0",
+      "digest": "0d20d1f16227990a"
     },
     "investigation": {
       "version": "1.0.0",
@@ -199,8 +199,8 @@
       "digest": "c8f8ae9bfe1193a7"
     },
     "security-reviewer": {
-      "version": "1.0.0",
-      "digest": "8a72ef6c4c004a94"
+      "version": "1.1.0",
+      "digest": "ff937686136ae0b6"
     },
     "verifier": {
       "version": "1.0.0",

@@ -84,7 +84,7 @@ flowchart LR
 | `/spec` | to-spec (synthesis, no new interview) | none |
 | `/build` | tdd (acceptance tests), code-review (on the whole change) | verifier (final checks) |
 | `/test` | tdd | none |
-| `/review` | code-review | domain reviewers when installed; doubter in `full` mode |
+| `/review` | code-review | code-reviewer, security-reviewer and doubter on a change at risk (ADR 0029); doubter in `full` mode; domain reviewers when installed |
 | `/ship` | mr (merge request text) | none |
 | `/diagnose` | diagnosing-bugs | none |
 

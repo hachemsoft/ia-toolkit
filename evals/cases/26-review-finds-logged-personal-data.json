@@ -1,0 +1,48 @@
+{
+  "name": "review-finds-logged-personal-data",
+  "cwd": "py-leads-mini",
+  "requires": {
+    "commands": [
+      "review"
+    ]
+  },
+  "git": {
+    "commit": true,
+    "uncommitted": {
+      "leads.py": "import logging\n\nfrom statuses import REMINDED, TO_CALL\nfrom texts import reminder_text\n\nlogger = logging.getLogger(__name__)\n\nLEADS = {\n    1: {\"name\": \"Alice\", \"phone\": \"+33600000001\", \"status\": TO_CALL, \"city\": \"Lyon\"},\n    2: {\"name\": \"Bruno\", \"phone\": \"+33600000002\", \"status\": REMINDED, \"city\": \"Nantes\"},\n}\n\n\ndef leads_to_call():\n    \"\"\"Leads still waiting for a call, oldest first.\"\"\"\n    return sorted(lead_id for lead_id, lead in LEADS.items() if lead[\"status\"] == TO_CALL)\n\n\ndef send_reminder(lead_id, sender):\n    \"\"\"Sends the call reminder of one lead; returns True when the sender accepted it.\"\"\"\n    lead = LEADS[lead_id]\n    logger.debug(\"reminder for lead %r\", lead)\n    accepted = sender(lead[\"phone\"], reminder_text(lead[\"name\"], lead[\"city\"]))\n    if accepted:\n        lead[\"status\"] = REMINDED\n    return accepted\n",
+      "statuses.py": "\"\"\"Statuses of a lead.\"\"\"\nTO_CALL = \"to_call\"\nREMINDED = \"reminded\"\nARCHIVED = \"archived\"\n",
+      "texts.py": "\"\"\"Texts sent to leads.\"\"\"\n\n\ndef reminder_text(name, city):\n    \"\"\"The reminder, with the first name and the city of the lead.\"\"\"\n    return f\"Hello {name}, your advisor in {city} will call you back today.\"\n",
+      "tests/test_leads.py": "from leads import LEADS, leads_to_call, send_reminder\n\n\ndef test_leads_to_call():\n    assert leads_to_call() == [1]\n\n\ndef test_send_reminder_marks_the_lead():\n    assert send_reminder(1, lambda phone, text: True) is True\n    assert LEADS[1][\"status\"] == \"reminded\"\n",
+      "tests/test_texts.py": "from texts import reminder_text\n\n\ndef test_reminder_text():\n    assert \"Lyon\" in reminder_text(\"Alice\", \"Lyon\")\n",
+      "README.md": "# leads-mini\n\nKeeps sales leads and sends them a call reminder. Statuses live in `statuses.py`, texts in `texts.py`.\n"
+    }
+  },
+  "prompt": "/review",
+  "expect": {
+    "regex": [
+      "(?i)(\\blog(s|ged|ger|ging)?\\b|logu|journal|debug)[^\\n]{0,250}(phone|t[ée]l[ée]phone|num[ée]ro|personal data|donn[ée]es? personnelles?|PII)|(phone|t[ée]l[ée]phone|num[ée]ro|personal data|donn[ée]es? personnelles?|PII)[^\\n]{0,250}(\\blog(s|ged|ger|ging)?\\b|logu|journal|debug)",
+      "(?i)((important|\\bP[0-2]\\b|bloquant|blocking|remove|retir|supprim|mask|masqu|redact|anonymi|pseudonymi|never|jamais|leak|fuite|expos|instead|à la place|should not|ne doit pas|fix|corrig|sensitive|sensible|GDPR|RGPD|only log|ne loguer que|uniquement|seulement)[^\\n]{0,300}(phone|t[ée]l[ée]phone|num[ée]ro|personal data|donn[ée]es? personnelles?|PII)|(phone|t[ée]l[ée]phone|num[ée]ro|personal data|donn[ée]es? personnelles?|PII)[^\\n]{0,300}(important|\\bP[0-2]\\b|bloquant|blocking|remove|retir|supprim|mask|masqu|redact|anonymi|pseudonymi|never|jamais|leak|fuite|expos|instead|à la place|should not|ne doit pas|fix|corrig|sensitive|sensible|GDPR|RGPD|only log|ne loguer que|uniquement|seulement))",
+      "Security review: dedicated"
+    ],
+    "not_regex": [
+      "(?i)\\bno (personal data )?leak|aucune fuite"
+    ],
+    "not_contains": [
+      "nothing to review",
+      "rien à relire"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "- **Important · Security** — leads.py:21 — `logger.debug` logs the whole lead with `%r`, its phone number included (personal data); log the lead id instead. (security-reviewer, code-reviewer)\n\nLimits: Security review: dedicated (personal data, external sender); code-reviewer, security-reviewer and doubter ran at the same time.",
+      "**Important**\n- leads.py:21 — le `logger.debug(\"... %r\", lead)` écrit le numéro de téléphone du prospect dans les logs ; ne loguer que l'identifiant. (security-reviewer)\n\nLimites : Security review: dedicated (données personnelles)."
+    ],
+    "fail": [
+      "Scope: 6 files. Statuses and texts moved to their own modules, reminders sent and tested. No finding.\nSecurity review: dedicated (personal data).",
+      "- **Important · Security** — leads.py:22 — the phone number is exposed to the external sender without consent. (security-reviewer)\nSecurity review: dedicated (personal data).",
+      "No personal data leak found. Bugs: logic OK.\nSecurity review: dedicated (personal data).",
+      "- **Important · Security** — leads.py:21 — the lead's phone number goes to the logs; log the id instead."
+    ]
+  },
+  "_doc": "A change at risk (personal data, an external sender) with one indirect flaw, buried in a six-file change: logger.debug logs the whole lead with %r, its phone number included. Judged on substance: the log of the phone number or personal data is named and presented as a problem, and the report says the dedicated review ran (ADR 0029). Without the kit the line cannot appear: the case measures the kit's review; its sibling review-without-risk-stays-in-the-main-pass checks the absence of a false trigger."
+}

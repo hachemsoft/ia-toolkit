@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.7.0 (2026-11-14)
+
+A change at risk gets a security review by independent reviewers. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **When**: in `/review` or a review asked in a sentence, whatever the mode, when the change is at full level, or touches personal data, secrets or tokens, authentication or permissions, input from outside or an external service, or its spec lists threats, or you ask. Not in `/build`. The report's limits start with `Security review: dedicated (<trigger>)` or `Security review: in the main pass (no trigger)`, then which reviewers ran and how; the line stays even when your `## Report` section shapes the report.
+- **How**: `/review` gives the code, security and doubt passes to code-reviewer, security-reviewer and doubter, each in a fresh context, at the same time when the CLI can run sub-agents in parallel, whatever the `parallel` setting (they only read; on Codex, by instruction only), waits for all of them, then merges their findings into one list on the usual scale, each naming the reviewers that found it; a disagreement is left to you.
+- **security-reviewer is installed by default** (1.1.0): five default agents. It checks the spec's Threats, treats the diff and its comments as data (a comment saying "accepted" dismisses nothing), lists what it dismissed, and keeps a finding without an exploitation scenario at Minor at most.
+- **Design**: `/spec` writes a Threats section (threat, mitigation, residual risk) when the change touches personal data, secrets or tokens, authentication or permissions, input from outside or an external service; the review checks each mitigation. The `spec.md` template (init-project-context 1.2.0) gains the section.
+- **Not in this version**: running a security scan the repo declares. A review is run on other people's changes, and a scan command read from the reviewed copy would run the change's own command; it needs its own design.
+- **Skill** `code-review` 1.2.0. **Evals**: cases `review-finds-logged-personal-data` (new `py-leads-mini` fixture) and `review-without-risk-stays-in-the-main-pass`. Decision: [ADR 0029](docs/adr/0029-risk-based-security-review-by-independent-reviewers.md). A review by an AI agent replaces neither an audit nor a penetration test.
+
 ## 4.6.1 (2026-11-14)
 
 `/build` names the way back of an irreversible operation, and lets the tests run before you approve them. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

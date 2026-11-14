@@ -1,0 +1,38 @@
+{
+  "name": "review-without-risk-stays-in-the-main-pass",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "review"
+    ]
+  },
+  "git": {
+    "commit": true,
+    "uncommitted": {
+      "orders.py": "ORDERS = {1: [{\"price\": 10.0, \"qty\": 2}, {\"price\": 2.5, \"qty\": 1}]}\n\n\ndef total(items):\n    \"\"\"Total of an order, in euros, before any discount.\"\"\"\n    return sum(item[\"price\"] * item[\"qty\"] for item in items)\n\n\ndef get_order(order_id):\n    if order_id not in ORDERS:\n        raise KeyError(\"Not found\")\n    return ORDERS[order_id]\n"
+    }
+  },
+  "prompt": "/review",
+  "expect": {
+    "regex": [
+      "(?i)Security review: in the main pass|passe principale"
+    ],
+    "not_regex": [
+      "Security review: dedicated"
+    ],
+    "not_contains": [
+      "nothing to review",
+      "rien à relire"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "Reviewing 0 commits since main, 1 unstaged change. No finding.\n\nLimits: Security review: in the main pass (no trigger)."
+    ],
+    "fail": [
+      "No finding.\nLimits: Security review: dedicated (full level).",
+      "No finding."
+    ]
+  },
+  "_doc": "The control of review-finds-logged-personal-data: a docstring changed, nothing at risk. The review stays in its main pass and says so; no dedicated review (ADR 0029)."
+}

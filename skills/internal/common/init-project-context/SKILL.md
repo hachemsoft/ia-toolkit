@@ -3,7 +3,7 @@ name: init-project-context
 description: "Set up a repo's agent context: a short AGENTS.md, a GLOSSARY.md prefilled with the repo's vocabulary, a docs/ folder ready for ADRs. Triggers: initialize the project context, create the AGENTS.md, set up the glossary, prepare the repo for the agent."
 metadata:
   aikit-default: "true"
-  aikit-version: "1.1.1"
+  aikit-version: "1.2.0"
   aikit-origin: "internal"
   aikit-summary: "Set up a repo's agent context, with confirmation for each file: short AGENTS.md, prefilled GLOSSARY.md, REVIEW.md, git rule for artifacts; does not copy the templates, does not create an empty ADR."
   aikit-category: "setup"

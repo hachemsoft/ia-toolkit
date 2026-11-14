@@ -45,7 +45,7 @@ The SDLC commands. `workflows/sdlc.md` is the same table, generated from `comman
 | Build | `/build` | default | diff and tests; `plan.md` for a full change | quick: the existing checks; standard and full: a failing acceptance test you approve before any code, then free slices (tdd's loop optional), then a review of the whole change (code-review) |
 | Build | `/design` | optional | interface sketch or prototype | module shapes compared (codebase-design), or a throwaway prototype |
 | Test | `/test` | default | real output of the checks | what changed and what depends on it; pastes the output (tdd) |
-| Deploy | `/review` | default | ranked findings | committed and uncommitted changes, one severity scale; a Tests pass on the facts of the kit's test check (tests deleted, disabled or relaxed); `quick` or `full` (code-review) |
+| Deploy | `/review` | default | ranked findings | committed and uncommitted changes, one severity scale; a Tests pass on the facts of the kit's test check (tests deleted, disabled or relaxed); a change at risk gets a dedicated security review by independent reviewers; `quick` or `full` (code-review) |
 | Deploy | `/ship` | default | merge request description | visual summary, evidence, merge danger; pushes nothing (mr) |
 | Maintain | `/diagnose` | default | root cause and regression test | red/green signal before any fix (diagnosing-bugs) |
 | Maintain | `/triage` | optional | agent-ready issues | triage state machine for incoming tickets (ticket-sorting) |
@@ -129,12 +129,20 @@ Each CLI's native sub-agents, installed as `ai-kit-<name>`. They inherit the ses
 | --- | --- | --- |
 | repo-investigator | default | understand the repo's flows and dependencies, without modifying files |
 | verifier | default | run the checks the repo declares and report what was run and observed, without fixing |
-| doubter | default | adversarial review in a fresh context: doubt each claim, find proof or a counterexample (`/review full`) |
+| doubter | default | adversarial review in a fresh context: doubt each claim, find proof or a counterexample (`/review full`, and a change at risk) |
 | code-reviewer | default | concrete regressions in a code change |
-| security-reviewer | optional | secrets, injections, permissions, exposure, dependencies |
+| security-reviewer | default | secrets, injections, permissions, exposure, dependencies; checks the spec's Threats (a change at risk) |
 | infra-reviewer | optional | blast radius, destructions, permissions, rollback of an infrastructure change |
 | architecture-reviewer | optional | options, criteria and consequences of a proposal or an ADR |
 | sql-reviewer, dbt-reviewer | optional | grain, joins, aggregations; dbt models, incremental logic, tests |
+
+**A change at risk** (full level, or personal data, secrets or tokens, authentication or permissions, input from outside, an
+external service, a spec with Threats, or on request) gets a dedicated security review: `/review` gives the code, security
+and doubt passes to code-reviewer, security-reviewer and doubter, each in a fresh context, at the same time when the CLI
+can, then merges their findings into one list; the report's limits say whether it ran and why
+([ADR 0029](adr/0029-risk-based-security-review-by-independent-reviewers.md)). A review by an AI agent replaces neither
+an audit nor a penetration test. Where a CLI states an agent's tools instead of enforcing them, the reviewers keep to reading by
+instruction only ([CLI matrix](cli/matrice.md)). `/build` does not run the dedicated review.
 
 Reviewers get read and search tools only; the verifier can also list folders and run commands. Defaults (tools, 12 turns,
 5 minutes) are in `agents/defaults.json`; the verifier has 15 turns and 10 minutes. Whether a CLI enforces the tool list or

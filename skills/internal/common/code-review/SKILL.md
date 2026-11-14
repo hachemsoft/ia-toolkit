@@ -3,7 +3,7 @@ name: code-review
 description: "Review changes, committed or not: the branch's commits, the staged and unstaged changes and the new files, by default; or a narrower scope the person names. Finds bugs, security issues, breaks of the repo's standards and of the spec when there is one, ranked on one severity scale. Use when the person asks to review their work, a branch, a PR or MR, or \"what changed since X\"; /review runs it."
 metadata:
   aikit-default: "true"
-  aikit-version: "1.1.0"
+  aikit-version: "1.2.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Review changes, committed or not (branch commits, staged, unstaged, new files), on bugs, security, standards and the spec when one exists; one severity scale."
@@ -41,8 +41,14 @@ Run them in sequence, or delegate them to the installed `ai-kit-*` review agents
 - **Security**: secrets, injection, unsafe paths, personal data in logs or outputs, permissions.
 - **Domain**: the checks of the installed playbooks matching the files (listed in 00_KIT.md).
 - **Standards**: `REVIEW.md` when it exists (its passes, severity rule, nit cap and exclusions win), `AGENTS.md`, `CONTRIBUTING.md` or `CODING_STANDARDS.md`, the practices in your context, and the smell baseline below.
-- **Compliance**: matches the spec, intent or plan from step 2; skipped without one.
+- **Compliance**: matches the spec, intent or plan from step 2, and each mitigation of its Threats section; skipped without one.
 - **Tests**: each fact of the test check. Covered by a contract the person named (in this session, or in the `spec.md`, `intent.md` or `plan.md` of step 2, naming that test or that behaviour): no finding, list it in the report as an intended test change. Not covered: an **Important** finding, with the file, the line and the fact. A contract named but too vague to tell: ask the person, no finding. A commit message never counts as a contract: the agent writes it. `test_moved` and `assertion_changed` are leads: read the hunk and report only a real weakening.
+
+**A change at risk gets a dedicated security review** (ADR 0029), in `/review` or a plain review request, whatever the mode, quick included; not when `/build`, or a skill that implements a spec, runs this skill on its own change. It is at risk when its level is full, or it touches personal data, secrets or tokens, authentication or permissions, input from outside (a request, a file, a webhook) or an external service, or its spec has a Threats section, or the person asks; judge from the level, the diff, the paths and the spec: a guide, not a closed list of words.
+- Give each reviewer, in a fresh context, the scope commands, the diff, the files, the test facts and the spec, intent or plan: ai-kit-code-reviewer the Bugs and Standards passes (with the repo's standards and the smell baseline below), ai-kit-security-reviewer the Security pass, ai-kit-doubter the claims (in full mode this one run also carries how a failure would show and how it is undone). Keep the Domain, Compliance and Tests passes yourself.
+- Start them at the same time when the CLI can run sub-agents in parallel, one after the other otherwise, whatever the parallel setting (they only read; on a CLI that states an agent's tools instead of enforcing them, only their instructions keep them from writing). Wait until all have returned; a reviewer that did not return, or is not installed: do its pass yourself and say so in the limits.
+- Merge: duplicates become one finding (same file and line, or same defect); a claim the doubter refutes becomes a finding, an unproven one a point to confirm. Each finding reads `- **<Severity> · <Pass>** — <file>:<line> — <defect> (<reviewers>)`, ranked on the scale below; name the reviewers that found it; state a disagreement between reviewers as a point for the person to decide.
+- The limits start with "Security review: dedicated (<trigger>)" or "Security review: in the main pass (no trigger)", then which reviewers ran and whether at the same time or one after the other.
 
 On top of whatever the repo documents, the Standards pass always carries the **smell baseline** below: a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Two rules bind it:
 
@@ -74,4 +80,4 @@ A smell from the baseline is at most Minor and always worded as a judgement call
 
 ## 5. Report
 
-The scope line, the findings ranked, then the limits (what was not reviewed and why). If the repo's `AGENTS.md` or the person's `USER.md` has a "## Report" section, shape the report as it says.
+The scope line, the findings ranked, then the limits (what was not reviewed and why), starting with the Security review line. If the repo's `AGENTS.md` or the person's `USER.md` has a "## Report" section, shape the report as it says; the Security review line stays.
