@@ -31,49 +31,35 @@ class HookScriptTests(unittest.TestCase):
    Path(tmp,'.env').write_text('AI_KIT_ALLOW_PROD=1\n',encoding='utf-8')
    self.assertEqual(run_hook('shell-guard.py dbt-prod-guard',payload,{'AI_KIT_ALLOW_PROD':'1'}).get('decision'),'deny')
  def test_protected_paths_symlink_and_config(self):
-  # Audit : un lien vers un dossier protégé, et la configuration du kit et des CLI, protégée même sans motif du repo.
+  # Audit: a link to a protected folder, and the configuration of the kit and of the CLIs. 4.8.0: a repo's own
+  # protected paths are no longer read, so its .ai-kit/protected-paths is an ordinary file.
   with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as fake_home:
    t=Path(tmp);(t/'.git').mkdir();(t/'.ai-kit').mkdir();(t/'.ai-kit/protected-paths').write_text('target/**\n',encoding='utf-8');(t/'target').mkdir()
    env={'HOME':fake_home,'USERPROFILE':fake_home}
    def decide(path):
     return run_hook('protected-paths.py',{'tool_name':'write_file','tool_input':{'file_path':path},'cwd':tmp},env).get('decision')
-   try:(t/'link').symlink_to(t/'target',target_is_directory=True)
+   (Path(fake_home)/'.ai-kit').mkdir()
+   try:(t/'link').symlink_to(Path(fake_home)/'.ai-kit',target_is_directory=True)
    except (OSError,NotImplementedError):pass
-   if (t/'link').exists():self.assertEqual(decide('link/a.sql'),'deny')
-   self.assertEqual(decide('.ai-kit/protected-paths'),'deny')
+   if (t/'link').exists():self.assertEqual(decide('link/aikit.toml'),'deny')
+   self.assertIsNone(decide('.ai-kit/protected-paths'))
+   self.assertIsNone(decide('target/a.sql'))
    for rel in ('.gemini/settings.json','.gemini/.env','.ai-kit/aikit.toml','.ai-kit/hooks/dbt-prod-guard.py','.codex/config.toml','.gemini/config/plugins/ai-kit/hooks.json',
                '.gemini/00_KIT.md','.gemini/10_COMPANY.md','.gemini/20_TEAM.md','.gemini/20_DATA_PLATFORM.md','.ai-kit/context/00_KIT.md'):
     self.assertEqual(decide(str(Path(fake_home)/rel)),'deny',rel)
    for rel in ('.ai-kit/learn/topic/progress.md','.gemini/USER.md','notes.md'):
     self.assertIsNone(decide(str(Path(fake_home)/rel)),rel)
    self.assertIsNone(decide('models/a.sql'))
- def test_shell_writes_to_configuration_blocked(self):
-  # The agent cannot overwrite aikit.toml or the CLI settings through simple shell commands; reading stays allowed.
-  for cmd in ('echo "{}" > ~/.ai-kit/aikit.toml',"sed -i 's/true/false/' ~/.ai-kit/aikit.toml",'tee ~/.gemini/settings.json < x','rm ~/.ai-kit/hooks/dbt-prod-guard.py','cp new.toml ~/.codex/config.toml','Set-Content $HOME\\.ai-kit\\aikit.toml "{}"','mv x .ai-kit/protected-paths'):
-   self.assertEqual(run_hook('protected-paths.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}).get('decision'),'deny',cmd)
-  for cmd in ('cat ~/.ai-kit/aikit.toml','grep hooks ~/.gemini/settings.json','echo hi > notes.txt','rm -rf build/','head -n 5 ~/.gemini/settings.json'):
-   self.assertNotIn('decision',run_hook('protected-paths.py',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}),cmd)
-  # Judged per simple command: a write and a protected path in two different commands, or a protected path quoted in the
-  # data of a heredoc given to another language, are not a write to the configuration.
-  for cmd in ('cat ~/.ai-kit/aikit.toml; sed -i s/a/b/ notes.md','grep x ~/.gemini/settings.json && rm -rf build/',
-              "python3 - <<'EOF'\ndoc = 'sed -i s/a/b/ ~/.ai-kit/aikit.toml, or echo x > .ai-kit/protected-paths'\nEOF",
-              'cat <<EOF > notes.md\nnever run: rm ~/.ai-kit/hooks/dbt-prod-guard.py\nEOF'):
+ def test_shell_commands_are_left_to_the_integrity_check(self):
+  # 4.8.0: protected-paths reads no shell command but the kit's own (ADR 0030); what a command changes is reported by the
+  # integrity check. Writes, reads, heredocs and the Codex list form all run.
+  for cmd in ('echo "{}" > ~/.ai-kit/aikit.toml',"sed -i 's/true/false/' ~/.ai-kit/aikit.toml",'tee ~/.gemini/settings.json < x','rm ~/.ai-kit/hooks/dbt-prod-guard.py',
+              'cp new.toml ~/.codex/config.toml','Set-Content $HOME\\.ai-kit\\aikit.toml "{}"','cat ~/.ai-kit/aikit.toml','grep hooks ~/.gemini/settings.json',
+              'sudo rm ~/.ai-kit/hooks/dbt-prod-guard.py','echo ~/.ai-kit/hooks/x.py | xargs rm','bash <<EOF\nsed -i s/a/b/ ~/.ai-kit/aikit.toml\nEOF',
+              "python3 - <<'EOF'\ndoc = 'sed -i s/a/b/ ~/.ai-kit/aikit.toml'\nEOF"):
    self.assertNotIn('decision',run_hook('protected-paths.py',{'tool_name':'Bash','tool_input':{'command':cmd}}),cmd)
-  # A word inside a path is not a command: install.json, a folder named rm-old, a file named tee.log.
-  for cmd in ('cat ~/.ai-kit/runtime/install.json','ls ~/.ai-kit/bin/rm-old ~/.gemini/settings.json','head ~/.ai-kit/hooks/tee.log'):
-   self.assertNotIn('decision',run_hook('protected-paths.py',{'tool_name':'Bash','tool_input':{'command':cmd}}),cmd)
-  # Where the shell runs it, it is one: after sudo, xargs, find -exec, bash -c, a subshell; the path anywhere in the pipeline.
-  for cmd in ('sudo rm ~/.ai-kit/hooks/dbt-prod-guard.py',"bash -c 'rm ~/.ai-kit/hooks/dbt-prod-guard.py'",'echo ~/.ai-kit/hooks/x.py | xargs rm',
-              'find ~/.ai-kit/hooks -name "*.py" -exec rm {} +','(cd ~ && cp x .ai-kit/aikit.toml)','FORCE=1 /bin/rm -f ~/.ai-kit/state.json',
-              'pwsh -Command "Remove-Item $HOME/.ai-kit/aikit.toml"',"sudo -n sed -i 's/a/b/' ~/.ai-kit/aikit.toml"):
-   self.assertEqual(run_hook('protected-paths.py',{'tool_name':'Bash','tool_input':{'command':cmd}}).get('decision'),'deny',cmd)
-  # Still blocked: a write in the same simple command, through a pipe, a continued line, or a heredoc a shell runs.
-  for cmd in ('echo x | tee ~/.ai-kit/aikit.toml','cd ~ && sed -i s/a/b/ .ai-kit/aikit.toml',"sed -i 's/a/b/' \\\n  ~/.ai-kit/aikit.toml",
-              'echo x &> ~/.ai-kit/aikit.toml','bash <<EOF\nsed -i s/a/b/ ~/.ai-kit/aikit.toml\nEOF',
-              'sudo sh <<EOF\nrm ~/.ai-kit/hooks/dbt-prod-guard.py\nEOF','cat > ~/.ai-kit/aikit.toml <<EOF\n{}\nEOF'):
-   self.assertEqual(run_hook('protected-paths.py',{'tool_name':'Bash','tool_input':{'command':cmd}}).get('decision'),'deny',cmd)
   r=run_hook('protected-paths.py',{'hook_event_name':'PreToolUse','tool_name':'shell','tool_input':{'command':['bash','-lc','echo x > ~/.ai-kit/aikit.toml']}})
-  self.assertEqual(r['hookSpecificOutput']['permissionDecision'],'deny')
+  self.assertEqual(r,{})
  def test_dbt_dev_allowed_and_non_dbt_ignored(self):
   for cmd in ('dbt test -t dev','dbt run','ls prod','python prod.py --target prod','dbt run -t prod-like','dbt run --target production_dev','mydbt run -t prod'):
    self.assertNotIn('decision',run_hook('shell-guard.py dbt-prod-guard',{'tool_name':'run_shell_command','tool_input':{'command':cmd}}),cmd)
@@ -88,24 +74,6 @@ class HookScriptTests(unittest.TestCase):
    self.assertEqual(run('dbt run').get('decision'),'deny');self.assertIn('profiles.yml',run('dbt run')['reason'])
    self.assertNotIn('decision',run('dbt run -t dev'));self.assertNotIn('decision',run('dbt run',{'AI_KIT_ALLOW_PROD':'1'}))
    (Path(tmp)/'profiles.yml').write_text('my_project:\n  target: dev\n',encoding='utf-8');self.assertNotIn('decision',run('dbt run'))
- def test_protected_paths(self):
-  with tempfile.TemporaryDirectory() as tmp:
-   (Path(tmp)/'.ai-kit').mkdir();(Path(tmp)/'.ai-kit/protected-paths').write_text('# protected\ntarget/**\ndbt_project.yml\n*.lock\n',encoding='utf-8')
-   deny=lambda p,tool='write_file':run_hook('protected-paths.py',{'tool_name':tool,'cwd':tmp,'tool_input':{'file_path':p}}).get('decision')
-   self.assertEqual(deny(tmp+'/target/run.sql'),'deny');self.assertEqual(deny('dbt_project.yml','replace'),'deny');self.assertEqual(deny('poetry.lock'),'deny')
-   self.assertIsNone(deny('models/a.sql'));self.assertIsNone(deny('target/x','run_shell_command'))
-   self.assertIsNone(deny('targets/x.sql'));self.assertIsNone(deny('target_new.sql'));self.assertEqual(deny('TARGET/x.sql'),'deny')
-   self.assertIsNone(run_hook('protected-paths.py',{'tool_name':'write_file','cwd':tmp,'tool_input':{'file_path':'D:\\elsewhere\\x.sql'}}).get('decision'))
-  with tempfile.TemporaryDirectory() as tmp:
-   self.assertIsNone(run_hook('protected-paths.py',{'tool_name':'write_file','cwd':tmp,'tool_input':{'file_path':'target/x'}}).get('decision'))
- def test_protected_paths_from_repo_root_when_launched_in_subfolder(self):
-  with tempfile.TemporaryDirectory() as tmp:
-   root=Path(tmp);(root/'.git').mkdir();(root/'.ai-kit').mkdir();(root/'.ai-kit/protected-paths').write_text('target/**\nfinance/closing/**\n',encoding='utf-8')
-   (root/'finance/.ai-kit').mkdir(parents=True);(root/'finance/.ai-kit/protected-paths').write_text('seeds/**\n',encoding='utf-8')
-   sub=str(root/'finance')
-   deny=lambda p:run_hook('protected-paths.py',{'tool_name':'write_file','cwd':sub,'tool_input':{'file_path':p}}).get('decision')
-   self.assertEqual(deny(str(root/'target/x.sql')),'deny');self.assertEqual(deny('closing/2026.sql'),'deny');self.assertEqual(deny('seeds/a.csv'),'deny')
-   self.assertIsNone(deny('models/margin.sql'));self.assertIsNone(deny(str(root/'marketing/seeds/a.csv')))
  def test_hook_no_longer_written_is_removed(self):
   import hashlib
   with tempfile.TemporaryDirectory() as tmp:

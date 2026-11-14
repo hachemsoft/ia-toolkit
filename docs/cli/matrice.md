@@ -35,7 +35,6 @@ with `--version` and `--help` only, that the latest CLIs still offer what the ki
 | Agent tool list (`AGENT_TOOLS`) | native | native, with agy's tool names | instruction only; the session's sandbox applies | native (`Read`, `Grep`, `Glob`, `Bash`) |
 | Guardrails | `ai-kit-*` groups under `hooks.BeforeTool` | plugin `hooks.json` (`PreToolUse`) | `[[hooks.PreToolUse]]` in the block, to approve ("Trust") | groups under `hooks.PreToolUse` of `settings.json` |
 | `whats-new` hook | group under `hooks.SessionStart` | plugin `hooks.json` (`SessionStart`, `injectSteps`) | `[[hooks.SessionStart]]`, to approve | group under `hooks.SessionStart` |
-| Repo protected paths | `<repo>/.ai-kit/protected-paths`, read by the kit script | the same | the same | the same |
 | MCP | `mcpServers` of `settings.json` | plugin `mcp_config.json` | `[mcp_servers.ai-kit-<name>]` in the block | `ai-kit-<name>` in `mcpServers` of `~/.claude.json` |
 | Permissions | the CLI's approval mode | each person's rules, never written by the kit | sandbox and approvals, never set by the kit | the CLI's own modes and rules, never set by the kit |
 | Logs read by `usage` | `~/.gemini/tmp/*/chats/*.json` | `~/.gemini/antigravity-cli/history.jsonl`, `conversations/*.db` (read-only) | `~/.codex/history.jsonl`, `~/.codex/sessions/**/rollout-*.jsonl` | `~/.claude/projects/*/*.jsonl` |

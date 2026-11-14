@@ -55,8 +55,8 @@ class AgyAdapterTests(unittest.TestCase):
   self.assertEqual(run_hook('shell-guard.py dbt-prod-guard',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt run --target prod'}},'workspacePaths':['/x']}).get('decision'),'deny')
   self.assertEqual(run_hook('shell-guard.py dbt-prod-guard',{'toolCall':{'name':'run_command','args':{'CommandLine':'dbt test -t dev'}}}),{'decision':'ask'})
   with tempfile.TemporaryDirectory() as tmp:
-   (Path(tmp)/'.ai-kit').mkdir();(Path(tmp)/'.ai-kit/protected-paths').write_text('target/**\n',encoding='utf-8')
-   self.assertEqual(run_hook('protected-paths.py',{'toolCall':{'name':'write_to_file','args':{'TargetFile':tmp+'/target/a.sql'}},'workspacePaths':[tmp]}).get('decision'),'deny')
+   # 4.8.0: a repo's CLI settings stay protected; its own protected paths are gone
+   self.assertEqual(run_hook('protected-paths.py',{'toolCall':{'name':'write_to_file','args':{'TargetFile':tmp+'/.claude/settings.json'}},'workspacePaths':[tmp]}).get('decision'),'deny')
    self.assertEqual(run_hook('protected-paths.py',{'toolCall':{'name':'write_to_file','args':{'TargetFile':tmp+'/models/a.sql'}},'workspacePaths':[tmp]}),{'decision':'ask'})
  def test_command_skill_text_valid_frontmatter(self):
   for c in load_commands():

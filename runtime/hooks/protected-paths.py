@@ -1,21 +1,16 @@
 #!/usr/bin/env python3
-"""Kit guardrail (before a tool call): blocks agent writes to the configuration of the kit and of the CLIs, and under the
-paths a repo protects.
-
-Protected paths of a repo are glob patterns, one per line, in <repo>/.ai-kit/protected-paths,
-comments with #. Example: target/**  ·  models/legacy/**  ·  *.lock  ·  dbt_project.yml
-A shell command that names a protected path is allowed only when every program it runs only reads (cat, grep, ls…):
-the list of what is allowed is closed, not the list of what writes. Output: JSON {"decision": "deny", "reason": ...} or {}.
+"""Kit guardrail (before a tool call): refuses a write tool aimed at the configuration of the kit or of a CLI (the path is
+exact), and the kit's own commands that change the installation or bill a model call. It reads no other shell command:
+what a command changes is reported by the integrity check after the tool call and at session start (ADR 0030).
+Output: JSON {"decision": "deny", "reason": ...} or {} ({"decision": "ask"} for agy).
 """
-import fnmatch
 import json
 import os
 import re
 import sys
 import time
 
-# Protected-paths file of a folder: .ai-kit/protected-paths (neutral, all CLIs).
-PATTERN_FILES = (os.path.join('.ai-kit', 'protected-paths'),)
+# --- Configuration -----------------------------------------------------------------------------------------------
 
 # Configuration of the kit and of the CLIs, always protected: an agent must not be able to switch off its own guardrails.
 # Relative to the home folder; a trailing / protects a whole folder. ~/.ai-kit/learning/ (personal /learn progress) and
@@ -30,29 +25,19 @@ CONFIG_PATHS = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/sources/', '
                 '.claude.json',
                 # git's own configuration can redirect the kit's next fetch (url.insteadOf) or run a program (core.fsmonitor) (0.51.1).
                 '.gitconfig', '.config/git/config')
-# The folders that hold that configuration: a `cd` into one of them, or a wildcard inside one, is treated as touching it.
-CONFIG_FOLDERS = ('.ai-kit', '.gemini', '.codex', '.claude')
+
 # Configuration of a repo, protected in every repo: a project setting can turn hooks off or change the environment the
 # guardrails read (a .env setting the kit's variables is refused through its content).
-REPO_CONFIG = ('.ai-kit/protected-paths', '.claude/settings.json', '.claude/settings.local.json',
+REPO_CONFIG = ('.claude/settings.json', '.claude/settings.local.json',
                '.gemini/settings.json', '.gemini/.env', '.codex/config.toml')
+
 KIT_VARIABLES = re.compile(r'^\s*(export\s+)?(AI_KIT_[A-Z_]*|DBT_TARGET)\s*=', re.M)
-SETS_KIT_VARIABLE = re.compile(r'(ai_kit_[a-z_]*|dbt_target)\s*=')  # the same, anywhere in a normalised (lower case) command
+
 DOTENV_BLOCKED = 'Blocked by the kit: a .env file the agent writes must not set the kit\'s variables (AI_KIT_*) or DBT_TARGET.'
 
-def patterns(directory):
-    found = []
-    for name in PATTERN_FILES:
-        try:
-            with open(os.path.join(directory, name), encoding='utf-8') as handle:
-                found += [line.strip() for line in handle if line.strip() and not line.lstrip().startswith('#')]
-        except OSError:
-            continue
-    return found
-
-def pattern_dirs(start):
-    """Folders whose protected-paths file applies: from a folder up to the repo root (the first folder that contains .git).
-    A monorepo started from a subfolder stays protected by the root."""
+def repo_dirs(start):
+    """Folders from start up to the repo root (the first folder that contains .git), where a repo's CLI settings live.
+    A monorepo started from a subfolder keeps the root's settings protected."""
     dirs, current = [], os.path.abspath(start)
     while True:
         dirs.append(current)
@@ -62,16 +47,6 @@ def pattern_dirs(start):
         if parent == current:
             return [os.path.abspath(start)]
         current = parent
-
-def matches(relative, pattern):
-    # '**' also covers zero folders; fnmatch does not do that on its own. Case-insensitive comparison (macOS, Windows).
-    # A leading / anchors the pattern at the repo root, as in .gitignore.
-    relative, pattern = relative.lower(), pattern.lower().lstrip('/')
-    candidates = {pattern, pattern.replace('/**', ''), pattern.replace('**/', '')}
-    if any(fnmatch.fnmatchcase(relative, c) for c in candidates):
-        return True
-    # Folder prefix with a boundary: target/** protects target/x.sql, not targets/x.sql.
-    return any(relative == p[:-3] or relative.startswith(p[:-3] + '/') for p in candidates if p.endswith('/**'))
 
 def deny_output(payload, reason):
     """Refusal in the shape the CLI expects: Codex and the CLIs using the PreToolUse format validate their output strictly."""
@@ -119,30 +94,27 @@ def installed_files():
         return ()
     return tuple(rel for rel in files if isinstance(rel, str) and not rel.endswith('/USER.md'))
 
-# --- Shell commands ---------------------------------------------------------------------------------------------------
+# --- The kit's own commands in a shell command ---------------------------------------------------------------------
+# The only shell rule: the kit's commands that change the installation or bill a model call. Any other command runs; what
+# it changes is reported by the integrity check (4.8.0).
 
 SHELL_TOOLS = ('run_shell_command', 'run_command', 'shell', 'local_shell', 'exec_command', 'unified_exec', 'container.exec', 'Bash',
                'PowerShell', 'powershell')
-# Programs that only read: a command naming a protected path is allowed only when it runs nothing else.
-READERS = {'cat', 'bat', 'less', 'more', 'head', 'tail', 'grep', 'egrep', 'fgrep', 'rg', 'ag', 'ack', 'ls', 'll', 'dir', 'stat', 'file',
-           'wc', 'diff', 'cmp', 'md5', 'md5sum', 'shasum', 'sha1sum', 'sha256sum', 'jq', 'yq', 'column', 'sort', 'uniq', 'cut', 'nl', 'od',
-           'xxd', 'hexdump', 'strings', 'tree', 'du', 'realpath', 'readlink', 'basename', 'dirname', 'test', '[', 'echo', 'printf', 'true',
-           'type', 'which', 'find', 'git', 'cp',  # not sed or awk: their scripts can write a file or run a command
-           # PowerShell
-           'get-content', 'gc', 'select-string', 'sls', 'get-childitem', 'gci', 'test-path', 'get-item', 'gi', 'get-filehash',
-           'resolve-path', 'measure-object', 'write-output', 'write-host', 'out-string', 'format-list', 'select-object'}
-GIT_READS = {'status', 'diff', 'log', 'show', 'blame', 'ls-files', 'grep', 'rev-parse', 'cat-file', 'describe'}
+
 WRAPPERS = {'sudo', 'doas', 'env', 'xargs', 'nohup', 'time', 'command', 'exec', 'builtin', 'nice', '-exec', '-execdir', '-ok'}
+
 RUNS_TEXT = re.compile(r'-[a-z]*c|-command|-encodedcommand', re.I)  # bash -c, sh -lc, pwsh -Command: the next word is run
+
 SHELLS = {'sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'pwsh', 'powershell'}
+
 CMD = {'cmd', 'cmd.exe'}  # cmd /c program: the next word is run
-# A run of > is read once from its start: no quadratic search on a long one.
-REDIRECTION = re.compile(r'(?<!>)>+\|?\s*([^\s;|&<>]+)')
+
 CHANGES_DIRECTORY = {'cd', 'pushd', 'chdir', 'set-location', 'sl', 'push-location'}
+
 HEREDOC = re.compile(r'<<-?\s*["\']?([A-Za-z_][A-Za-z0-9_]*)["\']?')
-MAX_COMMAND = 50000  # longer: judged on its own (a pathological command is refused when it names a protected path)
-BLOCKED = ('Blocked by the kit: this command touches "{}", configuration of the kit or of a CLI; the agent does not change it. '
-           'Reading it with cat, grep or ls is fine. Tell the person what to change (then run ai-kit sync --offline).')
+
+BLOCKED = ('Blocked by the kit: "{}" is configuration of the kit or of a CLI; the agent does not change it. '
+           'Reading it is fine. Tell the person what to change (then run ai-kit sync --offline).')
 
 def without_data_heredocs(text):
     """The command without the bodies of heredocs given to a program that is not a shell (python3 - <<EOF): that text is
@@ -202,42 +174,18 @@ def command_words(pipeline):
         expect = current in WRAPPERS or (core.startswith('-') and expect)
     return found
 
-def only_reads(program, words, mentions_in):
-    """True when this program, with these words, only reads. cp reads when the protected path is not its destination."""
-    if program not in READERS:
-        return False
-    positional = [w for w in words if not w.startswith('-')]
-    if program == 'find':
-        return not any(w in ('-delete', '-exec', '-execdir', '-ok', '-okdir', '-fprint', '-fprint0', '-fprintf', '-fls') for w in words)
-    if program == 'git':
-        _, subcommand, _ = git_call(words)  # git -C folder status: the folder is not the subcommand
-        sets_config = any(w == '-c' and '=' in words[i + 1] for i, w in enumerate(words[:-1]))  # -c key=value can run a program
-        return subcommand in GIT_READS and not sets_config and not any(w.startswith('--output') for w in words)
-    if program == 'cp':
-        if any(w == '-t' or w.startswith('--target-directory') for w in words):
-            return False
-        return bool(positional) and not mentions_in(positional[-1])
-    # Readers that also write a file when asked to: their output option, or a second file name.
-    if program in ('sort', 'tree'):
-        return not any(w.startswith('--o') or re.match(r'-[a-z0-9]*o', w) for w in words)  # -o, and -uo: o glued to other options
-    if program == 'uniq':
-        return len(positional) < 2
-    if program == 'xxd':
-        return '-r' not in words and len(positional) < 2
-    if program == 'yq':
-        return not any(w in ('-i', '--inplace') for w in words)
-    return True
-
 PYTHONS = re.compile(r'(python[0-9.]*|py)(\.exe)?')
-KIT_TOOLS = ('/.ai-kit/bin/friction.py', '/.ai-kit/bin/weakened_tests.py')  # run by /friction (writes only outside the protected paths) and /review (reads only)
 
 # The kit's own subcommands that change the installation or bill a model call: the agent tells the person, it does not run them
 # (0.52.0). Reading ones (doctor, usage, friction logging, --version, managed-settings into an empty folder) stay allowed.
 KIT_REFUSED = {'init', 'sync', 'rollback', 'uninstall'}
+
 # Every action of the command (installer/cli.py; a test compares the two lists).
 KIT_ACTIONS = {'init', 'sync', 'team', 'status', 'doctor', 'rollback', 'user', 'uninstall', 'usage', 'friction', 'managed-settings', 'validate'}
+
 # The launchers of a kit folder: they run the same command, and init when no action is given (Installer.cmd calls launcher.py).
 LAUNCHERS = ('bootstrap.sh', 'bootstrap.ps1', 'launcher.py')
+
 KIT_COMMAND_BLOCKED = ('Blocked by the kit: `ai-kit {}` changes the installation or bills a model call; the agent does not run it. '
                        'Tell the person the command to run in a terminal.')
 
@@ -292,95 +240,38 @@ def kit_command_reason(command, cwd):
                 return KIT_COMMAND_BLOCKED.format(' '.join([sub] + rest[:2]).strip())
     return None
 
-def runs_kit_tool(program, words, mentions_in):
-    """True when this program is Python running one of the kit's own tools, and its other words name no protected path."""
-    if not PYTHONS.fullmatch(program):
-        return False
-    script = next((w for w in words if not w.startswith('-')), '')
-    return script.endswith(KIT_TOOLS) and not any(mentions_in(w) for w in words if w != script)
-
 def protected_names():
     return [entry.lower() for entry in CONFIG_PATHS + REPO_CONFIG + installed_files()]
 
 def mention(text, names):
-    """The first protected name a text mentions, or None. A file name must end there (.claude.json.bak is not .claude.json)."""
+    """The first protected name a text mentions, or None: whole names (.claude.json.bak is not .claude.json, my.ai-kit is
+    not .ai-kit), a folder entry only as that folder, a prefix entry (00_, ai-kit-) followed by anything."""
     for name in names:
-        start = text.find(name.rstrip('/'))
+        stem = name.rstrip('/')
+        if not stem:
+            continue
+        start = text.find(stem)
         while start >= 0:
-            end = start + len(name.rstrip('/'))
-            if name.endswith('/') or end == len(text) or not re.match(r'[a-z0-9_.-]', text[end]):
-                return name.rstrip('/')
-            start = text.find(name.rstrip('/'), end)
+            end = start + len(stem)
+            before = start == 0 or not re.match(r'[a-z0-9_.-]', text[start - 1])
+            if name.endswith('/'):
+                after = end == len(text) or text[end] == '/'
+            else:
+                after = name.endswith(('_', '-')) or end == len(text) or not re.match(r'[a-z0-9_.-]', text[end])
+            if before and after:
+                return stem
+            start = text.find(stem, start + 1)
     return None
 
-def touches_config_folder(program, words, names):
-    """A wildcard inside a configuration folder, the folder kept in a variable, or a program aimed at the folder itself that
-    does not only read (ln -s ~/.ai-kit x, rm -rf ~/.claude, find ~/.ai-kit -delete, cp x ~/.ai-kit/): the file it writes is
-    not named, so it counts as a write. A cd into one is judged with what follows it (cd_scope)."""
-    def is_folder(word):
-        return any(word.rstrip('/').endswith('/' + f) or word.rstrip('/') == f for f in CONFIG_FOLDERS)
-    if program in CHANGES_DIRECTORY:
-        return False
-    if program == '=':
-        # p=~/.ai-kit, c=$HOME/.ai-kit/context: a configuration folder, or a folder above a protected file.
-        value = '/' + words[0].split('=', 1)[1].rstrip('/')
-        tails = [value[value.rfind('/' + f) + 1:] for f in CONFIG_FOLDERS if '/' + f in value]
-        return any(tail in CONFIG_FOLDERS or any(name.startswith(tail + '/') for name in names) for tail in tails)
-    if any(is_folder(w) for w in words) and not only_reads(program, words, is_folder):
-        return True
-    return any(re.search(r'[*?\[]', w) and any('/' + f + '/' in '/' + w for f in CONFIG_FOLDERS) for w in words)
-
-def cd_scope(target, names):
-    """What a cd to this (normalised) target allows afterwards: None outside the configuration folders; 'ordinary' for a
-    subfolder of one that holds no protected name (~/.claude/projects/p/memory, where the agent keeps its notes); else
-    'reads', the root of a configuration folder or a folder that holds a protected file: only readers may follow, since
-    the relative names they use cannot be judged (4.7.1)."""
-    value = '/' + target.strip('/') + '/'
-    start = max(value.rfind('/' + f + '/') for f in CONFIG_FOLDERS)  # the innermost: .ai-kit inside .claude is judged as .ai-kit
-    if start < 0:
-        return None
-    tail = value[start + 1:].rstrip('/')
-    if tail in CONFIG_FOLDERS or re.search(r'[*?\[$]', tail) or DOT_DOT.search(tail):
-        return 'reads'
-    if any(name.startswith(tail + '/') or tail.startswith(name.rstrip('/')) for name in names):
-        return 'reads'
-    return 'ordinary'
-
-def without_commit_messages(command):
-    """The command with the message of each git commit (-m, --message) replaced by a neutral word: a message is text, not a
-    path, and its ; or && must not split the command. A message holding $( or a backtick is kept: a substitution runs inside
-    double quotes; so is a quote that does not close (4.7.1)."""
-    out, position = [], 0
-    for match in COMMIT_MESSAGE.finditer(command):
-        value = match.group(2)
-        segment = re.split(r'[;\n&|]', ''.join(out) + command[position:match.start()])[-1]
-        if not COMMITS.search(segment.lower()) or '$(' in value or '`' in value:
-            continue
-        out.append(command[position:match.start(2)] + 'message')
-        position = match.end(2)
-    return ''.join(out) + command[position:]
-
-COMMIT_MESSAGE = re.compile(r'''(?<=\s)(-[a-z]*m|--message=?)\s*("(?:[^"\\]|\\.)*"|'[^']*'|[^\s"';&|<>`$()]+)''')
-COMMITS = re.compile(r'\bgit(\.exe)?\b.*\bcommit\b')
-DOT_DOT = re.compile(r'(^|/)\.\.(/|$)')
-
-# --- The kit folder and git's configuration (0.51.1) -------------------------------------------------------------------
-# The kit folder an installation came from (state.json kit_dir) is the source of the next update and of the session hook's
-# remote read. Its .git/config and .git/hooks are always protected; the rest of it when the session starts outside it: a
-# maintainer works on the kit with an agent inside the clone.
+# --- Write tools ---------------------------------------------------------------------------------------------------
 
 KIT_GIT = ('.git/config', '.git/hooks')
-GIT_CONFIG_SENSITIVE = re.compile(r'(url|credential|core|include|includeif)\.')  # keys that redirect a fetch or run a program
-GIT_CONFIG_WRITES = {'--add', '--replace-all', '--unset', '--unset-all', '--rename-section', '--remove-section', '-e', '--edit'}
-GIT_CONFIG_VERBS = {'set', 'unset', 'edit', 'rename-section', 'remove-section'}
-GIT_CONFIG_READS = {'get', 'list'}
-GIT_REMOTE_WRITES = {'add', 'set-url', 'rename', 'remove', 'rm', 'set-head', 'set-branches'}
+
 KIT_BLOCKED = ('Blocked by the kit: this touches the kit folder "{}", the source of the next update, from another repo; '
                'reading it is fine. Change it yourself, or work on the kit from a session started in its folder.')
+
 KIT_GIT_BLOCKED = ('Blocked by the kit: this changes the git configuration of the kit folder ("{}"), which the kit runs git in; '
                    'make the change yourself in a terminal.')
-GITCONFIG_BLOCKED = ('Blocked by the kit: this git setting ("{}") can redirect where the kit fetches from or run a program; '
-                     'make the change yourself in a terminal.')
 
 def kit_dir():
     """(real path, the forms a command may write it in) of the kit folder of state.json, or (None, ())."""
@@ -409,50 +300,6 @@ def in_kit(path, folder):
     """inside(), also without case: a path taken from a normalised command is lower case, the file system may not be."""
     return inside(path, folder) or inside(path.lower(), folder.lower())
 
-def names_folder(text, forms):
-    """The first form of the folder a normalised text names, whole (followed by /, a space, an operator or the end)."""
-    return next((f for f in forms if re.search(re.escape(f) + r'(?=$|[/\s;|&()<>])', text)), None)
-
-def names_kit_git(text, forms, here):
-    """True when a normalised text names the kit's .git/config or .git/hooks (relatively too, when the shell is in the kit)."""
-    targets = [f + '/' + g for f in forms for g in KIT_GIT]
-    if any(re.search(re.escape(t) + r'(?=$|[/\s;|&()<>])', text) for t in targets):
-        return True
-    return here and any(re.search(r'(^|[\s=<>|;&(])(\./)?' + re.escape(g) + r'(?=$|[/\s;|&()<>])', text) for g in KIT_GIT)
-
-def git_call(words):
-    """(directory given by -C or None, subcommand, the words after it) of a git call; lower case: -C and -c look alike,
-    told apart by their argument (-c takes key=value)."""
-    directory, index = None, 0
-    while index < len(words) and words[index].startswith('-'):
-        if words[index] == '-c' and index + 1 < len(words):
-            if '=' not in words[index + 1]:
-                directory = words[index + 1]
-            index += 2
-            continue
-        index += 1
-    if index >= len(words):
-        return directory, '', []
-    return directory, words[index], words[index + 1:]
-
-def git_config_reason(rest, target_in_kit):
-    """Reason to refuse a `git config` call: a write of a key that redirects or runs (any scope), or any write of the kit's config."""
-    flags = [w for w in rest if w.startswith('-')]
-    positional = [w for w in rest if not w.startswith('-')]
-    verb = positional[0] if positional and positional[0] in GIT_CONFIG_VERBS | GIT_CONFIG_READS else ''
-    keys = positional[1:] if verb else positional
-    if verb in GIT_CONFIG_READS or any(f.startswith('--get') or f in ('--list', '-l') for f in flags):
-        return None
-    writes = verb in GIT_CONFIG_VERBS or any(f in GIT_CONFIG_WRITES for f in flags) or len(keys) >= 2
-    if not writes:
-        return None
-    scoped = any(f in ('--global', '--system', '--file', '-f') or f.startswith('--file=') for f in flags)
-    if scoped and (any(f in ('-e', '--edit') for f in flags) or verb == 'edit' or (keys and GIT_CONFIG_SENSITIVE.match(keys[0]))):
-        return GITCONFIG_BLOCKED.format(keys[0] if keys else 'git config --edit')
-    if not scoped and target_in_kit:
-        return KIT_GIT_BLOCKED.format('git config')
-    return None
-
 def where(word, current):
     """The folder a cd or -C word leads to, from the current one (~ expanded)."""
     word = word.strip('"\'')
@@ -460,182 +307,16 @@ def where(word, current):
         word = os.path.expanduser('~') + word[1:]
     return real(word if os.path.isabs(word) else os.path.join(current, word))
 
-def kit_shell_reason(command, cwd):
-    """Reason to refuse a shell command for the kit folder or git's configuration, or None."""
-    folder, forms = kit_dir()
-    current = real(cwd)
-    session_in_kit = bool(folder) and inside(current, folder)
-    for pipeline in shell_segments(command):
-        text = normalised(pipeline)
-        programs = command_words(text)
-        for program, words in programs:
-            if program in CHANGES_DIRECTORY and words:
-                current = where(words[-1], current)
-            if program != 'git':
-                continue
-            directory, subcommand, rest = git_call(words)
-            target_in_kit = bool(folder) and in_kit(where(directory, current) if directory else current, folder)
-            if subcommand == 'config':
-                reason = git_config_reason(rest, target_in_kit)
-                if reason:
-                    return reason
-            if subcommand == 'remote' and target_in_kit and rest and rest[0] in GIT_REMOTE_WRITES:
-                return KIT_GIT_BLOCKED.format('git remote ' + rest[0])
-        if not folder:
-            continue
-        here = in_kit(current, folder)
-        if names_kit_git(text, forms, here):
-            if re.search(r'>+\|?\s*\S*\.git/(config|hooks)', text) or not all(only_reads(p, w, lambda t: names_kit_git(t, forms, here)) for p, w in programs):
-                return KIT_GIT_BLOCKED.format('.git/config')
-        name = None if session_in_kit else names_folder(text, forms)
-        if name:
-            if re.search(r'>+\|?\s*' + re.escape(name) + r'(?=$|/)', text) or not all(only_reads(p, w, lambda t: names_folder(t, forms)) for p, w in programs):
-                return KIT_BLOCKED.format(name)
-    return None
-
-def writes_kit_variables(text, programs, command):
-    """True when a pipeline writes a .env file (a redirection, or a program that does not only read) and its words set the
-    kit's variables: the content the write tools are refused for. An assignment before a program (AI_KIT_NO_LIVE=1 python3 …)
-    is that program's environment, not content; the body of a heredoc is content."""
-    def is_dotenv(word):
-        return word.rsplit('/', 1)[-1].startswith('.env')
-    written = any(is_dotenv(m.group(1)) for m in REDIRECTION.finditer(text)) or any(
-        any(is_dotenv(w) for w in words) and not only_reads(program, words, is_dotenv) for program, words in programs if program != '=')
-    if not written:
-        return False
-    content = normalised(command) if '<<' in text else ' '.join(' '.join(words) for program, words in programs if program != '=')
-    return bool(SETS_KIT_VARIABLE.search(content))
-
-def shell_config_write(command, cwd=None):
-    """Reason for refusal when a shell command may change the configuration of the kit or of a CLI, or a repo's."""
-    names = protected_names()
-    command = without_commit_messages(command)
-    if len(command) > MAX_COMMAND:
-        whole = normalised(command)
-        name = mention(whole, names) or next((f for f in CONFIG_FOLDERS if f in whole), None)
-        return BLOCKED.format(name) if name else None
-    reason = kit_shell_reason(command, cwd or os.getcwd()) or kit_command_reason(command, cwd or os.getcwd())
-    if reason:
-        return reason
-    # Inside a configuration folder (a cd earlier in the command, or the folder the CLI starts the call in, kept from a
-    # previous cd): 'ordinary' or 'reads' (cd_scope), and that folder.
-    start = normalised(cwd or '')
-    scope = cd_scope(start, names) if start else None
-    folder = next((f for f in CONFIG_FOLDERS if '/' + f in start), None)
-    for pipeline in shell_segments(command):
-        text = normalised(pipeline)
-        programs = command_words(text)
-        runs = [p for p, _ in programs if p not in CHANGES_DIRECTORY]
-        climbs = any(DOT_DOT.search(w) for _, words in programs for w in words)
-        if runs and (scope == 'reads' or (scope == 'ordinary' and climbs)):
-            writes = [m.group(1) for m in REDIRECTION.finditer(text) if m.group(1) != '/dev/null']
-            if writes or not all(only_reads(p, w, lambda t: True) for p, w in programs if p not in CHANGES_DIRECTORY):
-                return BLOCKED.format(folder)
-        for program, words in programs:
-            if program in CHANGES_DIRECTORY:
-                # Every word, not only the last: Set-Location $HOME\.claude -PassThru. The most restrictive wins.
-                scopes = [s for s in (cd_scope(w, names) for w in words if not w.startswith('-')) if s]
-                found = 'reads' if 'reads' in scopes else (scopes[0] if scopes else None)
-                if scope and (found != 'ordinary' or climbs):
-                    found = 'reads'  # cd .., cd -, cd "$OLDPWD" from inside a configuration folder: its target is not known
-                if found:
-                    scope = 'reads' if 'reads' in (scope, found) else found
-                    folder = next((f for f in CONFIG_FOLDERS for w in words if '/' + f in '/' + w), folder)
-            if touches_config_folder(program, words, names):
-                return BLOCKED.format(next(f for f in CONFIG_FOLDERS if f in text))
-        if '.env' in text and writes_kit_variables(text, programs, command):
-            return DOTENV_BLOCKED
-        name = mention(text, names)
-        if not name:
-            continue
-        # A redirection to the protected file writes it, whatever the program.
-        for match in REDIRECTION.finditer(text):
-            if mention(match.group(1), names):
-                return BLOCKED.format(name)
-        def allowed(program, words):
-            # '@' closes a PowerShell here-string piped into the program (/friction on Windows).
-            return program == '@' or only_reads(program, words, lambda t: mention(t, names)) or runs_kit_tool(program, words, lambda t: mention(t, names))
-        if not programs or any(p == '=' for p, _ in programs) or not all(allowed(p, w) for p, w in programs):
-            return BLOCKED.format(name)
-    return None
-
-# --- A repo's protected paths in shell commands ------------------------------------------------------------------------
-
-# Programs that change or delete the files they name. A closed list: a tool that regenerates a file without naming it
-# (poetry lock, dbt run) is not read, and neither is a path kept in a variable, a wildcard or a script that writes.
-WRITES_ALL = {'tee', 'rm', 'rmdir', 'unlink', 'shred', 'truncate', 'touch', 'chmod', 'chown', 'mv', 'rename',
-              # cmd and PowerShell
-              'del', 'erase', 'rd', 'move', 'ren', 'remove-item', 'ri', 'set-content', 'add-content', 'clear-content', 'out-file',
-              'new-item', 'ni', 'move-item', 'mi', 'rename-item', 'rni'}
-WRITES_LAST = {'cp', 'ln', 'install', 'rsync', 'copy', 'copy-item', 'cpi'}  # the destination is the last name
-GIT_WRITES = {'checkout', 'restore', 'rm', 'mv', 'clean'}  # they replace or delete the files they name
-REPO_BLOCKED = ('Blocked by the kit: this command changes or deletes "{}", which matches the protected path "{}" declared in the repo '
-                'protected paths (.ai-kit/protected-paths). Reading it is fine. Propose the change to a person instead.')
-
-def written_names(program, words):
-    """The names a program of the closed list writes, among its words (lower case, quotes removed)."""
-    names = [w for w in words if not w.startswith('-')]
-    if program in WRITES_ALL:
-        return names
-    if program in WRITES_LAST:
-        return names[-1:]
-    if program == 'sed' and any(w.startswith(('-i', '--in-place')) or re.fullmatch(r'-[a-z]+i', w) for w in words):
-        return names
-    if program == 'perl' and any(re.fullmatch(r'-[a-z0-9]*i[a-z0-9.]*', w) for w in words):
-        return names
-    if program == 'dd':
-        return [w[3:] for w in words if w.startswith('of=')]
-    if program == 'git':
-        _, subcommand, rest = git_call(words)
-        return [w for w in rest if not w.startswith('-')] if subcommand in GIT_WRITES else []
-    return []
-
-def repo_pattern_of(name, cwd, directories):
-    """(path relative to the folder, pattern) when this name, read from cwd, falls under a pattern a folder declares."""
-    if name.startswith('~'):
-        name = os.path.expanduser(name)
-    absolute = os.path.normpath(name if os.path.isabs(name) else os.path.join(cwd, name)).replace(os.sep, '/').lower()
-    for directory in directories:
-        declared = patterns(directory)
-        if not declared:
-            continue
-        for root in dict.fromkeys((real(directory), os.path.abspath(directory))):  # a temp folder behind a link (macOS /var)
-            root = root.replace(os.sep, '/').lower().rstrip('/')
-            if not absolute.startswith(root + '/'):
-                continue
-            relative = absolute[len(root) + 1:]
-            for pattern in declared:
-                if matches(relative, pattern):
-                    return relative, pattern
-    return None
-
-def repo_shell_reason(command, cwd):
-    """Reason for refusal when a shell command changes or deletes a file it names that the repo declares protected
-    (.ai-kit/protected-paths): a redirection to it, or a program of the closed list. Anything unexpected lets it run."""
-    try:
-        if len(command) > MAX_COMMAND:
-            return None
-        directories = pattern_dirs(cwd)
-        if not any(patterns(d) for d in directories):
-            return None
-        for pipeline in shell_segments(command):
-            text = normalised(pipeline)
-            targets = [m.group(1) for m in REDIRECTION.finditer(text)]
-            for program, words in command_words(text):
-                targets += written_names(program, words)
-            for name in targets:
-                found = repo_pattern_of(name, cwd, directories)
-                if found:
-                    return REPO_BLOCKED.format(*found)
-    except Exception:
-        return None
-    return None
-
-# --- Write tools -------------------------------------------------------------------------------------------------------
-
 def real(path):
-    """Absolute path with symbolic links resolved (a link to a protected folder is that folder)."""
-    return os.path.realpath(os.path.abspath(path))
+    """Absolute path with symbolic links resolved (a link to a protected folder is that folder); as written when the system
+    rejects it (a NUL byte)."""
+    try:
+        return os.path.realpath(os.path.abspath(path))
+    except (ValueError, OSError):
+        try:
+            return os.path.realpath(os.path.abspath(path.replace('\0', '')))
+        except (ValueError, OSError):
+            return os.path.abspath(path.replace('\0', ''))
 
 def config_reason(absolute, directories, content=''):
     home = real(os.path.expanduser('~'))
@@ -661,10 +342,10 @@ def config_reason(absolute, directories, content=''):
     return None
 
 def check(file_path, cwd, content=''):
-    """Reason for refusal if the file falls under a protected path, otherwise None. The repo is found from the file itself
-    (and from the launch folder): a file of another repo keeps that repo's protection."""
+    """Reason for refusal if a write tool's file is protected configuration, otherwise None. The repo is found from the
+    file itself (and from the launch folder): a file of another repo keeps that repo's CLI settings protected."""
     absolute = real(file_path if os.path.isabs(file_path) else os.path.join(cwd, file_path))
-    directories = list(dict.fromkeys(pattern_dirs(os.path.dirname(absolute)) + pattern_dirs(cwd)))
+    directories = list(dict.fromkeys(repo_dirs(os.path.dirname(absolute)) + repo_dirs(cwd)))
     reason = config_reason(absolute, directories, content)
     if reason:
         return reason
@@ -673,18 +354,6 @@ def check(file_path, cwd, content=''):
         return KIT_GIT_BLOCKED.format(os.path.relpath(absolute, folder).replace(os.sep, '/'))
     if folder and inside(absolute, folder) and not inside(real(cwd), folder):
         return KIT_BLOCKED.format(folder)
-    for directory in directories:
-        try:
-            relative = os.path.relpath(absolute, real(directory)).replace(os.sep, '/')
-        except ValueError:
-            # Windows: a different drive from this folder, so outside its patterns.
-            continue
-        if relative == '..' or relative.startswith('../'):
-            continue
-        for pattern in patterns(directory):
-            if not matches(relative, pattern):
-                continue
-            return 'Blocked by the kit: "' + relative + '" matches the protected path "' + pattern + '" declared in the repo protected paths (.ai-kit/protected-paths). Propose the change to a person instead of writing it.'
     return None
 
 def record_refusal(guardrail):
@@ -715,6 +384,18 @@ def passes(payload, note=None):
         answer['decision'] = 'ask'
     return json.dumps(answer, ensure_ascii=False)
 
+def fallback(payload):
+    """After an unexpected input: never a shell command, but a write tool that names a protected path is refused."""
+    try:
+        call = payload.get('toolCall') if isinstance(payload.get('toolCall'), dict) else {}
+        tool = str(payload.get('tool_name') or call.get('name') or '')
+        if tool in SHELL_TOOLS:
+            return None
+        name = mention(normalised(json.dumps(payload)), protected_names())
+        return BLOCKED.format(name) if name else None
+    except Exception:
+        return None
+
 def main():
     use_utf8()
     try:
@@ -725,10 +406,7 @@ def main():
     try:
         decision = decide(payload)
     except Exception:
-        # An unexpected input never lets a protected write through: refuse when the call names a protected path.
-        text = normalised(json.dumps(payload))
-        name = mention(text, [e.lower() for e in CONFIG_PATHS])
-        decision = BLOCKED.format(name) if name else None
+        decision = fallback(payload)
     if decision:
         record_refusal('protected-paths')
     print(json.dumps(deny_output(payload, decision), ensure_ascii=False) if decision else passes(payload))
@@ -746,7 +424,7 @@ def decide(payload):
             args = {'command': args}
         command = as_text(args.get('command') or args.get('cmd') or args.get('CommandLine'))
         folder = (args.get('workdir') or args.get('cwd') or cwd) if isinstance(args, dict) else cwd
-        return shell_config_write(command, folder) or repo_shell_reason(command, folder)
+        return kit_command_reason(command, folder)
     if not re.search(r'write|replace|edit|patch', tool, re.I):
         return None
     paths = target_paths(tool, args)

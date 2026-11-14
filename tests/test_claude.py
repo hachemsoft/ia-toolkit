@@ -297,7 +297,7 @@ class GuardrailPayloadTests(unittest.TestCase):
             answer = self.run_hook('protected-paths.py', {**base, 'tool_name': 'Write', 'tool_input': {'file_path': str(home/'notes.md')}}, home)
             self.assertFalse(self.denied(answer))
             answer = self.run_hook('protected-paths.py', {**base, 'tool_name': 'Bash', 'tool_input': {'command': 'echo x >> ~/.claude/settings.json'}}, home)
-            self.assertTrue(self.denied(answer))
+            self.assertFalse(self.denied(answer))  # 4.8.0: shell commands are left to the integrity check
 
 
 if __name__ == '__main__':

@@ -174,7 +174,6 @@ outside it ([guardrails](hooks.md)).
 | `REVIEW.md` | review passes, meaning of Important, cap on nits | init-project-context, `/review` |
 | `docs/sdlc/<date>-<slug>/` | `intent.md`, `spec.md`, `plan.md` of one change | `/intent`, `/spec`, `/build` |
 | `docs/agents/issue-tracker.md` | tracker and triage labels, only after setup-workflow | setup-workflow |
-| `.ai-kit/protected-paths` | glob patterns the agent's write tools must not touch | the repo team |
 | `.agents/skills/<name>/` | repo skills, with names of their own | the repo team |
 
 "Initialize the project context" runs init-project-context: it reads the repo, proposes `AGENTS.md`, `GLOSSARY.md`,

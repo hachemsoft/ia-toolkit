@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by 0030
 since: 0.23.0, widened in 0.31.0 (reconstructed from the CHANGELOG); title and scope narrowed to what the code does
 ---
 # A guardrail makes it harder for the agent to change its own configuration by mistake

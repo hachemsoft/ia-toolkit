@@ -105,10 +105,10 @@ class CodexHookPayloadTests(unittest.TestCase):
   self.assertEqual(run_hook('shell-guard.py dbt-prod-guard',{'hook_event_name':'PreToolUse','tool_name':'exec_command','tool_input':{'cmd':'dbt run -t dev'}}),{})
  def test_protected_paths_apply_patch(self):
   with tempfile.TemporaryDirectory() as tmp:
-   (Path(tmp)/'.git').mkdir();(Path(tmp)/'.ai-kit').mkdir();(Path(tmp)/'.ai-kit/protected-paths').write_text('target/**\n',encoding='utf-8')
-   patch='*** Begin Patch\n*** Update File: target/run.sql\n@@\n-a\n+b\n*** End Patch\n'
+   (Path(tmp)/'.git').mkdir()  # 4.8.0: a repo's CLI settings stay protected; its own protected paths are gone
+   patch='*** Begin Patch\n*** Update File: .codex/config.toml\n@@\n-a\n+b\n*** End Patch\n'
    r=run_hook('protected-paths.py',{'hook_event_name':'PreToolUse','tool_name':'apply_patch','cwd':tmp,'tool_input':{'command':patch}})
    self.assertEqual(r['hookSpecificOutput']['permissionDecision'],'deny')
-   ok=patch.replace('target/run.sql','models/a.sql')
+   ok=patch.replace('.codex/config.toml','models/a.sql')
    self.assertEqual(run_hook('protected-paths.py',{'hook_event_name':'PreToolUse','tool_name':'apply_patch','cwd':tmp,'tool_input':{'command':ok}}),{})
 if __name__=='__main__':unittest.main()

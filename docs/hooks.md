@@ -8,7 +8,7 @@ From `runtime/hooks/hooks.json`:
 
 | Name | Runs | Default | Blocks |
 | --- | --- | --- | --- |
-| `protected-paths` | before a write or shell tool | on | agent writes to the configuration of the kit and of the CLIs, and under a repo's protected paths |
+| `protected-paths` | before a write or shell tool | on | a write tool aimed at the configuration of the kit or of a CLI, and the kit's commands that change the installation |
 | `dbt-prod-guard` | before a shell tool | off | a dbt command on a production target |
 | `git-guard` | before a shell tool | off | the git commands that discard work for good, and a forced push to a main branch |
 | `bq-cost-guard` | before a shell tool | off | `bq query` without a dry run or a cap on the bytes billed |
@@ -40,55 +40,23 @@ IT can name every guardrail of the list; `whats-new` is not one.
 
 ## `protected-paths`
 
-Always blocks an agent's write to:
+The agent must not change, by mistake, the configuration that watches it: above all when its CLI no longer asks before a command (an auto-approve or "yolo" mode, or an "always allow" rule). Outside those modes, the CLI's own approval prompt already covers it. The guardrail refuses what it can judge exactly, the same way on every system; for the rest, the kit checks the result rather than the command ([ADR 0030](adr/0030-check-the-result-not-the-command.md)).
 
-- `~/.ai-kit/`: `aikit.toml`, `lock.toml`, `sources/`, `state.json`, `hooks/`, `bin/`, `backups/`, `runtime/`, `schemas/`, `news/`, `news.json`, and the rule layers `00_`, `10_`, `20_` in `context/`;
-- the CLIs' settings and instruction files the kit manages, a CLI's own permissions file the kit leaves to you ([agy](cli/agy.md)), and every file the kit installed (skills, commands, agents);
-- Git's own configuration, `~/.gitconfig` and `~/.config/git/config`, and the `.git/config` and `.git/hooks` of the kit folder;
-- in a repository: `.ai-kit/protected-paths` and the CLI settings files that could turn hooks off; a `.env` that sets `AI_KIT_*` or `DBT_TARGET`, written by a write tool or by a shell command.
+**Refused before the action:**
 
-`USER.md` and `~/.ai-kit/learning/` stay writable.
+- a write tool (write, edit, patch) whose file is protected: the path is exact. Protected: in `~/.ai-kit/`, `aikit.toml`, `lock.toml`, `sources/`, `state.json`, `hooks/`, `bin/`, `backups/`, `runtime/`, `schemas/`, `news/`, `news.json` and the rule layers `00_`, `10_`, `20_` in `context/`; the CLIs' settings and instruction files the kit manages, a CLI's own permissions file the kit leaves to you ([agy](cli/agy.md)) and every file the kit installed; `~/.gitconfig`, `~/.config/git/config`, the `.git/config` and `.git/hooks` of the kit folder, and the kit folder from another repo; in a repository, the CLI settings files that could turn hooks off ([CLI pages](cli/matrice.md)) and a `.env` that sets `AI_KIT_*` or `DBT_TARGET`. `USER.md` and `~/.ai-kit/learning/` stay writable;
+- the kit's commands that change the installation or bill a model call: `ai-kit init`, `sync`, `rollback`, `uninstall`, `team use`, `doctor --live`, `friction --publish`, wherever their options are written, also through `python -m ai_kit` or a launcher (`Installer.cmd`, `bootstrap.sh`, `bootstrap.ps1`, `launcher.py`). The agent tells you the command to run in a terminal. Reading commands (`status`, `doctor`, `usage`, `friction --list`) stay allowed.
 
-A shell command that names a protected file, or a configuration folder itself (`~/.ai-kit`, `~/.claude`…), is allowed only when every program it runs only reads (`cat`, `grep`, `ls`…): `find ~/.ai-kit -delete` is refused. A redirection to a protected file, or a configuration folder kept in a variable (`p=~/.ai-kit`), is refused.
-
-A `cd` into a configuration folder is judged with what follows it:
+**Any other shell command runs.** Reading a shell command to guess what it writes never ends: each shell (bash, zsh, PowerShell, cmd) and each system has its own forms. Instead, after each tool call and at each session start, the integrity check compares the files the kit installed (and the kit folder's `.git/config` and hooks) with what was recorded; a change is reported once, to the agent and to you, with the command that restores it (`ai-kit sync --offline`).
 
 | The agent's command | Result |
 | --- | --- |
-| `cd ~/.claude`, `cd ~/.claude && ls`, `cd ~/.ai-kit && cat aikit.toml` | runs: the root of a configuration folder, or a folder that holds a protected file, followed only by readers and no redirection |
-| `cd ~/.claude && rm settings.json`, `cd ~/.ai-kit && echo x > aikit.toml`, `cd ~/.claude && cp x settings.json` | refused: after such a `cd`, any name may be a protected file |
-| `cd ~/.claude/projects/p/memory && echo x >> MEMORY.md` | runs: a subfolder that holds no protected file is an ordinary folder |
-| `cd ~/.claude/projects/p && echo x > ../../settings.json`, `… && cd .. && rm settings.json` | refused: a `..` or a second `cd` from inside a configuration folder counts as the folder root |
+| a write tool on `~/.claude/settings.json`, `~/.ai-kit/aikit.toml`, the kit folder's `.git/config` | refused |
+| `ai-kit sync`, `python3 -m ai_kit uninstall --yes`, the kit's `bootstrap.sh` | refused |
+| `cat`, `grep … \| sed …`, `cd ~/.claude && ls`, `git commit -m "…"` | runs |
+| `echo x > ~/.claude/settings.json`, `rm ~/.ai-kit/hooks/…`, `Remove-Item …` | runs, then reported after the call |
 
-A call the CLI starts inside a configuration folder (one that keeps the folder of a previous `cd`) is judged the same way.
-
-The message of a `git commit` (`-m`, `--message`) is text, not a path: `git commit -m "explain .ai-kit/protected-paths"` runs. A message that holds `$(` or a backtick is read as a command, since it runs.
-
-**Your repo's own protected paths.** List glob patterns, one per line, `#` for comments, in `<repo>/.ai-kit/protected-paths`:
-
-```text
-target/**
-models/legacy/**
-*.lock
-```
-
-The file is read in the starting folder and each parent up to the repo root. Matching ignores case. The patterns apply to the agent's write tools and to its shell commands; your own terminal is never concerned.
-
-In a shell command, the guardrail refuses a command that names a protected file and changes or deletes it:
-
-| The agent's command | Result |
-| --- | --- |
-| `echo x > poetry.lock`, `… \| tee poetry.lock` | refused: a redirection to the file |
-| `sed -i … poetry.lock`, `perl -pi … poetry.lock`, `truncate`, `touch`, `chmod` | refused |
-| `rm`, `rmdir`, `unlink`, `mv` (either side), `cp` or `ln` to the file | refused |
-| `git checkout -- poetry.lock`, `git restore`, `git rm`, `git mv`, `git clean target` | refused: they replace or delete the file |
-| `Remove-Item`, `Set-Content`, `Out-File`, `del`, `move`… | refused |
-| `cat`, `grep`, `ls`, `diff`, `git diff`, `git add`, `cp poetry.lock elsewhere` | runs: the file is read, not changed |
-| `poetry lock`, `npm install`, `dbt run`, `terraform init` | runs: the tool that generates the file does not name it |
-
-So a pattern protects a file against a direct change, not against the tool whose job is to write it. The programs read are a closed list; `sudo`, `xargs`, `sh -c` in front of them change nothing.
-
-**Kit commands the agent may not run.** `ai-kit init`, `sync`, `rollback`, `uninstall`, `team use`, `doctor --live`, `friction --publish`, wherever their options are written, also through `python -m ai_kit` or a launcher (`Installer.cmd`, `bootstrap.sh`, `bootstrap.ps1`, `launcher.py`), however it is run. A launcher of a kit folder with no action installs: it is refused too. The agent tells you the command to run in a terminal. Reading commands (`status`, `doctor`, `usage`, `friction --list`) stay allowed, and so do the kit's own scripts in `~/.ai-kit/bin/`: `friction.py` for `/friction`, `weakened_tests.py` for `/review` (read-only), as long as nothing else in the command names a protected path.
+**Removed in 4.8.0: a repo's own protected paths.** `<repo>/.ai-kit/protected-paths` is no longer read: git already shows and restores a change to a repo's files. Its CLI settings files stay protected from the write tools.
 
 The refusal reaches the agent as a tool error starting with `Blocked by the kit:`.
 
@@ -166,9 +134,9 @@ The generated `README.txt` says where each file goes, per system and per CLI. Wi
 ## Limits
 
 - A rule on the text of a command is defeated by an alias, a wrapper script or a program the hook does not know.
-- A repo's protected paths in shell: only a file the command names is seen. A path kept in a variable (`f=poetry.lock; rm $f`), a wildcard (`rm *.lock`), a `cd target` followed by `rm a.sql`, a program outside the list or a script that writes the file all run.
-- After a `cd` into an ordinary subfolder of a configuration folder (one that holds no protected file), a symbolic link placed there towards a protected file is not seen.
-- The shell guardrails do not follow a `cd`: a folder or a branch is read from where the CLI started the command (`git -C` and `terraform -chdir` are read). `$(…)` inside single quotes is read as if it ran.
+- The kit's own commands are recognised in the text of a command: a commit message that quotes one (`git commit -m "run ai-kit sync"`) is refused too; reword it.
+- `protected-paths` does not prevent a shell command from changing the configuration: the change is reported after the call, not refused. Until it is restored, the next actions run with it. A classifier model was measured once as an alternative: [research note](research/classifier-model-for-guardrails.md).
+- The other shell guardrails do not follow a `cd`: a folder or a branch is read from where the CLI started the command (`git -C` and `terraform -chdir` are read). `$(…)` inside single quotes is read as if it ran.
 - A path or a command built at run time (a variable, `base64`, `eval`, a script written then run) is not seen: the hook reads the text it is given, before it runs.
 - A tool renamed or added by a CLI release is matched only once the kit's matchers name it; `doctor` probes each guardrail, the weekly drift check reads each CLI's help.
 - A guardrail calls a script and a Python under your home folder; a hook that cannot start blocks nothing.

@@ -10,7 +10,7 @@ says when a decision was superseded. A change that reverses a decision comes wit
 | [0003](0003-no-authentication-no-model-in-the-kit.md) | the kit never handles authentication or model choice | accepted |
 | [0004](0004-no-model-call-and-no-network-in-the-installer.md) | no model call in the engine or the tests; network only to read Git sources | accepted |
 | [0005](0005-one-neutral-context-folder-rule-layers-restored.md) | one neutral context folder; rule layers restored, the personal layer never rewritten | accepted |
-| [0006](0006-the-agent-cannot-change-its-own-configuration.md) | a guardrail keeps the agent from changing its own configuration by mistake | accepted |
+| [0006](0006-the-agent-cannot-change-its-own-configuration.md) | a guardrail keeps the agent from changing its own configuration by mistake | superseded by 0030 |
 | [0007](0007-frictions-are-local-lines-written-by-one-script.md) | a friction is one local line written by one script | accepted |
 | [0008](0008-organization-file-and-three-source-merge.md) | an organization file merged with personal settings | superseded by 0015 |
 | [0009](0009-generic-public-repository-in-english.md) | a generic, public repository, in English | accepted |
@@ -34,3 +34,4 @@ says when a decision was superseded. A change that reverses a decision comes wit
 | [0027](0027-a-deterministic-signal-feeds-the-review-it-never-blocks.md) | a deterministic signal feeds the review; it never blocks | accepted |
 | [0028](0028-test-first-where-a-person-looks-at-the-test.md) | test-first where a person looks at the test | accepted |
 | [0029](0029-risk-based-security-review-by-independent-reviewers.md) | a change at risk gets a security review by independent reviewers | accepted |
+| [0030](0030-check-the-result-not-the-command.md) | check the result, not the command: protected-paths reads no shell command but the kit's own | accepted |

