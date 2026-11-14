@@ -314,15 +314,13 @@ def mention(text, names):
     return None
 
 def touches_config_folder(program, words, names):
-    """cd into a configuration folder, a wildcard inside one, the folder kept in a variable, or a program aimed at the folder
-    itself that does not only read (ln -s ~/.ai-kit x, rm -rf ~/.claude, find ~/.ai-kit -delete, cp x ~/.ai-kit/): the file
-    it writes is not named, or what follows cannot be judged, so it counts as a write."""
+    """A wildcard inside a configuration folder, the folder kept in a variable, or a program aimed at the folder itself that
+    does not only read (ln -s ~/.ai-kit x, rm -rf ~/.claude, find ~/.ai-kit -delete, cp x ~/.ai-kit/): the file it writes is
+    not named, so it counts as a write. A cd into one is judged with what follows it (cd_scope)."""
     def is_folder(word):
         return any(word.rstrip('/').endswith('/' + f) or word.rstrip('/') == f for f in CONFIG_FOLDERS)
-    if program in CHANGES_DIRECTORY and words:
-        last = words[-1].rstrip('/')
-        if is_folder(last) or any('/' + folder + '/' in last + '/' for folder in CONFIG_FOLDERS):
-            return True
+    if program in CHANGES_DIRECTORY:
+        return False
     if program == '=':
         # p=~/.ai-kit, c=$HOME/.ai-kit/context: a configuration folder, or a folder above a protected file.
         value = '/' + words[0].split('=', 1)[1].rstrip('/')
@@ -331,6 +329,40 @@ def touches_config_folder(program, words, names):
     if any(is_folder(w) for w in words) and not only_reads(program, words, is_folder):
         return True
     return any(re.search(r'[*?\[]', w) and any('/' + f + '/' in '/' + w for f in CONFIG_FOLDERS) for w in words)
+
+def cd_scope(target, names):
+    """What a cd to this (normalised) target allows afterwards: None outside the configuration folders; 'ordinary' for a
+    subfolder of one that holds no protected name (~/.claude/projects/p/memory, where the agent keeps its notes); else
+    'reads', the root of a configuration folder or a folder that holds a protected file: only readers may follow, since
+    the relative names they use cannot be judged (4.6.2)."""
+    value = '/' + target.strip('/') + '/'
+    start = max(value.rfind('/' + f + '/') for f in CONFIG_FOLDERS)  # the innermost: .ai-kit inside .claude is judged as .ai-kit
+    if start < 0:
+        return None
+    tail = value[start + 1:].rstrip('/')
+    if tail in CONFIG_FOLDERS or re.search(r'[*?\[$]', tail) or DOT_DOT.search(tail):
+        return 'reads'
+    if any(name.startswith(tail + '/') or tail.startswith(name.rstrip('/')) for name in names):
+        return 'reads'
+    return 'ordinary'
+
+def without_commit_messages(command):
+    """The command with the message of each git commit (-m, --message) replaced by a neutral word: a message is text, not a
+    path, and its ; or && must not split the command. A message holding $( or a backtick is kept: a substitution runs inside
+    double quotes; so is a quote that does not close (4.6.2)."""
+    out, position = [], 0
+    for match in COMMIT_MESSAGE.finditer(command):
+        value = match.group(2)
+        segment = re.split(r'[;\n&|]', ''.join(out) + command[position:match.start()])[-1]
+        if not COMMITS.search(segment.lower()) or '$(' in value or '`' in value:
+            continue
+        out.append(command[position:match.start(2)] + 'message')
+        position = match.end(2)
+    return ''.join(out) + command[position:]
+
+COMMIT_MESSAGE = re.compile(r'''(?<=\s)(-[a-z]*m|--message=?)\s*("(?:[^"\\]|\\.)*"|'[^']*'|[^\s"';&|<>`$()]+)''')
+COMMITS = re.compile(r'\bgit(\.exe)?\b.*\bcommit\b')
+DOT_DOT = re.compile(r'(^|/)\.\.(/|$)')
 
 # --- The kit folder and git's configuration (0.51.1) -------------------------------------------------------------------
 # The kit folder an installation came from (state.json kit_dir) is the source of the next update and of the session hook's
@@ -477,6 +509,7 @@ def writes_kit_variables(text, programs, command):
 def shell_config_write(command, cwd=None):
     """Reason for refusal when a shell command may change the configuration of the kit or of a CLI, or a repo's."""
     names = protected_names()
+    command = without_commit_messages(command)
     if len(command) > MAX_COMMAND:
         whole = normalised(command)
         name = mention(whole, names) or next((f for f in CONFIG_FOLDERS if f in whole), None)
@@ -484,10 +517,30 @@ def shell_config_write(command, cwd=None):
     reason = kit_shell_reason(command, cwd or os.getcwd()) or kit_command_reason(command, cwd or os.getcwd())
     if reason:
         return reason
+    # Inside a configuration folder (a cd earlier in the command, or the folder the CLI starts the call in, kept from a
+    # previous cd): 'ordinary' or 'reads' (cd_scope), and that folder.
+    start = normalised(cwd or '')
+    scope = cd_scope(start, names) if start else None
+    folder = next((f for f in CONFIG_FOLDERS if '/' + f in start), None)
     for pipeline in shell_segments(command):
         text = normalised(pipeline)
         programs = command_words(text)
+        runs = [p for p, _ in programs if p not in CHANGES_DIRECTORY]
+        climbs = any(DOT_DOT.search(w) for _, words in programs for w in words)
+        if runs and (scope == 'reads' or (scope == 'ordinary' and climbs)):
+            writes = [m.group(1) for m in REDIRECTION.finditer(text) if m.group(1) != '/dev/null']
+            if writes or not all(only_reads(p, w, lambda t: True) for p, w in programs if p not in CHANGES_DIRECTORY):
+                return BLOCKED.format(folder)
         for program, words in programs:
+            if program in CHANGES_DIRECTORY:
+                # Every word, not only the last: Set-Location $HOME\.claude -PassThru. The most restrictive wins.
+                scopes = [s for s in (cd_scope(w, names) for w in words if not w.startswith('-')) if s]
+                found = 'reads' if 'reads' in scopes else (scopes[0] if scopes else None)
+                if scope and (found != 'ordinary' or climbs):
+                    found = 'reads'  # cd .., cd -, cd "$OLDPWD" from inside a configuration folder: its target is not known
+                if found:
+                    scope = 'reads' if 'reads' in (scope, found) else found
+                    folder = next((f for f in CONFIG_FOLDERS for w in words if '/' + f in '/' + w), folder)
             if touches_config_folder(program, words, names):
                 return BLOCKED.format(next(f for f in CONFIG_FOLDERS if f in text))
         if '.env' in text and writes_kit_variables(text, programs, command):

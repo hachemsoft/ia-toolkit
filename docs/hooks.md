@@ -49,7 +49,20 @@ Always blocks an agent's write to:
 
 `USER.md` and `~/.ai-kit/learning/` stay writable.
 
-A shell command that names a protected file, or a configuration folder itself (`~/.ai-kit`, `~/.claude`…), is allowed only when every program it runs only reads (`cat`, `grep`, `ls`…): `find ~/.ai-kit -delete` is refused. A redirection to a protected file, a `cd` into a configuration folder, or that folder kept in a variable (`p=~/.ai-kit`), is refused.
+A shell command that names a protected file, or a configuration folder itself (`~/.ai-kit`, `~/.claude`…), is allowed only when every program it runs only reads (`cat`, `grep`, `ls`…): `find ~/.ai-kit -delete` is refused. A redirection to a protected file, or a configuration folder kept in a variable (`p=~/.ai-kit`), is refused.
+
+A `cd` into a configuration folder is judged with what follows it:
+
+| The agent's command | Result |
+| --- | --- |
+| `cd ~/.claude`, `cd ~/.claude && ls`, `cd ~/.ai-kit && cat aikit.toml` | runs: the root of a configuration folder, or a folder that holds a protected file, followed only by readers and no redirection |
+| `cd ~/.claude && rm settings.json`, `cd ~/.ai-kit && echo x > aikit.toml`, `cd ~/.claude && cp x settings.json` | refused: after such a `cd`, any name may be a protected file |
+| `cd ~/.claude/projects/p/memory && echo x >> MEMORY.md` | runs: a subfolder that holds no protected file is an ordinary folder |
+| `cd ~/.claude/projects/p && echo x > ../../settings.json`, `… && cd .. && rm settings.json` | refused: a `..` or a second `cd` from inside a configuration folder counts as the folder root |
+
+A call the CLI starts inside a configuration folder (one that keeps the folder of a previous `cd`) is judged the same way.
+
+The message of a `git commit` (`-m`, `--message`) is text, not a path: `git commit -m "explain .ai-kit/protected-paths"` runs. A message that holds `$(` or a backtick is read as a command, since it runs.
 
 **Your repo's own protected paths.** List glob patterns, one per line, `#` for comments, in `<repo>/.ai-kit/protected-paths`:
 
@@ -154,6 +167,7 @@ The generated `README.txt` says where each file goes, per system and per CLI. Wi
 
 - A rule on the text of a command is defeated by an alias, a wrapper script or a program the hook does not know.
 - A repo's protected paths in shell: only a file the command names is seen. A path kept in a variable (`f=poetry.lock; rm $f`), a wildcard (`rm *.lock`), a `cd target` followed by `rm a.sql`, a program outside the list or a script that writes the file all run.
+- After a `cd` into an ordinary subfolder of a configuration folder (one that holds no protected file), a symbolic link placed there towards a protected file is not seen.
 - The shell guardrails do not follow a `cd`: a folder or a branch is read from where the CLI started the command (`git -C` and `terraform -chdir` are read). `$(…)` inside single quotes is read as if it ran.
 - A path or a command built at run time (a variable, `base64`, `eval`, a script written then run) is not seen: the hook reads the text it is given, before it runs.
 - A tool renamed or added by a CLI release is matched only once the kit's matchers name it; `doctor` probes each guardrail, the weekly drift check reads each CLI's help.
