@@ -19,6 +19,7 @@ import sys
 import tempfile
 
 MARKER = 'integrity.json'
+SELF = '.ai-kit/hooks/integrity.py'  # the check itself, recorded by every installation
 RESTORE = 'ai-kit sync --offline'
 SAFE_NAME = re.compile(r'[A-Za-z0-9._/@-]{1,160}')  # a name shown in a message: nothing else reaches the agent or the person
 MAX_BYTES = 32 * 1024 * 1024  # a file the kit installed is far smaller: a bigger one counts as changed, unread
@@ -134,8 +135,9 @@ def kit_git_digests(folder):
 
 
 def owned_changes(home, state, stamps, full):
-    """(changes as (name, current digest), fresh stamps) for the files the kit owns; full ignores the stamps (session start)."""
-    changes, fresh = [], {}
+    """(changes as (name, current digest), failures as (name, reason), fresh stamps) for the files the kit owns; full
+    ignores the stamps (session start). A file that cannot be read is a check that failed, not a change."""
+    changes, failed, fresh = [], [], {}
     for rel, expected in sorted((state.get('files') or {}).items()):
         if not safe_rel(rel):
             continue
@@ -147,10 +149,13 @@ def owned_changes(home, state, stamps, full):
         known = stamps.get(rel)
         reuse = not full and isinstance(known, list) and len(known) == 5 and known[:4] == now
         current = known[4] if reuse else file_digest(path)
+        if current is None:
+            failed.append((rel, 'unreadable'))
+            continue
         fresh[rel] = now + [current]
         if current != expected:
             changes.append((rel, current))
-    return changes, fresh
+    return changes, failed, fresh
 
 
 def git_changes(state):
@@ -188,22 +193,33 @@ def adapters():
             sys.path.pop(0)
 
 
+def pairs(items):
+    """(name, value) pairs kept in the marker as lists."""
+    return [tuple(c) for c in items if isinstance(c, list) and len(c) == 2]
+
+
 def shared_changes(home, state, marker, full):
-    """(changes as (name, current digest), stamps): the kit's part of the files it shares with a CLI, judged again when one
-    of those files moved since the last check, and always at session start."""
+    """(changes as (name, current digest), failures as (name, reason), stamps): the kit's part of the files it shares with
+    a CLI, judged again when one of those files moved since the last check, and always at session start. When the adapters
+    cannot load or their check fails, the files to judge are a check that failed, never taken for unchanged."""
     targets = state.get('targets') if isinstance(state.get('targets'), list) else []
     watched = [r for r in SHARED if r in (state.get('blocks') or {}) or (r == '.gemini/settings.json' and 'gemini' in targets)]
     now = {rel: stamp(os.path.join(home, rel)) for rel in watched}
-    cached = marker.get('shared_changed')
-    if not full and now == marker.get('shared_stamps') and isinstance(cached, list):
-        return [tuple(c) for c in cached if isinstance(c, list) and len(c) == 2], now
-    changed = set()
-    for module in adapters():
+    cached, cached_failed = marker.get('shared_changed'), marker.get('shared_failed', [])
+    if not full and now == marker.get('shared_stamps') and isinstance(cached, list) and isinstance(cached_failed, list):
+        return pairs(cached), pairs(cached_failed), now
+    if not watched:
+        return [], [], now
+    modules = adapters()
+    if not modules:
+        return [], [(rel, 'kit adapters not loadable') for rel in watched], now
+    changed, failed = set(), []
+    for module in modules:
         try:
             changed.update(r for r in module.changed_blocks(Path(home), state) if r in watched)
         except Exception:
-            continue
-    return [(rel, file_digest(os.path.join(home, rel))) for rel in sorted(changed)], now
+            failed = [(rel, 'check failed') for rel in watched]
+    return [(rel, file_digest(os.path.join(home, rel))) for rel in sorted(changed)], failed, now
 
 
 def shown(names):
@@ -216,16 +232,33 @@ def shown(names):
 
 def check(home, state, marker, full=False):
     """(text for the agent, text for the person, marker updated): texts only for a set of changes not announced yet."""
-    owned, fresh = owned_changes(home, state, marker.get('stamps') or {}, full)
-    shared, shared_now = shared_changes(home, state, marker, full)
+    owned, owned_failed, fresh = owned_changes(home, state, marker.get('stamps') or {}, full)
+    shared, shared_failed, shared_now = shared_changes(home, state, marker, full)
     changes = sorted(set(owned) | set(shared) | set(git_changes(state)))
-    marker = {**marker, 'stamps': fresh, 'shared_stamps': shared_now, 'shared_changed': [list(c) for c in shared]}
-    key = hashlib.sha256(json.dumps(changes).encode('utf-8')).hexdigest() if changes else ''
+    failed = sorted(set(owned_failed) | set(shared_failed))
+    marker = {**marker, 'stamps': fresh, 'shared_stamps': shared_now, 'shared_changed': [list(c) for c in shared],
+              'shared_failed': [list(c) for c in shared_failed]}
+    return announce(marker, changes, failed)
+
+
+def announce(marker, changes, failed):
+    """Healthy (nothing), drift (changes) or check failed (failures), said once per set: (agent, person, marker)."""
+    key = hashlib.sha256(json.dumps([changes, failed]).encode('utf-8')).hexdigest() if changes or failed else ''
     announced, marker['announced'] = marker.get('announced'), key
-    if not changes or key == announced:
+    if not key or key == announced:
         return None, None, marker
-    listed = shown([name for name, _ in changes])
-    return message(listed), person_message(listed), marker
+    agent, person = [], []
+    if changes:
+        listed = shown([name for name, _ in changes])
+        agent.append(message(listed))
+        person.append(person_message(listed))
+    if failed:
+        listed = shown([name for name, _ in failed])
+        reasons = sorted({reason for _, reason in failed})
+        agent.append('AI Kit integrity: could not check ' + listed + ' (' + ', '.join(reasons) + '). Say it to the person; they run '
+                     'ai-kit doctor, then, if it reports a problem: ' + RESTORE)
+        person.append('AI Kit: could not check ' + listed + ' (' + ', '.join(reasons) + '). Run ai-kit doctor; to restore: ' + RESTORE)
+    return ' '.join(agent), ' '.join(person), marker
 
 
 def message(listed):
@@ -260,14 +293,19 @@ def checked(home, full=False):
     state, problem = read_state(os.path.join(kit, 'state.json'))
     path = os.path.join(kit, MARKER)
     before = read_marker(path)
+    installed = os.path.dirname(os.path.realpath(__file__)) == os.path.realpath(os.path.join(kit, 'hooks'))
+    if state is None and installed and not problem:
+        problem = 'missing'  # this copy was installed by the kit: its state cannot be gone
+    if state is not None and installed and SELF not in (state.get('files') or {}):
+        # An installation records the check itself; an interrupted update or a state cut short does not.
+        problem = 'incomplete: no installed files' if not state.get('files') else 'incomplete: the check is not recorded'
     if problem:
-        key = 'state:' + problem
-        if before.get('announced') == key:
-            return None, None
-        write_marker(path, {**before, 'announced': key})
-        return message('~/.ai-kit/state.json (' + problem + ')'), person_message('~/.ai-kit/state.json (' + problem + ')')
+        agent, person, after = announce(dict(before), [], [('.ai-kit/state.json', problem)])
+        if after != before:
+            write_marker(path, after)
+        return agent, person
     if state is None:
-        return None, None
+        return None, None  # never installed here: nothing to check
     agent, person, after = check(home, state, before, full)
     if after != before:
         try:

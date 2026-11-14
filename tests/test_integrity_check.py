@@ -88,6 +88,8 @@ class FoundInReview(Installed):
     """4.8.0 review (doubter and security reviewer)."""
     post = {'hook_event_name': 'PostToolUse', 'tool_name': 'Bash'}
 
+    @unittest.skipIf(os.name == 'nt', 'Windows gives no change time (st_ctime is the creation time): a same-size edit with a '
+                     'restored modification time is a documented limit there (docs/hooks.md, Limits); decided 2026-11-14')
     def test_a_same_size_edit_with_its_old_time_is_reported(self):
         self.assertEqual(self.run_hook('integrity.py', self.post), {})
         before = os.stat(self.hook)

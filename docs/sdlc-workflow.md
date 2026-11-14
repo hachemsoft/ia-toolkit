@@ -237,6 +237,7 @@ flowchart TB
 | 4.7.0 | a change at risk gets a security review by independent reviewers ([ADR 0029](adr/0029-risk-based-security-review-by-independent-reviewers.md)) |
 | 4.7.1 | the protected-paths guardrail stops refusing a `cd` into a configuration folder followed by reads and a commit message that cites a protected file; agy keeps its own permission prompts |
 | 4.8.0 | the kit checks what changed instead of guessing what a command will do: a write tool on its configuration is refused, any other command runs, and a change is reported right after it |
+| 4.8.1 | the integrity check says when it could not check, and reports a missing or incomplete installation state |
 
 Details in the [changelog](../CHANGELOG.md).
 
