@@ -33,7 +33,14 @@
       "matcher": "write_file|replace|run_shell_command",
       "script": "protected-paths.py",
       "default": true,
-      "description": "Always blocks agent writes to the configuration of the kit and of the CLIs (also through simple shell commands); also blocks writes under the patterns listed in <repo>/.ai-kit/protected-paths. On by default."
+      "description": "Always blocks a write tool aimed at the configuration of the kit or of a CLI, and the kit's own commands that change the installation; reads no other shell command (ADR 0030). On by default."
+    },
+    "integrity": {
+      "event": "AfterTool",
+      "matcher": "",
+      "script": "integrity.py",
+      "default": true,
+      "description": "After each tool call, reports once a change to what the kit installed (its files, its part of the CLI settings, the kit folder's git configuration), to the agent and to the person, with the command that restores it. agy: at session start only, through whats-new. On by default."
     },
     "whats-new": {
       "event": "SessionStart",

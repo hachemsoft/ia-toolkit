@@ -63,12 +63,13 @@ def codex_context_block(kit_text, practice_texts, user_text, renamed=None):
     return '\n'.join(lines)
 
 def codex_config_block(agent_entries, hook_commands, mcp_servers):
-    """hook_commands: (event, command) pairs; a guardrail (PreToolUse) matches every tool, whats-new (SessionStart) every start."""
+    """hook_commands: (event, command) pairs; a guardrail (PreToolUse) and the integrity check (PostToolUse) match every tool,
+    whats-new (SessionStart) every start."""
     lines = [CODEX_TOML[0]]
     for name, (description, config_file) in agent_entries.items():
         lines += ['', '[agents.'+name+']', 'description = '+toml_value(description), 'config_file = '+toml_value(config_file)]
     for event, command in hook_commands:
-        lines += ['', '[[hooks.'+event+']]'] + (['matcher = ".*"'] if event == 'PreToolUse' else []) + ['', '[[hooks.'+event+'.hooks]]', 'type = "command"', 'command = '+toml_value(command), 'timeout = 20']
+        lines += ['', '[[hooks.'+event+']]'] + (['matcher = ".*"'] if event in ('PreToolUse', 'PostToolUse') else []) + ['', '[[hooks.'+event+'.hooks]]', 'type = "command"', 'command = '+toml_value(command), 'timeout = 20']
     for name, server in mcp_servers.items():
         lines += ['', '[mcp_servers.'+name+']']
         for key in ('command', 'args', 'env', 'cwd'):
@@ -205,19 +206,30 @@ def finalize(p: Plan, active: bool = True) -> None:
 def summary(p: Plan) -> Optional[str]:
     return 'Codex: skills in ~/.codex/skills, kit blocks in ~/.codex/AGENTS.md and ~/.codex/config.toml; commands are called $intent, $build…'+(' On first launch, Codex asks you to approve the kit guardrails: answer "Trust", otherwise they do not run.' if p.enabled_hooks else '')
 
+def changed_blocks(home: Path, state: dict) -> list:
+    """The shared files where the kit's block no longer matches state.json (integrity check, doctor)."""
+    if NAME not in state.get('targets', [NAME]):
+        return []
+    blocks, changed = state.get('blocks', {}), []
+    for rel, markers in ((CODEX_DIR+'/AGENTS.md', CODEX_MD), (CODEX_DIR+'/config.toml', CODEX_TOML)):
+        if rel not in blocks:
+            continue
+        path = home/rel
+        try:
+            _, block, _, written = read_block(path.read_text(encoding='utf-8') if path.exists() else '', markers, rel)
+        except (KitError, OSError, UnicodeDecodeError):
+            block = written = None
+        if block is None or digest(written.encode('utf-8')) != blocks[rel]:
+            changed.append(rel)
+    return changed
+
 def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     blocks = state.get('blocks', {})
     if not blocks:
         return
-    for rel, markers in ((CODEX_DIR+'/AGENTS.md', CODEX_MD), (CODEX_DIR+'/config.toml', CODEX_TOML)):
-        path = home/rel
-        text = path.read_text(encoding='utf-8') if path.exists() else ''
-        try:
-            _, block, _, written = read_block(text, markers, rel)
-        except KitError as exc:
-            status(False, str(exc))
-            continue
-        status(block is not None and digest(written.encode('utf-8')) == blocks.get(rel), 'Kit block intact in ~/'+rel)
+    changed = changed_blocks(home, state)
+    for rel in (CODEX_DIR+'/AGENTS.md', CODEX_DIR+'/config.toml'):
+        status(rel not in changed, 'Kit block intact in ~/'+rel)
     agents_md = home/CODEX_DIR/'AGENTS.md'
     user_file = home/'.ai-kit/context'/USER_CONTEXT
     if agents_md.exists() and user_file.exists():

@@ -141,21 +141,21 @@ class HookInstallTests(unittest.TestCase):
   cfg.write_text(cfg.read_text(encoding='utf-8').replace('pre_tool_use','session_start'),encoding='utf-8');self.assertIn('approval not verifiable automatically',self.doctor_text())
  def test_defaults_protect_configuration_only(self):
   # protected-paths is on by default (configuration of the kit and CLIs); dbt-prod-guard stays opt-in.
-  self.run_kit();self.assertEqual(sorted(read_json(self.home/'.ai-kit/state.json')['hooks']),['protected-paths','whats-new'])  # whats-new: on by default too (0.47)
+  self.run_kit();self.assertEqual(sorted(read_json(self.home/'.ai-kit/state.json')['hooks']),['integrity','protected-paths','whats-new'])  # whats-new: on by default too (0.47); integrity (4.8.0)
   self.assertEqual([g['hooks'][0]['name'] for g in self.settings()['hooks']['BeforeTool']],['ai-kit-protected-paths'])
-  self.overrides({'hooks':{'protected-paths':False,'whats-new':False}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertEqual(read_json(self.home/'.ai-kit/state.json')['hooks'],{})
+  self.overrides({'hooks':{'protected-paths':False,'whats-new':False,'integrity':False}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertEqual(read_json(self.home/'.ai-kit/state.json')['hooks'],{})
  def test_enable_then_disable(self):
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':True}});self.run_kit()
   groups=self.settings()['hooks']['BeforeTool'];self.assertEqual(len(groups),2);names={g['hooks'][0]['name'] for g in groups};self.assertEqual(names,{'ai-kit-shell-guard','ai-kit-protected-paths'})
   self.assertEqual({g['hooks'][0]['name']:g['matcher'] for g in groups}['ai-kit-shell-guard'],'run_shell_command');groups=[g for g in groups if g['hooks'][0]['name']=='ai-kit-shell-guard'];self.assertTrue(groups[0]['hooks'][0]['command'].endswith(' dbt-prod-guard'));self.assertTrue((self.home/'.ai-kit/hooks/shell-guard.py').is_file());self.assertIn(str(self.home.resolve()),groups[0]['hooks'][0]['command'])  # Windows: the temporary folder has a short name (RUNNER~1)
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':False}});self.run_kit()
   groups=self.settings()['hooks']['BeforeTool'];self.assertEqual(len(groups),1);self.assertFalse((self.home/'.ai-kit/hooks/protected-paths.py').exists())
-  self.overrides({'hooks':{'protected-paths':False,'whats-new':False}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertFalse((self.home/'.gemini/hooks/ai-kit').exists())
+  self.overrides({'hooks':{'protected-paths':False,'whats-new':False,'integrity':False}});self.run_kit();self.assertNotIn('hooks',self.settings());self.assertFalse((self.home/'.gemini/hooks/ai-kit').exists())
  def test_user_hooks_preserved(self):
   s=self.home/'.gemini/settings.json';s.parent.mkdir(parents=True);s.write_text(json.dumps({'hooks':{'BeforeTool':[{'matcher':'*','hooks':[{'name':'mine','type':'command','command':'echo'}]}],'SessionStart':[{'hooks':[{'type':'command','command':'x'}]}]}}),encoding='utf-8')
   self.overrides({'hooks':{'dbt-prod-guard':True,'protected-paths':False}});self.run_kit();h=self.settings()['hooks'];self.assertEqual(h['BeforeTool'][0]['hooks'][0]['name'],'mine');self.assertEqual(len(h['BeforeTool']),2)
   self.assertEqual(h['SessionStart'][0]['hooks'][0]['command'],'x');self.assertEqual(len(h['SessionStart']),2);self.assertEqual(h['SessionStart'][1]['hooks'][0]['name'],'ai-kit-whats-new');self.assertEqual(h['SessionStart'][1]['hooks'][0]['timeout'],20000)
-  self.overrides({'hooks':{'protected-paths':False,'whats-new':False}});self.run_kit();h=self.settings()['hooks'];self.assertEqual(len(h['BeforeTool']),1);self.assertEqual(h['SessionStart'],[{'hooks':[{'type':'command','command':'x'}]}])
+  self.overrides({'hooks':{'protected-paths':False,'whats-new':False,'integrity':False}});self.run_kit();h=self.settings()['hooks'];self.assertEqual(len(h['BeforeTool']),1);self.assertEqual(h['SessionStart'],[{'hooks':[{'type':'command','command':'x'}]}])
  def test_modified_kit_hook_blocks(self):
   self.overrides({'hooks':{'dbt-prod-guard':True}});self.run_kit();s=self.home/'.gemini/settings.json';v=read_json(s);v['hooks']['BeforeTool'][0]['matcher']='.*';s.write_text(json.dumps(v),encoding='utf-8')
   with self.assertRaises(KitError):self.run_kit()

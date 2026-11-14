@@ -104,6 +104,8 @@ def install(p: Plan) -> None:
         command = {'type': 'command', 'command': hook_command(p.hooks_dir/spec['script'], names), 'timeout': 20}
         name = hook_name
         event = cli_event(spec['event'])
+        if event == 'PostToolUse':
+            continue  # agy: the integrity check runs at session start only, through whats-new (its post-tool output is not documented)
         if event == 'PreToolUse':
             # agy tool names: run_command for the shell, *write*/*replace*/*edit* for file writes.
             parts = spec['matcher'].split('|')

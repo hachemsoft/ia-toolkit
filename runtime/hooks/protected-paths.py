@@ -18,7 +18,7 @@ import time
 CONFIG_PATHS = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/sources/', '.ai-kit/state.json', '.ai-kit/hooks/', '.ai-kit/bin/', '.ai-kit/backups/',
                 '.ai-kit/runtime/', '.ai-kit/schemas/', '.ai-kit/context/00_', '.ai-kit/context/10_', '.ai-kit/context/20_',
                 # the news the session hook shows (their text enters the next session) and its marker
-                '.ai-kit/news/', '.ai-kit/news.json',
+                '.ai-kit/news/', '.ai-kit/news.json', '.ai-kit/integrity.json',
                 '.gemini/00_', '.gemini/10_', '.gemini/20_', '.gemini/settings.json', '.gemini/.env', '.gemini/config/plugins/ai-kit/',
                 '.gemini/antigravity-cli/settings.json',  # agy's permissions: the person's answers, never the agent's
                 '.codex/config.toml', '.codex/AGENTS.md', '.codex/ai-kit/', '.claude/settings.json', '.claude/CLAUDE.md', '.claude/agents/ai-kit-',

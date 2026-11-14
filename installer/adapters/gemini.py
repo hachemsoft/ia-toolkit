@@ -384,6 +384,19 @@ def installed_skills(home, state):
     names = sorted({rel.split('/')[2] for rel in state.get('files',{}) if rel.startswith('.gemini/skills/')})
     return [s for s in names if (home/'.gemini/skills'/s/'SKILL.md').is_file()]
 
+def changed_blocks(home: Path, state: dict) -> list:
+    """~/.gemini/settings.json when a hook the kit declared there is gone or changed (integrity check); the rest of the file
+    is the person's."""
+    if NAME not in state.get('targets', [NAME]) or not state.get('hooks'):
+        return []
+    try:
+        settings = read_json(home/'.gemini/settings.json')
+    except (KitError, OSError, ValueError):
+        return ['.gemini/settings.json']
+    hooks = settings.get('hooks') if isinstance(settings, dict) and isinstance(settings.get('hooks'), dict) else {}
+    present = all(isinstance(hooks.get(h['event']), list) and h['group'] in hooks[h['event']] for h in state['hooks'].values())
+    return [] if present else ['.gemini/settings.json']
+
 def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     """Gemini-specific checks: executable, active account, personal context, commands, shadowed skills, settings."""
     status(bool(shutil.which(COMMAND)),'Gemini CLI on the PATH. If missing: follow the approved IT procedure.')

@@ -301,8 +301,8 @@ class OneHookTests(Folder):
         self.assertEqual(sorted(agy), ['ai-kit-protected-paths', 'ai-kit-shell-guard', 'ai-kit-whats-new'])
         self.assertTrue(agy['ai-kit-shell-guard']['enabled'])
         state = read_json(self.home/'.ai-kit/state.json')
-        self.assertEqual(sorted(state['hooks']), sorted(ALL + ('protected-paths', 'whats-new')))  # the names a person writes
-        self.assertEqual(sorted(p.name for p in (self.home/'.ai-kit/hooks').iterdir()), ['protected-paths.py', 'shell-guard.py', 'whats-new.py'])
+        self.assertEqual(sorted(state['hooks']), sorted(ALL + ('integrity', 'protected-paths', 'whats-new')))  # the names a person writes
+        self.assertEqual(sorted(p.name for p in (self.home/'.ai-kit/hooks').iterdir()), ['integrity.py', 'protected-paths.py', 'shell-guard.py', 'whats-new.py'])
 
     def test_turning_one_off_keeps_the_others(self):
         self.install({name: True for name in ALL})

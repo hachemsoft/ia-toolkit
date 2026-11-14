@@ -150,12 +150,41 @@ def context_text(items):
     return text
 
 
-def answer(payload, text):
+def answer(payload, text, person=None):
     """The hook's answer in the form of the CLI that asked: agy (conversationId) injects a persisted system message; the
-    others read hookSpecificOutput.additionalContext."""
+    others read hookSpecificOutput.additionalContext, and show systemMessage to the person."""
     if payload.get('conversationId') is not None:
         return {'injectSteps': [{'systemMessage': {'systemMessage': text}}]}
-    return {'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': text}}
+    output = {'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': text}}
+    return {'systemMessage': person, **output} if person else output
+
+
+CHECK_MISSING = ('AI Kit integrity: the kit\'s integrity check (~/.ai-kit/hooks/integrity.py) is missing or was changed, so changes to '
+                 'what the kit installed are no longer reported. Say it to the person in the first line of your reply; they restore it '
+                 'with: ai-kit sync --offline')
+
+
+def integrity(home, state):
+    """(agent text, person text) of the integrity check next to this script, run in full at session start. When the kit
+    installed it and it is missing or changed, that is said instead: it cannot report on itself. (None, None) otherwise; a
+    session always starts."""
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'integrity.py')
+    expected = (state.get('files') or {}).get('.ai-kit/hooks/integrity.py') if isinstance(state.get('files'), dict) else None
+    try:
+        if expected:
+            import hashlib
+            with open(script, 'rb') as handle:
+                if hashlib.sha256(handle.read()).hexdigest() != expected:
+                    raise ValueError('changed')
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('ai_kit_integrity', script)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.checked(home, full=True)
+    except Exception:
+        if expected:
+            return CHECK_MISSING, 'AI Kit: the integrity check ~/.ai-kit/hooks/integrity.py is missing or changed. To restore: ai-kit sync --offline'
+        return None, None
 
 
 def write_marker(path, text):
@@ -209,8 +238,12 @@ def main():
                 if waiting:
                     items.append(str(waiting)+' friction(s) logged here wait for the person\'s approval before they reach the team\'s tracker: '
                                  'they send them from a terminal with ai-kit friction --publish. Never run it yourself.')
-                if items:
-                    output = answer(payload, context_text(items))
+                agent, person = integrity(os.path.expanduser('~'), state)
+                text = context_text(items) if items else ''
+                if agent:  # the integrity check comes first: it is about what watches the agent
+                    text = agent + ('\n\n' + text if text else '')
+                if text:
+                    output = answer(payload, text, person)
     except Exception:
         output = {}
     print(json.dumps(output, ensure_ascii=False))

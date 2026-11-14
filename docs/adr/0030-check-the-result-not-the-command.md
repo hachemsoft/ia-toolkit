@@ -11,8 +11,9 @@ kit folder's git configuration) without anyone seeing it. Outside those modes th
 `protected-paths` keeps refusing what it can judge exactly: a write tool aimed at that configuration (the CLI gives the
 path) and the kit's own commands that change the installation or bill a model call. It reads no other shell command. An
 integrity check runs after each tool call (Claude Code and Codex `PostToolUse`, Gemini CLI `AfterTool`) and at each
-session start: it compares the files the kit installed, and the kit folder's `.git/config` and hooks, with what
-`state.json` recorded (size and time first, a digest when they differ), and reports a change once, to the agent
+session start: it compares the files the kit installed, its part of the files it shares with a CLI, and the settings of the
+kit folder's `.git/config` that decide where an update comes from, with what `state.json` recorded (size, times and inode
+first, a digest when they moved, always a digest at session start), and reports a change once, to the agent
 (`additionalContext`) and to the person (`systemMessage`), with the command that restores it. On agy, whose post-tool
 output is not documented, the check runs at session start only. A repo's own protected paths (`.ai-kit/protected-paths`,
 4.6.0) are removed; a repo's CLI settings stay protected from the write tools. Supersedes ADR 0006.
@@ -29,7 +30,9 @@ its configuration by none of these means.
 
 **Consequences**: a shell command can change the configuration; it is reported after the call, not prevented, and the
 actions after it run with the change until it is restored (`ai-kit sync --offline`). An agent that removes the post-tool
-hook itself is seen at the next session start. The kit runs git without global configuration (repositories), so
+hook itself is seen at the next session start; `whats-new` checks that the integrity script is the one the kit installed.
+A switch that turns all of a CLI's hooks off, outside the kit's part of its settings, is not seen (limits in the guardrails
+page). The kit runs git without global configuration (repositories), so
 `~/.gitconfig` is protected from the write tools only. The guardrail and the check ship together. Tests that expected a
 shell refusal are listed in the 4.8.0 changelog.
 

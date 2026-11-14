@@ -273,27 +273,49 @@ def summary(p: Plan) -> Optional[str]:
             + '. Close open Claude Code sessions before an update (they rewrite ~/.claude.json), then start a new one.')
 
 
+def claude_md_block(home: Path):
+    """The kit's block in ~/.claude/CLAUDE.md, or None when it is missing or its markers are broken."""
+    path = home/CLAUDE_DIR/'CLAUDE.md'
+    try:
+        return split_block(path.read_text(encoding='utf-8') if path.exists() else '', CLAUDE_MD, '~/.claude/CLAUDE.md')[1]
+    except (KitError, OSError, UnicodeDecodeError):
+        return None
+
+def settings_groups_digest(home: Path):
+    """The digest of the kit's hook groups in ~/.claude/settings.json, as recorded in state.json blocks."""
+    try:
+        settings = read_json(home/CLAUDE_DIR/'settings.json') if (home/CLAUDE_DIR/'settings.json').is_file() else {}
+    except (KitError, OSError, ValueError):
+        return None
+    hooks = settings.get('hooks') if isinstance(settings, dict) and isinstance(settings.get('hooks'), dict) else {}
+    mine = kit_hook_groups(hooks, kit_events(read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})))
+    return digest(json_bytes(mine)) if mine else None
+
+def changed_blocks(home: Path, state: dict) -> list:
+    """The shared files where the part the kit wrote no longer matches state.json (integrity check, doctor); the rest of
+    each file is the person's or the CLI's and is not looked at."""
+    if NAME not in state.get('targets', [NAME]):
+        return []
+    blocks, changed = state.get('blocks', {}), []
+    block = claude_md_block(home)
+    if CLAUDE_DIR+'/CLAUDE.md' in blocks and (block is None or digest(block.encode('utf-8')) != blocks[CLAUDE_DIR+'/CLAUDE.md']):
+        changed.append(CLAUDE_DIR+'/CLAUDE.md')
+    if state.get('hooks') and CLAUDE_DIR+'/settings.json' in blocks and settings_groups_digest(home) != blocks[CLAUDE_DIR+'/settings.json']:
+        changed.append(CLAUDE_DIR+'/settings.json')
+    return changed
+
 def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     if not shutil.which(COMMAND):
         print('[Info] Claude Code set up by the kit but not on the PATH.')
-    blocks = state.get('blocks', {})
-    path = home/CLAUDE_DIR/'CLAUDE.md'
-    text = path.read_text(encoding='utf-8') if path.exists() else ''
-    try:
-        _, block, _ = split_block(text, CLAUDE_MD, '~/.claude/CLAUDE.md')
-    except KitError as exc:
-        status(False, str(exc))
-        block = None
-    status(block is not None and digest(block.encode('utf-8')) == blocks.get(CLAUDE_DIR+'/CLAUDE.md'), 'Kit block intact in ~/.claude/CLAUDE.md')
+    changed = changed_blocks(home, state)
+    block = claude_md_block(home)
+    status(CLAUDE_DIR+'/CLAUDE.md' not in changed, 'Kit block intact in ~/.claude/CLAUDE.md')
     for line in (block or '').splitlines():
         if line.startswith('@'):
             target = Path(os.path.expanduser(line[1:]))
             status(target.is_file(), 'File imported by ~/.claude/CLAUDE.md present: '+line[1:])
     if state.get('hooks'):
-        settings = read_json(home/CLAUDE_DIR/'settings.json') if (home/CLAUDE_DIR/'settings.json').is_file() else {}
-        hooks = settings.get('hooks') if isinstance(settings.get('hooks'), dict) else {}
-        mine = kit_hook_groups(hooks, kit_events(read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})))
-        status(bool(mine) and digest(json_bytes(mine)) == blocks.get(CLAUDE_DIR+'/settings.json'), 'Guardrails configured in ~/.claude/settings.json')
+        status(CLAUDE_DIR+'/settings.json' not in changed, 'Guardrails configured in ~/.claude/settings.json')
     kit_servers = [name for name in state.get('mcp', {})]
     if kit_servers:
         data = read_json(home/'.claude.json') if (home/'.claude.json').is_file() else {}

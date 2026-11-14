@@ -13,7 +13,8 @@ From `runtime/hooks/hooks.json`:
 | `git-guard` | before a shell tool | off | the git commands that discard work for good, and a forced push to a main branch |
 | `bq-cost-guard` | before a shell tool | off | `bq query` without a dry run or a cap on the bytes billed |
 | `infra-prod-guard` | before a shell tool | off | `terraform apply` or `destroy` and the `kubectl` commands that change a cluster, on production |
-| `whats-new` | at session start | on | nothing: not a guardrail, it tells the agent what is new |
+| `integrity` | after a tool call | on | nothing: it reports a change to what the kit installed, to the agent and to you |
+| `whats-new` | at session start | on | nothing: not a guardrail, it tells the agent what is new, and runs the integrity check |
 
 The scripts are copied to `~/.ai-kit/hooks/` and declared to each CLI in its own format ([CLI pages](cli/matrice.md)). They run with the kit's private Python, isolated with `-I`. Your own hooks are kept.
 
@@ -105,6 +106,18 @@ Blocks `terraform apply` and `terraform destroy` (also `tofu`, `terragrunt`), an
 
 Each refusal adds one line to `~/.ai-kit/refusals.jsonl`: the date and the guardrail's name, never the command. `ai-kit usage` prints the count over its window (`Guardrail refusals: 3 (protected-paths ×2, git-guard ×1)`) and puts it in its JSON report (`guardrail_refusals`). The file stays on your machine and keeps its last 1000 lines; `ai-kit doctor`'s probes are not counted. The count says how often a guardrail stepped in, not whether it was right: a refusal that was wrong is a friction (`/friction`, category guardrail).
 
+## `integrity`
+
+After each tool call (and at session start, through `whats-new`), compares what the kit installed with what `state.json` recorded:
+
+- the files the kit owns (`~/.ai-kit/hooks/`, the rule layers, skills, commands, agents…): size, times and inode first, a digest when one of them moved, and always a digest at session start; a missing file counts;
+- the kit's part of the files it shares with a CLI (its block in `CLAUDE.md`, `AGENTS.md`, `config.toml`, its hooks in the CLI's `settings.json`): your own changes to the rest of these files, and the permissions a CLI records there, say nothing;
+- in the kit folder's `.git/config`, the settings that decide where the next update comes from or what git runs (remote URLs, `insteadOf`, `fsmonitor`, `hooksPath`, `include`, `credential`); a tracking branch or a hook you install there says nothing (the kit runs git without hooks).
+
+A change is reported once (a new change is reported again), to the agent, told to say it to you first, and to you directly where the CLI shows a hook's message; with the command that restores it, `ai-kit sync --offline`. The hook never blocks and never replaces the tool's result. It writes only `~/.ai-kit/integrity.json`, and only when something moved; it sends nothing. Measured on one macOS workstation: about 24 ms per tool call for 237 files, half of it the start of Python; about 44 ms at session start. A `state.json` that cannot be read, or a kit folder that is gone, is reported too. `whats-new` checks that the integrity script itself is the one the kit installed, since it cannot report on itself.
+
+On a CLI whose post-tool output is not documented, the check runs at session start only; on a CLI that asks you to approve the kit's hooks, it runs once you approve them ([CLI matrix](cli/matrice.md)). An agent that removes this hook from its CLI's settings is seen at the next session start.
+
 ## `whats-new`
 
 At the start of a new or resumed session, tells the agent once, so that it says it in its first reply:
@@ -135,6 +148,7 @@ The generated `README.txt` says where each file goes, per system and per CLI. Wi
 
 - A rule on the text of a command is defeated by an alias, a wrapper script or a program the hook does not know.
 - The kit's own commands are recognised in the text of a command: a commit message that quotes one (`git commit -m "run ai-kit sync"`) is refused too; reword it.
+- The integrity check reports, it does not prevent. A command that rewrites the check's own marker with the right values silences the report after a tool call until the next session start, which recomputes everything; one that removes the hooks with a switch outside the kit's part of a CLI's settings (a setting that turns all hooks off) is not seen; the kit's MCP servers in a CLI's settings and `~/.ai-kit/lock.toml` are not checked; a tool call during an `ai-kit sync` can report a change that the sync is making. `ai-kit doctor` checks what the hook cannot.
 - `protected-paths` does not prevent a shell command from changing the configuration: the change is reported after the call, not refused. Until it is restored, the next actions run with it. A classifier model was measured once as an alternative: [research note](research/classifier-model-for-guardrails.md).
 - The other shell guardrails do not follow a `cd`: a folder or a branch is read from where the CLI started the command (`git -C` and `terraform -chdir` are read). `$(…)` inside single quotes is read as if it ran.
 - A path or a command built at run time (a variable, `base64`, `eval`, a script written then run) is not seen: the hook reads the text it is given, before it runs.

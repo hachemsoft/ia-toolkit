@@ -151,7 +151,7 @@ def quote_path(path):
 
 # Manifest events (Gemini CLI's names) and their name in the CLIs that use Claude Code's: a guardrail runs before a tool,
 # the whats-new hook at session start. A hook that is not a guardrail is never locked or managed by IT.
-CLI_EVENTS = {'BeforeTool': 'PreToolUse'}
+CLI_EVENTS = {'BeforeTool': 'PreToolUse', 'AfterTool': 'PostToolUse'}  # Gemini CLI keeps the neutral names
 
 def cli_event(event):
     return CLI_EVENTS.get(event, event)

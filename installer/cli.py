@@ -116,6 +116,18 @@ def selected_adapters(target, home, recorded=None):
     return [a for a in ADAPTERS if a.NAME in wanted]
 
 
+def kit_git_digests(folder):
+    """Digests of the settings of a kit clone's .git/config that decide where the next update comes from, computed by the
+    integrity hook itself so that both agree; None when the kit folder is not a git clone."""
+    if not folder:
+        return None
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('ai_kit_integrity', ROOT/'runtime'/'hooks'/'integrity.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.kit_git_digests(str(folder))
+
+
 def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, report=None, progress=None, command=None, managed_file=None, extra_writes=None):
     """Full prevalidation, neutral plan, adapters, backup, then atomic write file by file.
     target: a --target value or a list of CLI names; None keeps the CLIs recorded by the previous installation.
@@ -190,6 +202,7 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
     hooks_dir = kit/'hooks'  # scripts shared by all CLIs, like kit/bin/friction.py
     hook_manifest, enabled_hooks, turned_off = guardrails(overrides, hooks_dir, locked_guardrails(managed), [n for n, v in (managed or {}).get('hooks', {}).items() if v is False])
     kit_dir = kit_folder()
+    kit_git = kit_git_digests(kit_dir)  # the clone's .git/config and hooks, checked by the integrity hook (4.8.0)
     # MCP: resolved from the three sources apart, not from the merged overrides ("github": true must not erase the server).
     servers, _ = resolve_mcp(org_defaults.get('mcp', {}), selection.get('mcp', []), personal.get('mcp', {}), team_layer.get('mcp', {}))  # undefined: doctor
     enabled_mcp, mcp_notices = filter_mcp({'ai-kit-'+name: server for name, server in servers.items()}, managed)
@@ -244,7 +257,7 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
         tracker = None if publication(managed) == 'disabled' else {**tracker, 'publication': publication(managed)}
     if ((managed or {}).get('frictions') or {}).get('tracker') and tracker is None:
         p.notices.append('[Info] Frictions stay local: frictions.publication = "disabled" in your aikit.toml (your organization set a friction tracker).')
-    new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'team':team,'targets':[a.NAME for a in active],'practices':selection['practices'],'command':command_state,'frictions_retention':(managed or {}).get('frictions', {}).get('retention_days', 30),**({'mcp_approvals':mcp_approvals} if mcp_approvals else {}),**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'friction_tracker': tracker} if tracker else {}),
+    new_state = {'schema_version':STATE_SCHEMA,'version':(ROOT/'VERSION').read_text(encoding='utf-8').strip(),'files':files,'mcp':enabled_mcp,'hooks':enabled_hooks,'user':identity,'blocks':p.blocks,'team':team,'targets':[a.NAME for a in active],'practices':selection['practices'],'command':command_state,'frictions_retention':(managed or {}).get('frictions', {}).get('retention_days', 30),**({'mcp_approvals':mcp_approvals} if mcp_approvals else {}),**({'managed':{'digest':managed_digest(managed_file)}} if managed is not None else {}),**({'kit_dir': kit_dir} if kit_dir else {}),**({'kit_git': kit_git} if kit_git is not None else {}),**({'friction_tracker': tracker} if tracker else {}),
                  'installed':{'sources':resource_sources(selected, catalog, agents, agent_catalog, core_synced(kit, extra_writes)),'skills':selected,'commands':[c['name'] for c in commands],'agents':['ai-kit-'+a for a,_ in agents],'clis':[a.NAME for a in active],
                               'versions':installed_versions}}
     # V2 slice 2: lock.toml (written by sync and rollback) goes in the same transaction as the files it describes; its digest
