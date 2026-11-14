@@ -35,3 +35,5 @@ dedicated review would rarely run); tying it to the `parallel` setting; running 
 `AGENTS.md` (a review runs on other people's changes, and a command read from the reviewed copy would run the change's own
 command, with injectable file names and secrets echoed into the reviewers' context: left for a design of its own, which
 would read the command from the base and refuse it when the change touches it).
+
+**Amended**: 4.13.0, a change to agent configuration (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, a CLI's instruction files, skills, agents, commands, hooks, MCP configuration) is a change at risk too, and also goes to contribution-auditor, which looks for hidden instructions, invisible characters, widened tools and data sent out; the limits then say "Security review: dedicated (agent configuration)". At the full level, blast-radius maps what the change reaches.

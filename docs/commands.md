@@ -119,9 +119,11 @@ Each CLI's native sub-agents, installed as `ai-kit-<name>`. They inherit the ses
 | verifier | default | run the checks the repo declares and report what was run and observed, without fixing; proves that the approved acceptance tests fail without the code, tells new failures from old ones ([ADR 0033](adr/0033-verifier-swaps-files-to-prove-a-test.md)) |
 | doubter | default | adversarial review in a fresh context: doubt each claim, find proof or a counterexample, then a position (no objection, concerns, oppose) with the strongest objection (`/review full`, and a change at risk) |
 | code-reviewer | default | concrete regressions in a code change |
+| blast-radius | default | what a change can reach (callers, public contracts, downstream dbt models, configuration, other areas), with a Mermaid map and what to test (`/spec` and `/review` at the full level) |
+| contribution-auditor | default | a change to agent configuration (`AGENTS.md`, skills, agents, hooks, MCP): hidden instructions, invisible characters, widened tools, data sent out; such a change is at risk |
 | security-reviewer | default | secrets, injections, permissions, exposure, dependencies; checks the spec's Threats (a change at risk) |
-| infra-reviewer | optional | blast radius, destructions, permissions, rollback of an infrastructure change |
-| architecture-reviewer | optional | options, criteria and consequences of a proposal or an ADR |
+| infra-reviewer | optional (called by infra-change) | blast radius, destructions, permissions, rollback of an infrastructure change |
+| architecture-reviewer | optional (called by architecture-decision) | options, criteria and consequences of a proposal or an ADR |
 | sql-reviewer, dbt-reviewer | optional | grain, joins, aggregations; dbt models, incremental logic, tests |
 
 How the review agents are briefed and when they run: [review](review.md). Where a CLI states an agent's tools

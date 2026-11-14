@@ -96,6 +96,8 @@ in words the pattern did not know, never to let a wrong behaviour pass.
 | `init-project-context-proposes-what-the-kit-reads` | php-noctx-mini | initializing a repo's context proposes its real test command and a `REVIEW.md` that adds to the kit's passes, without a `CLAUDE.md` import or a copy of the kit's rules |
 | `monorepo-app-overrides-its-family` | apis-mono-mini | in a layered monorepo, the app's `AGENTS.md` overrides its family's test command, and the agent follows the app |
 | `build-proves-the-acceptance-test` | py-api-mini | `/build` runs the verifier's proof and stops when the approved acceptance test passes without the code (ADR 0033) |
+| `review-flags-hidden-instruction-in-a-skill` | py-api-mini | `/review` treats a new repo skill as agent configuration and reports its hidden instruction and its invisible character (contribution-auditor) |
+| `full-review-maps-the-blast-radius` | mixed-mini | `/review full` maps what a renamed dbt column breaks: the Python API that reads it (blast-radius) |
 
 ## Results
 

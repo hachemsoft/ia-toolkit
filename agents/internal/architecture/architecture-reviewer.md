@@ -1,11 +1,11 @@
 ---
 name: architecture-reviewer
-description: "Review an architecture proposal or an ADR: compared options, criteria, consequences, consistency with existing decisions."
+description: "Review an architecture proposal or an ADR: compared options, criteria, consequences, consistency with existing decisions. Not for: reviewing code (code-reviewer)."
 max_turns: 12
 timeout_mins: 5
 metadata:
   aikit-default: "false"
-  aikit-version: "1.1.0"
+  aikit-version: "1.2.0"
   aikit-origin: "internal"
 ---
 

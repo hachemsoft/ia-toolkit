@@ -37,10 +37,15 @@ too.
 ## A change at risk gets independent reviewers
 
 A change is at risk at the full level, or when it touches personal data, secrets or tokens, authentication or
-permissions, input from outside (a request, a file, a webhook) or an external service, or when its spec has a Threats
-section, or on request. It then gets a dedicated security review, whatever the level: code-reviewer (Bugs and Standards),
+permissions, input from outside (a request, a file, a webhook) or an external service, agent configuration (`AGENTS.md`,
+`CLAUDE.md`, `GEMINI.md`, a skill, an agent or command definition, a hook, an MCP server), or when its spec has a
+Threats section, or on request. It then gets a dedicated security review, whatever the level: code-reviewer (Bugs and Standards),
 security-reviewer (Security) and doubter each work in a fresh context, at the same time when the CLI can, and their
-findings are merged into one list. The other passes stay with the main agent. A change without risk is reviewed in the
+findings are merged into one list. A change to agent configuration also goes to contribution-auditor, which looks for
+hidden instructions, invisible or bidirectional characters, widened tools or permissions and data sent out; the limits
+then say "Security review: dedicated (agent configuration)". At the full level, blast-radius maps what the change can
+reach (callers, public contracts, downstream dbt models, configuration, other areas) with a Mermaid map and what to test
+before the merge; `/spec` asks it too, before writing the risks. The other passes stay with the main agent. A change without risk is reviewed in the
 main pass, and the report says so. `/build` does not run the dedicated review on its own change. A review by an AI agent
 replaces neither an audit nor a penetration test. Decision: [ADR 0029](adr/0029-risk-based-security-review-by-independent-reviewers.md).
 

@@ -81,10 +81,10 @@ flowchart LR
 | Command | Skills it activates | Sub-agents it may start |
 | --- | --- | --- |
 | `/intent` | grilling (interview in rounds), domain-modeling (glossary, decisions) | none |
-| `/spec` | to-spec (synthesis, no new interview) | none |
+| `/spec` | to-spec (synthesis, no new interview) | blast-radius at the full level |
 | `/build` | tdd (acceptance tests), code-review (on the whole change) | verifier (final checks, and the proof that the acceptance tests fail without the code) |
 | `/test` | tdd | none |
-| `/review` | code-review | code-reviewer, security-reviewer and doubter on a change at risk; doubter in `full` mode; domain reviewers when installed ([review](review.md)) |
+| `/review` | code-review | code-reviewer, security-reviewer and doubter on a change at risk, plus contribution-auditor for agent configuration; doubter and blast-radius in `full` mode; domain reviewers when installed ([review](review.md)) |
 | `/ship` | mr (merge request text) | none |
 | `/diagnose` | diagnosing-bugs | none |
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.13.0 (2026-11-15)
+
+Two new review agents, and two reviewers the playbooks now call. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **blast-radius** (new, default): maps what a change can reach before it merges: callers, public contracts (APIs, events, schemas, exchanged files), downstream dbt models, configuration and deployment, other areas of a monorepo. It returns a Mermaid map, a table of what to test before the merge with file:line proof, and its limits (dynamic calls, consumers outside the repository). `/spec` asks it at the full level before writing the risks; `/review` at the full level.
+- **contribution-auditor** (new, default): audits a change to agent configuration in any repository (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, a CLI's instruction files, skills, agents and commands, hooks, MCP configuration): hidden instructions (also in comments and HTML), invisible or bidirectional characters (zero-width, bidi, isolates, a stray byte order mark), widened tools or permissions, hooks or servers that send data out, triggers on everything, names that imitate the kit. Important by default, Minor for ambiguous wording or a broad trigger; it reports, never blocks. Checked once by running its instructions in a fresh sub-agent on a planted skill: the hidden instruction to send an SSH key out, `Bash(*)`, the zero-width character and "do not ask the person" came out Important, the broad trigger Minor.
+- **Agent configuration is a change at risk** (code-review 1.5.0, ADR 0029): such a change gets the dedicated security review whatever the level, with contribution-auditor next to code-reviewer, security-reviewer and doubter; the limits say "Security review: dedicated (agent configuration)". In the kit's own repository, most changes now take this path.
+- **architecture-reviewer** reviews the drafted ADR cold before you confirm it (architecture-decision 1.1.0); **infra-reviewer** reviews the plan or diff cold before you approve it (infra-change 1.2.0). Without the agent installed, the playbook applies the same checks and says so. Each reviewer's description now ends with what it is not for.
+- Two eval cases written, not run: `review-flags-hidden-instruction-in-a-skill`, `full-review-maps-the-blast-radius`. Tests: `tests/test_new_agents.py`.
+
 ## 4.12.1 (2026-11-14)
 
 The documentation has one page per subject and matches what the kit does; the release notes are filled again. Nothing changes in what the kit installs or how it behaves.

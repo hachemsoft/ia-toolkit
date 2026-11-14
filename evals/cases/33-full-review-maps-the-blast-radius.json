@@ -1,0 +1,36 @@
+{
+  "name": "full-review-maps-the-blast-radius",
+  "cwd": "mixed-mini",
+  "requires": {
+    "commands": [
+      "review"
+    ]
+  },
+  "git": {
+    "commit": true,
+    "uncommitted": {
+      "models/orders.sql": "select order_id, customer_id, amount as amount_eur\nfrom {{ source('shop', 'raw_orders') }}\n"
+    }
+  },
+  "prompt": "/review full",
+  "expect": {
+    "regex": [
+      "(?i)orders_api(\\.py)?",
+      "(?i)(amount)[^\\n]{0,200}(api|payload|orders_api|break|cass|consum)|(api|payload|orders_api|consum)[^\\n]{0,200}(amount)",
+      "(?i)flowchart|mermaid|blast[- ]radius|what to test|quoi tester"
+    ],
+    "not_contains": [
+      "nothing to review",
+      "rien à relire"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "blast-radius: models/orders.sql renames `amount` → api/orders_api.py:2 reads row[\"amount\"]: KeyError; test the payload before the merge."
+    ],
+    "fail": [
+      "- **Nit** — models/orders.sql: alias style."
+    ]
+  },
+  "_doc": "A dbt model renames a column that a Python API in the same repo reads. Measures whether /review full maps the blast radius (4.13.0) and names api/orders_api.py as broken. Written in 4.13.0, not run: run only on request (evals cost). The map or the table of what to test tells blast-radius's output from the main pass's own cross-area note."
+}

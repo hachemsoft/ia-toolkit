@@ -1,11 +1,11 @@
 ---
 name: infra-reviewer
-description: "Review an infrastructure or pipeline change (Terraform, Kubernetes, Helm, CI/CD, Dockerfile): blast radius, destructions, permissions, rollback."
+description: "Review an infrastructure or pipeline change (Terraform, Kubernetes, Helm, CI/CD, Dockerfile): blast radius, destructions, permissions, rollback. Not for: application code (code-reviewer)."
 max_turns: 12
 timeout_mins: 5
 metadata:
   aikit-default: "false"
-  aikit-version: "1.1.0"
+  aikit-version: "1.2.0"
   aikit-origin: "internal"
 ---
 
