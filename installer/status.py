@@ -22,7 +22,8 @@ def status(home, verbose=False):
         if missing:  # a CLI installed after the kit: init keeps the recorded choice, so it is said here
             print('[Info] On this machine but not configured by the kit: '+', '.join(missing)+'. ai-kit init --target auto configures the CLIs present.')
     try:
-        managed = load_managed()
+        from .core import lockable_names
+        managed = load_managed(None, lockable_names(read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})))
         print(summary(managed) if managed is not None else 'Not administered (no managed.toml).')
     except ManagedConfigError as exc:
         managed = None

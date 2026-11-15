@@ -86,8 +86,8 @@ Closed schema (`schemas/managed.schema.json`). A file that is unreadable, writab
 | `[git] signers` | SSH public keys | a tag must carry an SSH signature from one of them |
 | `[teams] allowed` | Team URLs or prefixes | only these Teams |
 | `[teams] allow_unknown` | bool | `false`: no Team that is not already known |
-| `[hooks] locked` | guardrail names | kept on, whatever anyone writes |
-| `[hooks] <guardrail>` | bool | on or off for everyone |
+| `[hooks] locked` | guardrail names, or `integrity` (which keeps `whats-new` on too) | kept on, whatever anyone writes |
+| `[hooks] <guardrail>` or `integrity` | bool | on or off for everyone |
 | `[mcp] allow_stdio` | bool | `false`: no local server |
 | `[mcp] allowed_stdio`, `allowed_http` | `sha256:<64 hex>` identities | only these local or remote servers |
 | `[mcp] denied` | names, URL prefixes or executables | never installed |

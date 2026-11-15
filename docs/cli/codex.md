@@ -22,6 +22,10 @@ the CLIs chosen. `--target codex` installs it alone, `--target all` with the oth
   paths of an `apply_patch`. The `integrity` check: `[[hooks.PostToolUse]]`, every tool. The `whats-new` hook: `[[hooks.SessionStart]]`, no
   matcher. All three need the approval below.
 - **MCP servers** that are on: `[mcp_servers.ai-kit-<name>]` in the same block.
+- **Integrity check locked by IT** (`managed.toml`, 4.17.0): `ai-kit managed-settings` writes in `requirements.toml`
+  `[features] hooks = true` (hooks cannot be turned off) and managed hooks `[[hooks.PostToolUse]]` (every tool, `integrity`)
+  and `[[hooks.SessionStart]]` (`whats-new`), with `command` and `command_windows`. Written from Codex's source code (managed
+  hooks in `requirements.toml`, openai/codex #18893), not tried on a managed workstation: try one before the fleet.
 
 The `config.toml` block is appended at the end and checked to stay valid TOML before writing. Both files are backed up on
 every change.

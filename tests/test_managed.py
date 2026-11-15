@@ -85,7 +85,7 @@ class ManagedSettingsTests(unittest.TestCase):
         with self.assertRaises(KitError):
             self.run_it(imposed='managed_schema = 1\n[hooks]\nlocked = ["nope"]\n')
         with self.assertRaises(KitError):
-            self.run_it(imposed='managed_schema = 1\n[hooks]\nlocked = ["whats-new"]\n')  # a hook that is not a guardrail is nothing IT locks
+            self.run_it(imposed='managed_schema = 1\n[hooks]\nlocked = ["whats-new"]\n')  # 4.17.0: whats-new follows integrity, never locked alone (contract changed on purpose)
         self.out.mkdir(exist_ok=True)
         (self.out/'x').write_text('keep', encoding='utf-8')
         with self.assertRaises(KitError):

@@ -30,4 +30,4 @@ codex/requirements.toml
   Keeps the sandbox on: the agent writes only inside the repo it works in.
 
 The guardrails run each person's copy of the kit ($HOME/.ai-kit), so the kit stays installed per person, as usual.
-Antigravity CLI has no documented central policy: its guardrails stay those the kit installs.{mcp}
+Antigravity CLI has no documented central policy: its guardrails stay those the kit installs.{integrity}{mcp}

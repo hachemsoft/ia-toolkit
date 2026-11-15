@@ -150,7 +150,7 @@ def quote_path(path):
     return '"'+str(path)+'"' if os.name == 'nt' else shlex.quote(str(path))
 
 # Manifest events (Gemini CLI's names) and their name in the CLIs that use Claude Code's: a guardrail runs before a tool,
-# the whats-new hook at session start. A hook that is not a guardrail is never locked or managed by IT.
+# the integrity check after a tool, the whats-new hook at session start. IT locks a guardrail or the integrity check (4.17.0).
 CLI_EVENTS = {'BeforeTool': 'PreToolUse', 'AfterTool': 'PostToolUse'}  # Gemini CLI keeps the neutral names
 
 def cli_event(event):
@@ -158,6 +158,18 @@ def cli_event(event):
 
 def is_guardrail(spec):
     return spec.get('event') == 'BeforeTool'
+
+def is_lockable(spec):
+    """What IT may lock in managed.toml: a guardrail, or a hook marked lockable (the integrity check, 4.17.0)."""
+    return is_guardrail(spec) or spec.get('lockable') is True
+
+def lockable_names(manifest):
+    return [n for n, spec in manifest.items() if is_lockable(spec)]
+
+def with_followers(names, manifest):
+    """The names plus the hooks that follow one of them (whats-new follows integrity), in manifest order."""
+    names = list(dict.fromkeys(names))
+    return names + [n for n, spec in manifest.items() if spec.get('follows') in names and n not in names]
 
 def hook_command(script, names=()):
     """Command a CLI runs for a kit guardrail: this Python, isolated (-I: no PYTHON* variables, no current folder on the import path).

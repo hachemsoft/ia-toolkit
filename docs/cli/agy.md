@@ -62,6 +62,8 @@ baseline distributes it outside the kit.
   the repo fail in `agy -p` until the person has approved read rules. Interactive mode works.
 - **Write tool**: `protected-paths` recognises tools whose name contains `write`, `replace` or `edit` and looks for the
   path in the arguments (`TargetFile`, `AbsolutePath`, `FilePath`, `file_path`, `path`…); to be confirmed on a real write.
+- **Integrity check locked by IT** (`managed.toml`, 4.17.0): agy has no documented policy file, so `ai-kit managed-settings`
+  writes nothing for it; the lock holds through the kit installation, which reinstalls the hooks at each `ai-kit sync`.
 - **User-only skills**: agy has no such field; they may activate on their own.
 - **Logs**: `usage` reads `~/.gemini/antigravity-cli/history.jsonl` and, read-only, `conversations/*.db` (skill files read,
   `ai-kit-*` agents invoked); an unreadable conversation is skipped; no error events.

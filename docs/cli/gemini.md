@@ -16,6 +16,9 @@ calls, which are billed; they rely on what Gemini CLI shares with the other CLIs
 - **Guardrails** that are on: scripts in `~/.ai-kit/hooks/`, declared under `hooks.BeforeTool` in groups named
   `ai-kit-<name>`; your own hooks are kept. The `integrity` check is a group under `hooks.AfterTool`, every tool. The
   `whats-new` hook is a group under `hooks.SessionStart` without matcher; it answers in JSON only. Gemini warns once about a hook whose command changed: expected after an activation.
+- **Integrity check locked by IT** (`managed.toml`, 4.17.0): the system `settings.json` written by `ai-kit managed-settings`
+  gets `AfterTool` (no matcher) for `integrity` and `SessionStart` for `whats-new`; not on Windows, where the hook shell is
+  not documented.
 - **MCP servers** that are on: `ai-kit-<name>` entries under `mcpServers`.
 - **Default setting**: `skills.enabled`, only if missing.
 

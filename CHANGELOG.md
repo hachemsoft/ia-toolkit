@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.17.0 (2026-11-15)
+
+IT can lock the integrity check. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`[hooks] locked = ["integrity"]` in `managed.toml`**: the integrity check, which reports a change to what the kit installed, stays on whatever a person or an agent writes in `aikit.toml`, and `whats-new` with it (it runs the full check at session start); the run says `[Info] Hook integrity stays on`. `whats-new` is never named alone (`hooks.whats-new follows integrity`). Without that lock nothing changes: same files, same summary.
+- **In the policy files** of `ai-kit managed-settings`, once locked: Claude Code `managed-settings.json` gets `PostToolUse` without matcher (every tool) and `SessionStart`, through PowerShell on Windows like the guardrails; Gemini CLI's system `settings.json` gets `AfterTool` and `SessionStart` (not on Windows, where its hook shell is not documented); **Codex `requirements.toml` gets `[features] hooks = true` and managed hooks** `[[hooks.PostToolUse]]` and `[[hooks.SessionStart]]` with `command` and `command_windows` (in `cmd.exe` syntax, `%USERPROFILE%`: Codex runs a hook through `cmd.exe /C` on Windows; checked on a Windows 11 machine, where the PowerShell form fails). Codex's form was read in its source code (managed hooks in `requirements.toml`, openai/codex #18893), not tried on a managed workstation: try one before the fleet. agy has no policy file: there the lock holds through the kit installation. The README written with the files says so, and that the check reports, it does not block.
+- **`managed.toml` with a `[hooks]` table no longer stops the kit**: the install from a release ZIP, `ai-kit init`, `sync` and `status` validated it without the hook names and refused any lock, guardrails included; every caller now checks against the same names. `ai-kit status` also says what IT locks.
+- **Limit, written down**: locked, the check runs the script in the person's `$HOME`, which a shell command can replace until the next `ai-kit sync`, as for the guardrails; no setting turns it off. Managed hooks need no approval in Codex (its source: system and MDM hooks are trusted as managed).
+- A new notion, lockable hooks (the five guardrails and `integrity`), leaves the guardrails' count, summary and labels as they were. Decision: ADR 0030 amended. Test changed on purpose: `tests/test_managed.py` (`whats-new` locked alone is still refused, now because it follows `integrity`). Tests: `tests/test_integrity_lock.py`.
+
 ## 4.16.0 (2026-11-15)
 
 One Core context layer; a Team's layer now adds to it. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

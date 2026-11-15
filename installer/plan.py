@@ -3,7 +3,7 @@ practices, skills, agents and guardrails, and the old files to remove. apply (in
 
 import re
 
-from .core import content_root, ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, hook_identity, adopt_user_copy
+from .core import content_root, ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, hook_identity, adopt_user_copy, with_followers
 from .toml_files import set_schema, set_section_key
 from .config import AIKIT_FILE
 from .adapters import ADAPTERS
@@ -113,7 +113,7 @@ def guardrails(overrides, hooks_dir, managed_locked=(), managed_off=()):
         raise KitError('hooks must be an object name → true/false.')
     wanted_hooks = {**{n: True for n, spec in hook_manifest.items() if spec.get('default')}, **wanted_hooks}
     # IT's locks (managed.toml hooks.locked); a guardrail IT turns off is not locked (ADR 0015).
-    locked = [n for n in dict.fromkeys(managed_locked) if n not in managed_off]
+    locked = with_followers([n for n in managed_locked if n not in managed_off], hook_manifest)
     turned_off = [n for n in locked if wanted_hooks.get(n) is False]
     wanted_hooks.update({n: True for n in locked})
     for name in wanted_hooks:

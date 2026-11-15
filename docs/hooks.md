@@ -37,7 +37,7 @@ Then `ai-kit sync --offline`. IT decides above you in `managed.toml`:
 | `[hooks] locked = ["protected-paths"]` | stays on, whatever you write; the run says `[Info] Guardrail <name> stays on` |
 | `[hooks] <guardrail> = true` or `false` | on or off for everyone; your value is ignored, and the run says so |
 
-IT can name the five guardrails that run before a tool call. `integrity` and `whats-new` are not guardrails in `managed.toml`: IT can neither lock nor turn them off there, and a person can turn `integrity` off in `aikit.toml`. The CLI policy files below do not carry them either ([limits](#limits)).
+IT can name the five guardrails that run before a tool call, and `integrity` (since 4.17.0). Locking `integrity` keeps `whats-new` on too, since it runs the full check at session start; `whats-new` is never named alone. Without a lock, a person can turn `integrity` off in `aikit.toml`. Once locked, `ai-kit managed-settings` writes both hooks in the policy file of each CLI that has one; where a CLI has none, the lock holds through the kit installation ([limits](#limits), [per CLI](cli/matrice.md)).
 
 ## `protected-paths`
 
@@ -139,7 +139,7 @@ ai-kit managed-settings --out <empty folder> [--managed-hooks-only] [--managed-m
 | Option | Adds |
 | --- | --- |
 | (none) | deny rules on the kit's and the CLI's configuration, the guardrails on by default plus IT's `locked`, a sandbox requirement where the CLI has one |
-| `--managed-hooks-only` | the CLI ignores hooks from any other source, so also the kit's `integrity` and `whats-new` hooks, which these files do not carry |
+| `--managed-hooks-only` | the CLI ignores hooks from any other source: the kit's `integrity` and `whats-new` keep running only when IT locks `integrity`, which writes them in these files |
 | `--managed-mcp-only` | only the Core's MCP servers are allowed |
 
 The generated `README.txt` says where each file goes, per system and per CLI. Windows has its own files under `windows/`, where the guardrails run through PowerShell; for a CLI whose docs do not say which shell runs a hook on Windows, that file writes no guardrail (`README.txt` names it).
@@ -149,7 +149,8 @@ The generated `README.txt` says where each file goes, per system and per CLI. Wi
 - A rule on the text of a command is defeated by an alias, a wrapper script or a program the hook does not know.
 - The kit's own commands are recognised in the text of a command: a commit message that quotes one (`git commit -m "run ai-kit sync"`) is refused too; reword it.
 - On Windows, which gives no change time for a file, an edit that keeps a file's size and sets its modification time back is seen only at session start, when every digest is recomputed.
-- IT can lock the guardrails, not the integrity check: a person can turn it off in `aikit.toml`, and the policy files of `ai-kit managed-settings` do not carry it (with `--managed-hooks-only`, the CLI then ignores it).
+- Unless IT locks `integrity` in `managed.toml`, a person can turn it off in `aikit.toml`, and the policy files do not carry it (with `--managed-hooks-only`, the CLI then ignores it). Locked, it is in the policy file of each CLI that has one, except where a CLI's docs do not say which shell runs a hook on Windows; one CLI's managed hooks were written from its source code, not tried on a managed workstation ([per CLI](cli/matrice.md)).
+- Locked, the integrity check still runs the script in the person's `$HOME`: a shell command that replaces `integrity.py` and its recorded digest silences it until the next `ai-kit sync`, as it would a guardrail's script.
 - The integrity check reports, it does not prevent. A command that rewrites the check's own marker with the right values silences the report after a tool call until the next session start, which recomputes everything; one that removes the hooks with a switch outside the kit's part of a CLI's settings (a setting that turns all hooks off) is not seen; the kit's MCP servers in a CLI's settings and `~/.ai-kit/lock.toml` are not checked; a tool call during an `ai-kit sync` can report a change that the sync is making. `ai-kit doctor` checks what the hook cannot.
 - `protected-paths` does not prevent a shell command from changing the configuration: the change is reported after the call, not refused. Until it is restored, the next actions run with it. A classifier model was measured once as an alternative: [research note](research/classifier-model-for-guardrails.md).
 - The other shell guardrails do not follow a `cd`: a folder or a branch is read from where the CLI started the command (`git -C` and `terraform -chdir` are read). `$(…)` inside single quotes is read as if it ran.

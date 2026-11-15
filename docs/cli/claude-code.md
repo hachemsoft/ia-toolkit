@@ -27,6 +27,9 @@ the permissions.
   `protected-paths`, so an MCP server's write tool is seen too), next to your own hooks; no approval step. The
   `integrity` check: a group under `hooks.PostToolUse`, every tool. The `whats-new` hook: a group under
   `hooks.SessionStart`, no matcher.
+- **Integrity check locked by IT** (`managed.toml`, 4.17.0): `ai-kit managed-settings` adds to `managed-settings.json` a
+  `PostToolUse` group without matcher (every tool) for `integrity` and a `SessionStart` group for `whats-new`, through
+  PowerShell on Windows like the guardrails; managed hooks add up with the person's, and a change is reported once.
 - **MCP servers** that are on: `ai-kit-<name>` entries in `mcpServers` of `~/.claude.json`, translated from the kit's form
   (`command` → `stdio`, `httpUrl` → `http`, `url` → `sse`). A server with `cwd` is refused: give the full path in `command`.
 

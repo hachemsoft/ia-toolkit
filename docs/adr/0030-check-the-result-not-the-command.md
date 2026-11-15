@@ -41,3 +41,6 @@ reviewed); a classifier model before each command (a model on every workstation,
 errors, worse on the measured set); writing deny rules into each CLI's permissions (the kit never writes a person's
 permissions; IT can deploy them as managed settings); a check at session start only (a change would act for the rest of
 the session unreported).
+
+**Amended**: 4.17.0, IT can lock the integrity check in `managed.toml` (`[hooks] locked = ["integrity"]`), which keeps `whats-new` on too; `ai-kit managed-settings` then writes both hooks in the policy files of Claude Code, Gemini CLI (not on Windows) and Codex, so no setting of a person or an agent turns the check off on a managed workstation. The policy files run the copy in the
+person's `$HOME`, which a shell command can still replace until the next `ai-kit sync`, as for the guardrails. agy has no policy file: there the lock holds through the kit installation. The check still reports, it does not prevent.

@@ -3,7 +3,7 @@ workstation. Generated from the Core's guardrails and MCP servers and from manag
 import json
 from pathlib import Path
 
-from .core import ROOT, KitError, read_json, is_guardrail, hook_identity
+from .core import ROOT, KitError, read_json, is_guardrail, hook_identity, lockable_names, with_followers, cli_event
 from .toml_files import toml_value
 from .settings import core_settings
 
@@ -30,6 +30,13 @@ def command(spec, windows=False, served=()):
     if windows:
         return WINDOWS_PYTHON+' -I '+WINDOWS_HOOKS+spec['script']+'"'+served
     return POSIX_PYTHON+' -I '+POSIX_HOOKS+spec['script']+'"'+served
+
+
+def cmd_command(spec, served=()):
+    """A hook command for cmd.exe, which Codex uses to run hooks on Windows (COMSPEC, else cmd.exe, with /C): %USERPROFILE%,
+    not PowerShell's $HOME and call operator."""
+    served = ''.join(' '+n for n in served)
+    return '"%USERPROFILE%\\.ai-kit\\runtime\\venv\\Scripts\\python.exe" -I "%USERPROFILE%\\.ai-kit\\hooks\\'+spec['script']+'"'+served
 
 
 def declared(names, manifest):
@@ -80,9 +87,13 @@ def codex_mcp(servers):
 def claude(names, manifest, hooks_only, mcp=None, windows=False):
     from .adapters.claude import hook_matcher
     shell = {'shell': 'powershell'} if windows else {}
-    settings = {'permissions': {'deny': ['Edit('+p+')' for p in KIT_FILES + CLAUDE_FILES]},
-                'hooks': {'PreToolUse': [{'matcher': hook_matcher(spec['matcher']),
-                                          'hooks': [{'type': 'command', 'command': command(spec, windows, served), **shell, 'timeout': 20}]} for _, spec, served in declared(names, manifest)]}}
+    hooks = {}
+    for _, spec, served in declared(names, manifest):
+        group = {'hooks': [{'type': 'command', 'command': command(spec, windows, served), **shell, 'timeout': 20}]}
+        if is_guardrail(spec):
+            group = {'matcher': hook_matcher(spec['matcher']), **group}  # a guardrail sees its tools; the integrity check every tool
+        hooks.setdefault(cli_event(spec['event']), []).append(group)
+    settings = {'permissions': {'deny': ['Edit('+p+')' for p in KIT_FILES + CLAUDE_FILES]}, 'hooks': hooks}
     if hooks_only:
         settings['allowManagedHooksOnly'] = True
     if mcp is not None:
@@ -96,20 +107,40 @@ def gemini(names, manifest, windows=False):
     settings = {'hooks': {}, 'security': {'disableYoloMode': True}}
     for n, spec, served in ([] if windows else declared(names, manifest)):
         settings['hooks'].setdefault(spec['event'], []).append(
-            {'matcher': spec['matcher'], 'hooks': [{'name': 'ai-kit-'+n, 'type': 'command', 'command': command(spec, served=served)}]})
+            {**({'matcher': spec['matcher']} if spec['matcher'] else {}), 'hooks': [{'name': 'ai-kit-'+n, 'type': 'command', 'command': command(spec, served=served)}]})
     if not settings['hooks']:
         settings.pop('hooks')
     return json.dumps(settings, indent=2)+'\n'
 
 
-def codex(mcp=None):
-    return ('# Codex CLI requirements: the agent writes only inside the repo it works in (so never to ~/.codex or ~/.ai-kit),\n'
+def codex(mcp=None, names=(), manifest=None):
+    """requirements.toml; with the integrity check locked, its managed hooks too (Codex reads [hooks] and [features] there,
+    openai/codex #18893; managed hooks need no approval): every tool after the call, whats-new at session start. The hooks
+    come last, so that a bare key of the MCP block stays at the top level."""
+    text = ('# Codex CLI requirements: the agent writes only inside the repo it works in (so never to ~/.codex or ~/.ai-kit),\n'
             '# and the person cannot start it without a sandbox or without approvals.\n'
             'allowed_sandbox_modes = ["read-only", "workspace-write"]\n'
-            'allowed_approval_policies = ["untrusted", "on-request"]\n'
-            + ('' if mcp is None else '\n# MCP: only the servers the Core defines (mcp/servers.toml), by name and identity.\n'+codex_mcp(mcp)))
+            'allowed_approval_policies = ["untrusted", "on-request"]\n')
+    if mcp is not None:
+        text += '\n# MCP: only the servers the Core defines (mcp/servers.toml), by name and identity.\n'+codex_mcp(mcp)
+    hooks = [(spec, served) for _, spec, served in declared(names, manifest or {}) if not is_guardrail(spec)]
+    if hooks:
+        text += ('\n# The integrity check IT locks (managed.toml): it reports a change to what the kit installed, it does not block.\n'
+                 '[features]\nhooks = true\n')
+        for spec, served in hooks:
+            event = cli_event(spec['event'])
+            text += ('\n[[hooks.'+event+']]\n'+('matcher = "*"\n' if event == 'PostToolUse' else '')+'\n[[hooks.'+event+'.hooks]]\ntype = "command"\n'
+                     'command = '+toml_value(command(spec, served=served))+'\n'
+                     'command_windows = '+toml_value(cmd_command(spec, served))+'\n')
+    return text
 
 
+
+
+INTEGRITY_README = ('\n\nIntegrity check locked (managed.toml): integrity and whats-new are written in the Claude Code, Gemini CLI (not on\n'
+                    'Windows) and Codex files above. It reports a change, it does not block: it tells what the kit installed changed. agy\n'
+                    '(Antigravity CLI) has no policy file: there, the lock holds through the kit installation (managed.toml), reinstalled at\n'
+                    'each sync.')
 
 
 def mcp_readme(mcp):
@@ -137,10 +168,10 @@ def managed_settings(out, hooks_only=False, mcp_only=False, managed_file=None):
     # managed.toml goes into the native files too. Its hooks.locked add to the Core's locked guardrails,
     # a guardrail it turns off is not locked, and its MCP refusals (denied, allow_stdio, allowlists) apply to the MCP lock.
     from .config import filter_mcp, load_managed
-    imposed = load_managed(managed_file, [n for n, s in manifest.items() if is_guardrail(s)])
+    imposed = load_managed(managed_file, lockable_names(manifest))
     if imposed:
         off = [n for n, v in imposed.get('hooks', {}).items() if v is False]
-        names = [n for n in dict.fromkeys(list(names) + list(imposed.get('hooks', {}).get('locked', []))) if n not in off]
+        names = with_followers([n for n in dict.fromkeys(list(names) + list(imposed.get('hooks', {}).get('locked', []))) if n not in off], manifest)
         if mcp is not None:
             mcp, notices = filter_mcp(mcp, imposed)
             for line in notices:
@@ -149,8 +180,9 @@ def managed_settings(out, hooks_only=False, mcp_only=False, managed_file=None):
              'gemini-cli/settings.json': gemini(names, manifest),
              'windows/claude-code/managed-settings.json': claude(names, manifest, hooks_only, mcp, windows=True),
              'windows/gemini-cli/settings.json': gemini(names, manifest, windows=True),
-             'codex/requirements.toml': codex(mcp),
-             'README.txt': (ROOT/'templates'/'managed-settings-README.txt').read_text(encoding='utf-8').format(version=(ROOT/'VERSION').read_text(encoding='utf-8').strip(), hooks=', '.join(names),
+             'codex/requirements.toml': codex(mcp, names, manifest),
+             'README.txt': (ROOT/'templates'/'managed-settings-README.txt').read_text(encoding='utf-8').format(version=(ROOT/'VERSION').read_text(encoding='utf-8').strip(), hooks=', '.join(n for n in names if is_guardrail(manifest[n])) or 'none',
+                                         integrity=INTEGRITY_README if 'integrity' in names else '',
                                          hooks_only=' With allowManagedHooksOnly, hooks from any other source are ignored.' if hooks_only else '',
                                          mcp=mcp_readme(mcp))}
     for rel, text in files.items():

@@ -14,7 +14,7 @@
     },
     "hooks": {
       "type": "object",
-      "description": "locked: guardrails nobody can turn off; <guardrail> = true or false for everyone.",
+      "description": "locked: guardrails, or integrity (whats-new follows it), nobody can turn off; <name> = true or false for everyone.",
       "properties": {
         "locked": {
           "type": "array",
@@ -22,7 +22,7 @@
             "type": "string",
             "minLength": 1
           },
-          "description": "Guardrails kept on."
+          "description": "Guardrails, or integrity (which keeps whats-new on), kept on."
         }
       },
       "additionalProperties": {

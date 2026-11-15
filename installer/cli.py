@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 from . import resolve
-from .core import (content_root, STATE_SCHEMA, check_state_schema, _PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, KitError, friction_module, is_guardrail, read_json, json_bytes, digest,
+from .core import (lockable_names, content_root, STATE_SCHEMA, check_state_schema, _PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, KitError, friction_module, is_guardrail, read_json, json_bytes, digest,
                    safe_id, load_commands, load_agent, redact)
 from .adapters import ADAPTERS
 from .interface import Plan
@@ -159,7 +159,7 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
     org_defaults, team_layer, personal, overrides, choices = effective_settings(kit, team, choices)
     # managed.toml (IT): every key it sets wins over the Core, the Team and the person (ADR 0015).
     hook_specs = read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})
-    managed = load_managed(managed_file, [n for n, s in hook_specs.items() if is_guardrail(s)])
+    managed = load_managed(managed_file, lockable_names(hook_specs))
     overrides, managed_notices = apply_values(overrides, managed)
     catalog = resolve.skill_catalog(content_root())
     manifest = load_commands()
@@ -213,7 +213,7 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
     enabled_mcp, team_notices, mcp_approvals = team_mcp_gate(enabled_mcp, team_servers, managed, state.get('mcp_approvals'), APPROVE[0])
     mcp_notices += team_notices
     aikit_notices = load_aikit(kit/AIKIT_FILE)[1] if (kit/AIKIT_FILE).exists() else []  # unknown keys
-    notices = personal_notices + aikit_notices + managed_notices + mcp_notices + ['[Info] Guardrail '+n+' stays on: your organization or IT locks it (managed.toml hooks.locked).' for n in turned_off]
+    notices = personal_notices + aikit_notices + managed_notices + mcp_notices + ['[Info] '+('Guardrail ' if is_guardrail(hook_manifest[n]) else 'Hook ')+n+' stays on: your organization or IT locks it (managed.toml hooks.locked).' for n in turned_off]
     unknown_names(overrides, catalog, agent_catalog, notices)
     p = Plan(active=[a.NAME for a in active], notices=notices,
         skill_notes={skill: skill_note(skill, selected, catalog) for skill in selected},
@@ -533,7 +533,7 @@ def command_main(argv):
                 action = 'update' if args.offline else 'sync'
             else:  # init: a first installation syncs its Core (the shipped one, or the source set); later, it re-applies
                 action = 'sync' if first_shipped or (not locked and sync_configured(home)) else 'update'
-            with activation(home, action, args.dry_run, confirm, guardrail_names=[n for n, s in hook_specs.items() if is_guardrail(s)],
+            with activation(home, action, args.dry_run, confirm, guardrail_names=lockable_names(hook_specs),
                             team_name=args.rest[1] if args.action == 'team' else None, team_url=args.url, ask_url=ask_url,
                             bundle=args.from_bundle or (SHIPPED[0] if first_shipped else None), shipped=first_shipped) as act:
                 apply(home, args.dry_run, identity, args.target, act.team or state.get('team'),

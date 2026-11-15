@@ -54,6 +54,9 @@ def load_managed(path=None, guardrail_names=()):
     path = Path(path) if path is not None else managed_path()
     if not path.exists():
         return None
+    if not guardrail_names:  # every caller validates against the same names: what IT may lock (4.17.0)
+        from .core import ROOT, lockable_names, read_json
+        guardrail_names = lockable_names(read_json(ROOT/'runtime'/'hooks'/'hooks.json').get('hooks', {}))
     def refuse(reason):
         raise ManagedConfigError(str(path)+': '+reason+'. Nothing was changed; ask IT to fix the file (docs/configuration.md).')
     problem = ownership_problem(path)
@@ -73,12 +76,17 @@ def load_managed(path=None, guardrail_names=()):
         if table in data and not isinstance(data[table], dict):
             refuse('['+table+'] must be a table')
     hooks, mcp, frictions = data.get('hooks', {}), data.get('mcp', {}), data.get('frictions', {})
+    follower = 'hooks.whats-new follows integrity: lock or set integrity instead'
     for name, value in hooks.items():
         if name == 'locked':
+            if isinstance(value, list) and 'whats-new' in value:
+                refuse(follower)
             if not isinstance(value, list) or not all(isinstance(n, str) and n in guardrail_names for n in value):
-                refuse('hooks.locked must list guardrails of the kit ('+', '.join(sorted(guardrail_names))+')')
+                refuse('hooks.locked must list lockable hooks of the kit ('+', '.join(sorted(guardrail_names))+')')
+        elif name == 'whats-new':
+            refuse(follower)
         elif name not in guardrail_names:
-            refuse('unknown guardrail hooks.'+name+' (guardrails: '+', '.join(sorted(guardrail_names))+')')
+            refuse('unknown hook hooks.'+name+' (lockable hooks: '+', '.join(sorted(guardrail_names))+')')
         elif not isinstance(value, bool):
             refuse('hooks.'+name+' must be true or false')
     contradiction = [n for n in hooks.get('locked', []) if hooks.get(n) is False]
@@ -144,7 +152,7 @@ def apply_values(overrides, managed):
         mine = dict(result.get('hooks', {}))
         for name, value in hooks.items():
             if name in mine and mine[name] != value:
-                notices.append('[Info] Guardrail '+name+' = '+str(mine[name]).lower()+' in your settings is ignored: IT sets it to '+str(value).lower()+' (managed.toml).')
+                notices.append('[Info] '+('Hook ' if name in ('integrity', 'whats-new') else 'Guardrail ')+name+' = '+str(mine[name]).lower()+' in your settings is ignored: IT sets it to '+str(value).lower()+' (managed.toml).')
             mine[name] = value
         result['hooks'] = mine
     capture = managed.get('frictions', {}).get('capture')
@@ -299,7 +307,8 @@ def summary(managed, path=None):
     if managed is None:
         return None
     keys = sorted(k for k in managed if k != 'managed_schema')
-    return 'Managed by IT: '+str(path or managed_path())+' (sets '+(', '.join(keys) if keys else 'nothing')+').'
+    locked = (managed.get('hooks') or {}).get('locked') or []
+    return 'Managed by IT: '+str(path or managed_path())+' (sets '+(', '.join(keys) if keys else 'nothing')+(('; locks '+', '.join(locked)) if locked else '')+').'
 
 
 # --- ~/.ai-kit/aikit.toml: the person's V2 settings (docs/configuration.md) ---------------------------------
