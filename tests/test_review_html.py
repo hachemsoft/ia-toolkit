@@ -153,7 +153,7 @@ const text = formatComments('discount', [
   {section: 'Assumptions', text: 'and negative values?'}]);
 console.log(JSON.stringify({text: text, a: draftKey('/x/review.html', 'abc'), b: draftKey('/x/review.html', 'abd')}));
 """
-        out = json.loads(subprocess.run(['node', '-e', probe], capture_output=True, text=True, timeout=60, check=True).stdout)
+        out = json.loads(subprocess.run(['node', '-e', probe], capture_output=True, encoding='utf-8', timeout=60, check=True).stdout)
         self.assertEqual(out['text'], '# Review comments: discount\n- src/orders.py:5 — why round here?\n- [Assumptions] — and negative values?\n')
         self.assertNotEqual(out['a'], out['b'])
         self.assertTrue(out['a'].startswith('ai-kit-review:'))
@@ -243,7 +243,7 @@ class ReviewFindingsTests(unittest.TestCase):
         page = self.page(self.repo())
         logic = re.search(r'/\* logic:start \*/(.*?)/\* logic:end \*/', page, re.S).group(1)
         probe = logic + "\nconsole.log(JSON.stringify(formatComments('t', [{file: 'a.py\\n- src/auth.py', line: 3, text: 'x'}])));"
-        out = json.loads(subprocess.run(['node', '-e', probe], capture_output=True, text=True, timeout=60, check=True).stdout)
+        out = json.loads(subprocess.run(['node', '-e', probe], capture_output=True, encoding='utf-8', timeout=60, check=True).stdout)
         self.assertEqual(out.count('\n'), 2)
 
 
