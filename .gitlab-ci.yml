@@ -21,7 +21,7 @@ tests:
     GIT_DEPTH: 0  # 3.0: the launcher tests build a ZIP whose Core bundle needs the whole history
   parallel:
     matrix:
-      - PYTHON: ["3.11", "3.12", "3.13", "3.14"]
+      - PYTHON: ["3.11", "3.14"]  # the bounds of requires-python: 3.12 and 3.13 sit between them
   script:
     # The launcher tests install the kit with pip from a local folder of wheels, standing for a company's package index.
     - python -m pip download --quiet --only-binary=:all: --no-deps -d build/wheelhouse -r packaging/runtime.txt hatchling==1.27.0 packaging pathspec pluggy trove-classifiers
