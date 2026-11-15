@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.14.0 (2026-11-15)
+
+Four optional agents, each at its step of a change. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **silent-failure-hunter**: the failures a change makes silent: an empty `catch` or `except`, a fallback or default that hides an outage, a return code ignored, rows that vanish behind a `COALESCE` or a filter in SQL; each with the input that triggers it and what the caller sees. When installed, it joins the Bugs pass of every review that is not quick (code-review 1.6.0).
+- **pattern-scout**: before code is written, two or three places in the repository that already do the same thing, the convention they share and what differs. When installed, `/build` runs it at the standard and full levels through the code-change playbook (1.1.0).
+- **rule-miner**: before a business rule or a KPI changes, the rules already in the code, SQL and dbt models, as Given / When / Then with file:line, their contradictions and those written only in the code; it never invents one. When installed, `/spec` and the kpi-definition playbook (1.1.0) run it before writing the requirements.
+- **fresh-eyes**: reads a spec or a merge request description as a newcomer, without the conversation, and lists what cannot be understood, with the question it would ask; it rewrites nothing. When installed, `/spec` and `/ship` run it once the document is written.
+- All four are read-only, briefed cold, and never installed by default: a Team adds them in its `[defaults]`, a person with `extra_agents`. Suggested sets: development → silent-failure-hunter, pattern-scout; data → rule-miner; everyone → fresh-eyes ([repositories](docs/repositories.md)). Never run at the quick level.
+- Two of the four checked once by running their instructions in a fresh sub-agent: silent-failure-hunter found a swallowed error and, unprompted, the removed `raise_for_status()`; rule-miner returned six rules in place and the 12-month versus 6-month contradiction between a dbt model and Python code. Four eval cases written, not run; each requires its agent, and the eval runner now checks `requires.agents`. Tests: `tests/test_optional_agents.py`.
+- The page `review.html` planned for 4.14.0 moves to 4.15.0.
+
 ## 4.13.0 (2026-11-15)
 
 Two new review agents, and two reviewers the playbooks now call. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

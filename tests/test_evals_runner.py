@@ -250,3 +250,14 @@ class EvalCasesPageTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class RequiredAgentsTests(unittest.TestCase):
+    """4.14.0: a case can require an optional agent; the state records agents with the kit's prefix."""
+
+    def test_a_missing_agent_is_a_precondition(self):
+        case = {'requires': {'commands': ['review'], 'agents': ['silent-failure-hunter']}}
+        state = {'installed': {'commands': ['review'], 'agents': ['ai-kit-doubter']}}
+        self.assertEqual(evals_run.unmet_preconditions(case, state), ['agent silent-failure-hunter not installed'])
+        state['installed']['agents'].append('ai-kit-silent-failure-hunter')
+        self.assertEqual(evals_run.unmet_preconditions(case, state), [])

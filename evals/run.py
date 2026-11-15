@@ -7,7 +7,7 @@ AI_KIT_NO_LIVE=1 refuses it. Without a model: --dry-run lists the cases and chec
 Usage: python3 evals/run.py [--home DIR] [--cases evals/cases] [--only name] [--dry-run] [--report path.json] [--baseline]
        [--cli gemini|agy|codex|claude] [--model NAME] [--approval-mode MODE] [--timeout S] [--retries N] [--confirm-paid-run | --stand-in PATH]
 Each case is a JSON file: {"name", "prompt", "cwd" (fixture relative to evals/fixtures, optional), "subdir" (launch subfolder, optional),
-"requires": {"commands": [...], "skills": [...]} (optional, checked against the installed kit),
+"requires": {"commands": [...], "skills": [...], "agents": [...]} (optional, checked against the installed kit),
 "git": {"commit": true, "uncommitted": {"path": "text" | null}} (optional: a real repository, the fixture committed, then these files changed; null deletes one),
 "expect": {"contains": [...], "not_contains": [...], "regex": [...], "not_regex": [...], "files_absent": [...], "files_present": [...]}}.
 files_absent and files_present are paths relative to the repo; a bare name (intent.md) matches at any depth, where the
@@ -126,13 +126,15 @@ def blocked(case, state, baseline):
     return unmet_preconditions(case, state) if case.get('requires') and not baseline else []
 
 def unmet_preconditions(case, state):
-    """What the case needs from the installed kit (commands, skills) and is not there."""
+    """What the case needs from the installed kit (commands, skills, agents) and is not there."""
     needs, installed = case.get('requires', {}), state.get('installed', {}) if state else {}
     missing = []
     if not state:
         return ['kit not installed in this home folder']
     for kind in ('commands', 'skills'):
         missing += [kind[:-1] + ' ' + name + ' not installed' for name in needs.get(kind, []) if name not in installed.get(kind, [])]
+    agents = installed.get('agents', [])  # recorded with the kit's prefix (ai-kit-<name>)
+    missing += ['agent ' + name + ' not installed' for name in needs.get('agents', []) if name not in agents and 'ai-kit-' + name not in agents]
     return missing
 
 def prepare_git(repo, setup):

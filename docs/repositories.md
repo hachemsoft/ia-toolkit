@@ -42,6 +42,8 @@ Rules the kit enforces:
 - Each skill and agent declares `aikit-version` in its metadata.
 - A Team's MCP servers are on for its members; a local one needs an approval ([MCP](mcp.md#team-servers)).
 
+Optional agents a Team can add for its members in `[defaults]` (or a person with `extra_agents` in `aikit.toml`), by role: development → silent-failure-hunter, pattern-scout (with the code-change playbook); data → rule-miner (with kpi-definition); everyone → fresh-eyes. Each runs at its step, at the standard and full levels, only when installed ([agents](commands.md#agents)).
+
 ## Tags and versions
 
 - Only stable tags `vX.Y.Z` are followed, never a branch. `vX.Y.Z-rc.N` only with `git.allow_prerelease`.

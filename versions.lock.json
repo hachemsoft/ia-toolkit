@@ -17,8 +17,8 @@
       "digest": "823bbc423001e34c"
     },
     "kpi-definition": {
-      "version": "1.0.0",
-      "digest": "88c3ed28d0ce95d8"
+      "version": "1.1.0",
+      "digest": "7ddfbaccec180097"
     },
     "perimeter-brief": {
       "version": "1.0.0",
@@ -37,8 +37,8 @@
       "digest": "927daac85c224e96"
     },
     "code-review": {
-      "version": "1.5.0",
-      "digest": "7c02c23b92c04ea3"
+      "version": "1.6.0",
+      "digest": "867313918155cd33"
     },
     "codebase-design": {
       "version": "1.0.0",
@@ -169,8 +169,8 @@
       "digest": "fbb060a6a07e5a9c"
     },
     "code-change": {
-      "version": "1.0.0",
-      "digest": "8b562477d860ae8c"
+      "version": "1.1.0",
+      "digest": "e14d852a5c1303c1"
     },
     "infra-change": {
       "version": "1.2.0",
@@ -202,13 +202,29 @@
       "version": "1.1.0",
       "digest": "3022c92fc5e08f08"
     },
+    "fresh-eyes": {
+      "version": "1.0.0",
+      "digest": "18ee8640398b7eba"
+    },
+    "pattern-scout": {
+      "version": "1.0.0",
+      "digest": "6e2c8ee3fa8ee32e"
+    },
     "repo-investigator": {
       "version": "1.0.0",
       "digest": "c8f8ae9bfe1193a7"
     },
+    "rule-miner": {
+      "version": "1.0.0",
+      "digest": "c6a52b3dd6513f7d"
+    },
     "security-reviewer": {
       "version": "1.2.0",
       "digest": "0d0eeb676b0da3b6"
+    },
+    "silent-failure-hunter": {
+      "version": "1.0.0",
+      "digest": "4786e5ea58d0b0ae"
     },
     "verifier": {
       "version": "1.2.0",

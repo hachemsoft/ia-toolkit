@@ -3,7 +3,7 @@ name: code-review
 description: "Review changes, committed or not: the branch's commits, the staged and unstaged changes and the new files, by default; or a narrower scope the person names. Finds bugs, security issues, breaks of the repo's standards and of the spec when there is one, ranked on one severity scale. Use when the person asks to review their work, a branch, a PR or MR, or \"what changed since X\"; /review runs it."
 metadata:
   aikit-default: "true"
-  aikit-version: "1.5.0"
+  aikit-version: "1.6.0"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Review changes, committed or not (branch commits, staged, unstaged, new files), on bugs, security, standards and the spec when one exists; one severity scale."
@@ -49,6 +49,7 @@ Run them in sequence, or delegate them to the installed `ai-kit-*` review agents
 - Give each reviewer, in a fresh context, the cold brief above (scope commands, raw diff, files, test facts, spec, intent or plan): ai-kit-code-reviewer the Bugs and Standards passes (with the repo's standards and the smell baseline below), ai-kit-security-reviewer the Security pass, ai-kit-doubter the claims (in full mode this one run also carries how a failure would show and how it is undone), and, when the change touches agent configuration, ai-kit-contribution-auditor that configuration (the limits then name the trigger: "Security review: dedicated (agent configuration)"). Keep the Domain, Compliance and Tests passes yourself.
 - Start them at the same time when the CLI can run sub-agents in parallel, one after the other otherwise, whatever the parallel setting (they only read; on a CLI that states an agent's tools instead of enforcing them, only their instructions keep them from writing). Wait until all have returned; a reviewer that did not return, or is not installed: do its pass yourself and say so in the limits.
 - Merge: duplicates become one finding (same file and line, or same defect); a claim the doubter refutes becomes a finding, an unproven one a point to confirm. Each finding reads `- **<Severity> · <Pass>** — <file>:<line> — <defect> (<reviewers>)`, ranked on the scale below; name the reviewers that found it; state a disagreement between reviewers as a point for the person to decide.
+- When ai-kit-silent-failure-hunter is installed and the review is not quick (the review's level; when `/build` runs this skill, the change's level), give it the same cold brief, at the same time: its findings join the Bugs pass, with its name; not installed: skip it and say nothing.
 - At the full level, or when the person asks, also give ai-kit-blast-radius the same cold brief, at the same time: its map and its table of what to test go in the report after the findings, before the merge request discussions; not installed: list yourself what the change reaches and say so.
 - The limits start with "Security review: dedicated (<trigger>)" or "Security review: in the main pass (no trigger)", then which reviewers ran and whether at the same time or one after the other.
 

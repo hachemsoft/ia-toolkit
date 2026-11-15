@@ -124,6 +124,10 @@ Each CLI's native sub-agents, installed as `ai-kit-<name>`. They inherit the ses
 | security-reviewer | default | secrets, injections, permissions, exposure, dependencies; checks the spec's Threats (a change at risk) |
 | infra-reviewer | optional (called by infra-change) | blast radius, destructions, permissions, rollback of an infrastructure change |
 | architecture-reviewer | optional (called by architecture-decision) | options, criteria and consequences of a proposal or an ADR |
+| silent-failure-hunter | optional | errors a change swallows, fallbacks that hide an outage, return codes ignored, rows that vanish in SQL (`/review` when not quick, merged into Bugs) |
+| pattern-scout | optional | before code: two or three places that already do the same thing and their convention (`/build`, through code-change) |
+| rule-miner | optional | before a business rule or a KPI changes: the rules already in the code, as Given / When / Then (`/spec`, kpi-definition) |
+| fresh-eyes | optional | reads a spec or an MR description as a newcomer and lists what it cannot understand (`/spec`, `/ship`) |
 | sql-reviewer, dbt-reviewer | optional | grain, joins, aggregations; dbt models, incremental logic, tests |
 
 How the review agents are briefed and when they run: [review](review.md). Where a CLI states an agent's tools

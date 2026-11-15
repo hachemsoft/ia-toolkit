@@ -1,0 +1,37 @@
+{
+  "name": "review-finds-a-swallowed-error",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "review"
+    ],
+    "agents": [
+      "silent-failure-hunter"
+    ]
+  },
+  "git": {
+    "commit": true,
+    "uncommitted": {
+      "orders.py": "ORDERS = {1: [{\"price\": 10.0, \"qty\": 2}, {\"price\": 2.5, \"qty\": 1}]}\n\n\ndef total(items):\n    \"\"\"Total of an order, in euros.\"\"\"\n    return sum(item[\"price\"] * item[\"qty\"] for item in items)\n\n\ndef get_order(order_id):\n    try:\n        return ORDERS[order_id]\n    except Exception:\n        return []\n"
+    }
+  },
+  "prompt": "/review",
+  "expect": {
+    "regex": [
+      "(?i)(except|swallow|aval|silent|silenc|masqu|hide|hidden)[^\\n]{0,250}(KeyError|\\[\\]|empty|vide|not found|get_order)|(KeyError|\\[\\]|empty|vide|not found|get_order)[^\\n]{0,250}(except|swallow|aval|silent|silenc|masqu|hide|hidden)"
+    ],
+    "not_contains": [
+      "nothing to review",
+      "rien à relire"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "- **Important · Bugs** — orders.py:12 — `except Exception: return []` swallows the unknown order: get_order(99) now returns an empty order, total() gives 0 instead of an error (silent-failure-hunter)."
+    ],
+    "fail": [
+      "- Nit — orders.py: docstring missing on get_order."
+    ]
+  },
+  "_doc": "get_order now returns an empty list for an unknown order instead of raising: total() silently becomes 0. Measures whether /review reports the swallowed error (silent-failure-hunter). Needs the optional agent installed (extra_agents); written in 4.14.0, not run: run only on request (evals cost)."
+}

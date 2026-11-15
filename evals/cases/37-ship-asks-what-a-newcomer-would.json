@@ -1,0 +1,34 @@
+{
+  "name": "ship-asks-what-a-newcomer-would",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "ship"
+    ],
+    "agents": [
+      "fresh-eyes"
+    ]
+  },
+  "git": {
+    "commit": true,
+    "uncommitted": {
+      "orders.py": "ORDERS = {1: [{\"price\": 10.0, \"qty\": 2}, {\"price\": 2.5, \"qty\": 1}]}\nRATE = 0.92\n\n\ndef total(items):\n    \"\"\"Total of an order, in euros.\"\"\"\n    return sum(item[\"price\"] * item[\"qty\"] for item in items) * RATE\n\n\ndef get_order(order_id):\n    if order_id not in ORDERS:\n        raise KeyError(\"Not found\")\n    return ORDERS[order_id]\n"
+    }
+  },
+  "prompt": "/ship as agreed with finance, apply the usual rate",
+  "expect": {
+    "regex": [
+      "(?i)(as agreed|usual rate|RATE|0\\.92)[^\\n]{0,200}(\\?|unclear|pas clair|which|quel|why|pourquoi|source)"
+    ],
+    "not_contains": []
+  },
+  "samples": {
+    "pass": [
+      "fresh-eyes: \"the usual rate\" (RATE = 0.92): which rate, decided by whom, and why on the total in euros?"
+    ],
+    "fail": [
+      "## Summary\nApply the rate to totals."
+    ]
+  },
+  "_doc": "The MR rests on \"as agreed with finance\" and \"the usual rate\", which nothing in the repo explains. Measures whether /ship shows the questions a newcomer would ask (fresh-eyes). Needs the optional agent installed (extra_agents); written in 4.14.0, not run: run only on request (evals cost)."
+}

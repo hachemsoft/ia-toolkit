@@ -1,0 +1,35 @@
+{
+  "name": "build-follows-the-repo-pattern",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ],
+    "skills": [
+      "code-change"
+    ],
+    "agents": [
+      "pattern-scout"
+    ]
+  },
+  "git": {
+    "commit": true
+  },
+  "prompt": "/build add cancel_order(order_id) to orders.py, which removes an order. Do not stop for the tests.",
+  "expect": {
+    "regex": [
+      "(?i)KeyError[^\\n]{0,120}Not found|Not found[^\\n]{0,120}KeyError",
+      "(?i)(get_order|existing|existant|convention|pattern)"
+    ],
+    "not_contains": []
+  },
+  "samples": {
+    "pass": [
+      "pattern-scout: get_order (orders.py:9) raises KeyError(\"Not found\") for an unknown id; cancel_order follows it: raise KeyError(\"Not found\")."
+    ],
+    "fail": [
+      "def cancel_order(order_id):\n    ORDERS.pop(order_id, None)"
+    ]
+  },
+  "_doc": "The repo raises KeyError(\"Not found\") for an unknown order. Measures whether /build looks for the existing pattern first (pattern-scout, through code-change) and follows it. Needs the optional agent installed (extra_agents); written in 4.14.0, not run: run only on request (evals cost)."
+}

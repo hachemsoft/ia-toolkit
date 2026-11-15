@@ -98,6 +98,10 @@ in words the pattern did not know, never to let a wrong behaviour pass.
 | `build-proves-the-acceptance-test` | py-api-mini | `/build` runs the verifier's proof and stops when the approved acceptance test passes without the code (ADR 0033) |
 | `review-flags-hidden-instruction-in-a-skill` | py-api-mini | `/review` treats a new repo skill as agent configuration and reports its hidden instruction and its invisible character (contribution-auditor) |
 | `full-review-maps-the-blast-radius` | mixed-mini | `/review full` maps what a renamed dbt column breaks: the Python API that reads it (blast-radius) |
+| `review-finds-a-swallowed-error` | py-api-mini | `/review` reports an unknown order now swallowed into an empty list (silent-failure-hunter, optional) |
+| `build-follows-the-repo-pattern` | py-api-mini | `/build` looks for the existing way to report an unknown order and follows it (pattern-scout, optional) |
+| `spec-lists-the-rules-already-in-place` | dbt-mini | `/spec` finds the 120-day rule a model applies, against the glossary's 90 days, before redefining an active customer (rule-miner, optional) |
+| `ship-asks-what-a-newcomer-would` | py-api-mini | `/ship` shows what a newcomer cannot understand: "as agreed", "the usual rate" (fresh-eyes, optional) |
 
 ## Results
 

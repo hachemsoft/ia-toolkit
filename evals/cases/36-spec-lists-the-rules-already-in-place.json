@@ -1,0 +1,36 @@
+{
+  "name": "spec-lists-the-rules-already-in-place",
+  "cwd": "dbt-mini",
+  "requires": {
+    "commands": [
+      "spec"
+    ],
+    "agents": [
+      "rule-miner"
+    ]
+  },
+  "git": {
+    "commit": true,
+    "uncommitted": {
+      "docs/sdlc/2026-11-15-active-customers/intent.md": "# Intent: count active customers over 6 months\n\nStatus: accepted\n\n## Problem\nMarketing wants the active customer count over 6 months instead of the current definition.\n\n## Proposed outcome\nA model `active_customers` with the new definition.\n",
+      "models/active_customers.sql": "-- customers counted as active by the CRM export\nselect customer_id\nfrom {{ ref('stg_commandes') }}\nwhere order_date >= dateadd(day, -120, current_date)\ngroup by customer_id\n"
+    }
+  },
+  "prompt": "/spec docs/sdlc/2026-11-15-active-customers/intent.md",
+  "expect": {
+    "regex": [
+      "(?i)120",
+      "(?i)(90)[^\\n]{0,250}(120)|(120)[^\\n]{0,250}(90)"
+    ],
+    "not_contains": []
+  },
+  "samples": {
+    "pass": [
+      "Rules in place: Given a customer, When they ordered in the last 120 days, Then active (models/active_customers.sql:4). Contradiction: GLOSSARY.md:10 says 90 rolling days. The change to 6 months modifies both."
+    ],
+    "fail": [
+      "Requirement: count customers with an order in the last 6 months (GLOSSARY.md: 90 days today)."
+    ]
+  },
+  "_doc": "The glossary defines an active customer over 90 rolling days, but the model the CRM export uses counts 120 days. Measures whether /spec extracts the rule in the code and its contradiction with the glossary (rule-miner) before redefining it; the 120 days are in the code only, which /spec does not read on its own. Needs rule-miner installed (requires.agents); written in 4.14.0, not run: run only on request (evals cost)."
+}
