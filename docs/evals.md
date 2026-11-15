@@ -102,6 +102,7 @@ in words the pattern did not know, never to let a wrong behaviour pass.
 | `build-follows-the-repo-pattern` | py-api-mini | `/build` looks for the existing way to report an unknown order and follows it (pattern-scout, optional) |
 | `spec-lists-the-rules-already-in-place` | dbt-mini | `/spec` finds the 120-day rule a model applies, against the glossary's 90 days, before redefining an active customer (rule-miner, optional) |
 | `ship-asks-what-a-newcomer-would` | py-api-mini | `/ship` shows what a newcomer cannot understand: "as agreed", "the usual rate" (fresh-eyes, optional) |
+| `new-app-states-its-level` | (empty folder) | a vague request to create an app states its Level, aligns before code and writes no application file |
 
 ## Results
 

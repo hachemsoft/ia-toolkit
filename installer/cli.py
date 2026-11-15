@@ -221,8 +221,8 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
         restore=restore_edited, hook_manifest=hook_manifest, enabled_hooks=enabled_hooks, enabled_mcp=enabled_mcp, writes=writes, deletes=deletes,
         managed_write=managed_write, 
         agent_body=lambda definition: practices+'\n'+agent_instruction(definition)+'\n'+definition['instructions']+'\n')
-    # Scripts shared by all CLIs: frictions, the review's test facts (ADR 0027), the verifier's proof (ADR 0033) and enabled guardrails.
-    for script in ('friction.py', 'weakened_tests.py', 'prove_test.py'):
+    # Scripts shared by all CLIs: frictions, the review's test facts (ADR 0027), the verifier's proof (ADR 0033), the review page and enabled guardrails.
+    for script in ('friction.py', 'weakened_tests.py', 'prove_test.py', 'review_html.py'):
         managed_write(kit/'bin'/script, (ROOT/'runtime'/script).read_bytes(), 'Kit script')
     # What the session hook announces: the active content's CHANGELOG and NEWS, copied (no network at session start).
     for name in ('CHANGELOG.md', 'NEWS.md'):

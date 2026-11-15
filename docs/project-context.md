@@ -61,7 +61,8 @@ for changes; nothing is written before. It proposes:
 - `GLOSSARY.md`, prefilled with terms found in the code and the docs, never invented.
 - Three `.gitignore` lines for the local notes, valid in every folder of a monorepo:
   `**/docs/sdlc/**/intent.md`, `**/docs/sdlc/**/plan.md`, `**/docs/sdlc/handoff-*.md`. It does not propose one for
-  `review-guide.md` yet: add `**/docs/sdlc/**/review-guide.md` yourself if you use the review guide.
+  `review-guide.md` and `review.html` yet: add `**/docs/sdlc/**/review-guide.md` and `**/docs/sdlc/**/review.html` yourself
+  if you use the review guide or its page.
 - A first ADR when a structuring decision is already visible in the repository.
 
 It never replaces an existing file, and it never names a kit skill or a personal skill in a repository file: those depend

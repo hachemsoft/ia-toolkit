@@ -110,6 +110,16 @@ excerpt and the count of resolved and open marks. The same marks work on `spec.m
 tests of `/build`: a mark still open means the tests are not approved. A mark left in a diff is a Minor finding in
 `/review`.
 
+## The review page
+
+Ask for the page and the guide comes as `review.html` too, next to `review-guide.md`: one local file to open in a browser,
+with the guide on top and the diff below in the guide's order, added and removed lines in colour, large files folded.
+Click a line or a section of the guide to comment (keys `j` and `k` move, `c` comments); comments are kept in the browser
+while the diff does not change, when the browser allows it for local files. "Finish" copies `review-comments.md` (`file:line — comment`; `file:-5` is a removed
+line, line 5 of the base version) to the clipboard and offers to download it: paste it to the agent, or give it the path, and each comment is handled like a
+`review:` mark. The page loads nothing from outside, escapes everything it shows, and holds code from the repository:
+keep it on your machine. Written by the kit script `review_html.py`, with no install and no server.
+
 ## On the merge request
 
 When the branch has an open merge request, `/review` reads its unresolved discussions (`glab mr view <id> --unresolved`;

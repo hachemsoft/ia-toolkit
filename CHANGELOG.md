@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.15.0 (2026-11-15)
+
+The review guide has a page you open in a browser. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`review.html`** (review-guide 1.1.0): ask for the page and the new kit script `review_html.py` writes it next to `review-guide.md`: the guide on top, its `file:line` mentions linked to the lines, then the change's diff in the guide's order, added and removed lines in colour, binary and large files folded. Click a line or a section of the guide to comment (`j` and `k` move, `c` comments, Escape closes).
+- **Comments back to the agent**: "Finish" copies `review-comments.md` (`file:line — comment`, `[section] — comment`) to the clipboard, or shows it selected when the browser refuses, and offers to download it; paste it or give its path, and the agent handles each comment like a `review:` mark. Comments are kept in the browser while the diff does not change, when it allows that for local files; the page says when it does not.
+- **One local file, nothing from outside**: CSS and JavaScript inline, no request (a Content-Security-Policy allows only the page's own blocks, by digest), every text from the repository and the guide escaped, a warning that the page holds code from the repository. Standard library only, git in read mode, no server, no install. `review.html` is git-ignored in the kit's repository; in a repository, add the line yourself until init-project-context proposes it.
+- **Robust to the repository it reads**: the page is never written through a symbolic link nor over a tracked file, and an untracked link is shown as a link, never followed (no file outside the repository ends up in the page); the person's git settings (colour, prefixes, quoted names) do not change the diff read; a SQL comment line (`-- …`) stays a line; comments on a line that no longer exists, or saved by another local page, are not exported; `Ctrl`/`Cmd` shortcuts are left to the browser.
+- Tests: `tests/test_review_html.py` (planted `<script>`, `onerror` and `<!--<script>` escaped, the CSP digests, the guide's order, links not followed, the user's git settings, the comments file and the draft key run in node when it is installed).
+- **Creating an app is a change too**: the kit context's Level rule now says so ("a new app too"), so a vague request to create an app starts with its `Level:` line, aligns and shows the acceptance test before any code (friction 502a23). Eval case `new-app-states-its-level` written, not run.
+
 ## 4.14.0 (2026-11-15)
 
 Four optional agents, each at its step of a change. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

@@ -1,0 +1,29 @@
+{
+  "name": "new-app-states-its-level",
+  "requires": {},
+  "prompt": "Create a FastAPI app to manage a list of books.",
+  "expect": {
+    "regex": [
+      "(?i)level: (standard|full)",
+      "(?i)\\?|acceptance test|test d.acceptation|approv|approu|confirm|valid"
+    ],
+    "not_regex": [
+      "(?i)level: quick"
+    ],
+    "files_absent": [
+      "main.py",
+      "app.py"
+    ]
+  },
+  "_doc": "Friction 502a23: a vague request to create an app in an empty folder got code with no Level line, alignment or acceptance test. Creating an app is a change: the first line states standard or full, the reply aligns or shows the acceptance test, and no application code is written before approval. Patterns accept English and French answers.",
+  "samples": {
+    "pass": [
+      "Level: full — demande floue, nouvelle app : quels champs pour un livre, quelle persistance ? Je propose un test d'acceptation (POST /books puis GET /books renvoie le livre) à approuver avant le code.",
+      "Level: standard: a small new app. Acceptance test first: POST /books then GET /books returns it. Do you approve it?"
+    ],
+    "fail": [
+      "Here is main.py with FastAPI, a Book model and CRUD routes. Run uvicorn main:app --reload.",
+      "Level: quick. Created main.py with the routes. Done."
+    ]
+  }
+}
