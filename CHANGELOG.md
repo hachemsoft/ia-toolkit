@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.17.1 (2026-11-15)
+
+The review page is offered each time, and a repository ignores it. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **The page comes with the guide** (review-guide 1.2.0): once `review-guide.md` is written, the agent offers in one line to open it as `review.html` in a browser, and writes it only on a yes; before, the page was written only when asked for.
+- **init-project-context proposes their `.gitignore` lines** (1.4.0): `**/docs/sdlc/**/review-guide.md` and `**/docs/sdlc/**/review.html`, next to those of `intent.md`, `plan.md` and the handoffs, valid in every area of a monorepo, so a `git add -A` does not commit a page that holds code from the repository. Test strengthened: `tests/test_project_context_contract.py` checks them with `git check-ignore`.
+
 ## 4.17.0 (2026-11-15)
 
 IT can lock the integrity check. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

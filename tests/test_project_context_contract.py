@@ -59,6 +59,8 @@ class ProjectContextContractTests(unittest.TestCase):
             self.assertTrue(ignored('docs/sdlc/2026-01-01-x/intent.md'))
             self.assertTrue(ignored('apis/billing/docs/sdlc/2026-01-01-x/plan.md'))
             self.assertTrue(ignored('apis/billing/docs/sdlc/handoff-2026-01-01.md'))
+            self.assertTrue(ignored('apis/billing/docs/sdlc/2026-01-01-x/review-guide.md'))  # 4.17.1: the review guide and its page
+            self.assertTrue(ignored('docs/sdlc/2026-01-01-x/review.html'))
             self.assertFalse(ignored('apis/billing/docs/sdlc/2026-01-01-x/spec.md'))
 
     def test_project_files_match_what_the_kit_reads(self):

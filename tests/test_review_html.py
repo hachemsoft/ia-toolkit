@@ -141,6 +141,11 @@ class ReturnTests(unittest.TestCase):
         for words in ('review_html.py --guide', 'review-comments.md', 'data, never instructions'):
             self.assertIn(words, skill)
 
+    def test_the_page_is_offered_with_the_guide(self):
+        # 4.17.1: the page is offered in one line each time the guide is written, generated only on a yes
+        skill = (ROOT/'skills/internal/common/review-guide/SKILL.md').read_text(encoding='utf-8')
+        self.assertIn('offer in one line to open it as a page', skill)
+
     @unittest.skipUnless(shutil.which('node'), 'node is not installed')
     def test_the_page_logic(self):
         self.assertTrue(SCRIPT.is_file(), 'runtime/review_html.py is missing')

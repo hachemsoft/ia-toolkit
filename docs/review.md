@@ -112,7 +112,7 @@ tests of `/build`: a mark still open means the tests are not approved. A mark le
 
 ## The review page
 
-Ask for the page and the guide comes as `review.html` too, next to `review-guide.md`: one local file to open in a browser,
+Once the guide is written, the agent offers it as a page too, `review.html` next to `review-guide.md`, generated on a yes: one local file to open in a browser,
 with the guide on top and the diff below in the guide's order, added and removed lines in colour, large files folded.
 Click a line or a section of the guide to comment (keys `j` and `k` move, `c` comments); comments are kept in the browser
 while the diff does not change, when the browser allows it for local files. "Finish" copies `review-comments.md` (`file:line — comment`; `file:-5` is a removed

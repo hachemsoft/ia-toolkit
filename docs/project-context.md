@@ -59,10 +59,9 @@ for changes; nothing is written before. It proposes:
 - `REVIEW.md`, whose first paragraph is kept word for word: it says that the kit's six review passes always run and that
   this file only adds to them.
 - `GLOSSARY.md`, prefilled with terms found in the code and the docs, never invented.
-- Three `.gitignore` lines for the local notes, valid in every folder of a monorepo:
-  `**/docs/sdlc/**/intent.md`, `**/docs/sdlc/**/plan.md`, `**/docs/sdlc/handoff-*.md`. It does not propose one for
-  `review-guide.md` and `review.html` yet: add `**/docs/sdlc/**/review-guide.md` and `**/docs/sdlc/**/review.html` yourself
-  if you use the review guide or its page.
+- Five `.gitignore` lines for the local notes, valid in every folder of a monorepo: `**/docs/sdlc/**/intent.md`,
+  `**/docs/sdlc/**/plan.md`, `**/docs/sdlc/**/review-guide.md`, `**/docs/sdlc/**/review.html` (the review page holds code
+  from the repository) and `**/docs/sdlc/handoff-*.md`.
 - A first ADR when a structuring decision is already visible in the repository.
 
 It never replaces an existing file, and it never names a kit skill or a personal skill in a repository file: those depend
