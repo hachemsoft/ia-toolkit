@@ -261,3 +261,33 @@ class RequiredAgentsTests(unittest.TestCase):
         self.assertEqual(evals_run.unmet_preconditions(case, state), ['agent silent-failure-hunter not installed'])
         state['installed']['agents'].append('ai-kit-silent-failure-hunter')
         self.assertEqual(evals_run.unmet_preconditions(case, state), [])
+
+
+class ReportAndSandboxTests(unittest.TestCase):
+    """4.15.1: the report keeps the end of a long answer; a case may ask for a sandbox the agent can write in."""
+
+    def test_the_report_keeps_the_start_and_the_end(self):
+        self.assertTrue(hasattr(evals_run, 'kept_output'), 'the runner has no kept_output')
+        long = 'START' + 'x' * 30000 + 'FINAL ANSWER'
+        kept = evals_run.kept_output(long)
+        self.assertLessEqual(len(kept), 12100)
+        self.assertTrue(kept.startswith('START'))
+        self.assertTrue(kept.endswith('FINAL ANSWER'))
+        self.assertIn('characters cut', kept)
+        self.assertEqual(evals_run.kept_output('short'), 'short')
+
+    def test_a_case_can_ask_for_a_writable_sandbox(self):
+        plain = {'prompt': '/build x'}
+        writable = {'prompt': '/build x', 'sandbox': 'workspace-write'}
+        codex = evals_run.cli_command('codex', 'codex', plain, 60, None, 'default')
+        self.assertIn('read-only', codex)
+        codex = evals_run.cli_command('codex', 'codex', writable, 60, None, 'default')
+        self.assertNotIn('read-only', codex)
+        self.assertIn('workspace-write', codex)
+        claude = evals_run.cli_command('claude', 'claude', writable, 60, None, 'default')
+        self.assertNotIn('--disallowedTools', claude)
+        self.assertIn('--disallowedTools', evals_run.cli_command('claude', 'claude', plain, 60, None, 'default'))
+
+    def test_the_proof_case_asks_for_it(self):
+        case = json.loads((ROOT/'evals/cases/31-build-proves-the-acceptance-test.json').read_text(encoding='utf-8'))
+        self.assertEqual(case.get('sandbox'), 'workspace-write')

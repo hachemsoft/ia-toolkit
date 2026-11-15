@@ -53,10 +53,12 @@ models. Both runs are billed; repeat them before concluding.
 ## Write a case
 
 `evals/cases/NN-<name>.json`: `name`, `prompt` (typed as a person would), `cwd` (a fixture), optional `subdir` (where the
-CLI starts, for a monorepo), `requires` (`commands`, `skills`), `git` (a real repository: the fixture committed, then
+CLI starts, for a monorepo), `requires` (`commands`, `skills`, `agents`), optional `sandbox: "workspace-write"` (the agent
+may write and run commands, in the case's temporary copy only: the runner lifts the CLI's read-only sandbox or
+denied tools for that case), `git` (a real repository: the fixture committed, then
 `uncommitted` files written over it, `null` deleting one), and `expect` with `contains`, `not_contains`, `regex`, `not_regex`, `files_absent`,
 `files_present`, and optional `samples` (`pass` and `fail` answers: an offline test checks that the criteria accept the
-first and reject the second, without a model). A bare file name (`intent.md`) matches at any depth. Prefer observable facts (a file written or not, a
+first and reject the second, without a model). The report keeps an answer whole when short, else its start and its end. A bare file name (`intent.md`) matches at any depth. Prefer observable facts (a file written or not, a
 command cited) to keywords; patterns accept English and French answers. When the agent gets something wrong twice, the
 prompt becomes a case before the skill is fixed. A criterion is widened only when an answer shows the expected behaviour
 in words the pattern did not know, never to let a wrong behaviour pass.

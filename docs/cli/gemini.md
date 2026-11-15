@@ -2,6 +2,10 @@
 
 What the kit does for Gemini CLI. Behaviour verified on Gemini CLI 0.65. Shared concepts: [CLI matrix](matrice.md).
 
+**Status: maintained, no longer extended.** The kit keeps installing for Gemini CLI and its tests keep covering the adapter, but
+features added since 4.11 (cold review, the verifier's proof, the new agents, the review page) are not checked on it with real
+calls, which are billed; they rely on what Gemini CLI shares with the other CLIs (agents, shell, hooks).
+
 ## What the kit installs
 
 - **Context**: copies of `00_KIT.md`, `10_CORE.md`, the active Team's `20_<TEAM>.md` and `USER.md` from `~/.ai-kit/context/` in `~/.gemini/`

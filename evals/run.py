@@ -7,7 +7,7 @@ AI_KIT_NO_LIVE=1 refuses it. Without a model: --dry-run lists the cases and chec
 Usage: python3 evals/run.py [--home DIR] [--cases evals/cases] [--only name] [--dry-run] [--report path.json] [--baseline]
        [--cli gemini|agy|codex|claude] [--model NAME] [--approval-mode MODE] [--timeout S] [--retries N] [--confirm-paid-run | --stand-in PATH]
 Each case is a JSON file: {"name", "prompt", "cwd" (fixture relative to evals/fixtures, optional), "subdir" (launch subfolder, optional),
-"requires": {"commands": [...], "skills": [...], "agents": [...]} (optional, checked against the installed kit),
+"requires": {"commands": [...], "skills": [...], "agents": [...]} (optional, checked against the installed kit), "sandbox": "workspace-write" (optional: the agent may write and run commands in the case's temporary copy),
 "git": {"commit": true, "uncommitted": {"path": "text" | null}} (optional: a real repository, the fixture committed, then these files changed; null deletes one),
 "expect": {"contains": [...], "not_contains": [...], "regex": [...], "not_regex": [...], "files_absent": [...], "files_present": [...]}}.
 files_absent and files_present are paths relative to the repo; a bare name (intent.md) matches at any depth, where the
@@ -152,6 +152,13 @@ def prepare_git(repo, setup):
         (repo / rel).parent.mkdir(parents=True, exist_ok=True)
         (repo / rel).write_text(text, encoding='utf-8')
 
+def kept_output(output, limit=12000):
+    """The output for the report: whole when short, else its start and its end, where the final answer is."""
+    if len(output) <= limit:
+        return output
+    half = limit // 2
+    return output[:half] + '\n[... ' + str(len(output) - 2 * half) + ' characters cut ...]\n' + output[-half:]
+
 def cli_command(cli, executable, case, timeout, model, approval_mode):
     policy = ROOT / 'evals' / 'policy.toml'
     if cli == 'codex':
@@ -159,10 +166,14 @@ def cli_command(cli, executable, case, timeout, model, approval_mode):
         prompt = case['prompt']
         if prompt.startswith('/'):
             prompt = '$' + prompt[1:]
-        return [executable, 'exec', '--skip-git-repo-check', '--ephemeral', '--color', 'never', '-s', 'read-only'] + (['-m', model] if model else []) + [prompt]
+        # A case that must write (the verifier's proof) asks for "sandbox": "workspace-write": the agent writes in the case's
+        # temporary copy, never in the person's repository.
+        sandbox = 'workspace-write' if case.get('sandbox') == 'workspace-write' else 'read-only'
+        return [executable, 'exec', '--skip-git-repo-check', '--ephemeral', '--color', 'never', '-s', sandbox] + (['-m', model] if model else []) + [prompt]
     if cli == 'claude':
         # Claude Code: print mode, no shell and no file write, as the Gemini policy does; skills and agents stay available.
-        return [executable, '-p', case['prompt'], '--disallowedTools', 'Bash,Write,Edit,NotebookEdit'] + (['--model', model] if model else [])
+        locked = [] if case.get('sandbox') == 'workspace-write' else ['--disallowedTools', 'Bash,Write,Edit,NotebookEdit']
+        return [executable, '-p', case['prompt']] + locked + (['--model', model] if model else [])
     if cli == 'agy':
         # Antigravity: print mode; tools that ask for permission are refused for lack of a prompt, skills still activate.
         return [executable, '-p', case['prompt'], '--print-timeout', str(timeout) + 's'] + (['--model', model] if model else [])
@@ -291,7 +302,7 @@ def main(argv=None):
         failed += bool(failures)
         tokens = tokens_used(output)
         print('[' + status + '] ' + case['name'] + ('' if not failures else ' — ' + ' ; '.join(failures)) + (' (' + str(attempts) + ' attempts)' if attempts > 1 else '') + (' · ' + str(tokens) + ' tokens' if tokens is not None else ''))
-        results.append({'name': case['name'], 'status': status, 'failures': failures, 'attempts': attempts, 'tokens': tokens, 'output': output[:12000]})
+        results.append({'name': case['name'], 'status': status, 'failures': failures, 'attempts': attempts, 'tokens': tokens, 'output': kept_output(output)})
     if args.report:
         args.report.write_text(json.dumps({'meta': meta, 'results': results}, ensure_ascii=False, indent=2), encoding='utf-8')
     ran = [r for r in results if r['status'] != 'SKIP']

@@ -7,12 +7,12 @@ receives it through its adapter (`installer/adapters/`), in the place and form i
 
 | CLI | Adapter | Verified on | Page |
 | --- | --- | --- | --- |
-| Gemini CLI | integrated | 0.65 | [Gemini CLI](gemini.md) |
+| Gemini CLI | maintained, no longer extended | 0.65 | [Gemini CLI](gemini.md) |
 | Antigravity CLI (agy) | integrated | 1.4.12 | [Antigravity CLI](agy.md) |
 | Codex CLI | integrated | 0.164 (files, repo skills and evals) | [Codex CLI](codex.md) |
 | Claude Code | integrated | 2.1.316 (files and evals in `claude -p`) | [Claude Code](claude-code.md) |
 
-`doctor` says when a newer CLI version than the verified one runs. `.github/workflows/cli-drift.yml` checks each week,
+Gemini CLI stays installed and covered by the tests, but features added since 4.11 are not checked on it with real calls (each one is billed): they rely on what Gemini CLI shares with the others. `doctor` says when a newer CLI version than the verified one runs. `.github/workflows/cli-drift.yml` checks each week,
 with `--version` and `--help` only, that the latest CLIs still offer what the kit relies on (`scripts/cli_drift.py`).
 
 ## Concept by concept

@@ -44,6 +44,9 @@ command changes.
 
 ## Specifics
 
+- **Sub-agents in `codex exec`**: in a non-interactive run (`codex exec`), Codex was not seen starting the kit's sub-agents
+  (reviewers, contribution-auditor, blast-radius): the main agent does their passes itself, and the report's limits should say
+  so. In an interactive session they run as agent roles.
 - **Parallel agents**: Codex's sandbox does not let the agent write to `.git`, so it cannot create a worktree for a sub-agent: with the `parallel` setting, sub-agents that read run together and one writes at a time. To isolate a whole session, start it with `codex --worktree`; its sub-agents share that worktree ([parallel agents](../parallel-agents.md)).
 - **`~/.codex/AGENTS.override.md`**: when it exists, Codex reads it instead of `AGENTS.md` and the kit context is ignored;
   `doctor` reports it.
