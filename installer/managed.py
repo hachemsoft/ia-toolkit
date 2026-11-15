@@ -3,7 +3,7 @@ workstation. Generated from the Core's guardrails and MCP servers and from manag
 import json
 from pathlib import Path
 
-from .core import ROOT, KitError, read_json, is_guardrail, hook_identity, lockable_names, with_followers, cli_event
+from .core import ROOT, KitError, read_json, is_guardrail, hook_identity, with_followers, cli_event
 from .toml_files import toml_value
 from .settings import core_settings
 
@@ -170,7 +170,7 @@ def managed_settings(out, hooks_only=False, mcp_only=False, managed_file=None):
     # managed.toml goes into the native files too. Its hooks.locked add to the Core's locked guardrails,
     # a guardrail it turns off is not locked, and its MCP refusals (denied, allow_stdio, allowlists) apply to the MCP lock.
     from .config import filter_mcp, load_managed
-    imposed = load_managed(managed_file, lockable_names(manifest))
+    imposed = load_managed(managed_file)
     if imposed:
         off = [n for n, v in imposed.get('hooks', {}).items() if v is False]
         names = with_followers([n for n in dict.fromkeys(list(names) + list(imposed.get('hooks', {}).get('locked', []))) if n not in off], manifest)

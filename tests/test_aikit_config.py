@@ -133,6 +133,29 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(s['properties']['frictions']['properties']['capture']['enum'], list(config.FRICTION_CAPTURE))
         self.assertEqual(s['properties']['frictions']['properties']['publication']['enum'], list(config.FRICTION_PUBLICATION))
         self.assertEqual(s['properties']['managed_schema']['const'], max(config.MANAGED_SCHEMAS))
+        self.assertEqual(s['properties']['managed_schema'].get('type'), 'integer')  # 1.0 is refused
+        for table, rules in config.MANAGED_RULES.items():
+            self.assertEqual(set(s['properties'][table]['properties']), set(rules), table)
+
+    def test_managed_schema_refuses_empty_texts_like_the_loader(self):
+        # The loader refuses "" in every text it reads (a restriction written wrong must show, not vanish); the tracker's
+        # content is checked by settings.friction_tracker, not here.
+        s = self.schema('managed')
+        texts = []
+
+        def walk(node, where):
+            if node.get('type') == 'string':
+                texts.append((where, node))
+            for key, child in node.get('properties', {}).items():
+                if where+'.'+key != '.frictions.tracker':
+                    walk(child, where+'.'+key)
+            if isinstance(node.get('items'), dict):
+                walk(node['items'], where+'[]')
+        walk(s, '')
+        self.assertGreater(len(texts), 8)
+        for where, node in texts:
+            with self.subTest(where):
+                self.assertTrue(node.get('minLength', 0) >= 1 or 'pattern' in node or 'enum' in node, where)
 
     def test_aikit_schema_matches_the_loader(self):
         s = self.schema('aikit')

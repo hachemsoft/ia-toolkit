@@ -13,9 +13,49 @@ from .core import KitError, digest
 from .toml_files import read_toml
 
 MANAGED_SCHEMAS = {1}
-MANAGED_GIT = ('allowed_hosts', 'allowed_groups', 'allowed_schemes', 'allow_prerelease', 'revoked', 'signers')
 FRICTION_CAPTURE = ('propose', 'auto', 'off')
 FRICTION_PUBLICATION = ('approval', 'auto', 'disabled')
+
+
+def _is_bool(value):
+    return isinstance(value, bool)
+
+
+def _is_texts(value):
+    """A list of non-empty texts."""
+    return isinstance(value, list) and all(isinstance(v, str) and v for v in value)
+
+
+def _all_match(pattern):
+    return lambda values: all(re.fullmatch(pattern, v) for v in values)
+
+
+_BOOL = (_is_bool, 'must be true or false')
+_TEXTS = (_is_texts, 'must be a list of texts')
+_IDENTITIES = (_all_match(r'sha256:[0-9a-f]{64}'), 'lists server identities (sha256:<64 hex>, shown by ai-kit status --verbose)')
+# The closed tables of managed.toml: table -> key -> checks in order, each (predicate, text); a failed check refuses the file with
+# '<table>.<key> <text>'. A key absent from the file is never checked. [hooks] is not here: its keys are the lockable hooks.
+MANAGED_RULES = {
+    'mcp': {'allow_stdio': [_BOOL], 'denied': [_TEXTS], 'allowed_stdio': [_TEXTS, _IDENTITIES], 'allowed_http': [_TEXTS, _IDENTITIES]},
+    'frictions': {
+        'capture': [(lambda v: v in FRICTION_CAPTURE, 'must be '+', '.join(FRICTION_CAPTURE))],
+        'publication': [(lambda v: v in FRICTION_PUBLICATION, 'must be '+', '.join(FRICTION_PUBLICATION))],
+        'retention_days': [(lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 1, 'must be a whole number of days, 1 or more')],
+        # Its shape only: settings.friction_tracker checks its content and gives its defaults.
+        'tracker': [(lambda v: isinstance(v, dict), 'must be a table: kind, project, host, labels, sources (kind, project, host, labels, sources)')],
+    },
+    'enterprise': {'core': [(lambda v: isinstance(v, str) and bool(v), 'must be the URL of the Core repository')]},
+    'git': {  # Git sources (2.0, slice 2): the Core IT imposes, and the origins allowed.
+        'allowed_hosts': [_TEXTS], 'allowed_groups': [_TEXTS],
+        'allowed_schemes': [_TEXTS, (lambda v: set(v) <= {'https', 'ssh'}, 'accepts https and ssh only')],
+        'allow_prerelease': [_BOOL],
+        'revoked': [_TEXTS, (_all_match(r'[0-9a-f]{40}'), 'must list full commit SHAs (40 hexadecimal characters)')],
+        'signers': [_TEXTS],
+    },
+    'teams': {'allowed': [(_is_texts, 'must be a list of Team repository URLs or URL prefixes')], 'allow_unknown': [_BOOL]},
+}
+MANAGED_TABLES = ('hooks', *MANAGED_RULES)
+MANAGED_GIT = tuple(MANAGED_RULES['git'])
 
 
 class ManagedConfigError(KitError):
@@ -48,15 +88,20 @@ def ownership_problem(path):
     return None
 
 
-def load_managed(path=None, guardrail_names=()):
+def lockable_hooks():
+    """What IT may name in [hooks]: the lockable hooks of the engine's own manifest, the same for every caller."""
+    from .core import ROOT, lockable_names, read_json
+    return lockable_names(read_json(ROOT/'runtime'/'hooks'/'hooks.json').get('hooks', {}))
+
+
+def load_managed(path=None):
     """The validated content of managed.toml, or None when the file does not exist (not administered). Any other problem raises
     ManagedConfigError: unreadable, writable by the user, unknown key, wrong type, contradiction."""
     path = Path(path) if path is not None else managed_path()
     if not path.exists():
         return None
-    if not guardrail_names:  # every caller validates against the same names: what IT may lock (4.17.0)
-        from .core import ROOT, lockable_names, read_json
-        guardrail_names = lockable_names(read_json(ROOT/'runtime'/'hooks'/'hooks.json').get('hooks', {}))
+    lockable = lockable_hooks()
+
     def refuse(reason):
         raise ManagedConfigError(str(path)+': '+reason+'. Nothing was changed; ask IT to fix the file (docs/configuration.md).')
     problem = ownership_problem(path)
@@ -66,78 +111,43 @@ def load_managed(path=None, guardrail_names=()):
         data = read_toml(path)
     except KitError as exc:
         refuse('unreadable ('+str(exc)+')')
-    if data.get('managed_schema') not in MANAGED_SCHEMAS or isinstance(data.get('managed_schema'), bool):
+    if type(data.get('managed_schema')) is not int or data['managed_schema'] not in MANAGED_SCHEMAS:  # not True, not 1.0
         refuse('managed_schema must be one of '+', '.join(str(s) for s in sorted(MANAGED_SCHEMAS))+' (this AI Kit understands those)')
-    allowed = {'managed_schema', 'hooks', 'mcp', 'frictions', 'enterprise', 'git', 'teams'}
+    allowed = {'managed_schema', *MANAGED_TABLES}
     unknown = sorted(set(data) - allowed)
     if unknown:
         refuse('unknown key '+', '.join(unknown)+' (this version applies: '+', '.join(sorted(allowed))+')')
-    for table in ('hooks', 'mcp', 'frictions', 'enterprise', 'git', 'teams'):
+    for table in MANAGED_TABLES:
         if table in data and not isinstance(data[table], dict):
             refuse('['+table+'] must be a table')
-    hooks, mcp, frictions = data.get('hooks', {}), data.get('mcp', {}), data.get('frictions', {})
+    hooks = data.get('hooks', {})
     follower = 'hooks.whats-new follows integrity: lock or set integrity instead'
     for name, value in hooks.items():
         if name == 'locked':
             if isinstance(value, list) and 'whats-new' in value:
                 refuse(follower)
-            if not isinstance(value, list) or not all(isinstance(n, str) and n in guardrail_names for n in value):
-                refuse('hooks.locked must list lockable hooks of the kit ('+', '.join(sorted(guardrail_names))+')')
+            if not isinstance(value, list) or not all(isinstance(n, str) and n in lockable for n in value):
+                refuse('hooks.locked must list lockable hooks of the kit ('+', '.join(sorted(lockable))+')')
         elif name == 'whats-new':
             refuse(follower)
-        elif name not in guardrail_names:
-            refuse('unknown hook hooks.'+name+' (lockable hooks: '+', '.join(sorted(guardrail_names))+')')
+        elif name not in lockable:
+            refuse('unknown hook hooks.'+name+' (lockable hooks: '+', '.join(sorted(lockable))+')')
         elif not isinstance(value, bool):
             refuse('hooks.'+name+' must be true or false')
     contradiction = [n for n in hooks.get('locked', []) if hooks.get(n) is False]
     if contradiction:
         refuse('hooks.locked contains '+', '.join(contradiction)+' while hooks.'+contradiction[0]+' = false')
-    unknown = sorted(set(mcp) - {'allow_stdio', 'denied', 'allowed_stdio', 'allowed_http'})
-    if unknown:
-        refuse('unknown key mcp.'+', mcp.'.join(unknown))
-    if 'allow_stdio' in mcp and not isinstance(mcp['allow_stdio'], bool):
-        refuse('mcp.allow_stdio must be true or false')
-    for key in ('denied', 'allowed_stdio', 'allowed_http'):
-        if key in mcp and (not isinstance(mcp[key], list) or not all(isinstance(n, str) and n for n in mcp[key])):
-            refuse('mcp.'+key+' must be a list of texts')
-    for key in ('allowed_stdio', 'allowed_http'):
-        if any(not re.fullmatch(r'sha256:[0-9a-f]{64}', v) for v in mcp.get(key, [])):
-            refuse('mcp.'+key+' lists server identities (sha256:<64 hex>, shown by ai-kit status --verbose)')
-    unknown = sorted(set(frictions) - {'capture', 'publication', 'retention_days', 'tracker'})
-    if unknown:
-        refuse('unknown key frictions.'+', frictions.'.join(unknown))
-    if 'capture' in frictions and frictions['capture'] not in FRICTION_CAPTURE:
-        refuse('frictions.capture must be '+', '.join(FRICTION_CAPTURE))
-    if 'publication' in frictions and frictions['publication'] not in FRICTION_PUBLICATION:
-        refuse('frictions.publication must be '+', '.join(FRICTION_PUBLICATION))
-    if 'tracker' in frictions and not isinstance(frictions['tracker'], dict):
-        refuse('frictions.tracker must be a table: kind, project, host, labels, sources (kind, project, host, labels, sources)')
-    if 'retention_days' in frictions and (not isinstance(frictions['retention_days'], int) or isinstance(frictions['retention_days'], bool) or frictions['retention_days'] < 1):
-        refuse('frictions.retention_days must be a whole number of days, 1 or more')
-    # Git sources (2.0, slice 2): the Core IT imposes, and the origins allowed.
-    enterprise, git = data.get('enterprise', {}), data.get('git', {})
-    unknown = sorted(set(enterprise) - {'core'}) + sorted('git.'+k for k in set(git) - set(MANAGED_GIT))
-    if unknown:
-        refuse('unknown key '+', '.join(k if k.startswith('git.') else 'enterprise.'+k for k in unknown))
-    if 'core' in enterprise and (not isinstance(enterprise['core'], str) or not enterprise['core']):
-        refuse('enterprise.core must be the URL of the Core repository')
-    for key in ('allowed_hosts', 'allowed_groups', 'allowed_schemes', 'revoked', 'signers'):
-        if key in git and (not isinstance(git[key], list) or not all(isinstance(v, str) and v for v in git[key])):
-            refuse('git.'+key+' must be a list of texts')
-    if not set(git.get('allowed_schemes', [])) <= {'https', 'ssh'}:
-        refuse('git.allowed_schemes accepts https and ssh only')
-    if any(not re.fullmatch(r'[0-9a-f]{40}', v) for v in git.get('revoked', [])):
-        refuse('git.revoked must list full commit SHAs (40 hexadecimal characters)')
-    if 'allow_prerelease' in git and not isinstance(git['allow_prerelease'], bool):
-        refuse('git.allow_prerelease must be true or false')
-    teams = data.get('teams', {})
-    unknown = sorted(set(teams) - {'allowed', 'allow_unknown'})
-    if unknown:
-        refuse('unknown key teams.'+', teams.'.join(unknown))
-    if 'allowed' in teams and (not isinstance(teams['allowed'], list) or not all(isinstance(v, str) and v for v in teams['allowed'])):
-        refuse('teams.allowed must be a list of Team repository URLs or URL prefixes')
-    if 'allow_unknown' in teams and not isinstance(teams['allow_unknown'], bool):
-        refuse('teams.allow_unknown must be true or false')
+    # The closed tables: their unknown keys first, then each key present, in the order of MANAGED_RULES.
+    for table, rules in MANAGED_RULES.items():
+        values = data.get(table, {})
+        unknown = sorted(set(values) - set(rules))
+        if unknown:
+            refuse('unknown key '+', '.join(table+'.'+k for k in unknown))
+        for key, checks in rules.items():
+            if key in values:
+                for check, text in checks:
+                    if not check(values[key]):
+                        refuse(table+'.'+key+' '+text)
     return data
 
 

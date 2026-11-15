@@ -10,6 +10,7 @@
   "additionalProperties": false,
   "properties": {
     "managed_schema": {
+      "type": "integer",
       "const": 1
     },
     "hooks": {
@@ -129,7 +130,8 @@
       "properties": {
         "core": {
           "type": "string",
-          "description": "URL of the Core repository every workstation uses."
+          "description": "URL of the Core repository every workstation uses.",
+          "minLength": 1
         }
       }
     },
@@ -176,7 +178,8 @@
         "signers": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "description": "SSH public keys whose signature a tag must carry (optional)."
         }
@@ -189,7 +192,8 @@
         "allowed": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           }
         },
         "allow_unknown": {

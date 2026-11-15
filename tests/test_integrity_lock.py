@@ -69,15 +69,15 @@ class LockTests(Base):
         self.assertIn('integrity', names)
         self.assertNotIn('whats-new', names)
         self.managed.write_text(LOCKED, encoding='utf-8')
-        self.assertEqual(config.load_managed(self.managed, names)['hooks']['locked'], ['integrity'])
+        self.assertEqual(config.load_managed(self.managed)['hooks']['locked'], ['integrity'])
         for bad, words in (('locked = ["whats-new"]', 'follows integrity'), ('whats-new = true', 'follows integrity'),
                            ('locked = ["integrity"]\nintegrity = false', 'hooks.locked contains integrity')):
             self.managed.write_text('managed_schema = 1\n[hooks]\n'+bad+'\n', encoding='utf-8')
             with self.assertRaises(config.ManagedConfigError) as raised:
-                config.load_managed(self.managed, names)
+                config.load_managed(self.managed)
             self.assertIn(words, str(raised.exception))
         self.managed.write_text('managed_schema = 1\n[hooks]\nintegrity = false\n', encoding='utf-8')
-        self.assertIs(config.load_managed(self.managed, names)['hooks']['integrity'], False)  # off for everyone, not locked
+        self.assertIs(config.load_managed(self.managed)['hooks']['integrity'], False)  # off for everyone, not locked
 
     def test_every_caller_accepts_the_lock(self):
         # 4.17.0 review: bootstrap (ZIP install), sync and init called load_managed without names and refused any [hooks]

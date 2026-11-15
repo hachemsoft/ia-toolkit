@@ -189,11 +189,11 @@ def aikit_text(home, updates):
 
 
 @contextlib.contextmanager
-def activation(home, action, dry_run=False, confirm=None, managed_file=None, guardrail_names=(), team_name=None, team_url=None, ask_url=None, bundle=None,
+def activation(home, action, dry_run=False, confirm=None, managed_file=None, team_name=None, team_url=None, ask_url=None, bundle=None,
                shipped=False):
     """Yields an Activation for apply(), with the content root set to the active Core and Team."""
     kit = home/'.ai-kit'
-    managed = load_managed(managed_file, guardrail_names)
+    managed = load_managed(managed_file)
     settings, core_url, anchored = git_settings(home, managed)
     lock = read_lock(kit)
     core_url = core_url or ((lock.get('sources') or {}).get('core') or {}).get('url')  # the Core activated first (a ZIP's)

@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 from . import resolve
-from .core import (lockable_names, content_root, STATE_SCHEMA, check_state_schema, _PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, KitError, friction_module, is_guardrail, read_json, json_bytes, digest,
+from .core import (content_root, STATE_SCHEMA, check_state_schema, _PACKAGE_DIR, ROOT, KIT_CONTEXT, USER_CONTEXT, EMAIL, KitError, friction_module, is_guardrail, read_json, json_bytes, digest,
                    safe_id, load_commands, load_agent, redact)
 from .adapters import ADAPTERS
 from .interface import Plan
@@ -158,8 +158,7 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
     team = None if team == 'none' else safe_id(team) if team else state.get('team')
     org_defaults, team_layer, personal, overrides, choices = effective_settings(kit, team, choices)
     # managed.toml (IT): every key it sets wins over the Core, the Team and the person (ADR 0015).
-    hook_specs = read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})
-    managed = load_managed(managed_file, lockable_names(hook_specs))
+    managed = load_managed(managed_file)
     overrides, managed_notices = apply_values(overrides, managed)
     catalog = resolve.skill_catalog(content_root())
     manifest = load_commands()
@@ -509,7 +508,6 @@ def command_main(argv):
                 raise KitError('Kit not installed: run ai-kit init.')
             identity = resolve_identity(args, home, state)
             from .sync import activation
-            hook_specs = read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})
             def confirm(question):
                 if not interactive():
                     return False
@@ -533,7 +531,7 @@ def command_main(argv):
                 action = 'update' if args.offline else 'sync'
             else:  # init: a first installation syncs its Core (the shipped one, or the source set); later, it re-applies
                 action = 'sync' if first_shipped or (not locked and sync_configured(home)) else 'update'
-            with activation(home, action, args.dry_run, confirm, guardrail_names=lockable_names(hook_specs),
+            with activation(home, action, args.dry_run, confirm,
                             team_name=args.rest[1] if args.action == 'team' else None, team_url=args.url, ask_url=ask_url,
                             bundle=args.from_bundle or (SHIPPED[0] if first_shipped else None), shipped=first_shipped) as act:
                 apply(home, args.dry_run, identity, args.target, act.team or state.get('team'),

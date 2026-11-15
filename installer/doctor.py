@@ -434,10 +434,9 @@ def doctor_checks(home, cwd=None, problems=None):
     status(sys.version_info >= (3,11),'Python 3.11 minimum')
     # managed.toml (2.0.0): say which settings IT imposes, or why the file is refused (every change then exits 3).
     from .config import ManagedConfigError, drift, load_managed, summary
-    from .core import lockable_names
     managed = None
     try:
-        managed = load_managed(None, lockable_names(read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})))
+        managed = load_managed(None)
         if managed is not None:
             print('[Info] '+summary(managed))
     except ManagedConfigError as exc:

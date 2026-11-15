@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.17.3 (2026-11-15)
+
+`managed.toml` is checked against one table of rules, and its JSON schema says what the kit refuses. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`managed_schema = 1.0` is refused** (exit code 3, nothing changed): a version is a whole number; before, `1.0` was accepted. The only change in behaviour.
+- **`schemas/managed.schema.json` matches the loader**: `managed_schema` is an integer, and `enterprise.core`, `git.signers` and `teams.allowed` refuse an empty text, as the kit already did. A key absent or an empty list restricts nothing; an empty text in a list refuses the file, so a restriction written wrong shows instead of vanishing (`docs/configuration.md`).
+- **One table of rules** (`MANAGED_RULES` in `installer/config.py`) replaces the chain of checks: same refusals, same messages; with several problems in one file, the one reported may differ. `load_managed` reads the lockable hooks from the engine's manifest itself: its `guardrail_names` parameter is gone.
+- Tests: `tests/test_config_precedence.py` (`ValidationTests`: every refusal and its exact message), `tests/test_aikit_config.py` (the schema's tables match the rules, no text accepts `""` that the loader refuses). Test changed on purpose: `managed_schema = 1.0` is now among the refusals.
+
 ## 4.17.2 (2026-11-15)
 
 What a person can still switch off in Gemini CLI, closed where the policy file can and reported where it cannot. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer; IT regenerates its files with `ai-kit managed-settings`.
