@@ -7,6 +7,7 @@ import io
 import json
 import os
 import re
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -144,6 +145,11 @@ class InvariantTests(unittest.TestCase):
         def slug(heading):
             return re.sub(r'[^\w\- ]', '', heading.strip().lower()).replace(' ', '-')
         pages = [ROOT/'README.md', ROOT/'CHANGELOG.md'] + list((ROOT/'docs').rglob('*.md'))
+        try:  # the pages git tracks: a local note git ignores (docs/sdlc/*/plan.md) is not documentation
+            tracked = subprocess.run(['git', 'ls-files', '-z', '--', '*.md'], cwd=ROOT, capture_output=True, check=True).stdout
+            pages = [p for p in pages if p.relative_to(ROOT).as_posix() in set(tracked.decode('utf-8').split('\0'))]
+        except (OSError, subprocess.CalledProcessError):
+            pass  # not a git checkout (a release ZIP): every page on disk
         for page in pages:
             if page.name.startswith('plan-') or page.name in ('roadmap.md', 'portability-report.md'):
                 continue
