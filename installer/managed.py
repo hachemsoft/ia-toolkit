@@ -103,13 +103,15 @@ def claude(names, manifest, hooks_only, mcp=None, windows=False):
 
 
 def gemini(names, manifest, windows=False):
-    """On Windows, Gemini CLI's docs do not say which shell runs a hook: no hook is written there, YOLO mode stays off."""
-    settings = {'hooks': {}, 'security': {'disableYoloMode': True}}
+    """On Windows, Gemini CLI's docs do not say which shell runs a hook: no hook is written there, YOLO mode stays off.
+    hooksConfig.enabled = true: the system file is merged last, so a person's false does not turn the hooks off (4.17.2)."""
+    settings = {'hooks': {}, 'hooksConfig': {'enabled': True}, 'security': {'disableYoloMode': True}}
     for n, spec, served in ([] if windows else declared(names, manifest)):
         settings['hooks'].setdefault(spec['event'], []).append(
             {**({'matcher': spec['matcher']} if spec['matcher'] else {}), 'hooks': [{'name': 'ai-kit-'+n, 'type': 'command', 'command': command(spec, served=served)}]})
     if not settings['hooks']:
         settings.pop('hooks')
+        settings.pop('hooksConfig')  # no hook declared (Windows): the person's switch is left alone
     return json.dumps(settings, indent=2)+'\n'
 
 

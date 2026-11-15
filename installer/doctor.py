@@ -407,6 +407,21 @@ def newer_than(found, verified):
     return parts(found) > parts(verified)
 
 
+def gemini_hook_switches(home, status):
+    """Gemini CLI's switches in the person's settings (4.17.2): hooksConfig.disabled adds up across levels, so a kit hook listed
+    there does not run even when IT declares it; hooksConfig.enabled = false turns every hook off, unless the system file says
+    true. Said, not prevented. A repo's .gemini/settings.json is not read."""
+    settings = read_json(home/'.gemini/settings.json')
+    switches = settings.get('hooksConfig') if isinstance(settings, dict) else None
+    switches = switches if isinstance(switches, dict) else {}
+    disabled = switches.get('disabled') if isinstance(switches.get('disabled'), list) else []
+    kit = sorted(n for n in disabled if isinstance(n, str) and n.startswith('ai-kit-'))
+    status(not kit, 'Gemini CLI hooks on in ~/.gemini/settings.json' if not kit else
+           'Gemini CLI: hooksConfig.disabled in ~/.gemini/settings.json turns off '+', '.join(kit)+'; remove them from the list')
+    if switches.get('enabled') is False:
+        status(False, 'Gemini CLI: hooksConfig.enabled = false in ~/.gemini/settings.json turns every hook off, the kit\'s guardrails included')
+
+
 def doctor_checks(home, cwd=None, problems=None):
     issues = 0
     def status(ok,message):
@@ -465,6 +480,8 @@ def doctor_checks(home, cwd=None, problems=None):
                 parts = [level+': '+', '.join(k+(' ('+w+')' if w and level != 'OK' else '') for k, (s, w) in caps.items() if s == level)
                          for level in ('OK', 'DEGRADED', 'BLOCKED') if any(s == level for s, _ in caps.values())]
                 print('[Info] '+adapter.LABEL+' capabilities: '+' | '.join(parts))
+        if 'gemini' in (state.get('targets') or []):
+            gemini_hook_switches(home, status)
         tracker_checks(home, state, status)
         news_checks(home, state, status)
         identity = state.get('user', {})

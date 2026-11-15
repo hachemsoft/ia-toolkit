@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.17.2 (2026-11-15)
+
+What a person can still switch off in Gemini CLI, closed where the policy file can and reported where it cannot. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer; IT regenerates its files with `ai-kit managed-settings`.
+
+- **Gemini CLI's system `settings.json` keeps the hooks on**: `ai-kit managed-settings` writes `hooksConfig.enabled = true`. The system file is merged last, so a person's `false` no longer turns the guardrails and the integrity check off.
+- **`ai-kit doctor` reports a kit hook turned off in Gemini CLI**: a hook name `ai-kit-*` in `hooksConfig.disabled`, or `hooksConfig.enabled = false`, in `~/.gemini/settings.json`. Gemini CLI adds up the `disabled` lists of every level, so the policy file cannot undo it: the kit says it.
+- **Limits written** (`docs/hooks.md`, `docs/cli/gemini.md`): in a folder that is not trusted, Gemini CLI runs none of the hooks of its settings files, system ones included. Read in its source code (`settingsSchema.ts`, `hookRegistry.ts`, `settings.ts`). Claude Code was checked too: its docs say a person's `disableAllHooks` cannot turn managed hooks off.
+
 ## 4.17.1 (2026-11-15)
 
 The review page is offered each time, and a repository ignores it. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
