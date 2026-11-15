@@ -296,10 +296,6 @@ def inside(path, folder):
         return False
     return relative == '.' or not (relative == '..' or relative.startswith('..' + os.sep))
 
-def in_kit(path, folder):
-    """inside(), also without case: a path taken from a normalised command is lower case, the file system may not be."""
-    return inside(path, folder) or inside(path.lower(), folder.lower())
-
 def where(word, current):
     """The folder a cd or -C word leads to, from the current one (~ expanded)."""
     word = word.strip('"\'')
