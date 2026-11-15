@@ -72,7 +72,7 @@ Never write a secret here: `doctor` flags one. Write `${VARIABLE}` and define th
 
 ## `managed.toml` (IT)
 
-Closed schema (`schemas/managed.schema.json`). A file that is unreadable, writable by the user (POSIX: not owned by root, or its folder writable), has an unknown key or a wrong type is refused: every command that changes files stops with exit code 3 and nothing changes. A missing file means not administered. A key absent or set to an empty list (`[]`) restricts nothing; an empty text (`""`) in a list, or `managed_schema = 1.0`, refuses the file: a restriction written wrong shows instead of vanishing.
+Closed schema (`schemas/managed.schema.json`). A file that is unreadable, writable by the user (POSIX: not owned by root, or its folder writable), has an unknown key or a wrong type is refused: every command that changes files stops with exit code 3 and nothing changes. A missing file means not administered. A key absent restricts nothing. An empty list (`[]`) restricts nothing either, except in the allow-lists that name what is permitted: `mcp.allowed_stdio = []` refuses every local server, `mcp.allowed_http = []` every remote server, and `git.allowed_schemes = []` every Git URL. An empty text (`""`) in a list, or `managed_schema = 1.0`, refuses the file: a restriction written wrong shows instead of vanishing.
 
 | Key | Value | Effect |
 | --- | --- | --- |
