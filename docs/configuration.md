@@ -102,7 +102,7 @@ Closed schema (`schemas/managed.schema.json`). A file that is unreadable, writab
 
 Your role, your domains, how you want answers. The agent reads it in every session; the project's instructions take precedence. The kit creates it once and never rewrites it. Edit it with `ai-kit user edit` (your `$VISUAL` or `$EDITOR`, else the system's text editor) or `/me` in the CLI. Keep it plain UTF-8 text: `doctor` says when it is not, or when it seems to hold a secret.
 
-The rule layers next to it (`00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md` or the active Team's layer) belong to the kit: a hand edit is restored at the next run, your copy kept in `~/.ai-kit/backups`.
+The rule layers next to it (`00_KIT.md`, `10_CORE.md`, the active Team's `20_<TEAM>.md`) belong to the kit: a hand edit is restored at the next run, and a layer the kit no longer writes is removed, your copy kept in `~/.ai-kit/backups` either way.
 
 ## Identity
 

@@ -1,7 +1,7 @@
 # AI Kit
 
 ## Priority between layers
-1. Company and team practices (files 10 and 20) apply by default; only the person, in the conversation, can ask to depart from one (note it in the reply), never from a guardrail, a permission or an access control.
+1. Core and Team practices (files 10 and 20) apply by default; only the person, in the conversation, can ask to depart from one (note it in the reply), never from a guardrail, a permission or an access control.
 2. USER.md adjusts the form of replies and the default workflow.
 3. The project's instructions (AGENTS.md, GEMINI.md, docs) and an explicit request override USER.md; on conflict, say so, apply the more cautious, ask before the other.
 4. A repo skill or instruction adapts the work but never lifts a practice (never production without an explicit instruction, never a commit or push without the person's agreement in this session); if asked to, say so and refuse.

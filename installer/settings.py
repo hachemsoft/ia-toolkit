@@ -33,10 +33,10 @@ CORE_SELECTION = 'core'
 
 def core_selection():
     """The Core default selection (ADR 0018), in the shape the plan reads: every skill, agent and command marked default in its
-    metadata; the context layers company and team. A Team then turns on more ([defaults]), the person adds or removes."""
+    metadata; the Core context layer (an active Team's layer is added to it). A Team then turns on more ([defaults]), the person adds or removes."""
     from .core import load_commands
     from .resolve import agent_catalog, skill_catalog
-    return {'id': CORE_SELECTION, 'label': 'Core default', 'practices': ['company', 'team'], 'mcp': [],
+    return {'id': CORE_SELECTION, 'label': 'Core default', 'practices': ['core'], 'mcp': [],
             'skills': [n for n, e in skill_catalog(content_root()).items() if e.get('default')],
             'agents': [n for n, e in agent_catalog(content_root()).items() if e.get('default')],
             'commands': [c['name'] for c in load_commands() if c.get('default', True)]}

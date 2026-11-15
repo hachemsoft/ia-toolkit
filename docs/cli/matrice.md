@@ -20,7 +20,7 @@ with `--version` and `--help` only, that the latest CLIs still offer what the ki
 | Kit concept | Gemini CLI | Antigravity CLI (agy) | Codex CLI | Claude Code |
 | --- | --- | --- | --- | --- |
 | CLI folder | `~/.gemini/` | `~/.gemini/` and the plugin `~/.gemini/config/plugins/ai-kit/` | `~/.codex/` | `~/.claude/` and `~/.claude.json` |
-| Context layers (`00_KIT`, `10_COMPANY`, `20_TEAM`) | copies in `~/.gemini/`, declared in `context.fileName` | included by path from the plugin's `rules/AGENTS.md` | managed block at the top of `~/.codex/AGENTS.md` | imported by path from a managed block in `~/.claude/CLAUDE.md` |
+| Context layers (`00_KIT`, `10_CORE`, the active Team's `20_<TEAM>`) | copies in `~/.gemini/`, declared in `context.fileName` | included by path from the plugin's `rules/AGENTS.md` | managed block at the top of `~/.codex/AGENTS.md` | imported by path from a managed block in `~/.claude/CLAUDE.md` |
 | `USER.md` (always `~/.ai-kit/context/USER.md`) | a copy in `~/.gemini/USER.md` | included by path | copied into the block | imported by path |
 | Repository context | `AGENTS.md` or `GEMINI.md`, root and folders traversed | `AGENTS.md`, `GEMINI.md`, `.agents/rules/` | `AGENTS.md` (and `AGENTS.override.md`) | `AGENTS.md` when the repo has no `CLAUDE.md`; otherwise `CLAUDE.md`, and the block asks to read `AGENTS.md` |
 | Nested `AGENTS.md` (monorepo) | every one found under the launch folder and on demand, all concatenated | not verified | root down to the current folder, concatenated, the closest last (32 KiB by default) | a subfolder's when it opens a file there |

@@ -62,7 +62,7 @@ class InstallTests(Base):
         text = self.read('.claude/CLAUDE.md')
         self.assertTrue(text.startswith(claude.CLAUDE_MD[0]))
         self.assertIn('Always answer in French.', text)
-        for name in ('00_KIT.md', '10_COMPANY.md', '20_TEAM.md', 'USER.md'):
+        for name in ('00_KIT.md', '10_CORE.md', 'USER.md'):
             self.assertRegex(text, r'(?m)^@.*/'+name+'$')
         self.assertNotIn('Person:', text)  # USER.md is imported, not copied
         self.assertIn('AGENTS.md', text)

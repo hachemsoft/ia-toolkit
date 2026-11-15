@@ -64,8 +64,8 @@ The body is the prompt; `{{args}}` receives what the person types; no triple dou
 instructions below directly". Commands name no domain; mention a playbook only as "the installed playbook matching the
 files or the task". A command that changes something states `Level:` on its first line.
 
-**Context**: `context/NN-<id>.md` becomes `NN_<ID>.md` in `~/.ai-kit/context/` (`10-company.md`, `20-team.md`; a Team's
-context replaces the team layer). `templates/kit-context.md` becomes `00_KIT.md`. Business facts stay in the projects.
+**Context**: `context/NN-<id>.md` becomes `NN_<ID>.md` in `~/.ai-kit/context/` (the Core's `10-core.md`, which an organization's fork rewrites; an
+active Team's context is added after it as `20_<TEAM>.md`, never replacing it, and a Team named like a Core layer is refused). `templates/kit-context.md` becomes `00_KIT.md`. Business facts stay in the projects.
 
 **News**: `NEWS.md` entries are `## <YYYY-MM-DD> <id> : <title>`, then optional `teams: <names>` and `until: <date>` lines,
 then the text; `python3 scripts/check_news.py` checks them.

@@ -73,7 +73,7 @@ Everything below is plain files in a Git repository (the Core, this one by defau
 
 | Component | What it is | In the box | Source |
 | --- | --- | --- | --- |
-| **Context layers** | Markdown read by the agent before each repo's `AGENTS.md`: how the kit works, company practices, team practices, your `USER.md` | 4 layers; the repo's own rules win over yours | `context/`, [configuration](docs/configuration.md) |
+| **Context layers** | Markdown read by the agent before each repo's `AGENTS.md`: how the kit works, the Core practices, your Team's practices when one is active, your `USER.md` | 3 or 4 layers; the repo's own rules win over yours | `context/`, [configuration](docs/configuration.md) |
 | **Commands** | Shortcuts for the steps of a change, each ending with an artifact the next one reads | 14 by default: `/intent` → `/spec` → `/build` → `/test` → `/review` → `/ship`, `/diagnose`, and tools (`/me`, `/guide`, `/explain`, `/research`, `/learn`, `/friction`, `/retro`); 7 optional | `commands/`, [commands](docs/commands.md) |
 | **Skills** | Know-how the agent loads when the task fits: TDD, code review, diagnosis, domain modeling, writing a merge request… | 20 by default | `skills/`, [skills](docs/commands.md#skills) |
 | **Domain playbooks** | Optional skills that adapt the steps to a domain | SQL and dbt, application code (one playbook, with notes for Python, JavaScript and TypeScript, Java, PHP, Go, Scala), infrastructure, architecture | `skills/internal/<domain>/`, [playbooks](docs/commands.md#domain-playbooks) |

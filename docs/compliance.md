@@ -62,6 +62,6 @@ kit, governs them.
 
 1. Choose the CLIs and the model provider contracts (retention, training, data location).
 2. Classify repositories and data: what an agent may read, what needs a full review, what is excluded.
-3. Validate the company and team practices in `context/`, offered as a baseline.
+3. Validate the Core practices in `context/10-core.md`, offered as a baseline: rewrite it in your Core repository; each Team adds its own.
 4. Decide `managed.toml`: locked guardrails, MCP allowlists, Git origins, the friction tracker.
 5. Train people and follow usage; get action logs or review proofs from the CLI or the platform when required.

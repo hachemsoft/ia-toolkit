@@ -4,7 +4,7 @@ What the kit does for Gemini CLI. Behaviour verified on Gemini CLI 0.65. Shared 
 
 ## What the kit installs
 
-- **Context**: copies of `00_KIT.md`, `10_COMPANY.md`, `20_TEAM.md` and `USER.md` from `~/.ai-kit/context/` in `~/.gemini/`
+- **Context**: copies of `00_KIT.md`, `10_CORE.md`, the active Team's `20_<TEAM>.md` and `USER.md` from `~/.ai-kit/context/` in `~/.gemini/`
   (Gemini imports only files located there), declared in `context.fileName` of `~/.gemini/settings.json` before `GEMINI.md`
   and `AGENTS.md`. Your own names in `context.fileName` are kept. Edit `~/.ai-kit/context/USER.md`, then run
   `ai-kit sync --offline`; an edit made to the copy goes into the file when the file did not change since the copy.

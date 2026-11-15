@@ -135,7 +135,7 @@ instead of enforcing them, the reviewers keep to reading by instruction only ([C
 
 Reviewers get read and search tools only; the verifier can also list folders and run commands. Defaults (tools, 12 turns,
 5 minutes) are in `agents/defaults.json`; the verifier has 15 turns and 10 minutes. Whether a CLI enforces the tool list or
-only states it, and where it reads the limits, is in the [CLI matrix](cli/matrice.md). The kit and team practices are
+only states it, and where it reads the limits, is in the [CLI matrix](cli/matrice.md). The Core and Team practices are
 included in each agent's prompt; `USER.md` is not.
 
 ## Project context

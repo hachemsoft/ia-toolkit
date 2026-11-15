@@ -35,7 +35,7 @@ class PortabilityTests(unittest.TestCase):
         self.assertIn('Personal preference', prefs.read_text(encoding='utf-8'))
         self.assertTrue((self.home / '.gemini/00_KIT.md').exists())
         names = json.loads((self.home / '.gemini/settings.json').read_text(encoding='utf-8'))['context']['fileName']
-        self.assertEqual(names[:6], ['00_KIT.md','10_COMPANY.md','20_TEAM.md','USER.md','GEMINI.md','AGENTS.md'])
+        self.assertEqual(names[:5], ['00_KIT.md','10_CORE.md','USER.md','GEMINI.md','AGENTS.md'])
         # 3.0: no profiles, and no --profile option any more (a usage error).
         refused = self.run_cli('init', '--profile', 'data-developer', code=2)
         self.assertIn('--profile', refused.stderr)

@@ -172,7 +172,10 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
     if identity.get('email') and not EMAIL.fullmatch(identity['email']):
         raise KitError('Invalid email: '+identity['email'])
     if team and (context_folder()/('20-'+team+'.md')).is_file():
-        selection = {**selection, 'practices': ['company', team]}  # the active Team's context replaces the default team layer
+        clash = sorted(p.name for p in context_folder().glob('[0-9][0-9]-'+team+'.md') if p.name != '20-'+team+'.md')
+        if clash:
+            raise KitError('Team '+team+' has the name of a Core context layer ('+', '.join(clash)+'): rename the Team; nothing was changed.')
+        selection = {**selection, 'practices': selection['practices']+[team]}  # the active Team's context is added to the Core layer
     files = {}
     old_files = state.get('files',{})
     restored = []  # kit rule layers edited by hand: put back, the edited copy kept in the backup

@@ -33,14 +33,14 @@ flowchart TB
 | Source | Who writes it | What it decides | Where |
 | --- | --- | --- | --- |
 | `managed.toml` | IT | the Core repository, allowed Git hosts, locked guardrails, MCP allow and deny lists, the friction tracker | a fixed admin path ([configuration](configuration.md)) |
-| Core | the organization | the kit context, company practices, the commands, the skills and agents (default and optional), guardrails, approved MCP servers | a Git repository, used at its highest stable tag: this repository by default |
-| Team | one team | its practices (`20_TEAM.md` replaced), its own skills and agents, optional Core resources turned on, its MCP servers | a Git repository with `kind = "team"` ([repositories](repositories.md)) |
+| Core | the organization | the kit context, the Core practices (`10_CORE.md`, rewritten by an organization's fork), the commands, the skills and agents (default and optional), guardrails, approved MCP servers | a Git repository, used at its highest stable tag: this repository by default |
+| Team | one team | its practices (`20_<TEAM>.md`, added after the Core's, [ADR 0034](adr/0034-one-core-layer-a-team-layer-that-adds.md)), its own skills and agents, optional Core resources turned on, its MCP servers | a Git repository with `kind = "team"` ([repositories](repositories.md)) |
 | Person | you | extra or disabled resources, guardrails, MCP servers on or off, frictions, your `USER.md` | `~/.ai-kit/aikit.toml`, `~/.ai-kit/context/USER.md` |
 | Project | the repo's maintainers | its rules and glossary, its own MCP servers | the repo (`AGENTS.md`, `GLOSSARY.md`, the CLI's project files): the kit never writes there |
 
 **Precedence.** A value: `managed.toml` > person > Team > Core. A restriction (a denied server, a locked guardrail, a refused host): every layer's applies, and none can lift IT's ([ADR 0015](adr/0015-managed-wins-values-resolve-restrictions-all-apply.md)). Lists add up; a person removes an item with `disabled_*`.
 
-**Context read by the agent**, in order: `00_KIT.md` (how the kit works), `10_COMPANY.md`, `20_TEAM.md` (or the Team's own), `USER.md`, then the repo's `AGENTS.md`. The repo wins over `USER.md`; nothing lifts a practice or a guardrail.
+**Context read by the agent**, in order: `00_KIT.md` (how the kit works), `10_CORE.md`, the active Team's `20_<TEAM>.md`, `USER.md`, then the repo's `AGENTS.md`. The repo wins over `USER.md`; nothing lifts a practice or a guardrail.
 
 ## MCP servers
 

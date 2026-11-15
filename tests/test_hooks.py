@@ -45,7 +45,7 @@ class HookScriptTests(unittest.TestCase):
    self.assertIsNone(decide('.ai-kit/protected-paths'))
    self.assertIsNone(decide('target/a.sql'))
    for rel in ('.gemini/settings.json','.gemini/.env','.ai-kit/aikit.toml','.ai-kit/hooks/dbt-prod-guard.py','.codex/config.toml','.gemini/config/plugins/ai-kit/hooks.json',
-               '.gemini/00_KIT.md','.gemini/10_COMPANY.md','.gemini/20_TEAM.md','.gemini/20_DATA_PLATFORM.md','.ai-kit/context/00_KIT.md'):
+               '.gemini/00_KIT.md','.gemini/10_CORE.md','.gemini/20_DATA_PLATFORM.md','.ai-kit/context/00_KIT.md'):
     self.assertEqual(decide(str(Path(fake_home)/rel)),'deny',rel)
    for rel in ('.ai-kit/learn/topic/progress.md','.gemini/USER.md','notes.md'):
     self.assertIsNone(decide(str(Path(fake_home)/rel)),rel)

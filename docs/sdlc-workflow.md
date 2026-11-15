@@ -185,7 +185,7 @@ will, and says plainly which is which.
 ```mermaid
 flowchart TB
     subgraph Prompt["Read by the model: instructions"]
-        L1["kit context:<br/>steps, levels"] --> L2["company and team practices"] --> L3["your USER.md:<br/>form of replies"] --> L4["repo AGENTS.md:<br/>commands, conventions"]
+        L1["kit context:<br/>steps, levels"] --> L2["Core and Team practices"] --> L3["your USER.md:<br/>form of replies"] --> L4["repo AGENTS.md:<br/>commands, conventions"]
     end
     subgraph Outside["Run outside the model: checks"]
         G["<b>guardrails</b> before each tool call<br/>protected paths, git, production"]

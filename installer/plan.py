@@ -1,6 +1,8 @@
 """The steps of a neutral plan, before any adapter: the settings that apply, what is selected, the personal file, the
 practices, skills, agents and guardrails, and the old files to remove. apply (installer/cli.py) runs them in order."""
 
+import re
+
 from .core import content_root, ROOT, USER_CONTEXT, KitError, read_json, digest, safe_id, inside, hook_command, hook_identity, adopt_user_copy
 from .toml_files import set_schema, set_section_key
 from .config import AIKIT_FILE
@@ -8,6 +10,8 @@ from .adapters import ADAPTERS
 from .settings import (core_settings, team_settings, personal_settings, merge_settings, allowed_commands, resolve_skills,
                        practice_file, CHOICE_KEYS, SCALAR_CHOICES)
 from .commit import KIT_MANAGED
+
+RULE_LAYER = re.compile(r'[0-9]{2}_[A-Z0-9_]+\.md')  # 00_KIT.md, 10_CORE.md, 20_<TEAM>.md: a rule layer, restored or removed, never blocking
 
 LIST_KEYS = ('extra_skills', 'disabled_skills', 'extra_agents', 'disabled_agents', 'extra_commands', 'disabled_commands')
 
@@ -141,8 +145,8 @@ def remove_stale_files(p, files, user_file):
                     if adopt_user_copy(p, target_path, previous_hash):
                         p.deletes.append(target_path)
                     continue
-                if p.restore:
-                    p.deletes.append(target_path)  # sync --restore: removed, its copy kept in the backup
+                if p.restore or RULE_LAYER.fullmatch(target_path.name):  # sync --restore, or a rule layer (ADR 0005): never blocks
+                    p.deletes.append(target_path)  # removed, its copy kept in the backup
                     p.notices.append('[Check] '+str(target_path)+' was modified by hand and is no longer part of the kit: removed; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
                     continue
                 raise KitError('Old managed file modified locally: '+str(target_path)+'. Nothing was changed. Keep your copy elsewhere, '

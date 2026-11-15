@@ -13,10 +13,10 @@ class ContextLayerTests(unittest.TestCase):
   f=self.path(p);f.parent.mkdir(parents=True,exist_ok=True);f.write_text(text,encoding='utf-8');return f
  def test_fresh_install_layers(self):
   self.run_kit()
-  for name in ('00_KIT.md','10_COMPANY.md','20_TEAM.md','USER.md'):
+  for name in ('00_KIT.md','10_CORE.md','USER.md'):
    self.assertTrue(self.path('.ai-kit/context/'+name).is_file(),name);self.assertTrue(self.path('.gemini/'+name).is_file(),name)  # the file, Gemini's copy
   self.assertNotIn('Profile:',self.path('.gemini/00_KIT.md').read_text(encoding='utf-8'))  # no profiles in the context
-  self.assertIn('Team practices',self.path('.gemini/20_TEAM.md').read_text(encoding='utf-8'))
+  self.assertIn('Core practices',self.path('.gemini/10_CORE.md').read_text(encoding='utf-8'))
   state=read_json(self.path('.ai-kit/state.json'));self.assertEqual(state['schema_version'],2);self.assertNotIn('context_hash',state)
   self.assertIn('.gemini/00_KIT.md',state['files']);self.assertIn('.gemini/USER.md',state['files']);self.assertNotIn('.ai-kit/context/USER.md',state['files'])
   self.assertFalse(self.path('.gemini/GEMINI.md').exists())
@@ -27,9 +27,9 @@ class ContextLayerTests(unittest.TestCase):
   self.assertEqual([line for line in doctor_out.getvalue().splitlines() if line.startswith('[Check]') and 'PATH' not in line and 'approved in Codex' not in line],[],doctor_out.getvalue());self.assertIn('[OK] Personal context present',doctor_out.getvalue())
  def test_modified_kit_layer_restored(self):
   # Rule layers edited by hand no longer block update: they are restored (see RuleLayerRestoreTests).
-  self.run_kit();official=self.path('.gemini/10_COMPANY.md').read_text(encoding='utf-8');self.write('.gemini/10_COMPANY.md','modified')
+  self.run_kit();official=self.path('.gemini/10_CORE.md').read_text(encoding='utf-8');self.write('.gemini/10_CORE.md','modified')
   self.run_kit('data-developer')
-  self.assertEqual(self.path('.gemini/10_COMPANY.md').read_text(encoding='utf-8'),official)
+  self.assertEqual(self.path('.gemini/10_CORE.md').read_text(encoding='utf-8'),official)
  def test_existing_unmanaged_layer_blocks(self):
   self.write('.gemini/00_KIT.md','third-party')
   with self.assertRaises(KitError):self.run_kit()
@@ -44,10 +44,10 @@ class ContextLayerTests(unittest.TestCase):
   with self.assertRaises(KitError):self.run_kit()
   self.assertTrue(self.path('.ai-kit/context/USER.md').exists())
  def test_doctor_detects_missing_layer(self):
-  self.run_kit();self.path('.gemini/10_COMPANY.md').unlink()
+  self.run_kit();self.path('.gemini/10_CORE.md').unlink()
   out=io.StringIO()
   with contextlib.redirect_stdout(out):code=doctor(self.home)
-  self.assertEqual(code,1);self.assertIn('[Check] .gemini/10_COMPANY.md',out.getvalue())
+  self.assertEqual(code,1);self.assertIn('[Check] .gemini/10_CORE.md',out.getvalue())
  def test_doctor_ok_after_install(self):
   self.run_kit();out=io.StringIO()
   with contextlib.redirect_stdout(out):doctor(self.home)

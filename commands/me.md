@@ -36,4 +36,4 @@ Where it is: ~/.ai-kit/context/USER.md. Read it first: it is theirs; keep what t
 
 5. With their agreement only, write the file (plain UTF-8 text, same name and place). Then say: start a new session of the CLI to load it; in Gemini CLI and Codex CLI, run ai-kit sync --offline first (they read a copy). Offer three first prompts suited to their role.
 
-Never edit 00_KIT.md, 10_COMPANY.md, 20_TEAM.md or the kit's settings: if they want a rule for everyone, say it goes through the kit repository.
+Never edit 00_KIT.md, 10_CORE.md, a 20_<TEAM>.md or the kit's settings: if they want a rule for everyone, say it goes through the kit repository.

@@ -73,7 +73,7 @@ class OrganizationTests(unittest.TestCase):
         state = self.install('java-developer', team='kit-test-team')
         self.assertEqual(state['team'], 'kit-test-team')
         self.assertTrue((self.home/'.gemini/20_KIT_TEST_TEAM.md').is_file())
-        self.assertFalse((self.home/'.gemini/20_TEAM.md').exists())
+        self.assertTrue((self.home/'.gemini/10_CORE.md').is_file())  # the Team's layer is added to the Core layer, never replaces it
         # Kept for update, without --team.
         self.assertEqual(self.install('java-developer')['team'], 'kit-test-team')
 
@@ -84,7 +84,7 @@ class OrganizationTests(unittest.TestCase):
         self.install('general', team='kit-test-team')
         state = self.install('general', team='none')
         self.assertIsNone(state['team'])
-        self.assertTrue((self.home/'.gemini/20_TEAM.md').is_file())
+        self.assertTrue((self.home/'.gemini/10_CORE.md').is_file())
         self.assertFalse((self.home/'.gemini/20_KIT_TEST_TEAM.md').exists())
 
     def test_json_error_says_where_and_what(self):
@@ -184,9 +184,9 @@ class TeamToolsTests(unittest.TestCase):
         self.assertTrue((self.home/'.gemini/commands/ask.toml').is_file())
         self.assertIn('dbt-prod-guard', state['hooks'])
         self.assertEqual(list(state['mcp']), ['ai-kit-dbt'])
-        # No context/20-data-platform.md: the shared team practices stay, the team is kept for the next run.
+        # No context/20-data-platform.md: the Core layer alone, the team is kept for the next run.
         self.assertEqual(state['team'], 'data-platform')
-        self.assertIn('team', state['practices'])
+        self.assertEqual(state['practices'], ['core'])
         self.assertIn('[Info] Team: data-platform ([defaults])', out)
         self.assertIn('Team data-platform [defaults]: only known keys', out)
 

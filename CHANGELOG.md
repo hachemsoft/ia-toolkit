@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.16.0 (2026-11-15)
+
+One Core context layer; a Team's layer now adds to it. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`10_CORE.md`** replaces `10_COMPANY.md` and `20_TEAM.md`: the former company and team practices in one layer (`context/10-core.md`), without the "proposed baseline, not an approved internal policy" line every session read (audit AK-19). The update removes the two old layers, even edited by hand: the copy goes to `~/.ai-kit/backups/` with a `[Check]` line, the update goes on.
+- **A Team's context adds, never replaces**: an active Team with a `context/` installs `20_<TEAM>.md` after `10_CORE.md`, and every agent's prompt carries both; before, it replaced the default team practices, so a short Team layer dropped them. A Team named like a Core layer (`core`) is refused with a message that says so. Skills and agents keep their rule (a Team replaces a same-named one unless the Core protects it). ADR 0034; ADR 0005 amended.
+- **Organization's Core fork**: rename your `context/10-company.md` to `context/10-core.md` and merge your `20-team.md` into it; a Core still holding only `10-company.md` stops the install with "Practice not found or ambiguous: core".
+- The kit context's rule 1 now reads "Core and Team practices (files 10 and 20)". Tests: `tests/test_core_team_layers.py`; the golden install and the layer tests updated to the new names.
+
 ## 4.15.0 (2026-11-15)
 
 The review guide has a page you open in a browser. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

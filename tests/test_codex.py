@@ -56,7 +56,7 @@ class CodexAdapterTests(unittest.TestCase):
 
  def test_install_keeps_user_content_and_adds_blocks(self):
   self.run_kit();a=self.agents.read_text(encoding='utf-8');c=self.config.read_text(encoding='utf-8')
-  self.assertIn('- always in French',a);self.assertTrue(a.startswith(CODEX_MD[0]));self.assertIn('$intent',a);self.assertIn('Company practices',a);self.assertIn('# My context',a)
+  self.assertIn('- always in French',a);self.assertTrue(a.startswith(CODEX_MD[0]));self.assertIn('$intent',a);self.assertIn('Core practices',a);self.assertIn('# My context',a)
   self.assertIn('model = "gpt-x"',c);self.assertIn('trust_level = "trusted"',c);self.assertTrue(c.rstrip().endswith(CODEX_TOML[1]));self.assertIn('[agents.ai-kit-verifier]',c)
   try:import tomllib
   except ImportError:return

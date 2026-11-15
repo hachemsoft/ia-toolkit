@@ -37,7 +37,7 @@ class AgentTests(unittest.TestCase):
   self.overrides({'extra_agents':['unknown']})
   with self.assertRaises(KitError):self.run_kit()
  def test_generated_tools_and_context(self):
-  self.run_kit();text=self.agent('sql-reviewer').read_text(encoding='utf-8');header=text.split('---')[1];self.assertIn('name: ai-kit-sql-reviewer',header);self.assertIn('kind: local',header);self.assertIn('tools: ["read_file", "grep_search"]',header);self.assertNotIn('run_shell_command',header);self.assertNotIn('mcp_*',header);self.assertIn('Team practices',text);self.assertIn('Company practices',text);self.assertNotIn('My context',text)
+  self.run_kit();text=self.agent('sql-reviewer').read_text(encoding='utf-8');header=text.split('---')[1];self.assertIn('name: ai-kit-sql-reviewer',header);self.assertIn('kind: local',header);self.assertIn('tools: ["read_file", "grep_search"]',header);self.assertNotIn('run_shell_command',header);self.assertNotIn('mcp_*',header);self.assertIn('Core practices',text);self.assertNotIn('My context',text)
  def test_older_state_without_agents(self):
   self.run_kit()
   state_path=self.home/'.ai-kit/state.json';state=read_json(state_path)

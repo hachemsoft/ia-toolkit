@@ -12,8 +12,8 @@ class ContextSettingsTests(unittest.TestCase):
   self.assertEqual(merge_context_filenames({}),{'context':{'fileName':['USER.md','GEMINI.md','AGENTS.md']}})
  def test_managed_first(self):
   value={'context':{'fileName':['AGENTS.md','MINE.md']}}
-  merge_context_filenames(value,['00_KIT.md','10_COMPANY.md'])
-  self.assertEqual(value['context']['fileName'],['00_KIT.md','10_COMPANY.md','USER.md','GEMINI.md','AGENTS.md','MINE.md'])
+  merge_context_filenames(value,['00_KIT.md','10_CORE.md'])
+  self.assertEqual(value['context']['fileName'],['00_KIT.md','10_CORE.md','USER.md','GEMINI.md','AGENTS.md','MINE.md'])
  def test_existing_string(self):
   value={'context':{'fileName':'AGENTS.md','discoveryMaxDirs':100},'ui':{'theme':'custom'}}
   merge_context_filenames(value)
