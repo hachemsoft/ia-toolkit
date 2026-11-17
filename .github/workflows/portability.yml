@@ -110,6 +110,58 @@ jobs:
         if: failure()
         shell: bash
         run: python scripts/ci_annotations.py test-output.txt
+  upgrade-path:
+    # Indicative, not a required check and not needed by publish (docs/sdlc/2026-11-15-install-test-matrix): in a bare
+    # container, the latest published release installed on a blank home, then this commit's ZIP over it; and the latest
+    # published engine given this commit's Core must apply it or refuse it on min_engine, never fail otherwise (4.16 incident).
+    name: Upgrade from the latest release (container, indicative)
+    needs: release-zip
+    runs-on: ubuntu-24.04
+    container: python:3.11-slim
+    steps:
+      - name: Git, unzip and curl in the bare container
+        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends git unzip curl ca-certificates >/dev/null
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-zip
+          path: release
+      - name: Latest published release and this commit's ZIP, extracted
+        env:
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
+          echo "Latest release: $tag"
+          curl -fsSL -o previous.zip "https://github.com/$REPO/releases/download/$tag/ai-kit-${tag#v}.zip"
+          mkdir previous new
+          unzip -q previous.zip -d previous
+          unzip -q release/*.zip -d new
+      - name: The latest release on a blank home, then this commit over it
+        shell: bash
+        run: |
+          set -euo pipefail
+          home="$RUNNER_TEMP/upgrade"
+          python3 previous/scripts/launcher.py init --home "$home" --target all --user ci@example.org --command-on-path no </dev/null
+          python3 new/scripts/launcher.py init --home "$home" --target all --user ci@example.org --command-on-path no </dev/null
+          test -f "$home/.ai-kit/context/10_CORE.md"
+          python3 -c "import json,sys; v=json.load(open(sys.argv[1]))['version']; w=open(sys.argv[2]).read().strip(); sys.exit(0 if v == w else 'state.json says '+v+', this commit is '+w)" "$home/.ai-kit/state.json" new/VERSION
+          before=$(cd "$home" && find . -path ./.ai-kit/backups -prune -o -type f -print0 | sort -z | xargs -0 sha256sum)
+          python3 new/scripts/launcher.py init --home "$home" --target all --user ci@example.org --command-on-path no </dev/null
+          after=$(cd "$home" && find . -path ./.ai-kit/backups -prune -o -type f -print0 | sort -z | xargs -0 sha256sum)
+          [ "$before" = "$after" ] || { echo "::error::a second run changed files"; diff <(echo "$before") <(echo "$after"); exit 1; }
+      - name: The latest published engine given this commit's Core applies it or refuses it on min_engine
+        shell: bash
+        run: |
+          set -uo pipefail
+          home="$RUNNER_TEMP/old-engine"
+          python3 previous/scripts/launcher.py init --home "$home" --target all --user ci@example.org --command-on-path no </dev/null || exit 1
+          out=$(python3 previous/scripts/launcher.py sync --home "$home" --from-bundle "$PWD/new/core/ai-kit-core.bundle" </dev/null 2>&1); code=$?
+          echo "$out"
+          if [ "$code" -ne 0 ] && ! grep -q "needs AI Kit" <<<"$out"; then
+            echo "::error::the latest published engine neither applied this commit's Core nor refused it on min_engine (exit $code)"
+            exit 1
+          fi
   publish:
     name: Publish the release
     if: startsWith(github.ref, 'refs/tags/v')
