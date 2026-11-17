@@ -24,5 +24,11 @@ mode already has a stronger one.
 use. Tag protection on the hosting side is an operating requirement. Signatures cost IT one public-key line per release
 manager. No version solver: an integer `schema` and an optional `min_engine` in the source's `aikit.toml`.
 
+**Amended 2026-11-17 (credential helper)**: Git still runs without its global or system configuration, but the kit now passes
+the credential helper Git's own configuration declares (system or installation level) when the person's `~/.gitconfig`
+declares none and every declared value is in the closed list. Git for Windows declares `manager` only at system level,
+so a person without `~/.gitconfig` could not reach a private Core or Team over https (observed on a Windows workstation:
+`git ls-remote failed (auth)`). The person's own helper still wins; a `!command` or a path anywhere refuses the helper.
+
 **Considered**: trusting the host alone; an initial commit approved by IT (a redeploy per release); mandatory GPG or
 Sigstore signatures (a new dependency for no demonstrated gain); `tarfile` with `filter='data'` (missing in early 3.11).

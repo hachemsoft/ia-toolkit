@@ -2,7 +2,7 @@
 
 A source is a Core (later a Team) Git repository, identified by its canonical URL. Only stable vX.Y.Z tags are followed, never a
 branch. Git runs with an allowlisted environment, no global or system config, explicit -c overrides, and one credential helper
-from a closed list. Trees are read with ls-tree/cat-file, never through tar: regular files only, every path checked. lock.toml
+from a closed list (the person's, else the one Git's own configuration declares). Trees are read with ls-tree/cat-file, never through tar: regular files only, every path checked. lock.toml
 records the URL, tag, tag object, commit and tree digest of the active content, and the previous one for rollback."""
 import hashlib
 import json
@@ -109,17 +109,37 @@ def engine_dir(kit):
     return folder
 
 
+def git_level_helpers():
+    """The credential.helper values Git's own configuration declares (system and installation level, never the person's
+    global one nor a repository's): Git for Windows writes manager there, the Xcode git of macOS osxkeychain."""
+    env = {k: os.environ[k] for k in ENV_KEPT if k in os.environ}
+    env.update({'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_TERMINAL_PROMPT': '0'})
+    if 'GIT_CONFIG_SYSTEM' in os.environ:
+        env['GIT_CONFIG_SYSTEM'] = os.environ['GIT_CONFIG_SYSTEM']
+    with tempfile.TemporaryDirectory() as empty:  # outside any repository: no local config is read
+        env['GIT_CEILING_DIRECTORIES'] = str(Path(empty).parent)
+        try:
+            proc = subprocess.run(['git', 'config', '--get-all', 'credential.helper'], cwd=empty, env=env, capture_output=True, timeout=30)
+        except (OSError, subprocess.TimeoutExpired):
+            return []
+    return [v.strip() for v in proc.stdout.decode('utf-8', 'replace').splitlines() if v.strip()] if proc.returncode == 0 else []
+
+
 def credential_helper(home):
-    """The person's credential helper when it is one of the closed list; None otherwise (a !command or a path is refused)."""
+    """The credential helper the kit passes to Git, from a closed list (a !command or a path is refused): the person's own,
+    declared in ~/.gitconfig, wins; without one, the helper Git's own configuration declares, when every value it declares
+    is in the list."""
     config = home/'.gitconfig'
-    if not config.is_file():
-        return None
-    match = None
-    for line in config.read_text(encoding='utf-8', errors='replace').splitlines():
-        m = re.match(r'\s*helper\s*=\s*(.*?)\s*$', line)
-        if m:
-            match = m.group(1).strip('"')
-    return match if match in CREDENTIAL_HELPERS else None
+    declared = []
+    if config.is_file():
+        for line in config.read_text(encoding='utf-8', errors='replace').splitlines():
+            m = re.match(r'\s*helper\s*=\s*(.*?)\s*$', line)
+            if m:
+                declared.append(m.group(1).strip('"'))
+    if declared:
+        return declared[-1] if declared[-1] in CREDENTIAL_HELPERS else None
+    values = [v for v in git_level_helpers() if v]
+    return values[-1] if values and all(v in CREDENTIAL_HELPERS for v in values) else None
 
 
 def git(args, kit, git_dir=None, schemes=('https', 'ssh'), input_bytes=None, timeout=300, home=None, local_bundle=False):
@@ -137,7 +157,7 @@ def git(args, kit, git_dir=None, schemes=('https', 'ssh'), input_bytes=None, tim
         overrides.append('protocol.file.allow=always')  # a git bundle file the person gave (sync --from-bundle)
     if os.name == 'nt':
         overrides.append('core.longpaths=true')
-    helper = credential_helper(home or Path.home())
+    helper = credential_helper(Path(home) if home else Path(kit).parent)  # the installation's home (--home), kit = <home>/.ai-kit
     if helper:
         overrides.append('credential.helper='+helper)
     command = ['git'] + [a for o in overrides for a in ('-c', o)]

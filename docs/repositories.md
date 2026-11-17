@@ -49,7 +49,7 @@ Optional agents a Team can add for its members in `[defaults]` (or a person with
 - Only stable tags `vX.Y.Z` are followed, never a branch. `vX.Y.Z-rc.N` only with `git.allow_prerelease`.
 - `sync` takes the highest eligible tag and never goes below the active one; only `rollback` goes back.
 - A published tag must never move: the kit records every tag it has seen, and a tag that now points to another commit stops the sync.
-- Git runs with no global or system configuration, no hooks, no redirects, and only a credential helper from a closed list (`manager`, `manager-core`, `osxkeychain`, `libsecret`, `wincred`). A URL rewritten by Git is refused.
+- Git runs with no global or system configuration, no hooks, no redirects, and only a credential helper from a closed list (`manager`, `manager-core`, `osxkeychain`, `libsecret`, `wincred`): the one in your `~/.gitconfig`, else the one Git's own configuration declares (Git for Windows: `manager`; the Xcode git of macOS: `osxkeychain`) when every value it declares is in the list. With `--home <folder>`, `<folder>/.gitconfig` is read. A URL rewritten by Git is refused.
 - Accepted URLs: `https`, and `ssh` (also `git@host:path`); no credentials in the URL. IT can narrow hosts, groups and schemes.
 - Only regular files are extracted: a symbolic link, a submodule, an unsafe path or two paths that differ only by case are refused.
 

@@ -333,6 +333,33 @@ class OriginTests(unittest.TestCase):
                 config.write_text('[credential]\n\thelper = '+value+'\n', encoding='utf-8')
                 self.assertEqual(sources.credential_helper(Path(home)), expected, value)
 
+    def test_a_helper_declared_by_git_s_own_configuration_is_used_when_the_person_declares_none(self):
+        # Git for Windows declares credential.helper=manager in C:/Program Files/Git/etc/gitconfig, the Xcode git of macOS
+        # osxkeychain in its installation config: a person without ~/.gitconfig must still reach a private Core or Team.
+        with tempfile.TemporaryDirectory() as home:
+            with mock.patch.object(sources, 'git_level_helpers', return_value=['manager']):
+                self.assertEqual(sources.credential_helper(Path(home)), 'manager')
+            with mock.patch.object(sources, 'git_level_helpers', return_value=['osxkeychain', '!f() { cat ~/.ssh/id; }; f']):
+                self.assertIsNone(sources.credential_helper(Path(home)))  # one helper outside the list: none is used
+            (Path(home)/'.gitconfig').write_text('[credential]\n\thelper = wincred\n', encoding='utf-8')
+            with mock.patch.object(sources, 'git_level_helpers', return_value=['manager']):
+                self.assertEqual(sources.credential_helper(Path(home)), 'wincred')  # the person's own choice wins
+
+    @unittest.skipUnless(HAS_GIT, 'git not installed')
+    def test_git_level_helpers_reads_the_system_configuration(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            system = Path(tmp)/'gitconfig'
+            system.write_text('[credential]\n\thelper = manager\n', encoding='utf-8')
+            with mock.patch.dict(os.environ, {'GIT_CONFIG_SYSTEM': str(system), 'HOME': tmp, 'USERPROFILE': tmp}):
+                self.assertIn('manager', sources.git_level_helpers())
+
+    @unittest.skipUnless(HAS_GIT, 'git not installed')
+    def test_git_reads_the_helper_of_the_installation_s_home(self):
+        # ai-kit sync --home <folder>: the helper comes from <folder>/.gitconfig, never from the real home.
+        with tempfile.TemporaryDirectory() as home, mock.patch.object(sources, 'credential_helper', return_value=None) as helper:
+            sources.git(['--version'], Path(home)/'.ai-kit')
+        helper.assert_called_with(Path(home))
+
     @unittest.skipUnless(HAS_GIT, 'git not installed')
     def test_git_runs_without_the_person_s_global_config(self):
         with tempfile.TemporaryDirectory() as home:
