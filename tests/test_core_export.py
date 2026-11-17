@@ -56,6 +56,8 @@ class CoreExportTests(unittest.TestCase):
         self.assertTrue((self.core/'skills/tdd/SKILL.md').is_file())
         self.assertTrue((self.core/'agents/code-reviewer.md').is_file())
         self.assertEqual(read_toml(self.core/'aikit.toml')['kind'], 'core')
+        # The exported Core asks for the same engine as this repository's Core: an older engine refuses it clearly.
+        self.assertEqual(read_toml(self.core/'aikit.toml')['min_engine'], read_toml(ROOT/'aikit.toml')['min_engine'])
         self.assertEqual(problems(self.core, VERSION), [])
         self.assertEqual(self.install(self.base/'h1', self.core), self.install(self.base/'h2'))
 
