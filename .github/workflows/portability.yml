@@ -133,6 +133,7 @@ jobs:
           set -euo pipefail
           tag=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
           echo "Latest release: $tag"
+          echo "${tag#v}" > previous-version.txt
           curl -fsSL -o previous.zip "https://github.com/$REPO/releases/download/$tag/ai-kit-${tag#v}.zip"
           mkdir previous new
           unzip -q previous.zip -d previous
@@ -154,6 +155,12 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
+          # Same version as the latest release (main between releases): this commit's bundle tags HEAD with the released tag
+          # name, which the kit rightly refuses to put over the real tag. Only a version bump has an older engine to try.
+          if [ "$(cat new/VERSION)" = "$(cat previous-version.txt)" ]; then
+            echo "Skipped: this commit is $(cat new/VERSION), like the latest release; no older engine to try."
+            exit 0
+          fi
           home="$RUNNER_TEMP/old-engine"
           python3 previous/scripts/launcher.py init --home "$home" --target all --user ci@example.org --command-on-path no </dev/null || exit 1
           # GitHub runs the step with bash -e: capture the exit code without letting a failing sync end the step unseen.
