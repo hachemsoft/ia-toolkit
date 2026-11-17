@@ -156,7 +156,9 @@ jobs:
           set -uo pipefail
           home="$RUNNER_TEMP/old-engine"
           python3 previous/scripts/launcher.py init --home "$home" --target all --user ci@example.org --command-on-path no </dev/null || exit 1
-          out=$(python3 previous/scripts/launcher.py sync --home "$home" --from-bundle "$PWD/new/core/ai-kit-core.bundle" </dev/null 2>&1); code=$?
+          # GitHub runs the step with bash -e: capture the exit code without letting a failing sync end the step unseen.
+          code=0
+          out=$(python3 previous/scripts/launcher.py sync --home "$home" --from-bundle "$PWD/new/core/ai-kit-core.bundle" </dev/null 2>&1) || code=$?
           echo "$out"
           if [ "$code" -ne 0 ] && ! grep -q "needs AI Kit" <<<"$out"; then
             echo "::error::the latest published engine neither applied this commit's Core nor refused it on min_engine (exit $code)"

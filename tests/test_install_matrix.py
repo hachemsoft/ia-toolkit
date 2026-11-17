@@ -28,10 +28,21 @@ SHAPE_FILE = ROOT/'tests'/'content-shape.json'
 TIME_ARGS = ['mcp-server-time==2026.10.28', '--local-timezone=Europe/Paris']
 
 
+KIT_FILE_FOLDERS = ('bin', 'hooks', 'me', 'news', 'schemas')  # what the engine writes under ~/.ai-kit for the content to use
+
+
 def content_shape():
-    """What an engine relies on to find the content's context: the layer files and the layers the Core selection asks for."""
+    """What the content relies on the engine for: the context layer files, the layers the Core selection asks for, and the
+    files the engine installs under ~/.ai-kit (4.18.0: /me reads ~/.ai-kit/me/questions.md, which only a 4.18 engine
+    writes). Measured by a real install into a temporary home, never recomputed apart from the installer."""
+    with tempfile.TemporaryDirectory() as temp, contextlib.redirect_stdout(io.StringIO()):
+        home = Path(temp)
+        cli.apply(home, False, {'email': 'test@example.org'}, 'claude', managed_file=home/'managed.toml')
+        kit = home/'.ai-kit'
+        files = sorted(p.relative_to(kit).as_posix() for folder in KIT_FILE_FOLDERS for p in (kit/folder).rglob('*')
+                       if p.is_file() and '__pycache__' not in p.parts)
     return {'layers': sorted(p.name for p in context_folder(content_root()).glob('[0-9][0-9]-*.md')),
-            'practices': core_selection()['practices']}
+            'practices': core_selection()['practices'], 'kit_files': files}
 
 
 def shape_problem(recorded, shape, min_engine, version):
@@ -58,6 +69,13 @@ class ContentShapeTests(unittest.TestCase):
         self.assertIn('Raise min_engine in aikit.toml to 4.16.0', shape_problem(before, after, '4.0.0', '4.16.0'))
         self.assertIn('out of date', shape_problem(before, after, '4.16.0', '4.16.0'))  # raised: only the record lags
         self.assertIsNone(shape_problem({**after, 'min_engine': '4.16.0'}, after, '4.16.0', '4.17.0'))
+
+    def test_a_new_file_the_engine_installs_needs_a_new_min_engine(self):
+        # 4.18.0: /me reads ~/.ai-kit/me/questions.md; a 4.17 engine would install the new /me without that file, silently.
+        layers = {'layers': ['10-core.md'], 'practices': ['core']}
+        before = {**layers, 'kit_files': ['bin/friction.py'], 'min_engine': '4.17.0'}
+        after = {**layers, 'kit_files': ['bin/friction.py', 'me/questions.md']}
+        self.assertIn('Raise min_engine in aikit.toml to 4.18.0', shape_problem(before, after, '4.17.0', '4.18.0'))
 
 
 @unittest.skipUnless(HAS_GIT, 'git not installed')
