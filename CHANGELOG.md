@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.18.1 (2026-11-18)
+
+A private Core or Team over https works on a default Windows workstation. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **The credential helper Git declares is used** when your `~/.gitconfig` declares none: Git for Windows writes `credential.helper = manager` only in its system configuration (`C:/Program Files/Git/etc/gitconfig`), which the kit does not read, so `ai-kit team use` or `sync` on a private repository failed with `git ls-remote failed (auth): … terminal prompts disabled` (seen on a Windows workstation without `~/.gitconfig`). The kit now passes that helper (or `osxkeychain` from the Xcode git of macOS) when every value Git declares is in the closed list (`manager`, `manager-core`, `osxkeychain`, `libsecret`, `wincred`). Your own helper in `~/.gitconfig` still wins; a `!command` or a path still refuses the helper. Git keeps running without its global and system configuration. ADR 0016 amended; `docs/repositories.md`.
+- **`--home <folder>` reads `<folder>/.gitconfig`** for the helper, never the real home's.
+- **Install matrix in the tests**: a blank home through the command line, a Team's layer and MCP server written in every CLI, a second run that changes nothing (`tests/test_install_matrix.py`); and a content-shape rule (`tests/content-shape.json`): a new context layer, Core selection or file the engine installs under `~/.ai-kit` without a new `min_engine` fails, the 4.16.0 and 4.18.0 cases replayed.
+- **CI: `upgrade-path` job** (indicative, not required): in a bare `python:3.11-slim` container, the latest release then this commit on a blank home, a second run that changes nothing, and, when the version changes, the latest published engine given this commit's Core must apply it or refuse it on `min_engine`.
+- Tests: `tests/test_git_sources.py` (the helper Git declares, one outside the list refuses it, the person's own wins, `--home`), `tests/test_install_matrix.py`.
+
 ## 4.18.0 (2026-11-17)
 
 `/me` writes a USER.md without contradictions, asks three new questions, and reads them from a file. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer. The Core needs AI Kit 4.18.0 (`min_engine`): an older engine refuses it with a message to update.
