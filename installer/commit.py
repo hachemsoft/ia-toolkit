@@ -132,7 +132,7 @@ def resume_pending(home, kit):
     return None
 
 
-KIT_MANAGED = ('.ai-kit/bin/', '.ai-kit/hooks/', '.ai-kit/context/', '.ai-kit/schemas/', '.ai-kit/news/')
+KIT_MANAGED = ('.ai-kit/bin/', '.ai-kit/hooks/', '.ai-kit/context/', '.ai-kit/schemas/', '.ai-kit/news/', '.ai-kit/me/')
 
 
 def managed_roots(home):

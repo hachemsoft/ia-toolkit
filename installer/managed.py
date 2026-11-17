@@ -10,7 +10,7 @@ from .settings import core_settings
 # Written by an agent, these would switch a guardrail off or change what every session loads. USER.md and
 # ~/.ai-kit/learning stay writable: /me and /learn write there.
 KIT_FILES = ('~/.ai-kit/aikit.toml', '~/.ai-kit/state.json', '~/.ai-kit/hooks/**', '~/.ai-kit/bin/**', '~/.ai-kit/backups/**',
-             '~/.ai-kit/runtime/**', '~/.ai-kit/schemas/**', '~/.ai-kit/context/00_*', '~/.ai-kit/context/10_*', '~/.ai-kit/context/20_*')
+             '~/.ai-kit/runtime/**', '~/.ai-kit/schemas/**', '~/.ai-kit/me/**', '~/.ai-kit/context/00_*', '~/.ai-kit/context/10_*', '~/.ai-kit/context/20_*')
 CLAUDE_FILES = ('~/.claude/settings.json', '~/.claude/CLAUDE.md', '~/.claude/agents/ai-kit-*', '~/.claude/skills/ai-kit-*/**', '~/.claude.json')
 POSIX_PYTHON = '"$HOME/.ai-kit/runtime/venv/bin/python"'
 POSIX_HOOKS = '"$HOME/.ai-kit/hooks/'

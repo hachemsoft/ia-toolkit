@@ -77,6 +77,7 @@ class ShellTests(Base):
         'find ~/.claude -name settings.json -delete',
         'sort -uo ~/.ai-kit/aikit.toml ~/.ai-kit/aikit.toml',
         'echo x >> ~/.ai-kit/news/NEWS.md',  # its text enters the next session's context
+        'echo x >> ~/.ai-kit/me/questions.md',  # /me follows it as instructions
         'echo {} > ~/.gemini/antigravity-cli/settings.json',  # agy's own permissions
         'cd ~/.ai-kit && echo x > aikit.toml',  # 4.8.0: a cd is followed for the names a command writes
     )
@@ -108,6 +109,7 @@ class ShellTests(Base):
         'p=$HOME/build; echo x > "$p/log"',
         'sort -u ~/.ai-kit/aikit.toml',
         'cat ~/.ai-kit/news/NEWS.md',
+        'cat ~/.ai-kit/me/questions.md',
         # 4.8.0: not an obvious write to a protected target (a script, a variable, a link made elsewhere, a read): they run;
         # what an indirect write changes is reported at the next session start.
         "python3 -c \"open('/h/.ai-kit/aikit.toml','w').write('x')\"",
@@ -153,7 +155,7 @@ class ShellTests(Base):
     def test_the_news_and_agy_permissions_are_protected_from_the_write_tools(self):
         # 4.1.0: the news files (their text enters the next session) and agy's permissions were not in the list.
         write = lambda rel: self.decide({'tool_name': 'Write', 'tool_input': {'file_path': str(self.home/rel), 'content': 'x'}})
-        for rel in ('.ai-kit/news/NEWS.md', '.ai-kit/news/CHANGELOG.md', '.ai-kit/news.json', '.gemini/antigravity-cli/settings.json'):
+        for rel in ('.ai-kit/news/NEWS.md', '.ai-kit/news/CHANGELOG.md', '.ai-kit/news.json', '.ai-kit/me/questions.md', '.gemini/antigravity-cli/settings.json'):
             with self.subTest(rel):
                 self.assertEqual(write(rel), 'deny')
         for rel in ('.ai-kit/context/USER.md', '.ai-kit/learning/sql/progress.md', '.ai-kit/frictions.jsonl'):

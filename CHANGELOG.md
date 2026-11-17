@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.18.0 (2026-11-17)
+
+`/me` writes a USER.md without contradictions, asks three new questions, and reads them from a file. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer. The Core needs AI Kit 4.18.0 (`min_engine`): an older engine refuses it with a message to update.
+
+- **`/me` checks its own proposal**: it replays a review, a small fix and a disagreement against the lines it proposes and asks which one wins when two answer differently; it drops a line that `00_KIT.md` or `10_CORE.md` already covers. Seen on a real run: "ask me questions when I seem wrong" next to the kept "say so plainly", and "one point at a time" next to "five lines" for the same `/review`.
+- **Questions reworded and added**: the small-fix question no longer competes with the kit's levels; "if I think your idea is wrong" gives way to "if I am not sure what you mean" (the disagreement line is always kept); "what annoys you" asks for a real recent case; the answer-style question adds "two or three options, my pick first" for design choices, on top of a short or a reasoned answer. New: how to hear bad news, what makes an answer believable, how one decides.
+- **The questions live in `~/.ai-kit/me/questions.md`**, installed for every CLI from `templates/me-questions.md`, read only when `/me` runs: the command's prompt goes from 3996 to 2765 characters (a command stays under 4000). `ai-kit uninstall` removes it.
+- **Guardrail: `~/.ai-kit/me/` is protected** like `schemas/` and `news/`: `protected-paths` refuses a write there, and `ai-kit managed-settings` adds `Edit(~/.ai-kit/me/**)` to Claude Code's denied paths, since `/me` follows that file as instructions.
+- **A data model change is level full** in the kit context, next to a shared contract.
+- Correction to 4.17.3: "an empty list restricts nothing" holds except for `mcp.allowed_stdio`, `mcp.allowed_http` and `git.allowed_schemes`, where `[]` refuses every local server, every remote server or every Git URL (`docs/configuration.md`).
+- Tests: `tests/test_me.py` (the questions file, its install, the coherence steps), `tests/test_acceptance_first.py` (data model), `tests/test_guardrail_bypasses.py` and `tests/test_managed.py` (the protected folder). Tests changed on purpose: the question wordings are checked in `templates/me-questions.md` instead of the prompt.
+
 ## 4.17.3 (2026-11-15)
 
 `managed.toml` is checked against one table of rules, and its JSON schema says what the kit refuses. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

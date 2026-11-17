@@ -40,6 +40,7 @@ class ManagedSettingsTests(unittest.TestCase):
         self.assertIn('Bash|PowerShell', settings['hooks']['PreToolUse'][0]['matcher'])
         deny = settings['permissions']['deny']
         self.assertIn('Edit(~/.ai-kit/aikit.toml)', deny)
+        self.assertIn('Edit(~/.ai-kit/me/**)', deny)  # the questions /me follows
         self.assertFalse(any('USER.md' in d or 'learning' in d for d in deny), '/me and /learn must keep writing')
         self.assertNotIn('allowManagedHooksOnly', settings)
 

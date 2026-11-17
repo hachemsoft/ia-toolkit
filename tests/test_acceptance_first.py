@@ -19,6 +19,7 @@ class AcceptanceFirstTests(unittest.TestCase):
         self.assertIn('a go-ahead already given stands, not for an unseen test', kit)
         self.assertIn('risks first: how a failure shows', kit)
         self.assertIn('acceptance before code, then as standard', kit)  # full: risks first, then the standard step
+        self.assertIn('a shared contract, a data model,', kit)  # a data model change is full, for everyone, not a personal line
         self.assertLess(len(kit), 3800)
 
     def test_build_shows_the_failing_test_and_waits(self):

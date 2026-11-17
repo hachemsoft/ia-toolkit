@@ -233,6 +233,9 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
             managed_write(kit/'news'/name, source.read_bytes(), 'Kit news')
     command_state, command_after = plan_command(p, managed_write, command)
     managed_write(kit/'schemas'/'aikit.schema.json', (ROOT/'schemas/aikit.schema.json').read_bytes(), 'Kit schema')  # what aikit.toml points to
+    # The questions /me reads: out of the command's prompt (a command stays under 4000 characters), read only when /me runs.
+    questions = content_root()/'templates/me-questions.md'
+    managed_write(kit/'me'/'questions.md', (questions if questions.is_file() else ROOT/'templates/me-questions.md').read_bytes(), 'Kit questions')
     for script, name in {hook_manifest[n]['script']: n for n in enabled_hooks}.items():  # a script that serves several guardrails is written once
         managed_write(hooks_dir/script, (ROOT/'runtime/hooks'/script).read_bytes(), 'Guardrail' if is_guardrail(hook_manifest[name]) else 'Kit hook')
     # Context layers and USER.md, in the context folder (see context_location).
