@@ -183,7 +183,7 @@ PYTHONS = re.compile(r'(python[0-9.]*|py)(\.exe)?')
 KIT_REFUSED = {'init', 'sync', 'rollback', 'uninstall'}
 
 # Every action of the command (installer/cli.py; a test compares the two lists).
-KIT_ACTIONS = {'init', 'sync', 'team', 'status', 'doctor', 'rollback', 'user', 'uninstall', 'usage', 'friction', 'managed-settings', 'validate'}
+KIT_ACTIONS = {'init', 'sync', 'team', 'status', 'doctor', 'rollback', 'user', 'uninstall', 'usage', 'friction', 'managed-settings', 'validate', 'news'}
 
 # The launchers of a kit folder: they run the same command, and init when no action is given (Installer.cmd calls launcher.py).
 LAUNCHERS = ('bootstrap.sh', 'bootstrap.ps1', 'launcher.py')

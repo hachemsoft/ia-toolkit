@@ -5,70 +5,13 @@ Each entry: `## <YYYY-MM-DD> <id> : <title>` (id: 3 to 32 of a-z, 0-9, -; unique
 `teams: x` (names of Team repositories; any other metadata such as profiles: is refused), `until: YYYY-MM-DD`, then
 the text. Exit code 1 with one line per problem, 0 otherwise. No network, no model call.
 """
-import importlib.util
 import os
-import re
 import sys
-from datetime import date
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 sys.path.insert(0, ROOT)
 
-META_LINE = re.compile(r'^([a-z_]+):\s')
-
-
-def hook_module():
-    spec = importlib.util.spec_from_file_location('ai_kit_whats_new', os.path.join(ROOT, 'runtime', 'hooks', 'whats-new.py'))
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def valid_date(text):
-    try:
-        date.fromisoformat(text)
-        return True
-    except ValueError:
-        return False
-
-
-def problems(text):
-    hook = hook_module()
-    found, seen = [], set()
-    lines = text.splitlines()
-    for number, line in enumerate(lines, 1):
-        if line.startswith('## ') and not hook.HEADING.match(line):
-            found.append('line '+str(number)+': a heading must be "## <YYYY-MM-DD> <id> : <title>" (id: 3 to 32 of a-z, 0-9, -): '+line)
-        elif hook.HEADING.match(line):
-            # Metadata lines right after the heading: only the three keys the hook reads.
-            for following in lines[number:]:
-                if not following.strip():
-                    break
-                key = META_LINE.match(following)
-                if key and key.group(1) not in ('teams', 'until'):
-                    found.append('line '+str(number)+': unknown metadata "'+key.group(1)+'" (profiles, teams, until)')
-                elif not key:
-                    break
-    current = None
-    for number, line in enumerate(lines, 1):
-        if hook.HEADING.match(line):
-            current = hook.HEADING.match(line).group(2)
-        elif line.startswith('## '):
-            current = None
-        elif line.startswith('# ') and current:
-            found.append('line '+str(number)+': entry '+current+': a "# " heading inside the entry cuts its text (use ### or plain text)')
-    for entry in hook.parse_news(text):
-        where = 'entry '+entry['id']+': '
-        if entry['id'] in seen:
-            found.append(where+'id used twice')
-        seen.add(entry['id'])
-        if not valid_date(entry['date']):
-            found.append(where+'invalid date '+entry['date'])
-        if entry['until'] and not valid_date(entry['until']):
-            found.append(where+'invalid until date '+entry['until'])
-        if not entry['text']:
-            found.append(where+'no text')
-    return found
+from installer.news import hook_module, problems  # noqa: E402  (one rule for the CI and ai-kit news --add)
 
 
 def main(argv=None):

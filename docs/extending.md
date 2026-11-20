@@ -68,7 +68,7 @@ files or the task". A command that changes something states `Level:` on its firs
 active Team's context is added after it as `20_<TEAM>.md`, never replacing it, and a Team named like a Core layer is refused). `templates/kit-context.md` becomes `00_KIT.md`. Business facts stay in the projects.
 
 **News**: `NEWS.md` entries are `## <YYYY-MM-DD> <id> : <title>`, then optional `teams: <names>` and `until: <date>` lines,
-then the text; `python3 scripts/check_news.py` checks them.
+then the text; `ai-kit news --add` writes one (`/news` in a session) and refuses an entry the hook would skip; `python3 scripts/check_news.py` checks the whole file in CI. An entry ships with the Core's next tag.
 
 ## Size budgets
 

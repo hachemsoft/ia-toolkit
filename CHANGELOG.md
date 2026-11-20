@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.19.0 (2026-11-20)
+
+An announcement is written by a command, never by hand, and never in a form the session-start hook would skip. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **`ai-kit news --add`**: in a Core repository (a folder with `NEWS.md` and `aikit.toml`; `--path`, default the current folder; never under `~/.ai-kit`), writes one entry before the others: `--title`, `--id` (default: from the title), `--teams a,b`, `--until YYYY-MM-DD`, the text on standard input (read as UTF-8), or asked at a terminal. Refused, nothing written (exit 1): an id already used, an invalid or past date, an empty text or one over 1500 characters, a line starting with `#` or `##` that would cut the entry or start another one. After writing, the file is checked by the rule the `whats-new` hook reads it by, and put back as it was if it would not read in full. It commits, tags and sends nothing: it prints the next steps (review, merge request, tag of the Core, `ai-kit sync` on workstations). ADR 0025 amended (thirteen commands; the agent may run it).
+- **`/news`**, an optional command (`extra_commands = ["news"]`, or a Team's `[defaults]`): asks the title, the text, the Teams and the last day, shows the entry and, with the person's agreement, runs `ai-kit news --add` with the text on standard input (a quoted here-document, or a PowerShell literal here-string after `$OutputEncoding` is set to UTF-8). It never commits or tags. It needs AI Kit 4.19.0; the Core's `min_engine` stays 4.18.0, since the command is optional.
+- **One rule for the CI and the command**: `scripts/check_news.py` now calls `installer/news.py`. An `until` date must be written `YYYY-MM-DD` (Python 3.11 also read `20261231`, which the hook compares as text).
+- **`protected-paths` knows the `news` action**: a title or an option value naming an action (`--title sync`) is not taken for it.
+- Tests: `tests/test_news_add.py` (the entry written first and the rest intact, the id, the dates, the refusals, the file put back, the Core folder, the size, without a terminal, UTF-8 on standard input, `/news`, one rule), `tests/test_guardrail_bypasses.py` (the action).
+
 ## 4.18.2 (2026-11-20)
 
 The kit's hooks run in Gemini CLI on Windows. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

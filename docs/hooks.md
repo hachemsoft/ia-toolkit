@@ -126,7 +126,7 @@ At the start of a new or resumed session, tells the agent once, so that it says 
 - the entries of the content's `NEWS.md` aimed at everyone or at the active Team (`teams:`), until their `until:` date.
 - an offer of `/me`, once, while `~/.ai-kit/context/USER.md` is still the one the installation created (its role line empty): the agent offers it in one line and never starts it on its own.
 
-The changelog and the news are copies the installation writes to `~/.ai-kit/news/`: no network, no remote text. What was announced is recorded in `~/.ai-kit/news.json`. It also runs the local friction upkeep ([frictions](frictions.md)) and never blocks a session.
+The changelog and the news are copies the installation writes to `~/.ai-kit/news/`: no network, no remote text. A new entry therefore reaches a workstation only with a new tag of the Core and that workstation's `ai-kit sync`. To write one: `ai-kit news --add` in the Core repository (the text on standard input), or `/news` (optional: `extra_commands = ["news"]`); the command refuses an entry the hook would not read in full. What was announced is recorded in `~/.ai-kit/news.json`. It also runs the local friction upkeep ([frictions](frictions.md)) and never blocks a session.
 
 ## Rules IT can enforce
 

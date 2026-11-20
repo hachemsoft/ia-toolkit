@@ -241,7 +241,9 @@ class KitCommandTests(Base):
                'python3 scripts/launcher.py status', 'sh scripts/bootstrap.sh doctor', 'cmd /c ai-kit status',
                'python3 -m py_compile scripts/launcher.py', 'cat scripts/launcher.py', 'python3 tests/test_launcher.py',
                # a script of the same name with no action, where the kit's launchers are not: another project's
-               'sh bootstrap.sh', './scripts/bootstrap.sh', 'python3 launcher.py')
+               'sh bootstrap.sh', './scripts/bootstrap.sh', 'python3 launcher.py',
+               # 4.19.0: news --add writes in a Core repository; a title naming an action is not that action
+               "ai-kit news --add --path ~/core --title 'sync'", 'ai-kit news --add --title init')
 
     def test_writing_and_billed_subcommands_are_refused(self):
         for command in self.REFUSED:

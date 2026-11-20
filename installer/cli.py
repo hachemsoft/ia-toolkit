@@ -427,10 +427,10 @@ def command_main(argv):
     """The AI Kit command line (ADR 0025). Exit codes: 0 success, 1 refused or failed (nothing changed, or all
     restored), 2 usage, 3 administered configuration unusable, 130 interrupted."""
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
-    parser.add_argument('action', nargs='?', choices=['init', 'sync', 'team', 'status', 'doctor', 'rollback', 'user', 'uninstall', 'usage', 'friction', 'managed-settings', 'validate'],
+    parser.add_argument('action', nargs='?', choices=['init', 'sync', 'team', 'status', 'doctor', 'rollback', 'user', 'uninstall', 'usage', 'friction', 'managed-settings', 'validate', 'news'],
                         help='init: install, or check and re-apply; sync: the highest stable tag of your Core and Team (--dry-run, --offline: re-apply without network, --from-bundle FILE); '
                              'team list | team use <name> [--url URL] | team use none; status [--verbose]; doctor [--live]; rollback; user edit; uninstall; usage; '
-                             'friction --list | --publish; managed-settings --out FOLDER; validate [--path FOLDER]. No action: status.')
+                             'friction --list | --publish; managed-settings --out FOLDER; validate [--path FOLDER]; news --add [--path CORE] (text on standard input). No action: status.')
     parser.add_argument('rest', nargs='*', help='team: list, or use <name>; user: edit')
     parser.add_argument('--home', type=Path, default=Path.home(), help='Alternative home folder for an isolated trial')
     parser.add_argument('--user', help='init: the work email to record, without a question')
@@ -448,7 +448,12 @@ def command_main(argv):
     parser.add_argument('--out', type=Path, help='managed-settings: an empty folder to write the files IT deploys')
     parser.add_argument('--managed-hooks-only', action='store_true', help='managed-settings: Claude Code ignores hooks from any other source')
     parser.add_argument('--managed-mcp-only', action='store_true', help='managed-settings: Claude Code and Codex CLI allow only the MCP servers the Core defines')
-    parser.add_argument('--path', type=Path, help='validate: the Core or Team repository to check (default: the kit content)')
+    parser.add_argument('--path', type=Path, help='validate: the Core or Team repository to check (default: the kit content); news --add: the Core repository (default: the current folder)')
+    parser.add_argument('--add', action='store_true', help='news: add an entry to the Core\'s NEWS.md (the text on standard input, else asked)')
+    parser.add_argument('--title', help='news --add: the title, one line')
+    parser.add_argument('--id', help='news --add: the entry id (default: from the title)')
+    parser.add_argument('--teams', help='news --add: only for these Teams, comma-separated (default: everyone)')
+    parser.add_argument('--until', help='news --add: last day shown, YYYY-MM-DD')
     parser.add_argument('--since', type=int, default=42, help='usage: window in days (default 42)')
     parser.add_argument('--json', type=Path, help='usage: write the report to this file')
     parser.add_argument('--min-sessions', type=int, default=10, help='usage: minimum sessions before recommending (default 10)')
@@ -457,6 +462,8 @@ def command_main(argv):
     args = parser.parse_args(argv)
     if args.rest and args.action not in ('team', 'user'):
         parser.error('unexpected argument: '+' '.join(args.rest))
+    if (args.add or args.title or args.id or args.teams or args.until) and args.action != 'news':
+        parser.error('--add, --title, --id, --teams and --until go with news')
     if (args.offline or args.from_bundle or args.restore) and args.action != 'sync':
         parser.error('--offline, --from-bundle and --restore go with sync')
     if args.offline and args.from_bundle:
@@ -471,7 +478,7 @@ def command_main(argv):
                 from .status import status
                 code = status(home, args.verbose)
                 if args.action is None:
-                    print('Commands: ai-kit init, sync, team, status, doctor, rollback, user edit, uninstall, usage, friction, managed-settings, validate (ai-kit --help).')
+                    print('Commands: ai-kit init, sync, team, status, doctor, rollback, user edit, uninstall, usage, friction, managed-settings, validate, news (ai-kit --help).')
                 return code
             if args.action == 'uninstall':
                 if args.dry_run or args.yes:
@@ -495,6 +502,8 @@ def command_main(argv):
             if args.action == 'validate':
                 from .validate import validate
                 return validate(args.path or content_root(), (ROOT/'VERSION').read_text(encoding='utf-8').strip())
+            if args.action == 'news':
+                return news_add(args, home)
             if args.action == 'user':
                 if args.rest != ['edit']:
                     raise UsageError('user needs: user edit.')
@@ -554,6 +563,37 @@ def command_main(argv):
         except (EOFError, KeyboardInterrupt):
             print('\nOperation cancelled.', file=sys.stderr)
             return 130
+
+
+def stdin_text():
+    """Standard input as UTF-8, whatever the console's code page (Windows PowerShell 7 and the shells send UTF-8; 5.1 does once
+    $OutputEncoding says so, which /news sets)."""
+    try:
+        return sys.stdin.buffer.read().decode('utf-8-sig')
+    except UnicodeDecodeError as exc:
+        raise KitError('The text on standard input is not UTF-8. In Windows PowerShell 5.1, first run: '
+                       '$OutputEncoding = [System.Text.UTF8Encoding]::new($false)') from exc
+
+
+def news_add(args, home):
+    """ai-kit news --add: one entry in a Core's NEWS.md (installer/news.py). The text comes on standard input, so that a
+    shell expands nothing in it; at a terminal, what is missing is asked; without one, a missing title or text is a usage error."""
+    if not args.add:
+        raise UsageError('news needs: news --add [--path <Core repository>] [--title T] [--id ID] [--teams a,b] [--until YYYY-MM-DD], the text on standard input.')
+    from .news import add_entry, NEXT_STEPS
+    ask = None
+    if interactive():
+        from .ui import make_ui
+        ask = make_ui(args.plain)
+    title = args.title or (ask.text('Title (one line)') if ask else '')
+    text = ask.text('Text (a few lines, plain)') if sys.stdin.isatty() and ask else ('' if sys.stdin.isatty() else stdin_text())
+    if not (title or '').strip() or not (text or '').strip():
+        raise UsageError('news --add needs a title (--title) and a text on standard input when no terminal can ask for them.')
+    teams = (args.teams or '').split(',')
+    entry_id, news_file = add_entry(args.path or Path.cwd(), title, text, id=args.id, teams=teams, until=args.until, home=home)
+    print('Added the entry '+entry_id+' to '+str(news_file)+'.')
+    print(NEXT_STEPS)
+    return 0
 
 
 class UsageError(KitError):
