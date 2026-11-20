@@ -48,6 +48,21 @@ def gemini_command_toml(command):
     """Gemini CLI adapter: TOML command file (description, prompt with {{args}})."""
     return 'description = ' + json.dumps(command['description'], ensure_ascii=False) + '\n\nprompt = """\n' + command['prompt'] + '"""\n'
 
+# Gemini CLI runs every hook through PowerShell -Command on Windows (read in its source, 0.65: getShellConfiguration), not
+# a shell of the person's choice: a quoted program needs the call operator &, else 'Unexpected token -I' (issue 15).
+# Claude Code (Git Bash) and Codex (cmd.exe) get the plain command: & means something else there.
+WINDOWS = os.name == 'nt'
+
+def settings_group(group):
+    """A kit hook group as written in ~/.gemini/settings.json: on Windows, each command behind PowerShell's call operator."""
+    if not WINDOWS:
+        return group
+    return {**group, 'hooks': [{**h, 'command': '& '+h['command']} for h in group['hooks']]}
+
+def kit_forms(group):
+    """The forms of a kit group the kit recognises as its own: the one it writes, and the plain one an earlier version wrote."""
+    return (group, settings_group(group))
+
 def kit_hook_groups(groups):
     """Indexes of the hook groups added by the kit in a settings list."""
     return [i for i,g in enumerate(groups) if isinstance(g,dict) and any(isinstance(h,dict) and str(h.get('name','')).startswith('ai-kit-') for h in g.get('hooks',[]))]
@@ -285,7 +300,7 @@ def remove_kit_settings(p: Plan) -> None:
         if isinstance(hooks, dict):
             for name, old in p.state.get('hooks', {}).items():
                 groups = hooks.get(old['event'], [])
-                if isinstance(groups, list) and any(any(h.get('name') == old['group']['hooks'][0].get('name') for h in g.get('hooks', [])) and g != old['group'] for g in (groups[i] for i in kit_hook_groups(groups))):
+                if isinstance(groups, list) and any(any(h.get('name') == old['group']['hooks'][0].get('name') for h in g.get('hooks', [])) and g not in kit_forms(old['group']) for g in (groups[i] for i in kit_hook_groups(groups))):
                     if not p.restore:  # sync --restore: the kit's entry is replaced
                         raise KitError('Kit guardrail modified in settings.json: '+name)
                     else:
@@ -339,7 +354,7 @@ def finalize(p: Plan, active: bool = True) -> None:
         if not isinstance(groups, list):
             raise KitError('settings.json: hooks.'+old['event']+' must be a list.')
         for i in kit_hook_groups(groups):
-            if any(h.get('name') == old['group']['hooks'][0].get('name') for h in groups[i].get('hooks', [])) and groups[i] != old['group']:
+            if any(h.get('name') == old['group']['hooks'][0].get('name') for h in groups[i].get('hooks', [])) and groups[i] not in kit_forms(old['group']):
                 if not p.restore:  # sync --restore: the kit's entry is replaced
                     raise KitError('Kit guardrail modified in settings.json: '+name)
                 else:
@@ -353,8 +368,9 @@ def finalize(p: Plan, active: bool = True) -> None:
         if kept or not groups:
             merged_hooks[event] = kept
     for name, spec in p.enabled_hooks.items():
-        if spec['group'] not in merged_hooks.setdefault(spec['event'], []):  # guardrails served by one script: one hook
-            merged_hooks[spec['event']].append(spec['group'])
+        group = settings_group(spec['group'])
+        if group not in merged_hooks.setdefault(spec['event'], []):  # guardrails served by one script: one hook
+            merged_hooks[spec['event']].append(group)
     if merged_hooks or ('hooks' in settings and not any(kit_hook_groups(g) for g in original_hooks.values() if isinstance(g, list))):
         settings['hooks'] = merged_hooks
     else:
@@ -406,7 +422,7 @@ def changed_blocks(home: Path, state: dict) -> list:
     except (KitError, OSError, ValueError):
         return ['.gemini/settings.json']
     hooks = settings.get('hooks') if isinstance(settings, dict) and isinstance(settings.get('hooks'), dict) else {}
-    present = all(isinstance(hooks.get(h['event']), list) and h['group'] in hooks[h['event']] for h in state['hooks'].values())
+    present = all(isinstance(hooks.get(h['event']), list) and settings_group(h['group']) in hooks[h['event']] for h in state['hooks'].values())
     return [] if present else ['.gemini/settings.json']
 
 def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
@@ -446,7 +462,7 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     for name,hook in state.get('hooks',{}).items():
         groups = (settings.get('hooks') or {}).get(hook['event'], [])
         script = hook_parts(hook['group']['hooks'][0]['command'])[0]
-        status(isinstance(groups,list) and hook['group'] in groups and script.is_file(),('Guardrail' if hook.get('event') == 'BeforeTool' else 'Hook')+' configured in settings.json: '+name)
+        status(isinstance(groups,list) and settings_group(hook['group']) in groups and script.is_file(),('Guardrail' if hook.get('event') == 'BeforeTool' else 'Hook')+' configured in settings.json: '+name)
     if not any(h.get('event') == 'BeforeTool' for h in state.get('hooks',{}).values()):
         print('[Info] No guardrail enabled; see docs/hooks.md (protected-paths, dbt-prod-guard, git-guard, bq-cost-guard, infra-prod-guard).')
     for name,server in state.get('mcp',{}).items():

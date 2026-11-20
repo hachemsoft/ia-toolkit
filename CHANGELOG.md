@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.18.2 (2026-11-20)
+
+The kit's hooks run in Gemini CLI on Windows. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
+
+- **Gemini CLI on Windows: each kit hook command starts with PowerShell's call operator `& `.** Gemini CLI runs every hook through `powershell -Command` (read in its source, 0.65), and a command that starts with a quoted program needs `&`: without it, PowerShell stopped on `Unexpected token '-I'` and `ai-kit-whats-new` failed at each session start, like every kit guardrail (issue 15). Claude Code (Git Bash) and Codex (cmd.exe) keep the plain command. A `settings.json` written by an earlier version is taken back at the next sync, not reported as edited by hand. `docs/cli/gemini.md`.
+- Tests: `tests/test_gemini_windows_hooks.py` (every kit command behind `&`, parsed by PowerShell where it is present; a second sync, `doctor` and the integrity check accept it; an earlier settings file taken back).
+
 ## 4.18.1 (2026-11-18)
 
 A private Core or Team over https works on a default Windows workstation. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.
