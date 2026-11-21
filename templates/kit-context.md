@@ -37,5 +37,6 @@ Base skills target other tools; map silently:
 
 ## Artifacts and git
 AGENTS.md conventions first; else one folder per change, `docs/sdlc/<YYYY-MM-DD>-<slug>/`; `spec.md`, `REVIEW.md` committed; `intent.md`, `plan.md`, `review-guide.md` local, git-ignored.
+Resuming earlier work ("pick up where we left off"): first read `git status`, the branch, other branches, the log and the change's artifacts; name the artifact and the step you resume from; an approved test or plan changed since its approval, or whose approval nothing records: show it and ask again, never restore or assume it; a side-effect operation already run is not replayed.
 
 {frictions}Read the project's context before acting; never invent its business rules. Monorepo with an AGENTS.md per area, started at the root: ask which area unless the task names one, follow its AGENTS.md, write artifacts there.

@@ -42,6 +42,17 @@ class CeremonyTests(unittest.TestCase):
             self.assertIn('The first line of your reply is `Level: quick`', COMMANDS[name], name)
             self.assertIn('even if you then ask', COMMANDS[name], name)
 
+    def test_resuming_reads_the_state_and_asks_again_for_a_stale_approval(self):
+        # docs/sdlc/2026-11-21-loop-and-resume: paid runs of the resume cases (40-44) showed a new session that ignored the
+        # other branches, did not name the plan it followed, restored a changed approved test on its own, or assumed an
+        # approval that nothing recorded.
+        kit = (ROOT/'templates/kit-context.md').read_text(encoding='utf-8')
+        self.assertIn('Resuming', kit, 'the kit context has no resume rule')
+        rule = kit[kit.index('Resuming'):].split('\n', 1)[0]
+        for words in ('`git status`', 'other branches', 'log', 'name the artifact and the step',
+                      'changed since its approval', 'nothing records', 'ask again', 'never restore', 'not replayed'):
+            self.assertIn(words, rule, words)
+
     def test_a_quick_change_needs_no_plan_and_no_new_acceptance(self):
         build = COMMANDS['build']
         self.assertIn('Quick: no plan file', build)

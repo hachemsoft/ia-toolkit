@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.21.0 (2026-11-21)
+
+Picking up earlier work, the agent reads the state before acting. Paid runs of the new resume cases showed a new session that ignored the other branches, did not name the plan it followed, restored a changed approved test on its own, or assumed an approval that nothing recorded.
+
+- **One resume rule in the kit context** (`templates/kit-context.md`, "Artifacts and git"): read `git status`, the branch, the other branches, the log and the change's artifacts; name the artifact and the step resumed from; an approved test or plan changed since its approval, or whose approval nothing records, is shown and asked again, never restored or assumed; an operation with side effects already run is not replayed.
+- **The kit context's size budget goes from 3800 to 4200 characters** (`tests/test_context_layers.py`), about 95 more tokens per session, for this rule.
+- **Evals**: a `between` at the top of a case builds the state a previous session left before the first turn, without a billed turn, and a `between` may be a list of steps applied in order; `unchanged` no longer blames the agent for what that setup writes. Four cases: `stale-approval-is-asked-again`, `branch-changed-between-sessions`, `external-change-is-noticed-on-resume`, `standard-resume-without-a-plan`.
+- Tests: `tests/test_workflow_content.py`, `tests/test_evals_runner.py`.
+
 ## 4.20.0 (2026-11-21)
 
 The evals can measure an interrupted and resumed task: a case may hold several turns. Nothing changes on workstations or in what the kit installs.
