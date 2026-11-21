@@ -243,6 +243,13 @@ class CoherenceTests(unittest.TestCase):
         self.assertNotIn('/build or to-tickets does it', COMMANDS['spec'])
         self.assertNotIn('`/build` per ticket', skill_text('routing'))
 
+    def test_implement_spec_asks_once_for_the_commits_before_its_subagents(self):
+        # Its subagents commit and merge on branches: the kit context's rule (agreement to commits in this session) is said
+        # where it is needed, once, before they start.
+        body = skill_text('implement-spec')
+        self.assertIn('Before any subagent starts, ask the person once for their agreement to the commits and merges', body)
+        self.assertIn('push nothing, and open no PR, without their agreement', body)
+
     def test_the_retrospective_writes_where_retro_says(self):
         retro = skill_text('retrospective')
         self.assertNotIn('CODING_STANDARDS.md', retro)
