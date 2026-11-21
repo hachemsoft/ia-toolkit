@@ -39,3 +39,4 @@ says when a decision was superseded. A change that reverses a decision comes wit
 | [0032](0032-project-context-adds-to-the-kit.md) | a project's context adds to the kit: REVIEW.md never removes a pass, AGENTS.md per layer, no CLAUDE.md by default | accepted |
 | [0033](0033-verifier-swaps-files-to-prove-a-test.md) | the verifier may swap files for a moment to prove an acceptance test fails without the code, with a verified backup | accepted |
 | [0034](0034-one-core-layer-a-team-layer-that-adds.md) | one Core context layer, rewritten by a fork; a Team layer that adds to it | accepted |
+| [0035](0035-resuming-reads-the-files-and-git-measured-over-several-turns.md) | resuming reads the files and git; the evals measure it over several turns | accepted |
