@@ -3,7 +3,7 @@ name: routing
 description: "Kit router: which command, which tool and what level of ceremony for the situation described. Triggers: which skill for, where do I start, how do we do this here, guide, help with the workflow."
 metadata:
   aikit-default: "true"
-  aikit-version: "1.0.2"
+  aikit-version: "1.0.3"
   aikit-origin: "internal"
   aikit-summary: "Which command, which tool and what level of ceremony for the situation: kit router."
   aikit-category: "tool"
@@ -33,7 +33,7 @@ Propose only the commands listed under "Commands" in the kit context (00_KIT.md)
 | Small local change (label, typo, condition) | quick | do it, run the check that covers it | none; `/test` if the repo has tests |
 | Visual or exploratory | quick | iterate with the agent, look, start again | `/design` for a throwaway prototype |
 | Small feature | standard | short alignment in the conversation, then test-first | `/build`, `/test`, `/ship` |
-| Large or fuzzy | full | intent, spec, plan, verification between phases | `/intent`, `/spec`, `/build` per ticket, `/review`, `/ship` |
+| Large or fuzzy | full | intent, spec, plan, verification between phases | `/intent`, `/spec`, `/build` per slice, `/review`, `/ship` |
 | Production, irreversible, sensitive data | full | everything above, full review | `/review full`, guardrails active |
 
 ## The steps and their artifacts
@@ -48,7 +48,7 @@ Propose only the commands listed under "Commands" in the kit context (00_KIT.md)
 `/learn` learn a perimeter or a concept · `/explain` map of an area or rephrasing · `/ask` questionnaire for a business owner · `/retro` improve the agent's environment · `/handoff` handover · `/research` primary sources · `/wizard` human steps · `/audit` code health.
 
 ## Setting up a repo
-When it becomes useful, not before a first task: "Initialize the project context" (AGENTS.md, GLOSSARY.md, REVIEW.md, git rule for artifacts), proposed as one grouped change that keeps existing files. Only when the team wants the agent to read and create tickets (`/map`, `/triage`, to-tickets): `setup-workflow`, which requires `glab` or `gh` installed.
+When it becomes useful, not before a first task: "Initialize the project context" (AGENTS.md, GLOSSARY.md, REVIEW.md, git rule for artifacts), proposed as one grouped change that keeps existing files. Only when the team wants the agent to read and create tickets (`/map`, `/triage`, to-tickets): `setup-workflow` (a GitLab or GitHub tracker through `glab` or `gh`, or local markdown files).
 
 ## Outside the commands
 The installed domain playbooks (listed in 00_KIT.md) activate on their own when the task fits; `/build`, `/review` and `/diagnose` chain them. For the full map of the upstream flow, the `workflow-guide` skill is available as an option.

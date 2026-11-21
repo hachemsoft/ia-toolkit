@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.22.1 (2026-11-21)
+
+What the skills say agrees with their own metadata and with the commands. No new rule.
+
+- **No skill requires a tracker any more**: `implement-spec`, `to-tickets`, `to-spec`, `ticket-sorting` and `wayfinder` told the person to run `/setup-workflow` when no tracker was given, while their metadata said never to require one (and that note is only shown when `setup-workflow` is not installed, which it is by default); they now ask where the work is tracked and use local markdown files without one. `routing` no longer says `setup-workflow` needs `glab` or `gh`; `setup-workflow` and `workflow-guide` no longer present it as a step before any first use.
+- **Splitting into tickets, as it works**: `/spec` said `/build` splits a spec into tickets; it is the `to-tickets` skill, on request, and `/build` only proposes to split a change that needs more than three acceptance tests. `routing` says `/build` per slice, not per ticket.
+- **The retrospective writes where `/retro` says**: the repo's `REVIEW.md`, not a `CODING_STANDARDS.md` the kit never uses.
+- Tests: `tests/test_workflow_content.py` (`CoherenceTests`).
+
 ## 4.22.0 (2026-11-21)
 
 Picking up earlier work, the agent asks before building on a change someone else made outside the plan. A paid run on Antigravity (case `external-change-is-noticed-on-resume`) named such a change, then built on it in the same turn and asked only afterwards.

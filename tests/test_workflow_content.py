@@ -221,3 +221,29 @@ class OwnershipTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class CoherenceTests(unittest.TestCase):
+    """docs/sdlc/2026-11-21-loop-and-resume, increment 1: what the skills say agrees with their metadata and the commands."""
+
+    TRACKER_SKILLS = ('implement-spec', 'to-tickets', 'to-spec', 'ticket-sorting', 'wayfinder')
+
+    def test_no_skill_requires_a_tracker_to_continue(self):
+        for name in self.TRACKER_SKILLS:
+            body = skill_text(name).split('\n---\n', 1)[1]
+            with self.subTest(skill=name):
+                self.assertNotIn('tell the user to run `/setup-workflow`', body)
+                self.assertIn('never require a tracker to continue', body)
+                self.assertIn('local markdown', body)
+        self.assertNotIn('requires `glab` or `gh`', skill_text('routing'))
+        self.assertNotIn('Run once before first use', skill_text('setup-workflow'))
+        self.assertNotIn('run before your first engineering flow', skill_text('workflow-guide'))
+
+    def test_splitting_into_tickets_is_described_as_it_works(self):
+        self.assertNotIn('/build or to-tickets does it', COMMANDS['spec'])
+        self.assertNotIn('`/build` per ticket', skill_text('routing'))
+
+    def test_the_retrospective_writes_where_retro_says(self):
+        retro = skill_text('retrospective')
+        self.assertNotIn('CODING_STANDARDS.md', retro)
+        self.assertIn('REVIEW.md', retro)

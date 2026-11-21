@@ -4,7 +4,7 @@ description: Ask which skill or flow fits your situation. A router over the skil
 disable-model-invocation: true
 metadata:
   aikit-default: "false"
-  aikit-version: "1.0.0"
+  aikit-version: "1.0.1"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Which skill or which flow for the current situation: router across all skills."
@@ -122,4 +122,4 @@ Off the main flow entirely.
 
 ## Precondition
 
-**`/setup-workflow`**: run before your first engineering flow to configure the issue tracker, triage labels, and doc layout the other skills assume. Custom issue trackers also work.
+**`/setup-workflow`**: run when the team wants a tracker, to configure the issue tracker, triage labels, and doc layout the other skills assume. Custom issue trackers also work; the flows also work without one.

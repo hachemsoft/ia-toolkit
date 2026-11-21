@@ -1,10 +1,10 @@
 ---
 name: setup-workflow
-description: "Configure this repo for the engineering skills: set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills."
+description: "Configure this repo for the engineering skills: set up its issue tracker, triage label vocabulary, and domain doc layout. Run it when the team wants a tracker; the other engineering skills also work without one."
 disable-model-invocation: true
 metadata:
   aikit-default: "true"
-  aikit-version: "1.1.0"
+  aikit-version: "1.1.1"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Configure a repo for the flow: ticket tracker (GitHub, GitLab, local), triage labels, location of the glossary and the ADRs. Run once per repo."

@@ -69,8 +69,8 @@
       "digest": "0f113b64a386c9da"
     },
     "implement-spec": {
-      "version": "1.1.0",
-      "digest": "b1fc97eaebd36460"
+      "version": "1.1.1",
+      "digest": "b8990efcbd25b1e0"
     },
     "implement": {
       "version": "1.0.0",
@@ -101,20 +101,20 @@
       "digest": "678876c92e1d487e"
     },
     "retrospective": {
-      "version": "1.1.0",
-      "digest": "15ebacab6d1e8ab1"
+      "version": "1.1.1",
+      "digest": "40a6b1dd32c9942c"
     },
     "review-guide": {
       "version": "1.2.0",
       "digest": "ed75beec1a0e7ef1"
     },
     "routing": {
-      "version": "1.0.2",
-      "digest": "31fe3eac7f317063"
+      "version": "1.0.3",
+      "digest": "24fc99b434e7b136"
     },
     "setup-workflow": {
-      "version": "1.1.0",
-      "digest": "5915399d6cbf7377"
+      "version": "1.1.1",
+      "digest": "6187ff83481d8d31"
     },
     "tdd": {
       "version": "1.2.0",
@@ -125,32 +125,32 @@
       "digest": "ddbe33f046572ad8"
     },
     "ticket-sorting": {
-      "version": "1.1.0",
-      "digest": "c12c268f261b837e"
+      "version": "1.1.1",
+      "digest": "b9d9fc49674b3c03"
     },
     "to-questionnaire": {
       "version": "1.1.0",
       "digest": "d2f020e8517b1970"
     },
     "to-spec": {
-      "version": "1.1.0",
-      "digest": "853b766b43ab5953"
+      "version": "1.1.1",
+      "digest": "a7e03f3c931d8883"
     },
     "to-tickets": {
-      "version": "1.0.0",
-      "digest": "6e0c2ecfc298d9b7"
+      "version": "1.0.1",
+      "digest": "ab2384a4265ebf82"
     },
     "wait-what": {
       "version": "1.1.0",
       "digest": "84343325c82b2d7c"
     },
     "wayfinder": {
-      "version": "1.1.0",
-      "digest": "d98d20f0f8508813"
+      "version": "1.1.1",
+      "digest": "8030e184715ab60b"
     },
     "workflow-guide": {
-      "version": "1.0.0",
-      "digest": "0d27925817e21cef"
+      "version": "1.0.1",
+      "digest": "523f97f0a373f636"
     },
     "write-a-skill": {
       "version": "1.0.0",

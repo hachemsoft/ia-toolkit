@@ -3,7 +3,7 @@ name: ticket-sorting
 description: "Move issues and external PRs through a state machine of triage roles, categorise, verify, grill if needed, and write agent-ready briefs. Use when the user types /triage or explicitly asks for this step; do not activate on your own for unrelated requests."
 metadata:
   aikit-default: "false"
-  aikit-version: "1.1.0"
+  aikit-version: "1.1.1"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Move incoming tickets through a triage state machine until they are ready for an agent."
@@ -48,7 +48,7 @@ For a PR, the same states read against the attached code: `ready-for-agent` mean
 
 Every triaged issue should carry exactly one category role and one state role. If state roles conflict, flag it and ask the maintainer before doing anything else.
 
-These are canonical role names. The actual label strings used in the issue tracker may differ. The mapping should have been provided to you. If not, tell the user to run `/setup-workflow`.
+These are canonical role names. The actual label strings used in the issue tracker may differ. The mapping should have been provided to you. If not, ask the person where the work is tracked (a ticket, a document, nothing); without a tracker, use local markdown files; never require a tracker to continue.
 
 State transitions: an unlabeled issue normally goes to `needs-triage` first; from there it moves to `needs-info`, `ready-for-agent`, `ready-for-human`, or `wontfix`. `needs-info` returns to `needs-triage` once the reporter replies. The maintainer can override at any time; flag transitions that look unusual and ask before proceeding.
 

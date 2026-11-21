@@ -3,7 +3,7 @@ name: to-spec
 description: "Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just synthesis of what you've already discussed. Use when the user types /spec or explicitly asks for this step; do not activate on your own for unrelated requests."
 metadata:
   aikit-default: "true"
-  aikit-version: "1.1.0"
+  aikit-version: "1.1.1"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Turn the conversation into a specification: in this kit, /spec writes it as spec.md, never a ticket."
@@ -13,7 +13,7 @@ metadata:
 
 This skill takes the current conversation context and codebase understanding and produces a spec. Do NOT interview the user; just synthesize what you already know.
 
-The issue tracker and triage label vocabulary should have been provided to you. If not, tell the user to run `/setup-workflow`.
+The issue tracker and triage label vocabulary should have been provided to you. If not, ask the person where the work is tracked (a ticket, a document, nothing); without a tracker, use local markdown files; never require a tracker to continue.
 
 ## Process
 

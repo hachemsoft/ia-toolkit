@@ -4,7 +4,7 @@ description: Break a plan, spec, or the current conversation into a set of trace
 disable-model-invocation: true
 metadata:
   aikit-default: "false"
-  aikit-version: "1.0.0"
+  aikit-version: "1.0.1"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Split a plan or a spec into tracer-bullet tickets with their blocking dependencies."
@@ -17,7 +17,7 @@ metadata:
 
 Break a plan, spec, or conversation into a set of **tickets**: tracer-bullet vertical slices, each declaring the tickets that **block** it.
 
-The issue tracker and triage label vocabulary should have been provided to you. If not, tell the user to run `/setup-workflow`.
+The issue tracker and triage label vocabulary should have been provided to you. If not, ask the person where the work is tracked (a ticket, a document, nothing); without a tracker, use local markdown files; never require a tracker to continue.
 
 ## Process
 

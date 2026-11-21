@@ -3,7 +3,7 @@ name: wayfinder
 description: "Plan a huge chunk of work (more than one agent session can hold) as a shared map of decision tickets on your issue tracker, and resolve them one at a time until the way to the destination is clear. Use when the user types /map or explicitly asks for this step; do not activate on your own for unrelated requests."
 metadata:
   aikit-default: "false"
-  aikit-version: "1.1.0"
+  aikit-version: "1.1.1"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Map a piece of work too large for one session into decision tickets, resolved one by one."
@@ -31,7 +31,7 @@ The map is a single issue on this repo's issue tracker, labelled `wayfinder:map`
 
 The map is an **index**, not a store. It lists the decisions made and points at the tickets that hold their detail; a decision lives in exactly one place, its ticket, so the map never restates it, only gists it and links.
 
-**Where the map, its child tickets, blocking, and frontier queries physically live is tracker-specific.** The issue tracker should have been provided to you. If not, tell the user to run `/setup-workflow`. Consult the tracker doc's "Wayfinding operations" section for how _this_ repo expresses them. If no tracker has been provided, default to the local-markdown tracker.
+**Where the map, its child tickets, blocking, and frontier queries physically live is tracker-specific.** The issue tracker should have been provided to you; consult the tracker doc's "Wayfinding operations" section for how _this_ repo expresses them. If not, ask the person where the work is tracked (a ticket, a document, nothing); without a tracker, use local markdown files; never require a tracker to continue.
 
 ### The map body
 

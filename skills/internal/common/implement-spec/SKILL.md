@@ -4,7 +4,7 @@ description: "Implement the result of /to-spec and /to-tickets in code."
 disable-model-invocation: true
 metadata:
   aikit-default: "false"
-  aikit-version: "1.1.0"
+  aikit-version: "1.1.1"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Implement a whole spec: tickets read as a graph, sub-agents in parallel, integration branch."
@@ -18,7 +18,7 @@ metadata:
 
 You have been provided a spec. This spec should have tickets associated with it, describing how to implement the spec.
 
-The issue tracker should have been provided to you. If not, tell the user to run `/setup-workflow`.
+The issue tracker should have been provided to you. If not, ask the person where the work is tracked (a ticket, a document, nothing); without a tracker, use local markdown files; never require a tracker to continue.
 
 The goal is the entire spec implemented on a single **integration branch**, with every ticket resolved the way the issue tracker closes work.
 
