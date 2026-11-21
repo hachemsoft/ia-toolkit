@@ -450,6 +450,15 @@ class MultiTurnTests(unittest.TestCase):
         self.assertEqual(evals_run.cli_command('claude', 'claude', plain, 60, None, 'default'),
                          ['claude', '-p', '/build x', '--disallowedTools', 'Bash,Write,Edit,NotebookEdit'])
 
+    def test_agy_runs_every_case_in_its_sandbox(self):
+        """2026-11-21, agy 1.5.14: print mode refuses every shell command the person has not approved word for word, and
+        drops the whole answer; --sandbox lets them run (the plan mode refuses them too). agy may then write in the case's copy."""
+        for case in ({'prompt': '/build x'}, {'prompt': '/build x', 'sandbox': 'workspace-write'}):
+            command = evals_run.cli_command('agy', 'agy', case, 60, None, 'default')
+            self.assertIn('--sandbox', command)
+            self.assertNotIn('--dangerously-skip-permissions', command)
+            self.assertNotIn('--mode', command)
+
     def test_a_writable_claude_case_accepts_file_edits(self):
         """Print mode cannot answer a permission prompt: without it, a case that must write fails for a reason that is not the kit."""
         command = evals_run.cli_command('claude', 'claude', {'prompt': '/build x', 'sandbox': 'workspace-write'}, 60, None, 'default')

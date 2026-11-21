@@ -30,7 +30,7 @@ Each case runs in a temporary copy of a fixture (`evals/fixtures/`) with writes 
 | CLI | How writes and shell are denied |
 | --- | --- |
 | Gemini CLI | default approval mode with the `evals/policy.toml` policy (skill activation allowed, shell and writes denied) |
-| Antigravity CLI | print mode; a tool that needs a permission is refused, and that is reported as an infrastructure error |
+| Antigravity CLI | print mode with `--sandbox`: shell commands run, and agy may write in the case's temporary copy (it has no read-only mode that lets commands run: its plan mode refuses them); what the sandbox blocks outside that copy is not verified |
 | Codex CLI | read-only, ephemeral `exec` (a case with `turns` keeps its session, to resume it); `/intent` in a prompt becomes `$intent` |
 | Claude Code | print mode with shell, write and edit tools disallowed; a `workspace-write` case accepts file edits (`--permission-mode acceptEdits`), the shell keeps the person's own rules |
 
@@ -180,5 +180,5 @@ workstation with `--cli`.
 | CLI | Limit |
 | --- | --- |
 | Gemini CLI | non-interactive mode does not expose skill activation: cases measure what the command prompts achieve alone; `plan` approval mode also blocks skills |
-| Antigravity CLI | a tool that asks for a permission drops the whole answer in print mode, until the person has approved read rules in their own settings; a case whose answer needs shell commands (the resume cases read `git status`, branches and log) stays `ERROR`: approved rules match one command line, the model writes them differently each run, and the refusal does not name the command (agy 1.5.14, 2026-11-21) |
+| Antigravity CLI | without `--sandbox`, print mode drops the whole answer at the first shell command the person has not approved word for word (agy 1.5.14, 2026-11-21); with it, agy can write where Claude Code and Codex cannot, so a criterion on files measures more on agy |
 | all | one run varies with the model; a case that fails one time in ten says something about the prompt, not only the model |

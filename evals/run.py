@@ -283,8 +283,10 @@ def cli_command(cli, executable, case, timeout, model, approval_mode, prompt=Non
         locked = ['--permission-mode', 'acceptEdits'] if case.get('sandbox') == 'workspace-write' else ['--disallowedTools', 'Bash,Write,Edit,NotebookEdit']
         return [executable] + (['-c'] if resume else []) + ['-p', prompt] + locked + (['--model', model] if model else [])
     if cli == 'agy':
-        # Antigravity: print mode; tools that ask for permission are refused for lack of a prompt, skills still activate.
-        return [executable, '-p', prompt, '--print-timeout', str(timeout) + 's'] + (['--model', model] if model else [])
+        # Antigravity: print mode refuses every shell command the person has not approved word for word, and drops the whole
+        # answer; --sandbox ("terminal restrictions") lets them run, the plan mode does not (agy 1.5.14). agy may then write
+        # in the case's temporary copy; what the sandbox blocks outside it is not verified.
+        return [executable, '-p', prompt, '--sandbox', '--print-timeout', str(timeout) + 's'] + (['--model', model] if model else [])
     # Default approval mode: in non-interactive mode, tools that ask for confirmation (write, shell) are refused, but
     # activate_skill stays available. Plan mode blocks skill activation in Gemini 0.65 and would skew the evaluation.
     return [executable, '--approval-mode', approval_mode, '--skip-trust', '--policy', str(policy)] + (['-m', model] if model else []) + ['-p', prompt]
