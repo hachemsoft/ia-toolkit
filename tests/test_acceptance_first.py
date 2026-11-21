@@ -20,7 +20,7 @@ class AcceptanceFirstTests(unittest.TestCase):
         self.assertIn('risks first: how a failure shows', kit)
         self.assertIn('acceptance before code, then as standard', kit)  # full: risks first, then the standard step
         self.assertIn('a shared contract, a data model,', kit)  # a data model change is full, for everyone, not a personal line
-        self.assertLess(len(kit), 4200)  # 4.21.0: +the resume rule (cases 40-44)
+        self.assertLess(len(kit), 4300)  # 4.21.0 and 4.22.0: the resume rule, gaps measured by the eval cases 40-44
 
     def test_build_shows_the_failing_test_and_waits(self):
         build = read('commands/build.md')

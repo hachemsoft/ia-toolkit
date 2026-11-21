@@ -53,6 +53,14 @@ class CeremonyTests(unittest.TestCase):
                       'changed since its approval', 'nothing records', 'ask again', 'never restore', 'not replayed'):
             self.assertIn(words, rule, words)
 
+    def test_resuming_asks_before_building_on_a_change_made_by_someone_else(self):
+        # Paid runs of case 43 on agy (4.21.0, --sandbox): it named an uncommitted change outside the plan, then built on it
+        # in the same turn and asked only afterwards.
+        kit = (ROOT/'templates/kit-context.md').read_text(encoding='utf-8')
+        rule = kit[kit.index('Resuming'):].split('\n', 1)[0]
+        for words in ('a change outside the plan you did not make', 'ask before building on it'):
+            self.assertIn(words, rule, words)
+
     def test_a_quick_change_needs_no_plan_and_no_new_acceptance(self):
         build = COMMANDS['build']
         self.assertIn('Quick: no plan file', build)

@@ -91,7 +91,7 @@ class CoreTeamLayerTests(unittest.TestCase):
     def test_kit_rule_one_names_core_and_team_layers(self):
         text = (ROOT/'templates/kit-context.md').read_text(encoding='utf-8')
         self.assertIn('Core and Team practices (files 10 and 20)', text)
-        self.assertLess(len(text), 4200)  # 4.21.0: +the resume rule (cases 40-44)
+        self.assertLess(len(text), 4300)  # 4.21.0 and 4.22.0: the resume rule, gaps measured by the eval cases 40-44
 
 
 if __name__ == '__main__':

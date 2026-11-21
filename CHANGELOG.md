@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.22.0 (2026-11-21)
+
+Picking up earlier work, the agent asks before building on a change someone else made outside the plan. A paid run on Antigravity (case `external-change-is-noticed-on-resume`) named such a change, then built on it in the same turn and asked only afterwards.
+
+- **The resume rule gains one clause** (`templates/kit-context.md`): a change outside the plan you did not make: name it and ask before building on it. The rest of the rule is unchanged.
+- **The kit context's size budget goes from 4200 to 4300 characters** (three tests), about 12 more tokens per session.
+- **Evals**: Antigravity runs every case with `--sandbox` (print mode dropped the whole answer at the first shell command the person had not approved word for word; its plan mode refuses them too), so it may write in the case's copy; `stale-approval-is-asked-again` checks that the agent names the change, asks, and never says it restores the approved test itself; `standard-resume-without-a-plan` accepts the question up to 400 characters after the approval word.
+- Tests: `tests/test_workflow_content.py`, `tests/test_evals_runner.py`.
+
 ## 4.21.0 (2026-11-21)
 
 Picking up earlier work, the agent reads the state before acting. Paid runs of the new resume cases showed a new session that ignored the other branches, did not name the plan it followed, restored a changed approved test on its own, or assumed an approval that nothing recorded.
