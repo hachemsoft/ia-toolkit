@@ -258,3 +258,20 @@ class RetryLimitTests(unittest.TestCase):
             with self.subTest(command=name):
                 self.assertRegex(COMMANDS[name], r'the same check still fails after three different fixes, stop')
                 self.assertIn('the literal failing output', COMMANDS[name])
+
+
+class PlaybookSectionTests(unittest.TestCase):
+    """docs/sdlc/2026-11-21-loop-and-resume: a playbook's "In the kit commands" lines go only to commands that read them
+    (ADR 0021, amended: /test reads it when AGENTS.md has no table of checks)."""
+
+    def test_no_playbook_line_for_spec_or_guide_and_test_names_the_section(self):
+        for path in sorted((ROOT/'skills/internal').glob('*/*/SKILL.md')):
+            text = path.read_text(encoding='utf-8')
+            if '## In the kit commands' not in text:
+                continue
+            section = text.split('## In the kit commands', 1)[1].split('\n## ', 1)[0]
+            with self.subTest(playbook=path.parent.name):
+                self.assertNotRegex(section, r'(?m)^- `/(spec|guide)`')
+        self.assertIn('the "In the kit commands" section of the matching domain playbook for `/test`', COMMANDS['test'])
+        dbt = skill_text('dbt-model-change')
+        self.assertIn('- `/test`: when AGENTS.md has no "Verifying your work" table', dbt)

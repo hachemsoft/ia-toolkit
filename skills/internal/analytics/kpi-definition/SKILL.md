@@ -3,7 +3,7 @@ name: kpi-definition
 description: "Define or redefine a KPI before computing it: grain, population, period, exclusions, source of truth, owner. Triggers: define an indicator, the KPI doesn't match, two different numbers for the same measure, new metric. Not for: debugging the SQL of a metric already defined."
 metadata:
   aikit-default: "false"
-  aikit-version: "1.1.0"
+  aikit-version: "1.1.1"
   aikit-origin: "internal"
   aikit-summary: "Define a KPI before computing it: grain, population, period, exclusions, source of truth, owner."
   aikit-category: "domain"
@@ -34,5 +34,4 @@ No production query before the written definition. No new term when the glossary
 
 ## In the kit commands
 - `/intent`: when the intent concerns a KPI or a metric, settle grain, population, period and exclusions before closing the interview.
-- `/guide`: a KPI or metric definition starts with `/intent`, then `/build`.
-- `/spec`, and `/build` when the KPI has no spec: at the standard and full levels, when ai-kit-rule-miner is installed, give it `intent.md` and the code, SQL and dbt models the KPI touches, never the rules you plan, before the requirements or the acceptance tests; the rules it returns go in the spec, or, without a spec, with the acceptance tests shown for approval, and a rule the change modifies is named as such.
+- `/build` when the KPI has no spec: at the standard and full levels, when ai-kit-rule-miner is installed, give it `intent.md` and the code, SQL and dbt models the KPI touches, never the rules you plan, before the requirements or the acceptance tests; the rules it returns go in the spec, or, without a spec, with the acceptance tests shown for approval, and a rule the change modifies is named as such.

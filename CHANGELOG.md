@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.22.3 (2026-11-22)
+
+A playbook's "In the kit commands" lines go only to commands that read them.
+
+- **`/test` names where the playbook's fallback is**: without a table of checks in the repo's AGENTS.md, it follows the "In the kit commands" section of the matching domain playbook for `/test` (for dbt: `dbt build --select <changed models>+` on the development target), instead of "what the playbook says". The repo's AGENTS.md still comes first.
+- **`kpi-definition` loses two lines that repeated a command**: its `/spec` line said what `commands/spec.md` already says (the rule-miner before the requirements), its `/guide` line what `/guide` already says (a KPI definition starts with `/intent`); the `/build` part stays. ADR 0021 amended.
+- **Tests run in parallel**: `scripts/offline_tests.py` runs one process per test file (`AI_KIT_TEST_JOBS` to choose, 1 for the former single process), about 1 minute instead of 3 on a 10-core workstation; its output stays unittest's, read by the CI annotations, and survives a Windows console that cannot show a character. `test_core_team_layers` works on a copy of the content instead of the repository's `context/`. ADR 0035 records the resume decisions.
+- Tests: `tests/test_workflow_content.py`, `tests/test_parallel_runner.py`.
+
 ## 4.22.2 (2026-11-21)
 
 The kit's agents start again on Antigravity 1.5.14.

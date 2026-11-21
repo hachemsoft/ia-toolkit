@@ -8,7 +8,7 @@ An additive extension of a Core workflow is a skill with `aikit-category: domain
 `## In the kit commands`. Each bullet starts with one or more backticked command names and a colon
 (`` - `/build`, `/diagnose`: … ``) and adds steps or checks inside that command's step. The insertion points are the
 commands whose prompt tells the agent to follow "the installed playbook matching the files or the task, including its
-"In the kit commands" section": `/intent`, `/build`, `/review`, `/diagnose` and `/learn`. A Team never edits a Core command,
+"In the kit commands" section": `/intent`, `/build`, `/review`, `/diagnose` and `/learn`; `/test` reads the section when the repo's AGENTS.md has no table of checks (4.22.3: a playbook line for `/spec` or `/guide` repeated what those commands already say, and was removed). A Team never edits a Core command,
 removes a step, lowers a level or lifts a gate; a Team that needs another sequence ships its own skill. When several
 playbooks match, all apply, and on conflict the agent applies the more cautious and says so. `workflows/*.md` are indexes,
 never prompts.
