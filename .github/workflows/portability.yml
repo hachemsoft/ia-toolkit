@@ -128,10 +128,13 @@ jobs:
       - name: Latest published release and this commit's ZIP, extracted
         env:
           REPO: ${{ github.repository }}
+          # The run's own read-only token (contents: read above): without it the API answered 403 to the runner's
+          # anonymous calls (tags v4.20.0, v4.21.0, v4.22.1). Passed through the environment, never echoed, API call only.
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          tag=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
+          tag=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/releases/latest" | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
           echo "Latest release: $tag"
           echo "${tag#v}" > previous-version.txt
           curl -fsSL -o previous.zip "https://github.com/$REPO/releases/download/$tag/ai-kit-${tag#v}.zip"

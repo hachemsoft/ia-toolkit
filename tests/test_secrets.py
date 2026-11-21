@@ -92,3 +92,22 @@ class ReleaseTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class UpgradeJobTokenTests(unittest.TestCase):
+    """The indicative upgrade job asks the GitHub API with the run's read-only token: anonymous calls got 403."""
+
+    def test_the_token_is_read_only_passed_by_the_environment_and_used_for_the_api_only(self):
+        from installer.core import ROOT
+        text = (ROOT/'.github/workflows/portability.yml').read_text(encoding='utf-8')
+        self.assertIn('permissions:\n  contents: read\n', text)
+        job = text[text.index('Upgrade from the latest release'):]
+        job = job[:job.index('- name: The latest release on a blank home')]
+        self.assertIn('GH_TOKEN: ${{ github.token }}', job)
+        self.assertIn('-H "Authorization: Bearer $GH_TOKEN"', job)
+        self.assertNotIn('secrets.', job)
+        for line in job.splitlines():
+            if 'GH_TOKEN' in line and line.strip().startswith(('echo', 'printf')):
+                self.fail('the token is printed: ' + line)
+        api_calls = [line for line in job.splitlines() if 'curl' in line]
+        self.assertTrue(all(('api.github.com' in line) == ('GH_TOKEN' in line) for line in api_calls), api_calls)
