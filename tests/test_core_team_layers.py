@@ -4,11 +4,12 @@ import contextlib
 import io
 import json
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 
 from installer.cli import apply
-from installer.core import ROOT, KitError, digest, read_json
+from installer.core import ROOT, KitError, content_from, digest, read_json
 
 IDENTITY = {'email': 'a@example.org', 'source': 'test'}
 FORMER_COMPANY_RULE = 'Keep secrets out of code, prompts, logs and commits.'
@@ -19,7 +20,15 @@ class CoreTeamLayerTests(unittest.TestCase):
     def setUp(self):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
-        self.home = Path(temp.name)
+        self.home = Path(temp.name)/'home'
+        self.home.mkdir()
+        # A copy of the content: the team layers this test adds never reach the repository's context/, which the other
+        # test files read at the same time when the suite runs in parallel (scripts/offline_tests.py, 4.22.3).
+        self.content = Path(temp.name)/'content'
+        shutil.copytree(ROOT, self.content, ignore=shutil.ignore_patterns('.git', 'build', 'dist', 'docs', 'evals', 'tests', '__pycache__', '.codegraph'))
+        reading = content_from(self.content)
+        reading.__enter__()
+        self.addCleanup(reading.__exit__, None, None, None)
 
     def run_kit(self, team=None, target='claude'):
         out = io.StringIO()
@@ -31,7 +40,7 @@ class CoreTeamLayerTests(unittest.TestCase):
         return self.home/'.ai-kit/context'/name
 
     def team_file(self, name, text):
-        path = ROOT/'context'/('20-'+name+'.md')
+        path = self.content/'context'/('20-'+name+'.md')
         path.write_text(text, encoding='utf-8')
         self.addCleanup(path.unlink)
 

@@ -5,6 +5,7 @@ Usage: python3 scripts/offline_tests.py [unittest arguments, for example -k code
 Exit code: that of the tests, or 3 when a test reached one of the CLIs.
 """
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -33,6 +34,73 @@ def clean_path():
             kept.append(folder)
     return kept
 
+RAN = re.compile(r'^Ran (\d+) tests? in ([\d.]+)s$', re.M)
+STATUS = re.compile(r'^(OK|FAILED)(?: \((.*)\))?$', re.M)
+
+
+def discovered_files(args):
+    """The test files a plain `discover -s DIR [-p PATTERN] [-v]` would load, or None for any other use (-k, a module, -t):
+    those run as before, in one process."""
+    if not args or args[0] != 'discover':
+        return None
+    rest, start, pattern = args[1:], None, 'test*.py'
+    while rest:
+        flag = rest.pop(0)
+        if flag in ('-s', '--start-directory') and rest:
+            start = rest.pop(0)
+        elif flag in ('-p', '--pattern') and rest:
+            pattern = rest.pop(0)
+        elif flag not in ('-v', '--verbose', '-q', '--quiet'):
+            return None
+    if not start:
+        return None
+    folder = Path(start) if Path(start).is_absolute() else ROOT/start
+    return sorted(folder.glob(pattern))
+
+
+def run_in_parallel(files, args, env, jobs):
+    """One process per test file, `jobs` at a time (the biggest files first); their output in file order, then one total
+    in unittest's own words, which the CI annotations read (scripts/ci_annotations.py)."""
+    import concurrent.futures
+    import time
+    verbosity = [a for a in args[1:] if a in ('-v', '--verbose', '-q', '--quiet')]
+    start = str(files[0].parent)
+
+    def run(path):
+        proc = subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', start, '-p', path.name, *verbosity],
+                              cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                              encoding='utf-8', errors='replace')
+        return proc.returncode, proc.stdout
+
+    began = time.monotonic()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as pool:
+        futures = {path: pool.submit(run, path) for path in sorted(files, key=lambda p: p.stat().st_size, reverse=True)}
+        results = [(path, futures[path].result()) for path in files]
+    total, counts, failed = 0, {}, False
+    for path, (code, output) in results:
+        ran = list(RAN.finditer(output))
+        body = output[:output.rfind('\n-', 0, ran[-1].start()) + 1] if ran else output
+        sys.stdout.write(body if body.endswith('\n') else body + '\n')
+        total += int(ran[-1].group(1)) if ran else 0
+        status = list(STATUS.finditer(output))
+        if not ran or not status or status[-1].group(1) == 'FAILED' or code not in (0, 5):
+            failed = True
+        for part in (status[-1].group(2) or '').split(', ') if status else []:
+            if '=' in part:
+                key, value = part.split('=')
+                counts[key] = counts.get(key, 0) + int(value)
+        if not ran or not status:
+            counts['errors'] = counts.get('errors', 0) + 1
+            print('ERROR: ' + path.name + ' did not report (exit code ' + str(code) + ')')
+    detail = ', '.join(key + '=' + str(counts[key]) for key in ('failures', 'errors', 'skipped', 'expected failures', 'unexpected successes') if counts.get(key))
+    print('-' * 70)
+    print('Ran ' + str(total) + ' tests in ' + format(time.monotonic() - began, '.3f') + 's (' + str(len(files)) + ' files, ' + str(jobs) + ' at a time)')
+    print()
+    print(('FAILED' if failed else 'OK') + (' (' + detail + ')' if detail else ''))
+    sys.stdout.flush()
+    return 1 if failed else 0
+
+
 def main(argv):
     with tempfile.TemporaryDirectory(prefix='ai-kit-offline-') as tmp:
         tools = Path(tmp)/'bin'
@@ -59,7 +127,12 @@ def main(argv):
                 print('A real '+name+' is still reachable on the cleaned PATH: tests not run.', file=sys.stderr)
                 return 3
         args = list(argv) or ['discover', '-s', 'tests']
-        code = subprocess.call([sys.executable, '-m', 'unittest', *args], cwd=ROOT, env=env)
+        jobs = int(os.environ.get('AI_KIT_TEST_JOBS') or os.cpu_count() or 1)
+        files = discovered_files(args)
+        if jobs > 1 and files and len(files) > 1:
+            code = run_in_parallel(files, args, env, jobs)
+        else:
+            code = subprocess.call([sys.executable, '-m', 'unittest', *args], cwd=ROOT, env=env)
         calls = log.read_text(encoding='utf-8').splitlines() if log.exists() else []
         if calls:
             print('\nCalls to a model CLI during the tests (stand-ins, nothing sent):', file=sys.stderr)
