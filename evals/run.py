@@ -310,9 +310,14 @@ def run_case(case, home, timeout, model=None, approval_mode='default', cli='gemi
         outputs = []
         for number, turn in enumerate(turns, 1):
             try:
-                before = snapshot(cwd, turn['expect'].get('unchanged', []))  # as the turn found it, before its "between"
+                # unchanged: as the turn found it. A later turn's "between" (a change made outside the agent) comes after the
+                # snapshot; the case-level one (turn 1) is the state a previous session left: the snapshot comes after it.
+                if number > 1:
+                    before = snapshot(cwd, turn['expect'].get('unchanged', []))
                 for step in between_steps(turn.get('between')):
                     apply_between(cwd, step)
+                if number == 1:
+                    before = snapshot(cwd, turn['expect'].get('unchanged', []))
             except (OSError, subprocess.CalledProcessError) as exc:
                 outputs.append('=== turn ' + str(number) + ' ===\n')
                 return '\n'.join(outputs), ['ERROR turn ' + str(number) + ': the runner could not prepare it (' + str(exc) + '): not a behaviour result'], number

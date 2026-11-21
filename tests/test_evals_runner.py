@@ -416,6 +416,12 @@ class MultiTurnTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(report['results'][0]['status'], 'OK')
 
+    def test_the_setup_between_is_not_a_change_of_the_agent(self):
+        """Paid runs of 2026-11-21: a case-level between wrote yesterday's files, and unchanged blamed the agent for them."""
+        self.case([], between={'write': {'tests/test_discount.py': 'approved\n'}}, expect={'regex': ['\\?'], 'unchanged': ['tests/test_discount.py']})
+        code, out, report = self.run_cases('claude')
+        self.assertEqual(report['results'][0]['status'], 'OK', out)
+
     def test_a_case_level_between_is_checked_when_the_cases_load(self):
         self.case([], between={'git': [['push']]})
         with self.assertRaises(SystemExit) as refused:
