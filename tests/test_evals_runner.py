@@ -450,6 +450,17 @@ class MultiTurnTests(unittest.TestCase):
         self.assertEqual(evals_run.cli_command('claude', 'claude', plain, 60, None, 'default'),
                          ['claude', '-p', '/build x', '--disallowedTools', 'Bash,Write,Edit,NotebookEdit'])
 
+    def test_a_writable_claude_case_may_run_the_tests_and_git_only(self):
+        """Increment 2 (correction loop): the agent must run the checks itself; print mode cannot ask, so the writable case
+        allows the test runner and git, and nothing else of the shell (decided 2026-11-21)."""
+        command = evals_run.cli_command('claude', 'claude', {'prompt': '/build x', 'sandbox': 'workspace-write'}, 60, None, 'default')
+        self.assertIn('--allowedTools', command)
+        allowed = command[command.index('--allowedTools') + 1:]
+        allowed = allowed[:next((i for i, a in enumerate(allowed) if a.startswith('--')), len(allowed))]
+        self.assertEqual(sorted(allowed), ['Bash(git:*)', 'Bash(python -m pytest:*)', 'Bash(python3 -m pytest:*)'])
+        plain = evals_run.cli_command('claude', 'claude', {'prompt': '/build x'}, 60, None, 'default')
+        self.assertNotIn('--allowedTools', plain)
+
     def test_agy_runs_every_case_in_its_sandbox(self):
         """2026-11-21, agy 1.5.14: print mode refuses every shell command the person has not approved word for word, and
         drops the whole answer; --sandbox lets them run (the plan mode refuses them too). agy may then write in the case's copy."""

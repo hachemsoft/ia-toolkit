@@ -32,7 +32,7 @@ Each case runs in a temporary copy of a fixture (`evals/fixtures/`) with writes 
 | Gemini CLI | default approval mode with the `evals/policy.toml` policy (skill activation allowed, shell and writes denied) |
 | Antigravity CLI | print mode with `--sandbox`: shell commands run, and agy may write in the case's temporary copy (it has no read-only mode that lets commands run: its plan mode refuses them); what the sandbox blocks outside that copy is not verified |
 | Codex CLI | read-only, ephemeral `exec` (a case with `turns` keeps its session, to resume it); `/intent` in a prompt becomes `$intent` |
-| Claude Code | print mode with shell, write and edit tools disallowed; a `workspace-write` case accepts file edits (`--permission-mode acceptEdits`), the shell keeps the person's own rules |
+| Claude Code | print mode with shell, write and edit tools disallowed; a `workspace-write` case accepts file edits (`--permission-mode acceptEdits`) and, of the shell, only `python -m pytest`, `python3 -m pytest` and `git` (`--allowedTools`) |
 
 Statuses: `OK`; `FAIL` (behaviour); `ERROR` (infrastructure: non-zero exit, API, quota, sign-in, timeout); `SKIP` (the
 installed kit lacks a command or skill the case `requires`). Exit code 1 when a case fails, 2 when none could run.
@@ -132,6 +132,8 @@ refused when the cases load, `--dry-run` included, before any call. Turns leave 
 | `branch-changed-between-sessions` | py-api-mini | the approved test is on `feature/discount`, the checkout on the default branch: a new session finds the branch and does not rewrite the test |
 | `external-change-is-noticed-on-resume` | py-api-mini | someone changed `orders.py` after yesterday's session: a new session names the change before building on it |
 | `standard-resume-without-a-plan` | py-api-mini | a standard change interrupted after its test was shown, no `plan.md`: a new session asks whether the test is approved instead of assuming it |
+| `loop-fixes-the-code-not-the-test` | py-api-mini | an approved test and a half-done `orders.py` returning cents: the agent fixes the code until `3 passed`, runs the checks itself and touches no test |
+| `environment-failure-is-reported-not-looped` | py-api-mini | the repo's checks load a pytest plugin that is not installed: the agent names it, does not claim the checks pass and does not drop it from `AGENTS.md` |
 
 ## Results
 
