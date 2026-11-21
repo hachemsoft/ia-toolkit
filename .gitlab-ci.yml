@@ -1,7 +1,7 @@
 # The same model-free checks as .github/workflows/portability.yml, for an organization's GitLab copy of the kit.
 # No API key, no CLI installed, and AI_KIT_NO_LIVE=1 refuses any real call. Linux runners only: the macOS and Windows
-# jobs of the GitHub workflow have no equivalent on a default GitLab runner; the release ZIP itself is built and tested
-# on GitHub, which publishes it. Images are pinned by tag; pin them by digest if your registry policy asks for it.
+# jobs of the GitHub workflow have no equivalent on a default GitLab runner. On a vX.Y.Z tag, publish-release attaches the
+# ZIP to the tag's GitLab release (scripts/gitlab_release.py); the runner of release-zip needs a package index for the wheels. Images are pinned by tag; pin them by digest if your registry policy asks for it.
 variables:
   AI_KIT_NO_LIVE: "1"
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
@@ -12,7 +12,7 @@ workflow:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_TAG
 
-stages: [test, release]
+stages: [test, release, publish]
 
 tests:
   stage: test
@@ -50,3 +50,12 @@ release-zip:
   artifacts:
     paths: [dist/*.zip]
     expire_in: 30 days
+
+publish-release:
+  stage: publish
+  image: python:3.12
+  needs: [release-zip]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/
+  script:
+    - python scripts/gitlab_release.py

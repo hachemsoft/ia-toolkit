@@ -118,6 +118,8 @@ What CI runs (`.github/workflows/portability.yml`, mirrored for Linux runners in
 | no risky instruction, secret or undeclared script | `python3 runtime/check_skills.py` |
 | release ZIP builds and installs offline | `python scripts/build_release.py` (needs the full git history) |
 
+On a GitLab copy, a `vX.Y.Z` tag also runs `publish-release`: `scripts/gitlab_release.py` uploads the ZIP and its `SHA256SUMS.txt` to the project's generic package registry and links them from the tag's release (created with the tag's CHANGELOG section, or completed when it exists), so that people download the ZIP from the Releases page. The tag must be `v` followed by `VERSION`; the job token needs the package registry, which is on by default.
+
 The test job first fills a local wheelhouse that stands for a package index:
 `python -m pip download --quiet --only-binary=:all: --no-deps -d build/wheelhouse -r packaging/runtime.txt hatchling==1.27.0 packaging pathspec pluggy trove-classifiers`,
 then `python -m pip install --quiet --no-index --find-links build/wheelhouse -r packaging/runtime.txt`. Without these, the

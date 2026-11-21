@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.19.2 (2026-11-21)
+
+An organization's GitLab copy of the kit runs its pipeline and publishes the ZIP on its Releases page. Nothing changes on workstations.
+
+- **`.gitlab-ci.yml` is valid again**: in the `tests` job, the `pip download … --only-binary=:all: --no-deps …` line read as a YAML mapping (`: `), so GitLab refused the whole file (`jobs:tests:script config should be a string`) and no pipeline ran, neither the tests nor `release-zip`. The line is quoted; checked with `glab ci lint` and a full pipeline on a GitLab copy (tests 3.11 and 3.14, lint, release-zip).
+- **The ZIP on the GitLab release of each `vX.Y.Z` tag**: a `publish-release` job (`scripts/gitlab_release.py`, standard library, the job token) uploads `ai-kit-<version>.zip` and `SHA256SUMS.txt` to the project's generic package registry and links them from the tag's release: created with the tag's CHANGELOG section, or, when a release already exists (made by hand or by another tool), completed with the missing links. A tag other than `v<VERSION>` is refused before any upload, since the ZIP and its Core bundle are named after `VERSION`.
+- Tests: `tests/test_gitlab_release.py`.
+
 ## 4.19.1 (2026-11-21)
 
 A Core or Team over https works behind a proxy that inspects TLS on Windows. Update the kit to install it: a new ZIP or `git pull`, then its installer.
