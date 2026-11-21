@@ -24,7 +24,7 @@ tests:
       - PYTHON: ["3.11", "3.14"]  # the bounds of requires-python: 3.12 and 3.13 sit between them
   script:
     # The launcher tests install the kit with pip from a local folder of wheels, standing for a company's package index.
-    - python -m pip download --quiet --only-binary=:all: --no-deps -d build/wheelhouse -r packaging/runtime.txt hatchling==1.27.0 packaging pathspec pluggy trove-classifiers
+    - 'python -m pip download --quiet --only-binary=:all: --no-deps -d build/wheelhouse -r packaging/runtime.txt hatchling==1.27.0 packaging pathspec pluggy trove-classifiers'
     - python -m pip install --quiet --no-index --find-links build/wheelhouse -r packaging/runtime.txt
     - python scripts/offline_tests.py discover -s tests -v
 
