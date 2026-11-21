@@ -89,7 +89,11 @@ class AgyTests(Base):
         self.assertIn('"list_dir"', verifier)
         self.assertNotIn('run_shell_command', verifier)
         self.assertNotIn('list_directory', verifier)
-        self.assertIn('"view_file"', self.read('.gemini/config/plugins/ai-kit/agents/ai-kit-code-reviewer.md'))
+        # agy 1.5.14 resolves view_file and read_file to one tool and refuses an agent that lists both ("tool name conflict:
+        # multiple tools resolved with name read_file", 2026-11-21): the agents list read_file only.
+        reviewer = self.read('.gemini/config/plugins/ai-kit/agents/ai-kit-code-reviewer.md')
+        self.assertIn('"read_file"', reviewer)
+        self.assertNotIn('"view_file"', reviewer)
 
 
 class CodexTests(Base):

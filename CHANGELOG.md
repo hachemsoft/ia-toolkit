@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.22.2 (2026-11-21)
+
+The kit's agents start again on Antigravity 1.5.14.
+
+- **Antigravity**: agy 1.5.14 resolves `view_file` and `read_file` to one tool and refuses an agent that lists both (`tool name conflict: multiple tools resolved with name "read_file"`), so none of the kit's agents (verifier, reviewers) started; seen in the paid eval runs of 2026-11-21, where agy did the proof itself. The agents now list `read_file` only (`installer/adapters/agy.py`).
+- **Evals**: a writable case on Claude Code may run `python -m pytest`, `python3 -m pytest` and `git`, nothing else of the shell; cases `loop-fixes-the-code-not-the-test` and `environment-failure-is-reported-not-looped`; `build-proves-the-acceptance-test` accepts more wordings of the right stop. A test keeps the correction loop's limit in `/build` and `/diagnose`.
+- **CI**: the indicative upgrade job asks the GitHub API with the run's read-only token (anonymous calls got 403).
+- Tests: `tests/test_collisions.py` (contract changed on purpose: `read_file` instead of `view_file`), `tests/test_workflow_content.py`, `tests/test_secrets.py`, `tests/test_evals_runner.py`.
+
 ## 4.22.1 (2026-11-21)
 
 What the skills say agrees with their own metadata and with the commands. No new rule.

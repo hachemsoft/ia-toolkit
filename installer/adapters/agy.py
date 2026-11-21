@@ -43,7 +43,8 @@ BUILTIN_COMMANDS = {'help', 'planning', 'agents', 'model', 'models', 'permission
 MANAGED_PREFIXES = (AGY_PLUGIN+'/',)
 AGENT_TOOLS = 'native'  # agy reads "tools" in an agent's header (a field of its agent definitions, read on agy 1.4.12)
 # The kit's tool names (Gemini's) in agy's: one kit tool can be several in agy.
-AGY_TOOLS = {'read_file': ['view_file', 'read_file'], 'grep_search': ['grep_search'], 'list_directory': ['list_dir', 'find_by_name'],
+# agy 1.5.14 resolves view_file and read_file to one tool and refuses an agent listing both ("tool name conflict").
+AGY_TOOLS = {'read_file': ['read_file'], 'grep_search': ['grep_search'], 'list_directory': ['list_dir', 'find_by_name'],
              'run_shell_command': ['run_command', 'command_status']}
 # history.jsonl holds the prompts; each conversation (SQLite, one row per step) holds the tool calls with their JSON
 # arguments: skill files read, invoke_subagent with the agent's TypeName (format read on agy 1.4.12).
