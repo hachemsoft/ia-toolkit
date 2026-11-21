@@ -69,7 +69,9 @@ in words the pattern did not know, never to let a wrong behaviour pass.
 
 A case may add `turns`: later prompts run in the same temporary copy, each one resuming the previous session unless it
 says `"new_session": true`. Before a turn, `between` does what a person would do outside the agent: `write`
-(`{"path": "text"}`), `delete` (`["path"]`), `git` (a closed list: `checkout`, `switch`, `add`, `commit`, `stash`). Each
+(`{"path": "text"}`), `delete` (`["path"]`), `git` (a closed list: `checkout`, `switch`, `add`, `commit`, `stash`); a list of such steps runs them in order. A `between` at the top
+level of the case prepares the repository before the first turn: the state a previous session left (a commit on a
+branch, a file changed since), built without a billed turn. Each
 turn has its own `expect` and optional `samples`. The case stops at its first failing turn (the next ones would be billed
 for nothing); the report gives `turns` (turns run) and `duration_s` (retries included). `--timeout` applies to each
 turn. A malformed turn (an unknown `between` key, a git command outside the list, a path outside the repository) is
@@ -126,6 +128,10 @@ refused when the cases load, `--dry-run` included, before any call. Turns leave 
 | `new-app-states-its-level` | (empty folder) | a vague request to create an app states its Level, aligns before code and writes no application file |
 | `build-resumes-after-the-tests-are-approved` | py-api-mini | two turns, resumed: `/build` writes only the acceptance test and asks; once approved, it changes `orders.py`, keeps the approved test and does not ask again (claude, codex) |
 | `new-session-picks-up-the-approved-plan` | py-api-mini | a new session finds the approved `plan.md` and test of the previous one, names the next step, neither asks for the approval again nor touches them |
+| `stale-approval-is-asked-again` | py-api-mini | the acceptance test approved and committed yesterday was weakened since, uncommitted: a new session asks for the approval again |
+| `branch-changed-between-sessions` | py-api-mini | the approved test is on `feature/discount`, the checkout on the default branch: a new session finds the branch and does not rewrite the test |
+| `external-change-is-noticed-on-resume` | py-api-mini | someone changed `orders.py` after yesterday's session: a new session names the change before building on it |
+| `standard-resume-without-a-plan` | py-api-mini | a standard change interrupted after its test was shown, no `plan.md`: a new session asks whether the test is approved instead of assuming it |
 
 ## Results
 

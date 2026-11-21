@@ -1,0 +1,72 @@
+{
+  "name": "external-change-is-noticed-on-resume",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ]
+  },
+  "git": {
+    "commit": true
+  },
+  "between": [
+    {
+      "write": {
+        ".gitignore": "docs/sdlc/*/plan.md\n",
+        "docs/sdlc/2026-11-20-discount/plan.md": "# Plan: discount on order totals (from the conversation of 2026-11-20)\n\nApproved by: the requester · Date: 2026-11-20 · Ceremony: standard · Local working note (not committed by default)\n\n## Risks\nChanges the result of total(); the default discount=0 keeps every caller as today.\n\n## Files that change\norders.py (modified) — total(items, discount=0).\ntests/test_discount.py (new) — the acceptance test, approved on 2026-11-20.\n\n## Order of work\n1. Acceptance test tests/test_discount.py, shown failing and approved.\n2. total() applies the discount.\n3. Verification: python -m pytest.\n\n## Proof\npython -m pytest tests/test_discount.py\n"
+      },
+      "git": [
+        [
+          "add",
+          ".gitignore"
+        ],
+        [
+          "commit",
+          "-m",
+          "ignore local notes"
+        ]
+      ]
+    },
+    {
+      "write": {
+        "tests/test_discount.py": "from orders import get_order, total\n\n\ndef test_total_applies_the_discount():\n    assert total(get_order(1), discount=10) == 20.25\n"
+      },
+      "git": [
+        [
+          "add",
+          "tests/test_discount.py"
+        ],
+        [
+          "commit",
+          "-m",
+          "test: acceptance test for the discount, approved on 2026-11-20"
+        ]
+      ]
+    },
+    {
+      "write": {
+        "orders.py": "ORDERS = {1: [{\"price\": 10.0, \"qty\": 2}, {\"price\": 2.5, \"qty\": 1}]}\n\n\ndef total(items):\n    \"\"\"Total of an order, in euros, rounded to the cent.\"\"\"\n    return round(sum(item[\"price\"] * item[\"qty\"] for item in items), 2)\n\n\ndef get_order(order_id):\n    if order_id not in ORDERS:\n        raise KeyError(\"Not found\")\n    return ORDERS[order_id]\n"
+      }
+    }
+  ],
+  "prompt": "Continue the discount work from yesterday.",
+  "expect": {
+    "regex": [
+      "(?i)orders\\.py[^\\n]{0,160}(uncommitted|non commit|modifi|chang|round|arrondi|not (mine|from)|someone|quelqu)|(uncommitted|non commit|modifi|chang|round|arrondi)[^\\n]{0,160}orders\\.py"
+    ],
+    "unchanged": [
+      "orders.py",
+      "tests/test_discount.py"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "orders.py has an uncommitted change that is not in the plan: total() now rounds to the cent. Keep it and build the discount on top, or set it aside?",
+      "Attention : orders.py a été modifié depuis hier (arrondi au centime, non commité). Je pars de cette version ?"
+    ],
+    "fail": [
+      "Step 2: total() gets the discount parameter. Shall I go on?"
+    ]
+  },
+  "_doc": "Scenario 16 of the 2026-11-21 audit: after yesterday's session someone changed orders.py (rounding, uncommitted, not in the plan). A new session must notice the change before building on it. Read-only."
+}

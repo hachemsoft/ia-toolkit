@@ -13,7 +13,8 @@ Each case is a JSON file: {"name", "prompt", "cwd" (fixture relative to evals/fi
 "file_regex": {"path": ["pattern"]}, "unchanged": ["path"]},
 "turns": [{"between": {"write": {"path": "text"}, "delete": ["path"], "git": [["checkout", "-b", "x"]]}, "new_session": false,
 "prompt": "...", "expect": {...}}] (optional: later turns in the same temporary repo; each resumes the previous session
-unless new_session; "between" is done by the runner before the turn; claude and codex only, other CLIs SKIP)}.
+unless new_session; "between" is done by the runner before the turn (one step, or a list of steps applied in order; at the
+top level of the case, before the first turn: the state a previous session left, built without a billed turn); claude and codex only, other CLIs SKIP)}.
 file_regex and unchanged take paths from the repository's root (no "any depth" match); file_regex reads a file after the turn; unchanged: a file identical to its state when the turn started (before its
 "between"): a test written at turn 1 and approved stays as approved at turn 2.
 A multi-turn case stops at its first failing turn: the next ones would be billed for nothing.
@@ -57,22 +58,29 @@ def relative_path(rel):
     return bool(rel) and not Path(rel).is_absolute() and not Path(rel).drive and '..' not in parts
 
 
+def between_steps(between):
+    """A "between" is one step (an object) or several, applied in order (a list)."""
+    if not between:
+        return []
+    return list(between) if isinstance(between, list) else [between]
+
+
 def turns_problem(case):
     """What is wrong in a case's turns, checked when the cases load (a --dry-run too), never halfway through a paid run."""
     turns = case.get('turns', [])
     if not isinstance(turns, list):
         return 'turns must be a list'
-    paths = list(case['expect'].get('file_regex', {})) + list(case['expect'].get('unchanged', []))
-    for number, turn in enumerate(turns, 2):
+    paths = []
+    for number, turn in enumerate([{'prompt': case['prompt'], 'expect': case['expect'], 'between': case.get('between')}] + turns, 1):
         if not isinstance(turn, dict) or not isinstance(turn.get('prompt'), str) or not isinstance(turn.get('expect'), dict):
             return 'turn ' + str(number) + ' needs a prompt (text) and an expect (object)'
-        between = turn.get('between', {})
-        if set(between) - {'write', 'delete', 'git'}:
-            return 'turn ' + str(number) + ': between takes write, delete and git only'
-        for command in between.get('git', []):
-            if not isinstance(command, list) or not command or command[0] not in BETWEEN_GIT:
-                return 'turn ' + str(number) + ': git ' + ' '.join(map(str, command or [])) + ' is not one of ' + ', '.join(BETWEEN_GIT)
-        paths += list(between.get('write', {})) + list(between.get('delete', []))
+        for between in between_steps(turn.get('between')):
+            if not isinstance(between, dict) or set(between) - {'write', 'delete', 'git'}:
+                return 'turn ' + str(number) + ': between takes write, delete and git only'
+            for command in between.get('git', []):
+                if not isinstance(command, list) or not command or command[0] not in BETWEEN_GIT:
+                    return 'turn ' + str(number) + ': git ' + ' '.join(map(str, command or [])) + ' is not one of ' + ', '.join(BETWEEN_GIT)
+            paths += list(between.get('write', {})) + list(between.get('delete', []))
         paths += list(turn['expect'].get('file_regex', {})) + list(turn['expect'].get('unchanged', []))
     for rel in paths:
         if not relative_path(rel):
@@ -298,13 +306,13 @@ def run_case(case, home, timeout, model=None, approval_mode='default', cli='gemi
         env = {**os.environ, 'HOME': str(home), 'USERPROFILE': str(home)}
         # "subdir": start the CLI in a subfolder of the fixture (monorepo started from one area).
         run_dir = cwd / case['subdir'] if case.get('subdir') else cwd
-        turns = [{'prompt': case['prompt'], 'expect': case['expect'], 'new_session': True}] + case.get('turns', [])
+        turns = [{'prompt': case['prompt'], 'expect': case['expect'], 'between': case.get('between'), 'new_session': True}] + case.get('turns', [])
         outputs = []
         for number, turn in enumerate(turns, 1):
             try:
                 before = snapshot(cwd, turn['expect'].get('unchanged', []))  # as the turn found it, before its "between"
-                if turn.get('between'):
-                    apply_between(cwd, turn['between'])
+                for step in between_steps(turn.get('between')):
+                    apply_between(cwd, step)
             except (OSError, subprocess.CalledProcessError) as exc:
                 outputs.append('=== turn ' + str(number) + ' ===\n')
                 return '\n'.join(outputs), ['ERROR turn ' + str(number) + ': the runner could not prepare it (' + str(exc) + '): not a behaviour result'], number

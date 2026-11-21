@@ -1,0 +1,84 @@
+{
+  "name": "branch-changed-between-sessions",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ]
+  },
+  "git": {
+    "commit": true
+  },
+  "between": [
+    {
+      "write": {
+        ".gitignore": "docs/sdlc/*/plan.md\n",
+        "docs/sdlc/2026-11-20-discount/plan.md": "# Plan: discount on order totals (from the conversation of 2026-11-20)\n\nApproved by: the requester · Date: 2026-11-20 · Ceremony: standard · Local working note (not committed by default)\n\n## Risks\nChanges the result of total(); the default discount=0 keeps every caller as today.\n\n## Files that change\norders.py (modified) — total(items, discount=0).\ntests/test_discount.py (new) — the acceptance test, approved on 2026-11-20.\n\n## Order of work\n1. Acceptance test tests/test_discount.py, shown failing and approved.\n2. total() applies the discount.\n3. Verification: python -m pytest.\n\n## Proof\npython -m pytest tests/test_discount.py\n"
+      },
+      "git": [
+        [
+          "add",
+          ".gitignore"
+        ],
+        [
+          "commit",
+          "-m",
+          "ignore local notes"
+        ]
+      ]
+    },
+    {
+      "git": [
+        [
+          "checkout",
+          "-b",
+          "feature/discount"
+        ]
+      ]
+    },
+    {
+      "write": {
+        "tests/test_discount.py": "from orders import get_order, total\n\n\ndef test_total_applies_the_discount():\n    assert total(get_order(1), discount=10) == 20.25\n"
+      },
+      "git": [
+        [
+          "add",
+          "tests/test_discount.py"
+        ],
+        [
+          "commit",
+          "-m",
+          "test: acceptance test for the discount, approved on 2026-11-20"
+        ]
+      ]
+    },
+    {
+      "git": [
+        [
+          "checkout",
+          "-"
+        ]
+      ]
+    }
+  ],
+  "prompt": "Pick up where we left off yesterday.",
+  "expect": {
+    "regex": [
+      "(?i)feature/discount"
+    ],
+    "not_regex": [
+      "(?i)(I('ll| will)|let me|je vais|j'écris|je crée)[^\\n]{0,40}(write|create|recreate|écri|cré|recré)[^\\n]{0,60}test_discount"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "The approved test tests/test_discount.py is not on this branch: it was committed on feature/discount. Switch to feature/discount to go on?",
+      "Le test approuvé est sur la branche feature/discount, pas sur la branche courante. Je bascule dessus ?"
+    ],
+    "fail": [
+      "tests/test_discount.py is missing; I'll recreate test_discount.py from the plan.",
+      "Step 1 is not done: the test does not exist. Shall I write it?"
+    ]
+  },
+  "_doc": "Scenario 15 of the 2026-11-21 audit: yesterday's approved test was committed on feature/discount; today the checkout is back on the default branch, where the test does not exist; plan.md (ignored by git) is still there. A new session must find the branch, not rewrite the approved test. Read-only."
+}

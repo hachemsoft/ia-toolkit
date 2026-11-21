@@ -268,6 +268,8 @@ if sys.argv[1:2] == ['--version']:
     print('9.9.9-stand-in'); raise SystemExit(0)
 with open(os.environ['STAND_IN_ARGV'], 'a', encoding='utf-8') as log:
     log.write(json.dumps(sys.argv[1:]) + '\\n')
+if os.environ.get('STAND_IN_GIT'):
+    import subprocess; print(subprocess.run(['git', 'branch', '--list'], capture_output=True, text=True).stdout)
 answers = os.environ.get('STAND_IN_ANSWERS', 'Which customers count as active?').split('||')
 calls = sum(1 for _ in open(os.environ['STAND_IN_ARGV'], encoding='utf-8'))
 print(answers[min(calls, len(answers)) - 1])
@@ -395,6 +397,31 @@ class MultiTurnTests(unittest.TestCase):
                     self.run_cases('claude')
                 self.assertIn(reason, str(refused.exception))
                 self.assertEqual(self.argv(), [])
+
+    def test_a_case_level_between_prepares_the_repository_before_the_first_turn(self):
+        """The state a previous session left (a branch, a commit, a file changed since) is built without a billed turn."""
+        self.case([], between={'git': [['checkout', '-b', 'feature/discount']], 'write': {'tests/test_discount.py': 'def test_d(): pass\n'}},
+                  expect={'contains': ['feature/discount'], 'files_present': ['tests/test_discount.py']})
+        code, out, report = self.run_cases('claude', STAND_IN_GIT='1')
+        self.assertEqual(code, 0, out)
+        self.assertEqual(report['results'][0].get('turns'), 1)
+        self.assertEqual(len(self.argv()), 1)
+
+    def test_between_steps_run_in_order(self):
+        """A list of steps: write and commit yesterday's test, then change it again, uncommitted."""
+        self.case([], between=[{'write': {'tests/test_discount.py': 'approved\n'}, 'git': [['add', '-A'], ['commit', '-m', 'approved']]},
+                               {'write': {'tests/test_discount.py': 'changed since\n'}}],
+                  expect={'regex': ['\\?'], 'file_regex': {'tests/test_discount.py': ['changed since']}})
+        code, out, report = self.run_cases('claude')
+        self.assertEqual(code, 0, out)
+        self.assertEqual(report['results'][0]['status'], 'OK')
+
+    def test_a_case_level_between_is_checked_when_the_cases_load(self):
+        self.case([], between={'git': [['push']]})
+        with self.assertRaises(SystemExit) as refused:
+            self.run_cases('claude')
+        self.assertIn('git push', str(refused.exception))
+        self.assertEqual(self.argv(), [])
 
     def test_a_between_the_runner_cannot_do_is_an_error_not_a_crash(self):
         self.case([{'between': {'git': [['checkout', 'no-such-branch']]}, 'prompt': 'Go on.', 'expect': {}}])
