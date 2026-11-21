@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.20.0 (2026-11-21)
+
+The evals can measure an interrupted and resumed task: a case may hold several turns. Nothing changes on workstations or in what the kit installs.
+
+- **Several turns in one case** (`evals/run.py`): optional `turns`, each one resuming the previous session (`claude -c -p`, `codex exec resume --last`, which only looks at the case's own folder) or starting afresh with `"new_session": true`; a `between` does what a person would do outside the agent before a turn (`write`, `delete`, a closed list of git commands: `checkout`, `switch`, `add`, `commit`, `stash`). The case stops at its first failing turn, the next ones are not sent. On Gemini CLI and Antigravity a case with `turns` is `SKIP`.
+- **Criteria on the files**: `file_regex` (a file's content after the turn) and `unchanged` (a file as the turn found it: an acceptance test approved at turn 1 stays as approved at turn 2), at any turn.
+- **Report**: `turns` and `duration_s` per case. A malformed turn or a path outside the case's repository is refused when the cases load, `--dry-run` included, before any call; a `between` the runner cannot do is an `ERROR`, never a crash that loses the report.
+- **A writable case on Claude Code accepts file edits** (`--permission-mode acceptEdits`): print mode cannot answer a permission prompt; the shell keeps the person's own rules. Codex: the sandbox of a resumed turn is not verified (`codex exec resume` takes no `--sandbox`).
+- Two cases: `build-resumes-after-the-tests-are-approved` (interrupted after the acceptance test is shown, resumed, approved) and `new-session-picks-up-the-approved-plan` (a new session that only has the files of the previous one).
+- Tests: `tests/test_evals_runner.py` (`MultiTurnTests`).
+
 ## 4.19.2 (2026-11-21)
 
 An organization's GitLab copy of the kit runs its pipeline and publishes the ZIP on its Releases page. Nothing changes on workstations.

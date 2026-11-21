@@ -9,7 +9,14 @@ Usage: python3 evals/run.py [--home DIR] [--cases evals/cases] [--only name] [--
 Each case is a JSON file: {"name", "prompt", "cwd" (fixture relative to evals/fixtures, optional), "subdir" (launch subfolder, optional),
 "requires": {"commands": [...], "skills": [...], "agents": [...]} (optional, checked against the installed kit), "sandbox": "workspace-write" (optional: the agent may write and run commands in the case's temporary copy),
 "git": {"commit": true, "uncommitted": {"path": "text" | null}} (optional: a real repository, the fixture committed, then these files changed; null deletes one),
-"expect": {"contains": [...], "not_contains": [...], "regex": [...], "not_regex": [...], "files_absent": [...], "files_present": [...]}}.
+"expect": {"contains": [...], "not_contains": [...], "regex": [...], "not_regex": [...], "files_absent": [...], "files_present": [...],
+"file_regex": {"path": ["pattern"]}, "unchanged": ["path"]},
+"turns": [{"between": {"write": {"path": "text"}, "delete": ["path"], "git": [["checkout", "-b", "x"]]}, "new_session": false,
+"prompt": "...", "expect": {...}}] (optional: later turns in the same temporary repo; each resumes the previous session
+unless new_session; "between" is done by the runner before the turn; claude and codex only, other CLIs SKIP)}.
+file_regex and unchanged take paths from the repository's root (no "any depth" match); file_regex reads a file after the turn; unchanged: a file identical to its state when the turn started (before its
+"between"): a test written at turn 1 and approved stays as approved at turn 2.
+A multi-turn case stops at its first failing turn: the next ones would be billed for nothing.
 files_absent and files_present are paths relative to the repo; a bare name (intent.md) matches at any depth, where the
 commands really write (docs/sdlc/<date>-<slug>/intent.md).
 Statuses: OK; FAIL (behaviour); ERROR (infrastructure: CLI exit code, API, quota, timeout); SKIP (precondition not met).
@@ -23,9 +30,11 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+BETWEEN_GIT = ('checkout', 'switch', 'add', 'commit', 'stash')  # a closed list: the runner only ever touches the temporary copy
 
 def load_cases(folder, only=None):
     cases = []
@@ -36,8 +45,40 @@ def load_cases(folder, only=None):
         for key in ('name', 'prompt', 'expect'):
             if key not in case:
                 raise SystemExit('Invalid case (' + path.name + '): missing key ' + key)
+        problem = turns_problem(case)
+        if problem:
+            raise SystemExit('Invalid case (' + path.name + '): ' + problem)
         cases.append(case)
     return cases
+
+def relative_path(rel):
+    """A path a case gives: relative to the temporary copy, never absolute, never climbing out of it."""
+    parts = Path(rel).parts
+    return bool(rel) and not Path(rel).is_absolute() and not Path(rel).drive and '..' not in parts
+
+
+def turns_problem(case):
+    """What is wrong in a case's turns, checked when the cases load (a --dry-run too), never halfway through a paid run."""
+    turns = case.get('turns', [])
+    if not isinstance(turns, list):
+        return 'turns must be a list'
+    paths = list(case['expect'].get('file_regex', {})) + list(case['expect'].get('unchanged', []))
+    for number, turn in enumerate(turns, 2):
+        if not isinstance(turn, dict) or not isinstance(turn.get('prompt'), str) or not isinstance(turn.get('expect'), dict):
+            return 'turn ' + str(number) + ' needs a prompt (text) and an expect (object)'
+        between = turn.get('between', {})
+        if set(between) - {'write', 'delete', 'git'}:
+            return 'turn ' + str(number) + ': between takes write, delete and git only'
+        for command in between.get('git', []):
+            if not isinstance(command, list) or not command or command[0] not in BETWEEN_GIT:
+                return 'turn ' + str(number) + ': git ' + ' '.join(map(str, command or [])) + ' is not one of ' + ', '.join(BETWEEN_GIT)
+        paths += list(between.get('write', {})) + list(between.get('delete', []))
+        paths += list(turn['expect'].get('file_regex', {})) + list(turn['expect'].get('unchanged', []))
+    for rel in paths:
+        if not relative_path(rel):
+            return rel + ': a path relative to the case\'s repository, without ..'
+    return None
+
 
 TOKENS = re.compile(r'tokens used\s*\n?\s*(\d[\d\s\u202f\u00a0,.]*)', re.I)
 
@@ -119,10 +160,15 @@ def files_matching(repo, rel):
         return [repo / rel] if (repo / rel).exists() else []
     return [path for path in repo.rglob(rel) if '.git' not in path.relative_to(repo).parts]
 
-def blocked(case, state, baseline):
+RESUMABLE = ('claude', 'codex')  # the CLIs whose print mode the runner resumes; gemini and agy are billed on Vertex
+
+
+def blocked(case, state, baseline, cli=None):
     """Why a case does not run: its preconditions, or a skeleton from ai-kit new whose prompt is still to write (never sent to a model)."""
     if '<…' in case['prompt']:
         return ['skeleton to complete: its prompt and criteria are placeholders']
+    if case.get('turns') and cli is not None and cli not in RESUMABLE:
+        return ['several turns: resume not supported by the runner for ' + cli + ' (claude and codex only)']
     return unmet_preconditions(case, state) if case.get('requires') and not baseline else []
 
 def unmet_preconditions(case, state):
@@ -152,6 +198,51 @@ def prepare_git(repo, setup):
         (repo / rel).parent.mkdir(parents=True, exist_ok=True)
         (repo / rel).write_text(text, encoding='utf-8')
 
+def git_in(repo, *args):
+    subprocess.run(['git', '-c', 'user.name=Evals', '-c', 'user.email=evals@example.org', '-C', str(repo), *args], check=True, capture_output=True)
+
+
+def apply_between(repo, between):
+    """What happens outside the agent before a turn: a person edits or deletes a file, switches branch."""
+    for rel, text in between.get('write', {}).items():
+        (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+        (repo / rel).write_text(text, encoding='utf-8')
+    for rel in between.get('delete', []):
+        (repo / rel).unlink(missing_ok=True)
+    for command in between.get('git', []):  # checked against BETWEEN_GIT when the cases load
+        git_in(repo, *command)
+
+
+def snapshot(repo, paths):
+    """The bytes of the files a turn's "unchanged" names, when the turn starts (None: absent)."""
+    return {rel: (repo / rel).read_bytes() if (repo / rel).is_file() else None for rel in paths}
+
+
+def file_failures(repo, expect, before):
+    failures = []
+    for rel in expect.get('files_absent', []):
+        found = files_matching(repo, rel)
+        if found:
+            failures.append('file created although forbidden: ' + ', '.join(f.relative_to(repo).as_posix() for f in found))
+    for rel in expect.get('files_present', []):
+        if not files_matching(repo, rel):
+            failures.append('expected file not written: ' + rel)
+    for rel, patterns in expect.get('file_regex', {}).items():
+        path = repo / rel
+        text = path.read_text(encoding='utf-8', errors='replace') if path.is_file() else None
+        for pattern in patterns:
+            if text is None:
+                failures.append(rel + ': file missing')
+                break
+            if not re.search(pattern, text, re.I | re.S):
+                failures.append(rel + ': pattern not found: ' + pattern)
+    for rel in expect.get('unchanged', []):
+        path = repo / rel
+        if (path.read_bytes() if path.is_file() else None) != before.get(rel, b''):
+            failures.append('changed: ' + rel)
+    return failures
+
+
 def kept_output(output, limit=12000):
     """The output for the report: whole when short, else its start and its end, where the final answer is."""
     if len(output) <= limit:
@@ -159,29 +250,40 @@ def kept_output(output, limit=12000):
     half = limit // 2
     return output[:half] + '\n[... ' + str(len(output) - 2 * half) + ' characters cut ...]\n' + output[-half:]
 
-def cli_command(cli, executable, case, timeout, model, approval_mode):
+def cli_command(cli, executable, case, timeout, model, approval_mode, prompt=None, resume=False):
+    """The command line of one turn. prompt: a later turn's text (default: the case's); resume: continue the previous
+    turn's session (claude -c, codex exec resume --last)."""
     policy = ROOT / 'evals' / 'policy.toml'
+    prompt = case['prompt'] if prompt is None else prompt
     if cli == 'codex':
         # Codex: exec in a read-only sandbox, ephemeral session; kit commands are called $intent, not /intent.
-        prompt = case['prompt']
         if prompt.startswith('/'):
             prompt = '$' + prompt[1:]
+        if resume:
+            # `codex exec resume` takes no --sandbox: the resumed turn runs with the session's settings (not verified).
+            return [executable, 'exec', 'resume', '--last', '--skip-git-repo-check'] + (['-m', model] if model else []) + [prompt]
+        # A multi-turn case keeps its session (no --ephemeral) so that the next turn can resume it.
+        ephemeral = [] if case.get('turns') else ['--ephemeral']
         # A case that must write (the verifier's proof) asks for "sandbox": "workspace-write": the agent writes in the case's
         # temporary copy, never in the person's repository.
         sandbox = 'workspace-write' if case.get('sandbox') == 'workspace-write' else 'read-only'
-        return [executable, 'exec', '--skip-git-repo-check', '--ephemeral', '--color', 'never', '-s', sandbox] + (['-m', model] if model else []) + [prompt]
+        return [executable, 'exec', '--skip-git-repo-check'] + ephemeral + ['--color', 'never', '-s', sandbox] + (['-m', model] if model else []) + [prompt]
     if cli == 'claude':
         # Claude Code: print mode, no shell and no file write, as the Gemini policy does; skills and agents stay available.
-        locked = [] if case.get('sandbox') == 'workspace-write' else ['--disallowedTools', 'Bash,Write,Edit,NotebookEdit']
-        return [executable, '-p', case['prompt']] + locked + (['--model', model] if model else [])
+        # A writable case: file edits are accepted without a prompt (print mode cannot answer one); the shell keeps the
+        # person's own Claude Code rules.
+        locked = ['--permission-mode', 'acceptEdits'] if case.get('sandbox') == 'workspace-write' else ['--disallowedTools', 'Bash,Write,Edit,NotebookEdit']
+        return [executable] + (['-c'] if resume else []) + ['-p', prompt] + locked + (['--model', model] if model else [])
     if cli == 'agy':
         # Antigravity: print mode; tools that ask for permission are refused for lack of a prompt, skills still activate.
-        return [executable, '-p', case['prompt'], '--print-timeout', str(timeout) + 's'] + (['--model', model] if model else [])
+        return [executable, '-p', prompt, '--print-timeout', str(timeout) + 's'] + (['--model', model] if model else [])
     # Default approval mode: in non-interactive mode, tools that ask for confirmation (write, shell) are refused, but
     # activate_skill stays available. Plan mode blocks skill activation in Gemini 0.65 and would skew the evaluation.
-    return [executable, '--approval-mode', approval_mode, '--skip-trust', '--policy', str(policy)] + (['-m', model] if model else []) + ['-p', case['prompt']]
+    return [executable, '--approval-mode', approval_mode, '--skip-trust', '--policy', str(policy)] + (['-m', model] if model else []) + ['-p', prompt]
 
 def run_case(case, home, timeout, model=None, approval_mode='default', cli='gemini', executable=None):
+    """Runs the case's turns in one temporary copy. Returns the output of every turn, the failures of the first turn that
+    failed (later turns are not sent) and the number of turns run."""
     fixture = case.get('cwd')
     with tempfile.TemporaryDirectory() as tmp:
         cwd = Path(tmp) / 'repo'
@@ -194,34 +296,51 @@ def run_case(case, home, timeout, model=None, approval_mode='default', cli='gemi
         else:
             (cwd / '.git').mkdir(exist_ok=True)
         env = {**os.environ, 'HOME': str(home), 'USERPROFILE': str(home)}
-        command = cli_command(cli, executable or cli, case, timeout, model, approval_mode)
         # "subdir": start the CLI in a subfolder of the fixture (monorepo started from one area).
         run_dir = cwd / case['subdir'] if case.get('subdir') else cwd
-        try:
-            proc = run_timed(command, timeout, cwd=run_dir, text=True, encoding='utf-8', env=env, stdin=subprocess.DEVNULL)
-        except subprocess.TimeoutExpired as exc:
-            partial = ((exc.stdout or b'') if isinstance(exc.stdout, bytes) else (exc.stdout or '').encode()).decode('utf-8', 'replace') + '\n' + ((exc.stderr or b'') if isinstance(exc.stderr, bytes) else (exc.stderr or '').encode()).decode('utf-8', 'replace')
-            return partial, ['ERROR timed out after ' + str(timeout) + ' s without an answer (interactive authentication pending, network, or model unavailable)']
-        except OSError as exc:
-            return '', ['ERROR cannot start ' + command[0] + ': ' + str(exc)]
-        # The criteria apply to the model answer (stdout); stderr only serves diagnosis
-        # (conflicting skill warnings, API errors), otherwise its messages pollute the checks.
-        output = proc.stdout + '\n--- stderr ---\n' + proc.stderr
-        error = api_error(proc.returncode, output)
-        if error:
-            return output, ['ERROR ' + error]
-        if proc.returncode != 0:
-            # A CLI that failed did not answer: its output is not judged, whatever it contains.
-            return output, ['ERROR ' + cli + ' exited with code ' + str(proc.returncode) + ': execution failure, not a behaviour result']
-        failures = check(proc.stdout, case['expect'])
-        for rel in case['expect'].get('files_absent', []):
-            found = files_matching(cwd, rel)
-            if found:
-                failures.append('file created although forbidden: ' + ', '.join(f.relative_to(cwd).as_posix() for f in found))
-        for rel in case['expect'].get('files_present', []):
-            if not files_matching(cwd, rel):
-                failures.append('expected file not written: ' + rel)
-        return output, failures
+        turns = [{'prompt': case['prompt'], 'expect': case['expect'], 'new_session': True}] + case.get('turns', [])
+        outputs = []
+        for number, turn in enumerate(turns, 1):
+            try:
+                before = snapshot(cwd, turn['expect'].get('unchanged', []))  # as the turn found it, before its "between"
+                if turn.get('between'):
+                    apply_between(cwd, turn['between'])
+            except (OSError, subprocess.CalledProcessError) as exc:
+                outputs.append('=== turn ' + str(number) + ' ===\n')
+                return '\n'.join(outputs), ['ERROR turn ' + str(number) + ': the runner could not prepare it (' + str(exc) + '): not a behaviour result'], number
+            command = cli_command(cli, executable or cli, case, timeout, model, approval_mode, turn['prompt'], resume=not turn.get('new_session'))
+            output, failures = run_turn(command, run_dir, env, timeout, cli, turn['expect'])
+            if failures and not failures[0].startswith('ERROR'):
+                failures += file_failures(cwd, turn['expect'], before)
+            elif not failures:
+                failures = file_failures(cwd, turn['expect'], before)
+            outputs.append(output if len(turns) == 1 else '=== turn ' + str(number) + ' ===\n' + output)
+            if failures:
+                if len(turns) > 1:
+                    failures = ['turn ' + str(number) + ': ' + f if not f.startswith('ERROR') else f for f in failures]
+                return '\n'.join(outputs), failures, number
+        return '\n'.join(outputs), [], len(turns)
+
+
+def run_turn(command, run_dir, env, timeout, cli, expect):
+    """One call to the CLI: its output and what fails in its answer (an ERROR first when the infrastructure failed)."""
+    try:
+        proc = run_timed(command, timeout, cwd=run_dir, text=True, encoding='utf-8', env=env, stdin=subprocess.DEVNULL)
+    except subprocess.TimeoutExpired as exc:
+        partial = ((exc.stdout or b'') if isinstance(exc.stdout, bytes) else (exc.stdout or '').encode()).decode('utf-8', 'replace') + '\n' + ((exc.stderr or b'') if isinstance(exc.stderr, bytes) else (exc.stderr or '').encode()).decode('utf-8', 'replace')
+        return partial, ['ERROR timed out after ' + str(timeout) + ' s without an answer (interactive authentication pending, network, or model unavailable)']
+    except OSError as exc:
+        return '', ['ERROR cannot start ' + command[0] + ': ' + str(exc)]
+    # The criteria apply to the model answer (stdout); stderr only serves diagnosis
+    # (conflicting skill warnings, API errors), otherwise its messages pollute the checks.
+    output = proc.stdout + '\n--- stderr ---\n' + proc.stderr
+    error = api_error(proc.returncode, output)
+    if error:
+        return output, ['ERROR ' + error]
+    if proc.returncode != 0:
+        # A CLI that failed did not answer: its output is not judged, whatever it contains.
+        return output, ['ERROR ' + cli + ' exited with code ' + str(proc.returncode) + ': execution failure, not a behaviour result']
+    return output, check(proc.stdout, expect)
 
 def version_of(executable):
     """The CLI's own --version answer: no model call."""
@@ -239,7 +358,7 @@ def main(argv=None):
     parser.add_argument('--cases', type=Path, default=ROOT / 'evals' / 'cases')
     parser.add_argument('--only')
     parser.add_argument('--dry-run', action='store_true', help='list the cases and check their preconditions; no model call')
-    parser.add_argument('--timeout', type=int, default=300, help='per case, in seconds: limits time, not cost')
+    parser.add_argument('--timeout', type=int, default=300, help='per call (each turn of a case), in seconds: limits time, not cost')
     parser.add_argument('--retries', type=int, default=0, help='extra attempts on an infrastructure error, at most ' + str(MAX_RETRIES) + ' (each one is billed)')
     parser.add_argument('--report', type=Path)
     parser.add_argument('--baseline', action='store_true', help='measure the CLI without the kit: --home must hold no kit; every case runs, preconditions ignored; compare with evals/compare.py')
@@ -263,7 +382,7 @@ def main(argv=None):
         return 2
     if args.dry_run:
         for case in cases:
-            unmet = blocked(case, state, args.baseline)
+            unmet = blocked(case, state, args.baseline, args.cli)
             print(case['name'] + ' : ' + case['prompt'][:80] + (' [precondition: ' + '; '.join(unmet) + ']' if unmet else ''))
         print('Dry run: no model called.')
         return 0
@@ -286,23 +405,25 @@ def main(argv=None):
     print('Kit ' + kit_version + ' | ' + args.cli + ' ' + str(meta['cli_version']) + ' | model ' + meta['model'] + (' | stand-in, no model' if args.stand_in else ''))
     results, failed = [], 0
     for case in cases:
-        unmet = blocked(case, state, args.baseline)
+        unmet = blocked(case, state, args.baseline, args.cli)
         if unmet:
             print('[SKIP] ' + case['name'] + ' — precondition: ' + '; '.join(unmet))
-            results.append({'name': case['name'], 'status': 'SKIP', 'failures': unmet, 'attempts': 0, 'tokens': None, 'output': ''})
+            results.append({'name': case['name'], 'status': 'SKIP', 'failures': unmet, 'attempts': 0, 'tokens': None, 'turns': 0, 'duration_s': 0.0, 'output': ''})
             continue
         attempts = 0
+        started = time.monotonic()
         while True:
             attempts += 1
-            output, failures = run_case(case, args.home.resolve(), int(case.get('timeout', args.timeout)), args.model, args.approval_mode, args.cli, executable)
+            output, failures, turns = run_case(case, args.home.resolve(), int(case.get('timeout', args.timeout)), args.model, args.approval_mode, args.cli, executable)
             infra = bool(failures) and failures[0].startswith('ERROR')
             if not infra or attempts > args.retries:
                 break
         status = 'OK' if not failures else ('ERROR' if failures[0].startswith('ERROR') else 'FAIL')
         failed += bool(failures)
         tokens = tokens_used(output)
+        duration = round(time.monotonic() - started, 1)
         print('[' + status + '] ' + case['name'] + ('' if not failures else ' — ' + ' ; '.join(failures)) + (' (' + str(attempts) + ' attempts)' if attempts > 1 else '') + (' · ' + str(tokens) + ' tokens' if tokens is not None else ''))
-        results.append({'name': case['name'], 'status': status, 'failures': failures, 'attempts': attempts, 'tokens': tokens, 'output': kept_output(output)})
+        results.append({'name': case['name'], 'status': status, 'failures': failures, 'attempts': attempts, 'tokens': tokens, 'turns': turns, 'duration_s': duration, 'output': kept_output(output)})
     if args.report:
         args.report.write_text(json.dumps({'meta': meta, 'results': results}, ensure_ascii=False, indent=2), encoding='utf-8')
     ran = [r for r in results if r['status'] != 'SKIP']

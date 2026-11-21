@@ -1,0 +1,44 @@
+{
+  "name": "new-session-picks-up-the-approved-plan",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ]
+  },
+  "git": {
+    "commit": true,
+    "uncommitted": {
+      "docs/sdlc/2026-11-20-discount/plan.md": "# Plan: discount on order totals (from the conversation of 2026-11-20)\n\nApproved by: the requester · Date: 2026-11-20 · Ceremony: standard · Local working note (not committed by default)\n\n## Risks\nChanges the result of total(); the default discount=0 keeps every caller as today.\n\n## Files that change\norders.py (modified) — total(items, discount=0).\ntests/test_discount.py (new) — the acceptance test, approved on 2026-11-20.\n\n## Order of work\n1. Acceptance test tests/test_discount.py, shown failing and approved.\n2. total() applies the discount.\n3. Verification: python -m pytest.\n\n## Proof\npython -m pytest tests/test_discount.py\n",
+      "tests/test_discount.py": "from orders import get_order, total\n\n\ndef test_total_applies_the_discount():\n    assert total(get_order(1), discount=10) == 20.25\n"
+    }
+  },
+  "prompt": "Pick up where we left off yesterday.",
+  "expect": {
+    "regex": [
+      "(?i)plan\\.md|2026-11-20-discount",
+      "(?i)test_discount|orders\\.py|total\\(|step 2|étape 2|discount|remise"
+    ],
+    "not_regex": [
+      "(?i)\\b(approve|approuvez|approuves|validez|valides)\\b[^\\n]{0,40}\\bplan\\b[^\\n]{0,20}\\?",
+      "(?i)what (were we|did we) (doing|work)|sur quoi (travaillions|étions)"
+    ],
+    "unchanged": [
+      "tests/test_discount.py",
+      "docs/sdlc/2026-11-20-discount/plan.md"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "I found docs/sdlc/2026-11-20-discount/plan.md: step 1 is done (tests/test_discount.py approved and red). Next: step 2, total() applies the discount. Shall I go on?",
+      "Le plan docs/sdlc/2026-11-20-discount/plan.md est approuvé ; reste l'étape 2 : la remise dans total().",
+      "docs/sdlc/2026-11-20-discount/plan.md is approved; next is step 2, the discount in total(). Shall I follow the plan?"
+    ],
+    "fail": [
+      "What were we doing yesterday? I have no memory of the previous session.",
+      "I found plan.md. Do you approve the plan?",
+      "Validez-vous le plan ?"
+    ]
+  },
+  "_doc": "Scenario 8 of the 2026-11-21 audit: a new session, no conversation to resume, only the files of the previous one (an approved plan.md and an approved acceptance test, uncommitted). Measures whether the agent finds the work from the files, names the next step, and neither asks for the approval again nor touches the approved test. The before point of increment 3 (checkpoint). Read-only. Written in 4.20.0, not run: run only on request (evals cost)."
+}

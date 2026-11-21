@@ -263,6 +263,188 @@ class RequiredAgentsTests(unittest.TestCase):
         self.assertEqual(evals_run.unmet_preconditions(case, state), [])
 
 
+STAND_IN_ARGV = '''import json, os, sys
+if sys.argv[1:2] == ['--version']:
+    print('9.9.9-stand-in'); raise SystemExit(0)
+with open(os.environ['STAND_IN_ARGV'], 'a', encoding='utf-8') as log:
+    log.write(json.dumps(sys.argv[1:]) + '\\n')
+answers = os.environ.get('STAND_IN_ANSWERS', 'Which customers count as active?').split('||')
+calls = sum(1 for _ in open(os.environ['STAND_IN_ARGV'], encoding='utf-8'))
+print(answers[min(calls, len(answers)) - 1])
+'''
+
+
+@unittest.skipIf(sys.platform == 'win32', 'the stand-in is a script with a shebang')
+class MultiTurnTests(unittest.TestCase):
+    """Increment 0 of docs/sdlc/2026-11-21-loop-and-resume: a case may hold several turns, resumed in the same session or
+    started afresh, with external changes between them and assertions on the files; no model is called."""
+
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.base = Path(temp.name)
+        self.stand_in = self.base/'cli'
+        self.stand_in.write_text('#!'+sys.executable+'\n'+STAND_IN_ARGV, encoding='utf-8')
+        self.stand_in.chmod(0o755)
+        self.argv_log = self.base/'argv.log'
+        self.home = self.base/'home'
+        (self.home/'.ai-kit').mkdir(parents=True)
+        (self.home/'.ai-kit/state.json').write_text(json.dumps({'version': '0', 'installed': {'commands': ['build'], 'skills': []}}), encoding='utf-8')
+        self.cases = self.base/'cases'
+        self.cases.mkdir()
+        env = {k: v for k, v in os.environ.items() if k != 'AI_KIT_NO_LIVE'}
+        env['STAND_IN_ARGV'] = str(self.argv_log)
+        patcher = mock.patch.dict(os.environ, env, clear=True)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def case(self, turns, **extra):
+        data = {'name': 'multi', 'prompt': '/build add a discount', 'cwd': 'py-api-mini', 'git': {'commit': True},
+                'expect': {'regex': ['\\?']}, 'turns': turns, **extra}
+        (self.cases/'multi.json').write_text(json.dumps(data), encoding='utf-8')
+
+    def run_cases(self, cli, **env):
+        out = io.StringIO()
+        with mock.patch.dict(os.environ, env), contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+            code = evals_run.main(['--cases', str(self.cases), '--home', str(self.home), '--report', str(self.base/'r.json'),
+                                   '--cli', cli, '--stand-in', str(self.stand_in)])
+        report = json.loads((self.base/'r.json').read_text(encoding='utf-8')) if (self.base/'r.json').exists() else None
+        return code, out.getvalue(), report
+
+    def argv(self):
+        return [json.loads(line) for line in self.argv_log.read_text(encoding='utf-8').splitlines()] if self.argv_log.exists() else []
+
+    def test_claude_resumes_the_session_for_the_next_turn(self):
+        self.case([{'prompt': 'The tests are approved, go on.', 'expect': {'contains': ['done']}}])
+        code, out, report = self.run_cases('claude', STAND_IN_ANSWERS='Which discount? ||done')
+        self.assertEqual(code, 0, out)
+        calls = self.argv()
+        self.assertEqual(len(calls), 2, 'the second turn was not sent')
+        first, second = calls
+        self.assertNotIn('-c', first)
+        self.assertIn('-c', second)
+        self.assertIn('The tests are approved, go on.', second)
+        self.assertEqual(report['results'][0].get('turns'), 2)
+
+    def test_codex_keeps_the_session_and_resumes_the_last_one(self):
+        self.case([{'prompt': 'The tests are approved, go on.', 'expect': {'contains': ['done']}}])
+        code, out, _ = self.run_cases('codex', STAND_IN_ANSWERS='Which discount? ||done')
+        self.assertEqual(code, 0, out)
+        calls = self.argv()
+        self.assertEqual(len(calls), 2, 'the second turn was not sent')
+        first, second = calls
+        self.assertEqual(first[0], 'exec')
+        self.assertNotIn('--ephemeral', first)  # a multi-turn case needs a session to resume
+        self.assertEqual(second[:3], ['exec', 'resume', '--last'])
+        self.assertEqual(second[-1], 'The tests are approved, go on.')
+
+    def test_a_new_session_does_not_resume(self):
+        self.case([{'new_session': True, 'prompt': 'Pick up where we left off.', 'expect': {'contains': ['done']}}])
+        self.run_cases('claude', STAND_IN_ANSWERS='Which discount? ||done')
+        calls = self.argv()
+        self.assertEqual(len(calls), 2)
+        self.assertNotIn('-c', calls[1])
+        self.argv_log.unlink()
+        self.run_cases('codex', STAND_IN_ANSWERS='Which discount? ||done')
+        calls = self.argv()
+        self.assertEqual(len(calls), 2)
+        self.assertNotIn('resume', calls[1])
+
+    def test_a_change_between_turns_is_caught_by_unchanged(self):
+        self.case([{'between': {'write': {'tests/test_orders.py': 'def test_rewritten(): pass\n'}},
+                    'prompt': 'Go on.', 'expect': {'unchanged': ['tests/test_orders.py', 'orders.py']}}])
+        code, out, report = self.run_cases('claude', STAND_IN_ANSWERS='Which discount? ||done')
+        self.assertEqual(code, 1, out)
+        self.assertEqual(report['results'][0]['status'], 'FAIL')
+        self.assertIn('changed: tests/test_orders.py', out)
+        self.assertNotIn('changed: orders.py', out)
+
+    def test_file_regex_reads_the_file_after_the_turn(self):
+        self.case([{'between': {'write': {'orders.py': 'DISCOUNT = 0.1\n'}}, 'prompt': 'Go on.',
+                    'expect': {'file_regex': {'orders.py': ['DISCOUNT'], 'tests/test_orders.py': ['discount']}}}])
+        code, out, _ = self.run_cases('claude', STAND_IN_ANSWERS='Which discount? ||done')
+        self.assertEqual(code, 1, out)
+        self.assertIn('tests/test_orders.py', out)
+        self.assertNotIn("orders.py: pattern not found: DISCOUNT", out)
+
+    def test_a_failing_turn_stops_the_case(self):
+        self.case([{'prompt': 'Go on.', 'expect': {'contains': ['done']}}])
+        code, out, report = self.run_cases('claude', STAND_IN_ANSWERS='I changed the code.||done')  # turn 1 asks nothing
+        self.assertEqual(code, 1, out)
+        self.assertEqual(len(self.argv()), 1)  # the second turn would be billed: never sent
+        self.assertEqual(report['results'][0].get('turns'), 1)
+
+    def test_gemini_and_agy_multi_turn_cases_are_skipped_without_a_call(self):
+        self.case([{'prompt': 'Go on.', 'expect': {}}])
+        for cli in ('gemini', 'agy'):
+            with self.subTest(cli=cli):
+                code, out, report = self.run_cases(cli)
+                self.assertEqual(report['results'][0]['status'], 'SKIP', out)
+                self.assertIn('resume', report['results'][0]['failures'][0])
+                self.assertEqual(self.argv(), [])
+
+    def test_a_malformed_turn_is_refused_when_the_cases_load_before_any_call(self):
+        """Review of increment 0: a bad turn found halfway through a paid run lost the report of the cases already billed."""
+        for turns, reason in (([{'prompt': 'Go on.', 'expect': {}, 'between': {'git': [['branch', 'x']]}}], 'git branch x'),
+                              ([{'prompt': 'Go on.'}], 'needs a prompt'),
+                              ([{'prompt': 'Go on.', 'expect': {}, 'between': {'write': {'../outside.py': 'x'}}}], '../outside.py'),
+                              ([{'prompt': 'Go on.', 'expect': {'unchanged': ['/etc/hosts']}}], '/etc/hosts')):
+            with self.subTest(reason=reason):
+                self.case(turns)
+                with self.assertRaises(SystemExit) as refused:
+                    self.run_cases('claude')
+                self.assertIn(reason, str(refused.exception))
+                self.assertEqual(self.argv(), [])
+
+    def test_a_between_the_runner_cannot_do_is_an_error_not_a_crash(self):
+        self.case([{'between': {'git': [['checkout', 'no-such-branch']]}, 'prompt': 'Go on.', 'expect': {}}])
+        code, out, report = self.run_cases('claude', STAND_IN_ANSWERS='Which discount? ||done')
+        self.assertEqual(report['results'][0]['status'], 'ERROR', out)
+        self.assertIn('could not prepare', report['results'][0]['failures'][0])
+        self.assertEqual(len(self.argv()), 1)
+
+    def test_unchanged_passes_on_an_untouched_file_and_fails_on_a_deleted_one(self):
+        self.case([{'prompt': 'Go on.', 'expect': {'unchanged': ['orders.py']}},
+                   {'between': {'delete': ['orders.py']}, 'prompt': 'Again.', 'expect': {'unchanged': ['orders.py']}}])
+        code, out, report = self.run_cases('claude', STAND_IN_ANSWERS='Which discount? ||done||done')
+        self.assertEqual(report['results'][0]['turns'], 3, out)
+        self.assertIn('turn 3: changed: orders.py', out)
+
+    def test_single_turn_command_lines_are_exactly_the_previous_ones(self):
+        plain = {'prompt': '/build x'}
+        self.assertEqual(evals_run.cli_command('codex', 'codex', plain, 60, None, 'default'),
+                         ['codex', 'exec', '--skip-git-repo-check', '--ephemeral', '--color', 'never', '-s', 'read-only', '$build x'])
+        self.assertEqual(evals_run.cli_command('claude', 'claude', plain, 60, None, 'default'),
+                         ['claude', '-p', '/build x', '--disallowedTools', 'Bash,Write,Edit,NotebookEdit'])
+
+    def test_a_writable_claude_case_accepts_file_edits(self):
+        """Print mode cannot answer a permission prompt: without it, a case that must write fails for a reason that is not the kit."""
+        command = evals_run.cli_command('claude', 'claude', {'prompt': '/build x', 'sandbox': 'workspace-write'}, 60, None, 'default')
+        self.assertEqual(command[command.index('--permission-mode') + 1], 'acceptEdits')
+
+    def test_the_samples_of_later_turns_are_checked_too(self):
+        """A turn's samples, like a case's: the "pass" answers pass check(), the "fail" ones fail it. No model call."""
+        turns = [(c['name'], t) for c in evals_run.load_cases(ROOT/'evals'/'cases') for t in c.get('turns', []) if t.get('samples')]
+        self.assertGreaterEqual(len(turns), 1)
+        for name, turn in turns:
+            for answer in turn['samples'].get('pass', []):
+                with self.subTest(case=name, answer=answer):
+                    self.assertEqual(evals_run.check(answer, turn['expect']), [])
+            for answer in turn['samples'].get('fail', []):
+                with self.subTest(case=name, answer=answer):
+                    self.assertNotEqual(evals_run.check(answer, turn['expect']), [])
+
+    def test_a_single_turn_case_keeps_its_command_and_reports_turns_and_duration(self):
+        plain = {'prompt': '/build x'}
+        self.assertIn('--ephemeral', evals_run.cli_command('codex', 'codex', plain, 60, None, 'default'))
+        self.assertNotIn('-c', evals_run.cli_command('claude', 'claude', plain, 60, None, 'default'))
+        (self.cases/'single.json').write_text(json.dumps({'name': 'single', 'prompt': '/build x', 'expect': {'regex': ['\\?']}}), encoding='utf-8')
+        code, out, report = self.run_cases('claude')
+        self.assertEqual(code, 0, out)
+        self.assertEqual(report['results'][0].get('turns'), 1)
+        self.assertIsInstance(report['results'][0].get('duration_s'), float)
+
+
 class ReportAndSandboxTests(unittest.TestCase):
     """4.15.1: the report keeps the end of a long answer; a case may ask for a sandbox the agent can write in."""
 

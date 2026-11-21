@@ -25,14 +25,14 @@ Options: `--cli gemini|agy|codex|claude` (default `gemini`), `--home`, `--cases`
 `--approval-mode` (one CLI only), `--timeout`, `--retries`, `--report`. Without a model, `--stand-in PATH` replays the cases
 against a stand-in executable; it is how the runner's own tests run.
 
-Each case runs in a temporary copy of a fixture (`evals/fixtures/`) with writes and shell denied:
+Each case runs in a temporary copy of a fixture (`evals/fixtures/`) with writes and shell denied, unless it asks for `sandbox: "workspace-write"`:
 
 | CLI | How writes and shell are denied |
 | --- | --- |
 | Gemini CLI | default approval mode with the `evals/policy.toml` policy (skill activation allowed, shell and writes denied) |
 | Antigravity CLI | print mode; a tool that needs a permission is refused, and that is reported as an infrastructure error |
-| Codex CLI | read-only, ephemeral `exec`; `/intent` in a prompt becomes `$intent` |
-| Claude Code | print mode with shell, write and edit tools disallowed |
+| Codex CLI | read-only, ephemeral `exec` (a case with `turns` keeps its session, to resume it); `/intent` in a prompt becomes `$intent` |
+| Claude Code | print mode with shell, write and edit tools disallowed; a `workspace-write` case accepts file edits (`--permission-mode acceptEdits`), the shell keeps the person's own rules |
 
 Statuses: `OK`; `FAIL` (behaviour); `ERROR` (infrastructure: non-zero exit, API, quota, sign-in, timeout); `SKIP` (the
 installed kit lacks a command or skill the case `requires`). Exit code 1 when a case fails, 2 when none could run.
@@ -58,10 +58,29 @@ may write and run commands, in the case's temporary copy only: the runner lifts 
 denied tools for that case), `git` (a real repository: the fixture committed, then
 `uncommitted` files written over it, `null` deleting one), and `expect` with `contains`, `not_contains`, `regex`, `not_regex`, `files_absent`,
 `files_present`, and optional `samples` (`pass` and `fail` answers: an offline test checks that the criteria accept the
-first and reject the second, without a model). The report keeps an answer whole when short, else its start and its end. A bare file name (`intent.md`) matches at any depth. Prefer observable facts (a file written or not, a
+first and reject the second, without a model). Two more criteria read the files after the answer: `file_regex`
+(`{"path": ["pattern"]}`) and `unchanged` (`["path"]`: the file is as the turn found it), with paths from the repository's
+root (no "any depth" match). The report keeps an answer whole when short, else its start and its end. A bare file name (`intent.md`) matches at any depth. Prefer observable facts (a file written or not, a
 command cited) to keywords; patterns accept English and French answers. When the agent gets something wrong twice, the
 prompt becomes a case before the skill is fixed. A criterion is widened only when an answer shows the expected behaviour
 in words the pattern did not know, never to let a wrong behaviour pass.
+
+### Several turns
+
+A case may add `turns`: later prompts run in the same temporary copy, each one resuming the previous session unless it
+says `"new_session": true`. Before a turn, `between` does what a person would do outside the agent: `write`
+(`{"path": "text"}`), `delete` (`["path"]`), `git` (a closed list: `checkout`, `switch`, `add`, `commit`, `stash`). Each
+turn has its own `expect` and optional `samples`. The case stops at its first failing turn (the next ones would be billed
+for nothing); the report gives `turns` (turns run) and `duration_s` (retries included). `--timeout` applies to each
+turn. A malformed turn (an unknown `between` key, a git command outside the list, a path outside the repository) is
+refused when the cases load, `--dry-run` included, before any call. Turns leave their sessions in the CLI's history of the
+`--home` folder. Tokens are read from the last turn only.
+
+| CLI | Next turn |
+| --- | --- |
+| Claude Code | `claude -c -p <prompt>` |
+| Codex CLI | `codex exec resume --last <prompt>`; its sandbox is not verified yet (`codex exec resume` takes no `--sandbox`) |
+| Gemini CLI, Antigravity CLI | not resumed: a case with `turns` is `SKIP` |
 
 ## Cases
 
@@ -105,6 +124,8 @@ in words the pattern did not know, never to let a wrong behaviour pass.
 | `spec-lists-the-rules-already-in-place` | dbt-mini | `/spec` finds the 120-day rule a model applies, against the glossary's 90 days, before redefining an active customer (rule-miner, optional) |
 | `ship-asks-what-a-newcomer-would` | py-api-mini | `/ship` shows what a newcomer cannot understand: "as agreed", "the usual rate" (fresh-eyes, optional) |
 | `new-app-states-its-level` | (empty folder) | a vague request to create an app states its Level, aligns before code and writes no application file |
+| `build-resumes-after-the-tests-are-approved` | py-api-mini | two turns, resumed: `/build` writes only the acceptance test and asks; once approved, it changes `orders.py`, keeps the approved test and does not ask again (claude, codex) |
+| `new-session-picks-up-the-approved-plan` | py-api-mini | a new session finds the approved `plan.md` and test of the previous one, names the next step, neither asks for the approval again nor touches them |
 
 ## Results
 

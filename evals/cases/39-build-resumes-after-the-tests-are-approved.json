@@ -1,0 +1,64 @@
+{
+  "name": "build-resumes-after-the-tests-are-approved",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ]
+  },
+  "git": {
+    "commit": true
+  },
+  "sandbox": "workspace-write",
+  "prompt": "/build total() must accept an optional discount percentage: total(items, discount=0) returns the total minus that percentage. Write the acceptance test in tests/test_discount.py. Do not commit.",
+  "expect": {
+    "regex": [
+      "(?i)approv|approu|valid|confirm|accord|ok pour|shall I|before (I|any) (code|implement|chang)|avant (de|tout) (cod|modifi|implément)"
+    ],
+    "files_present": [
+      "tests/test_discount.py"
+    ],
+    "unchanged": [
+      "orders.py"
+    ]
+  },
+  "turns": [
+    {
+      "prompt": "I approve tests/test_discount.py as written. Go on.",
+      "expect": {
+        "not_regex": [
+          "(?i)\\b(approve|approuvez|approuves|validez|valides)\\b[^\\n]{0,60}(\\btests?\\b|test_discount)[^\\n]{0,40}\\?"
+        ],
+        "unchanged": [
+          "tests/test_discount.py"
+        ],
+        "file_regex": {
+          "orders.py": [
+            "discount"
+          ]
+        }
+      },
+      "samples": {
+        "pass": [
+          "Level: standard. orders.py: total() takes discount. python -m pytest: 3 passed. Not committed.",
+          "Le test approuvé tests/test_discount.py est inchangé ; orders.py applique la remise. Voulez-vous que je lance la suite complète ?"
+        ],
+        "fail": [
+          "Before I go on: do you approve these tests?",
+          "Can you approve tests/test_discount.py?",
+          "Validez-vous le test ?",
+          "Do you approve the test?"
+        ]
+      }
+    }
+  ],
+  "samples": {
+    "pass": [
+      "Level: standard. Acceptance test tests/test_discount.py fails on its assertion (total() got an unexpected keyword argument). Approve it before I code?"
+    ],
+    "fail": [
+      "Level: standard. Done: total() applies the discount, 3 passed."
+    ]
+  },
+  "_doc": "Scenarios 7 and 14 of the 2026-11-21 audit: interrupted after the acceptance test is shown, resumed in the same session (claude -c, codex exec resume --last). Turn 1 writes only the test and asks; turn 2, approved, changes orders.py, never the approved test, and does not ask again. Measures resume and the approval gate across turns. Written in 4.20.0, not run: run only on request (evals cost). claude and codex only."
+}
