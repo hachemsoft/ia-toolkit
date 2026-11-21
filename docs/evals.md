@@ -182,5 +182,5 @@ workstation with `--cli`.
 | CLI | Limit |
 | --- | --- |
 | Gemini CLI | non-interactive mode does not expose skill activation: cases measure what the command prompts achieve alone; `plan` approval mode also blocks skills |
-| Antigravity CLI | without `--sandbox`, print mode drops the whole answer at the first shell command the person has not approved word for word (agy 1.5.14, 2026-11-21); with it, agy can write where Claude Code and Codex cannot, so a criterion on files measures more on agy |
+| Antigravity CLI | without `--sandbox`, print mode drops the whole answer at the first shell command the person has not approved word for word (agy 1.5.14, 2026-11-21); with it, agy can write where Claude Code and Codex cannot, so a criterion on files measures more on agy; print mode returns before a sub-agent it started has answered, so a case whose verdict comes from a kit agent (the verifier's proof) can fail on agy for that reason alone (agy 1.5.14) |
 | all | one run varies with the model; a case that fails one time in ten says something about the prompt, not only the model |
