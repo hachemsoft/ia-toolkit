@@ -247,3 +247,14 @@ class CoherenceTests(unittest.TestCase):
         retro = skill_text('retrospective')
         self.assertNotIn('CODING_STANDARDS.md', retro)
         self.assertIn('REVIEW.md', retro)
+
+
+class RetryLimitTests(unittest.TestCase):
+    """docs/sdlc/2026-11-21-loop-and-resume, increment 2: the correction loop is bounded. Paid runs of the loop cases
+    (45, 46, 31) showed no gap, so the rule stays as written; this test keeps it from being lost."""
+
+    def test_build_and_diagnose_stop_after_three_different_fixes_of_the_same_check(self):
+        for name in ('build', 'diagnose'):
+            with self.subTest(command=name):
+                self.assertRegex(COMMANDS[name], r'the same check still fails after three different fixes, stop')
+                self.assertIn('the literal failing output', COMMANDS[name])
