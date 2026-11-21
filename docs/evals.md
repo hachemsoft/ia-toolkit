@@ -180,5 +180,5 @@ workstation with `--cli`.
 | CLI | Limit |
 | --- | --- |
 | Gemini CLI | non-interactive mode does not expose skill activation: cases measure what the command prompts achieve alone; `plan` approval mode also blocks skills |
-| Antigravity CLI | a tool that asks for a permission drops the whole answer in print mode, until the person has approved read rules in their own settings |
+| Antigravity CLI | a tool that asks for a permission drops the whole answer in print mode, until the person has approved read rules in their own settings; a case whose answer needs shell commands (the resume cases read `git status`, branches and log) stays `ERROR`: approved rules match one command line, the model writes them differently each run, and the refusal does not name the command (agy 1.5.14, 2026-11-21) |
 | all | one run varies with the model; a case that fails one time in ten says something about the prompt, not only the model |
