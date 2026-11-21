@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.19.1 (2026-11-21)
+
+A Core or Team over https works behind a proxy that inspects TLS on Windows. Update the kit to install it: a new ZIP or `git pull`, then its installer.
+
+- **The workstation's TLS settings reach the kit's Git** (issue #17): the kit runs Git without the global and system configuration (ADR 0016), so `http.schannelCheckRevoke=false`, the usual setting where Windows cannot check a certificate's revocation, was ignored and `ai-kit team use` or `sync` failed with `CRYPT_E_NO_REVOCATION_CHECK`. The kit now passes `http.schannelCheckRevoke` (`true`, `false`) and `http.sslBackend` (`schannel`, `openssl`) from the person's `~/.gitconfig`, else from Git's own configuration; any other value or `http.*` key is not passed, and `http.sslVerify` stays `true`.
+- Tests: `tests/test_git_sources.py` (the closed list, the person's value over Git's own, `http.sslVerify` kept).
+
 ## 4.19.0 (2026-11-20)
 
 An announcement is written by a command, never by hand, and never in a form the session-start hook would skip. Update the kit to install it: `ai-kit sync` with a Core repository, else a new ZIP or `git pull`, then its installer.

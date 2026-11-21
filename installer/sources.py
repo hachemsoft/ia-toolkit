@@ -1,8 +1,9 @@
 """Git sources (ADR 0016): the only module that runs Git.
 
 A source is a Core (later a Team) Git repository, identified by its canonical URL. Only stable vX.Y.Z tags are followed, never a
-branch. Git runs with an allowlisted environment, no global or system config, explicit -c overrides, and one credential helper
-from a closed list (the person's, else the one Git's own configuration declares). Trees are read with ls-tree/cat-file, never through tar: regular files only, every path checked. lock.toml
+branch. Git runs with an allowlisted environment, no global or system config, explicit -c overrides, one credential helper
+from a closed list (the person's, else the one Git's own configuration declares), and the TLS settings http.schannelCheckRevoke and
+http.sslBackend from a closed list (http_settings). Trees are read with ls-tree/cat-file, never through tar: regular files only, every path checked. lock.toml
 records the URL, tag, tag object, commit and tree digest of the active content, and the previous one for rollback."""
 import hashlib
 import json
@@ -24,6 +25,12 @@ CREDENTIAL_HELPERS = ('manager', 'manager-core', 'osxkeychain', 'libsecret', 'wi
 ENV_KEPT = ('PATH', 'HOME', 'USERPROFILE', 'SYSTEMROOT', 'SYSTEMDRIVE', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR', 'LANG', 'LC_ALL',
             'SSH_AUTH_SOCK', 'APPDATA', 'LOCALAPPDATA', 'PROGRAMDATA', 'HTTPS_PROXY', 'HTTP_PROXY', 'NO_PROXY', 'https_proxy',
             'http_proxy', 'no_proxy', 'DISPLAY', 'XDG_RUNTIME_DIR', 'DBUS_SESSION_BUS_ADDRESS')
+# Workstation TLS settings the kit passes on (http_settings): Git key as config prints it -> (name, accepted value -> passed value).
+HTTP_SETTINGS = {
+    'http.schannelcheckrevoke': ('http.schannelCheckRevoke', {**dict.fromkeys(('true', 'yes', 'on', '1'), 'true'),
+                                                             **dict.fromkeys(('false', 'no', 'off', '0'), 'false')}),
+    'http.sslbackend': ('http.sslBackend', {'schannel': 'schannel', 'openssl': 'openssl'}),
+}
 WINDOWS_RESERVED = re.compile(r'^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$', re.I)
 # Tests only, set by patching (never from the environment): local bare repositories over file://.
 LOCAL_FOR_TESTS = False
@@ -109,20 +116,41 @@ def engine_dir(kit):
     return folder
 
 
-def git_level_helpers():
-    """The credential.helper values Git's own configuration declares (system and installation level, never the person's
-    global one nor a repository's): Git for Windows writes manager there, the Xcode git of macOS osxkeychain."""
+def workstation_config(args, global_config):
+    """`git config <args>` as the workstation's Git reads it, outside any repository: Git's own configuration (system and
+    installation level) and global_config as the person's; lines of output, [] on any failure."""
     env = {k: os.environ[k] for k in ENV_KEPT if k in os.environ}
-    env.update({'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_TERMINAL_PROMPT': '0'})
+    env.update({'GIT_CONFIG_GLOBAL': str(global_config), 'GIT_TERMINAL_PROMPT': '0'})
     if 'GIT_CONFIG_SYSTEM' in os.environ:
         env['GIT_CONFIG_SYSTEM'] = os.environ['GIT_CONFIG_SYSTEM']
     with tempfile.TemporaryDirectory() as empty:  # outside any repository: no local config is read
         env['GIT_CEILING_DIRECTORIES'] = str(Path(empty).parent)
         try:
-            proc = subprocess.run(['git', 'config', '--get-all', 'credential.helper'], cwd=empty, env=env, capture_output=True, timeout=30)
+            proc = subprocess.run(['git', 'config', *args], cwd=empty, env=env, capture_output=True, timeout=30)
         except (OSError, subprocess.TimeoutExpired):
             return []
     return [v.strip() for v in proc.stdout.decode('utf-8', 'replace').splitlines() if v.strip()] if proc.returncode == 0 else []
+
+
+def git_level_helpers():
+    """The credential.helper values Git's own configuration declares (system and installation level, never the person's
+    global one nor a repository's): Git for Windows writes manager there, the Xcode git of macOS osxkeychain."""
+    return workstation_config(['--get-all', 'credential.helper'], os.devnull)
+
+
+def http_settings(home):
+    """-c overrides for the TLS settings the workstation's Git declares (the person's ~/.gitconfig over Git's own
+    configuration, last value wins as in Git), each from a closed list; any other value or http.* key is not passed.
+    Issue #17: behind a proxy that inspects TLS, schannel cannot check revocation unless http.schannelCheckRevoke=false."""
+    found = {}
+    for line in workstation_config(['--get-regexp', r'^http\.(schannelcheckrevoke|sslbackend)$'], Path(home)/'.gitconfig'):
+        key, _, value = line.partition(' ')
+        found[key.lower()] = value.strip().lower()
+    overrides = []
+    for key, (name, accepted) in HTTP_SETTINGS.items():
+        if found.get(key) in accepted:
+            overrides.append(name+'='+accepted[found[key]])
+    return overrides
 
 
 def credential_helper(home):
@@ -160,6 +188,7 @@ def git(args, kit, git_dir=None, schemes=('https', 'ssh'), input_bytes=None, tim
     helper = credential_helper(Path(home) if home else Path(kit).parent)  # the installation's home (--home), kit = <home>/.ai-kit
     if helper:
         overrides.append('credential.helper='+helper)
+    overrides += http_settings(Path(home) if home else Path(kit).parent)  # http.sslVerify=true above is never lifted
     command = ['git'] + [a for o in overrides for a in ('-c', o)]
     if git_dir is not None:
         prepare_cache(git_dir)

@@ -361,6 +361,30 @@ class OriginTests(unittest.TestCase):
         helper.assert_called_with(Path(home))
 
     @unittest.skipUnless(HAS_GIT, 'git not installed')
+    def test_tls_settings_of_the_workstation_from_a_closed_list(self):
+        # Issue #17: behind a proxy that inspects TLS, Windows workstations set http.schannelCheckRevoke=false; the kit ran
+        # Git without that configuration, so ls-remote failed with CRYPT_E_NO_REVOCATION_CHECK.
+        with tempfile.TemporaryDirectory() as tmp:
+            home, system = Path(tmp)/'home', Path(tmp)/'gitconfig'
+            home.mkdir(); system.write_text('', encoding='utf-8')
+            with mock.patch.dict(os.environ, {'GIT_CONFIG_SYSTEM': str(system), 'HOME': str(home), 'USERPROFILE': str(home)}):
+                self.assertEqual(sources.http_settings(home), [])  # nothing declared, no ~/.gitconfig
+                (home/'.gitconfig').write_text('[http]\n\tschannelCheckRevoke = no\n\tsslBackend = schannel\n\tsslVerify = false\n'
+                                               '\tproxy = http://proxy.example.org:8080\n\textraHeader = X: y\n', encoding='utf-8')
+                self.assertEqual(sources.http_settings(home), ['http.schannelCheckRevoke=false', 'http.sslBackend=schannel'])
+                (home/'.gitconfig').write_text('[http]\n\tschannelCheckRevoke = maybe\n\tsslBackend = gnutls\n', encoding='utf-8')
+                self.assertEqual(sources.http_settings(home), [])  # outside the list: not passed
+                (home/'.gitconfig').unlink()
+                system.write_text('[http]\n\tschannelCheckRevoke = false\n', encoding='utf-8')
+                self.assertEqual(sources.http_settings(home), ['http.schannelCheckRevoke=false'])  # Git's own configuration
+                (home/'.gitconfig').write_text('[http]\n\tschannelCheckRevoke = true\n', encoding='utf-8')
+                self.assertEqual(sources.http_settings(home), ['http.schannelCheckRevoke=true'])  # the person's wins
+                (home/'.gitconfig').write_text('[http]\n\tschannelCheckRevoke = false\n\tsslVerify = false\n', encoding='utf-8')
+                run = lambda key: sources.git(['config', '--get', key], home/'.ai-kit', home=home).strip()
+                self.assertEqual(run('http.schannelCheckRevoke'), b'false')
+                self.assertEqual(run('http.sslVerify'), b'true')  # the certificate itself is always checked
+
+    @unittest.skipUnless(HAS_GIT, 'git not installed')
     def test_git_runs_without_the_person_s_global_config(self):
         with tempfile.TemporaryDirectory() as home:
             (Path(home)/'.gitconfig').write_text('[url "https://evil.example.org/"]\n\tinsteadOf = https://gitlab.example.org/\n', encoding='utf-8')

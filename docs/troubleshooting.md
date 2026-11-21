@@ -40,6 +40,7 @@ The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) add: 2 when Python or th
 | `First use of <URL> needs your confirmation in a terminal: run ai-kit sync there.` | run `ai-kit sync` in a terminal and check the URL, tag and commit shown |
 | `git was not found: install Git (IT can provide it), then run the command again.` | ask IT for Git 2.29 or newer |
 | `git ls-remote failed (auth): …` (or `network`, `not-found`) | sign in to the Git host with your usual credential helper, check the network or the URL |
+| `git ls-remote failed (network): … CRYPT_E_NO_REVOCATION_CHECK …` (Windows) | the network does not let Windows check the certificate's revocation (often a proxy that inspects TLS): `git config --global http.schannelCheckRevoke false`, or ask IT to set it in Git's configuration; the kit passes it on (4.19.1) |
 | `Git URL refused (…)`, `Host … is not in git.allowed_hosts …`, `This Team is not in teams.allowed (managed.toml): …` | the origin is not allowed; ask IT or use the URL it publishes |
 | `No stable tag vX.Y.Z in the source: ask its owner to publish one.` | the repository has no `vX.Y.Z` tag yet |
 | `Tag … now points to another commit. Nothing was changed. …` | tell the repository's owner: a published tag must never move |
