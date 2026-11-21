@@ -64,6 +64,15 @@ class ParallelRunnerTests(unittest.TestCase):
         self.assertRegex(out, r'(?m)^FAILED \(failures=1\)$')
         self.assertIn('No call to gemini, agy, codex or claude during the tests.', out)
 
+    def test_output_the_console_cannot_encode_does_not_stop_the_run(self):
+        """CI of c00ffb5 on Windows: a test printed a character cp1252 cannot encode and the runner died rewriting it."""
+        (self.suite/'test_gamma.py').write_text('import unittest\n\nclass Text(unittest.TestCase):\n'
+                                               '    def test_prints(self):\n        print("\u2713 \u2260 \u2192")\n', encoding='utf-8')
+        code, out = self.run_suite(AI_KIT_TEST_JOBS='2', PYTHONIOENCODING='cp1252')
+        self.assertNotIn('UnicodeEncodeError', out)
+        self.assertRegex(out, r'(?m)^Ran 4 tests in ')
+        self.assertEqual(code, 1, out)  # test_beta_fails, and nothing else
+
     def test_one_job_runs_the_files_one_after_the_other(self):
         code, out = self.run_suite(AI_KIT_TEST_JOBS='1')
         (a_start, a_end), (b_start, b_end) = self.spans()

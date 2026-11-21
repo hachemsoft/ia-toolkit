@@ -66,9 +66,19 @@ def run_in_parallel(files, args, env, jobs):
     verbosity = [a for a in args[1:] if a in ('-v', '--verbose', '-q', '--quiet')]
     start = str(files[0].parent)
 
+    # The children write UTF-8 into their pipe, whatever the console's encoding (cp1252 on a Windows runner); the runner
+    # writes their output back in its own console's encoding, replacing what that encoding cannot show.
+    child_env = {**env, 'PYTHONIOENCODING': 'utf-8'}
+    console = sys.stdout.encoding or 'utf-8'
+
+    def show(text):
+        sys.stdout.flush()
+        sys.stdout.buffer.write(text.encode(console, errors='replace'))
+        sys.stdout.buffer.flush()
+
     def run(path):
         proc = subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', start, '-p', path.name, *verbosity],
-                              cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                              cwd=ROOT, env=child_env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                               encoding='utf-8', errors='replace')
         return proc.returncode, proc.stdout
 
@@ -80,7 +90,7 @@ def run_in_parallel(files, args, env, jobs):
     for path, (code, output) in results:
         ran = list(RAN.finditer(output))
         body = output[:output.rfind('\n-', 0, ran[-1].start()) + 1] if ran else output
-        sys.stdout.write(body if body.endswith('\n') else body + '\n')
+        show(body if body.endswith('\n') else body + '\n')
         total += int(ran[-1].group(1)) if ran else 0
         status = list(STATUS.finditer(output))
         if not ran or not status or status[-1].group(1) == 'FAILED' or code not in (0, 5):
