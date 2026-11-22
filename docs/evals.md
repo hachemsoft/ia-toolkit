@@ -73,7 +73,7 @@ says `"new_session": true`. Before a turn, `between` does what a person would do
 level of the case prepares the repository before the first turn: the state a previous session left (a commit on a
 branch, a file changed since), built without a billed turn. A case may set `cli` (the CLI of its first turn: it then runs with that `--cli` only) and a turn another `cli`: that turn starts a new session in that CLI, in the same repository (a resume across CLIs). Each
 turn has its own `expect` and optional `samples`. The case stops at its first failing turn (the next ones would be billed
-for nothing); the report gives `turns` (turns run) and `duration_s` (retries included). `--timeout` applies to each
+for nothing); the report gives `turns` (turns run), `duration_s` (retries included) and `turns_output`, each turn's output kept on its own (12,000 characters per turn). `--timeout` applies to each
 turn. A malformed turn (an unknown `between` key, a git command outside the list, a path outside the repository) is
 refused when the cases load, `--dry-run` included, before any call. Turns leave their sessions in the CLI's history of the
 `--home` folder. Tokens are read from the last turn only.

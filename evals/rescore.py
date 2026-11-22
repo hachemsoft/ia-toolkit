@@ -57,7 +57,8 @@ def main(argv=None):
                 print(head + ' | no such case in ' + str(args.cases))
                 continue
             print(head + ' (answers only, files not re-checked)')
-            for number, answer in turns_of(result.get('output', '')):
+            recorded = ''.join(result['turns_output']) if result.get('turns_output') else result.get('output', '')
+            for number, answer in turns_of(recorded):
                 expect = expectation(case, number)
                 if expect is None:
                     print('  turn ' + str(number) + ': no such turn in the case now')

@@ -264,6 +264,13 @@ def file_failures(repo, expect, before):
     return failures
 
 
+def turn_outputs(output):
+    """Each turn's output of a multi-turn case, split on the markers run_case writes; None for a case with one turn."""
+    if not output.startswith('=== turn '):
+        return None
+    return ['=== turn ' + chunk for chunk in output.split('=== turn ')[1:]]
+
+
 def kept_output(output, limit=12000):
     """The output for the report: whole when short, else its start and its end, where the final answer is."""
     if len(output) <= limit:
@@ -462,7 +469,8 @@ def main(argv=None):
         tokens = tokens_used(output)
         duration = round(time.monotonic() - started, 1)
         print('[' + status + '] ' + case['name'] + ('' if not failures else ' — ' + ' ; '.join(failures)) + (' (' + str(attempts) + ' attempts)' if attempts > 1 else '') + (' · ' + str(tokens) + ' tokens' if tokens is not None else ''))
-        results.append({'name': case['name'], 'status': status, 'failures': failures, 'attempts': attempts, 'tokens': tokens, 'turns': turns, 'duration_s': duration, 'output': kept_output(output)})
+        results.append({'name': case['name'], 'status': status, 'failures': failures, 'attempts': attempts, 'tokens': tokens, 'turns': turns, 'duration_s': duration, 'output': kept_output(output),
+                        **({'turns_output': [kept_output(o) for o in turn_outputs(output)]} if turn_outputs(output) else {})})
     if args.report:
         args.report.write_text(json.dumps({'meta': meta, 'results': results}, ensure_ascii=False, indent=2), encoding='utf-8')
     ran = [r for r in results if r['status'] != 'SKIP']

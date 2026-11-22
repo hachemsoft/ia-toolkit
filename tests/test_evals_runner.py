@@ -370,6 +370,18 @@ class MultiTurnTests(unittest.TestCase):
         self.assertIn('tests/test_orders.py', out)
         self.assertNotIn("orders.py: pattern not found: DISCOUNT", out)
 
+    def test_the_report_keeps_each_turn_whole_enough_to_read(self):
+        """2026-11-22: the report kept one output cut to 12,000 characters, so a third turn's answer was lost and had to be
+        read back from the CLI's own session files."""
+        self.case([{'prompt': 'Go on.', 'expect': {'contains': ['done']}}])
+        code, out, report = self.run_cases('claude', STAND_IN_ANSWERS='Which discount? ' + 'x' * 15000 + '||done at the end')
+        self.assertEqual(code, 0, out)
+        turns = report['results'][0].get('turns_output')
+        self.assertIsInstance(turns, list, report['results'][0].keys())
+        self.assertEqual(len(turns), 2)
+        self.assertLessEqual(len(turns[0]), 12100)
+        self.assertIn('done at the end', turns[1])
+
     def test_a_failing_turn_stops_the_case(self):
         self.case([{'prompt': 'Go on.', 'expect': {'contains': ['done']}}])
         code, out, report = self.run_cases('claude', STAND_IN_ANSWERS='I changed the code.||done')  # turn 1 asks nothing
