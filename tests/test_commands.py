@@ -18,7 +18,7 @@ class CommandTests(unittest.TestCase):
   for c in load_commands():
    self.assertIn(c['category'],('workflow','tool'));self.assertNotIn(c['name'],names);names.add(c['name'])
    for s in c['skills']:self.assertIn(s,catalog,c['name']);self.assertNotIn('replaced_by',catalog[s])
-   self.assertIn('{{args}}',c['prompt'],c['name']);self.assertTrue(c['description']);self.assertLess(len(c['prompt']),4000,c['name'])
+   self.assertIn('{{args}}',c['prompt'],c['name']);self.assertTrue(c['description']);self.assertLess(len(c['prompt']),4200 if c['name']=='build' else 4000,c['name'])  # 4.23.3: /build carries the one-line contract rule
    if c['category']=='workflow':self.assertIn('stage',c)
   for c in load_commands():
    for s in c['skills']:self.assertIn(c['skills'][0],catalog)

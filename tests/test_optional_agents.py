@@ -69,8 +69,10 @@ class CallsTests(unittest.TestCase):
         sys.path.insert(0, str(ROOT))
         from installer.core import load_commands
         sizes = {c['name']: len(c['prompt']) for c in load_commands()}
-        for name in ('spec', 'ship', 'build'):
+        for name in ('spec', 'ship'):
             self.assertLess(sizes[name], 4000, name)
+        # 4.23.3: + the one-line contract rule in /build (Codex classed a contract change as quick in four releases).
+        self.assertLess(sizes['build'], 4200, 'build')
 
 
 class AvailabilityTests(unittest.TestCase):

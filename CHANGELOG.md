@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.23.3 (2026-11-22)
+
+`/build` says that a one-line change can change a contract.
+
+- **`/build`**: "A change to a function's return value, the type of error it raises or its parameters changes its contract: never quick, even on one line; a message's wording alone does not." A first wording ("what a function raises") made Codex class a new error message as standard Codex classed `get_order` "raises KeyError → returns None", announced as one line, as quick in 4.2.0, 4.5.0, 4.22.3 and 4.23.2 (eval `small-contract-change-names-its-consequences`). The `/build` budget goes from 4 000 to 4 200 characters (read only when `/build` runs).
+- **Evals**: Codex no longer runs ephemeral: an ephemeral session cannot start a sub-agent (`collab spawn failed: … no rollout found for thread id`), so the review cases measured Codex without the kit's reviewers; with them, `review-finds-logged-personal-data` and `full-review-maps-the-blast-radius` pass. `review-flags-hidden-instruction-in-a-skill` accepts "dissimuler" and "audit de configuration".
+- Tests: `tests/test_workflow_content.py`, `tests/test_commands.py`, `tests/test_optional_agents.py` (the `/build` budget, changed on purpose).
+
 ## 4.23.2 (2026-11-22)
 
 The test suite passes on Windows, checked on a Windows VM before the tag; nothing changes on workstations.

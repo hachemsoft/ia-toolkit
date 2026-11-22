@@ -61,6 +61,16 @@ class CeremonyTests(unittest.TestCase):
         for words in ('a change outside the plan you did not make', 'ask before building on it'):
             self.assertIn(words, rule, words)
 
+    def test_build_says_a_one_line_contract_change_is_not_quick(self):
+        # Codex classed get_order "raises KeyError -> returns None", "one line", as quick in 4.2.0, 4.5.0, 4.22.3 and 4.23.2
+        # (eval small-contract-change-names-its-consequences): the level follows what a change can break, not its size.
+        build = COMMANDS['build']
+        self.assertIn("a function's return value, the type of error it raises or its parameters", build)
+        self.assertIn('never quick, even on one line', build)
+        # 2026-11-22: "what a function raises" made Codex class a message's new wording as standard (case 06): the wording
+        # alone is no contract.
+        self.assertIn("a message's wording alone does not", build)
+
     def test_a_quick_change_needs_no_plan_and_no_new_acceptance(self):
         build = COMMANDS['build']
         self.assertIn('Quick: no plan file', build)
