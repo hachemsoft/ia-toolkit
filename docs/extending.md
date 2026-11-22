@@ -131,6 +131,10 @@ these checks.
 permission bypass, an instruction to turn a guardrail off or to change the kit's or a CLI's configuration, a secret, and
 a script not listed in its `KIT_ALLOWED`. It finds obvious forms only: review stays the barrier.
 
+Optional, for a maintainer with a Windows UTM VM: `python3 scripts/vm_tests.py --python '<guest python.exe>'` runs the
+model-free suite of a committed branch in the VM (bundle, clone, run, log) and prints its result. The CI's Windows jobs
+stay the gate.
+
 ## Releasing
 
 1. Set the version in `VERSION` and `pyproject.toml` (a test checks they match), and `min_engine` in `aikit.toml` when the
