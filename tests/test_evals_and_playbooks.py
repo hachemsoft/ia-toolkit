@@ -56,7 +56,7 @@ class EvalSuiteTests(unittest.TestCase):
   self.assertIsNone(evals_run.api_error(0,'2026-11-01 16:35:10.505 xcodebuild[46213] DVTDeveloperPaths: error = Error Domain'))
  def test_dry_run_lists_cases(self):
   out=io.StringIO()
-  with contextlib.redirect_stdout(out):code=evals_run.main(['--dry-run'])
+  with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(out):code=evals_run.main(['--dry-run','--home',str(tmp)])  # never the person's own home
   self.assertEqual(code,0);self.assertIn('guide-routes-to-commands',out.getvalue())
  def test_workflow_file_targets_evals(self):
   wf=(ROOT/'.github/workflows/agent-evals.yml').read_text(encoding='utf-8');self.assertIn('evals/run.py',wf);self.assertIn('GEMINI_API_KEY',wf)

@@ -78,14 +78,7 @@ def managed_path():
 def ownership_problem(path):
     """Why someone other than IT could change this file, or None."""
     path = Path(path)
-    if os.name == 'nt':
-        try:
-            with open(path, 'r+b'):
-                writable = True
-        except OSError:
-            writable = False
-        return windows_ownership_problem(windows_owner(path), windows_owner(path.parent), writable)
-    return posix_ownership_problem(path)
+    return windows_file_problem(path) if os.name == 'nt' else posix_ownership_problem(path)
 
 
 def posix_ownership_problem(path):
@@ -113,10 +106,11 @@ def posix_ownership_problem(path):
     return None
 
 
-def windows_ownership_problem(file_owner, folder_owner, writable):
+def windows_ownership_problem(file_owner, folder_owner, writable, deletable=False, folder_deletes=False):
     """Windows: the file and its folder are owned by SYSTEM, Administrators or TrustedInstaller (owner SIDs), and the
-    current user cannot open the file for writing. The owner decides: a person can create the file under C:\\ProgramData
-    and set it read-only, which makes it unwritable but still theirs. An owner that cannot be read is refused."""
+    current user can neither write the file, nor delete it, nor delete a file of its folder (which is how a file is
+    replaced). The owner decides: a person can create the file under C:\\ProgramData and set it read-only, which makes it
+    unwritable but still theirs. An owner that cannot be read is refused."""
     if file_owner is None or folder_owner is None:
         return 'its owner or the owner of its folder cannot be read'
     if file_owner not in WINDOWS_TRUSTED_OWNERS:
@@ -125,7 +119,68 @@ def windows_ownership_problem(file_owner, folder_owner, writable):
         return 'its folder is owned by '+folder_owner+', not by Administrators or SYSTEM'
     if writable:
         return 'the current user can write it'
+    if deletable:
+        return 'the current user can delete it'
+    if folder_deletes:
+        return 'the current user can delete the files of its folder, so replace it'
     return None
+
+
+WINDOWS_RIGHTS = {'write': 0x0002, 'delete': 0x00010000, 'delete-child': 0x0040}  # FILE_WRITE_DATA, DELETE, FILE_DELETE_CHILD
+
+
+def windows_file_problem(path):
+    """Windows: why someone other than IT could change this file, or None. A link, a junction or any other reparse point
+    is refused, for the file and for its folder (what it points to is not what was checked); then the owners; then what
+    the current user may do. An elevated administrator is IT: like root on POSIX, the last checks do not apply."""
+    path = Path(path)
+    if windows_reparse_point(path):
+        return 'it is a link (a reparse point)'
+    if windows_reparse_point(path.parent):
+        return 'its folder is a link or a junction (a reparse point)'
+    elevated = windows_elevated()
+    can = (lambda target, right: False) if elevated else windows_can_open
+    return windows_ownership_problem(windows_owner(path), windows_owner(path.parent), can(path, 'write'), can(path, 'delete'),
+                                     can(path.parent, 'delete-child'))
+
+
+def windows_reparse_point(path):
+    """True for a symbolic link, a junction or any other reparse point (FILE_ATTRIBUTE_REPARSE_POINT), not followed."""
+    try:
+        return bool(getattr(os.lstat(path), 'st_file_attributes', 0) & getattr(stat, 'FILE_ATTRIBUTE_REPARSE_POINT', 0x400))
+    except OSError:
+        return False  # unreadable: the owner check that follows refuses it
+
+
+def windows_elevated():
+    """True when this process runs as an elevated administrator (or SYSTEM). Windows only."""
+    try:
+        import ctypes
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except Exception:  # noqa: BLE001 — unknown: not elevated, every check applies
+        return False
+
+
+def windows_can_open(path, right):
+    """True when the current user is granted this right on the file or folder (WINDOWS_RIGHTS): the system answers by
+    opening a handle with that access and nothing else, so nothing is written, created or deleted. Windows only."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+        create = kernel32.CreateFileW
+        create.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+        create.restype = wintypes.HANDLE
+        # share read, write and delete (7); OPEN_EXISTING (3); FILE_FLAG_BACKUP_SEMANTICS (a folder can be opened) and
+        # FILE_FLAG_OPEN_REPARSE_POINT (a link is not followed).
+        handle = create(str(path), WINDOWS_RIGHTS[right], 7, None, 3, 0x02000000 | 0x00200000, None)
+        if handle in (None, wintypes.HANDLE(-1).value):
+            return False
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle(handle)
+        return True
+    except Exception:  # noqa: BLE001 — the right could not be asked for: not granted as far as the kit can tell
+        return False
 
 
 def windows_owner(path):
@@ -172,7 +227,7 @@ def load_managed(path=None):
     """The validated content of managed.toml, or None when the file does not exist (not administered). Any other problem raises
     ManagedConfigError: unreadable, writable by the user, unknown key, wrong type, contradiction."""
     path = Path(path) if path is not None else managed_path()
-    if not path.exists():
+    if not os.path.lexists(path):  # a link whose target is gone exists: refused below, never read as "not administered"
         return None
     lockable = lockable_hooks()
 
@@ -225,6 +280,12 @@ def load_managed(path=None):
     unknown = sorted(set(data.get('frictions', {}).get('tracker', {})) - set(TRACKER_KEYS))
     if unknown:
         refuse('unknown key '+', '.join('frictions.tracker.'+k for k in unknown)+' (this version applies: '+', '.join(TRACKER_KEYS)+')')
+    # The tracker's content, as the installation checks it: status and doctor refuse what sync refuses.
+    from .settings import friction_tracker
+    try:
+        friction_tracker({}, data)
+    except ManagedConfigError as exc:
+        refuse(str(exc).removeprefix('managed.toml: ').rstrip('.'))
     return data
 
 
@@ -256,15 +317,56 @@ def locked_guardrails(managed):
 
 
 FETCH_AND_RUN = ('npx', 'uvx', 'bunx', 'pnpx', 'pipx')
+# The launcher's options that name a package it fetches. Those of COMMAND_FROM say which package the command comes from:
+# the word that follows the options is then a command of that package, not a package.
+PACKAGE_OPTIONS = {'npx': ('-p', '--package'), 'pnpx': ('--package',), 'bunx': ('-p', '--package'), 'uvx': ('--from', '--with'), 'pipx': ('--spec',)}
+COMMAND_FROM = ('-p', '--package', '--from', '--spec')
+# The launcher's options that take a value which is not a package (a folder, a registry, a Python version): skipped.
+VALUE_OPTIONS = ('--cache', '--registry', '--userconfig', '--prefix', '--python', '--index', '--index-url', '--default-index', '--extra-index-url',
+                 '--find-links', '--cache-dir', '--directory', '--project', '--config-file', '--env-file', '--pip-args', '--constraint',
+                 '--constraints', '--overrides', '--with-requirements', '--python-preference', '--index-strategy', '--keyring-provider',
+                 '--resolution', '--prerelease', '--exclude-newer', '--color', '--allow-insecure-host', '--node-options', '--loglevel', '-p')
+RUNS_TEXT = ('-c', '--call')  # npx -c "…": a command line given to a shell
+
+
+def pinned(spec):
+    """A package with its exact version (name@1.2.3, @scope/name@1.2.3, name==1.2.3); a folder or a URL is not one."""
+    spec = str(spec)
+    if not spec or spec.startswith(('/', '.', '~', '\\')) or re.match(r'[A-Za-z]:[\\/]', spec) or '://' in spec:
+        return False
+    return '==' in spec or bool(re.search(r'@\d', spec))
 
 
 def unpinned_launcher(server):
-    """A fetch-and-run launcher (npx, uvx...) whose package has no exact version: what runs changes without anyone seeing it."""
+    """A fetch-and-run launcher (npx, uvx...) that fetches a package without an exact version: what runs changes without
+    anyone seeing it. Every package counts: the one after the launcher's options and those its options add (--with, -p,
+    --from, --spec); the value of another option (--cache /tmp/@1) is never taken for the package."""
     from .settings import program
-    if program(server.get('command')) not in FETCH_AND_RUN:
+    name = program(server.get('command'))
+    if name not in FETCH_AND_RUN:
         return False
-    packages = [a for a in server.get('args') or [] if not a.startswith('-') and a not in ('run', 'dlx', 'exec')]
-    return not packages or not any(('==' in a) or re.search(r'@\d', a) for a in packages[:1])
+    args = [str(a) for a in server.get('args') or []]
+    package_options = PACKAGE_OPTIONS.get(name, ())
+    packages, first, command_from, at = [], None, False, 0
+    while at < len(args) and first is None:  # the launcher's own options come before the package; what follows it is its own
+        flag, equals, value = args[at].partition('=')
+        if not args[at].startswith('-'):
+            if args[at] not in ('run', 'dlx', 'exec'):
+                first = args[at]
+        elif flag in RUNS_TEXT and flag not in package_options:
+            return True
+        elif flag in package_options:
+            if not equals:
+                at += 1
+                value = args[at] if at < len(args) else ''
+            packages.append(value)
+            command_from = command_from or flag in COMMAND_FROM
+        elif flag in VALUE_OPTIONS and not equals:
+            at += 1
+        at += 1
+    if not command_from:
+        packages.append(first or '')
+    return not all(pinned(package) for package in packages)
 
 
 def team_mcp_gate(enabled_mcp, team_servers, managed, approved, approve=None):

@@ -120,7 +120,7 @@ class ValidationTests(Base):
                       'git': {'allowed_hosts': [], 'allowed_schemes': [], 'revoked': [], 'allow_prerelease': False},
                       'teams': {'allowed': [], 'allow_unknown': False}},
                      {'managed_schema': 1, 'hooks': {}, 'mcp': {}, 'frictions': {}, 'enterprise': {}, 'git': {}, 'teams': {}},
-                     {'managed_schema': 1, 'frictions': {'tracker': {'kind': 'jira'}}},  # its values: friction_tracker; its keys are closed here
+                     {'managed_schema': 1, 'frictions': {'tracker': {'kind': 'gitlab', 'project': 'group/project'}}},  # no default added to it either
                      {'managed_schema': 1, 'hooks': {'locked': ['protected-paths'], 'protected-paths': True}}):
             with self.subTest(data):
                 self.write_managed(data)

@@ -3,7 +3,7 @@ name: routing
 description: "Kit router: which command, which tool and what level of ceremony for the situation described. Triggers: which skill for, where do I start, how do we do this here, guide, help with the workflow."
 metadata:
   aikit-default: "true"
-  aikit-version: "1.0.4"
+  aikit-version: "1.0.5"
   aikit-origin: "internal"
   aikit-summary: "Which command, which tool and what level of ceremony for the situation: kit router."
   aikit-category: "tool"
@@ -45,7 +45,7 @@ Propose only the commands listed under "Commands" in the kit context (00_KIT.md)
 - `/diagnose <symptom>` → proven cause and regression test (Maintain). `/triage` for incoming tickets.
 
 ## The tools, at any time
-`/learn` learn a perimeter or a concept · `/explain` map of an area or rephrasing · `/ask` questionnaire for a business owner · `/retro` improve the agent's environment · `/handoff` handover · `/research` primary sources · `/wizard` human steps · `/audit` code health.
+`/learn` learn a perimeter or a concept · `/explain` map of an area, analysis of a question about the project with evidence (`/explain <question>`), or rephrasing · `/ask` questionnaire for a business owner · `/retro` improve the agent's environment · `/handoff` handover · `/research` a question answered from primary sources, recorded in the repo · `/wizard` human steps · `/audit` code health.
 
 ## Setting up a repo
 When it becomes useful, not before a first task: "Initialize the project context" (AGENTS.md, GLOSSARY.md, REVIEW.md, git rule for artifacts), proposed as one grouped change that keeps existing files. Only when the team wants the agent to read and create tickets (`/map`, `/triage`, to-tickets): `setup-workflow` (a GitLab or GitHub tracker through `glab` or `gh`, or local markdown files).

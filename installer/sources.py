@@ -94,7 +94,7 @@ def authorize(url, git):
         return
     parts = urlsplit(url)
     hosts, groups = git.get('allowed_hosts'), git.get('allowed_groups')
-    if hosts is not None and parts.hostname not in hosts:
+    if hosts is not None and parts.hostname not in [str(h).strip().lower() for h in hosts]:  # a host name has no case
         if not hosts:
             raise SourceError('refused-origin', 'git.allowed_hosts is empty in managed.toml: no Git host is allowed (IT removes the key to lift the restriction): '+url)
         raise SourceError('refused-origin', 'Host '+str(parts.hostname)+' is not in git.allowed_hosts ('+', '.join(hosts)+'): '+url)
@@ -301,7 +301,7 @@ def verify_signature(kit, cache, tag, signers):
     allowed = engine_dir(kit)/'allowed_signers'
     allowed.write_text(''.join(('ai-kit ' if SSH_KEY_TYPE.match(key.strip()) else '')+key.strip()+'\n' for key in signers), encoding='utf-8')
     try:
-        git(['-c', 'gpg.format=ssh', '-c', 'gpg.ssh.allowedSignersFile='+str(allowed), 'verify-tag', '--raw', tag], kit, git_dir=cache)
+        git(['-c', 'gpg.format=ssh', '-c', 'gpg.ssh.allowedSignersFile='+str(allowed), 'verify-tag', '--raw', 'refs/tags/'+tag], kit, git_dir=cache)
         header = git(['cat-file', 'tag', 'refs/tags/'+tag], kit, git_dir=cache).decode('utf-8', 'replace').split('\n\n', 1)[0]
     except SourceError:
         raise SourceError('invalid', 'Tag '+tag+' is not signed by a key IT lists (managed.toml git.signers): nothing was changed.') from None
@@ -467,6 +467,14 @@ class EngineLock:
             pid = int(self.path.read_text(encoding='utf-8').strip() or 0)
         except (OSError, ValueError):
             return True
+        if pid <= 0:
+            # No pid written: a command stopped right after creating the file, or one that is writing it this instant.
+            # Never probed (kill(0, 0) signals this very process group and always answers): taken over once it is a few
+            # seconds old.
+            try:
+                return time.time() - self.path.stat().st_mtime > 5
+            except OSError:
+                return True
         if os.name == 'nt':
             return time.time() - self.path.stat().st_mtime > 3600
         try:

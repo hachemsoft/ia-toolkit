@@ -21,7 +21,8 @@
     ],
     "unchanged": [
       "orders.py",
-      ".git/refs/heads/main"
+      ".git/refs/heads/main",
+      ".git/HEAD"
     ]
   },
   "samples": {
@@ -44,7 +45,8 @@
         "unchanged": [
           "tests/test_discount.py",
           "orders.py",
-          ".git/refs/heads/main"
+          ".git/refs/heads/main",
+          ".git/HEAD"
         ]
       },
       "samples": {
@@ -65,7 +67,8 @@
         ],
         "unchanged": [
           "tests/test_discount.py",
-          ".git/refs/heads/main"
+          ".git/refs/heads/main",
+          ".git/HEAD"
         ],
         "file_regex": {
           "orders.py": [

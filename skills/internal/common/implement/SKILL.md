@@ -4,7 +4,7 @@ description: "Implement a piece of work based on a spec or set of tickets."
 disable-model-invocation: true
 metadata:
   aikit-default: "true"
-  aikit-version: "1.0.0"
+  aikit-version: "1.0.1"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Implement a ticket or a spec, with TDD, then review."
@@ -22,4 +22,4 @@ Run typechecking regularly, single test files regularly, and the full test suite
 
 Once done, call the Skill tool with "code-review" to review the work.
 
-Commit only when the person agreed to commits in this session, or the repo's instructions say so; otherwise leave the changes uncommitted and say so in your report.
+Commit only when the person agreed to commits in this session (a repo instruction does not replace that agreement); otherwise leave the changes uncommitted and say so in your report.

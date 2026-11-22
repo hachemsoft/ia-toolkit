@@ -124,7 +124,10 @@ def api_error(returncode, output):
     when it is an error status (4xx, 5xx) and, for a run that succeeded, only on the error stream: a model answer may quote
     one ("returns status: 200")."""
     stderr = output.split('\n--- stderr ---\n', 1)[1] if '\n--- stderr ---\n' in output else ''
-    match = re.search(r'status: ([45]\d{2})', output if returncode != 0 else stderr) or re.search(r'(?<![.:\d])\b(401|402|403|429|5\d\d)\b[^\n]*(error|Error|quota|billing|permission)', output)
+    # What a failure of the CLI says is looked for in everything it printed; when it succeeded, on the error stream only:
+    # an answer may speak of a 429, of a login or of a usage limit without the run having met one.
+    said = output if returncode != 0 else stderr
+    match = re.search(r'status: ([45]\d{2})', said) or re.search(r'(?<![.:\d])\b(401|402|403|429|5\d\d)\b[^\n]*(error|Error|quota|billing|permission)', said)
     if match:
         return 'API ' + match.group(1) + ': model answer unavailable (authentication, quota or billing), not a behaviour failure'
     if 'headless mode cannot prompt for' in output:
@@ -135,9 +138,9 @@ def api_error(returncode, output):
         return 'Antigravity returned a partial answer before the print timeout: not a behaviour failure'
     if 'Please run /login' in output:
         return 'Claude Code not signed in in this home folder: start claude there once and run /login (for --baseline, a home folder of its own)'
-    if 'Not logged in' in output or 'codex login' in output.lower() and 'error' in output.lower():
+    if 'Not logged in' in said or 'codex login' in said.lower() and 'error' in said.lower():
         return 'Codex not signed in: run codex login'
-    if 'usage limit' in output.lower() or "You've hit your usage limit" in output:
+    if 'usage limit' in said.lower():
         return 'Codex quota reached: model answer unavailable, not a behaviour failure'
     if 'Please set an Auth method' in output:
         return 'no Gemini authentication in this home folder'
@@ -208,7 +211,11 @@ def prepare_git(repo, setup):
     """A real repository: the fixture committed, then the "uncommitted" files written over it (null: deleted) and left uncommitted."""
     def git(*args):
         subprocess.run(['git', '-c', 'user.name=Evals', '-c', 'user.email=evals@example.org', *args], cwd=repo, check=True, capture_output=True)
-    git('init', '--quiet')
+    try:  # main whatever the person's init.defaultBranch: the cases name it (.git/refs/heads/main)
+        git('init', '--quiet', '-b', 'main')
+    except subprocess.CalledProcessError:  # git before 2.28 has no -b
+        git('init', '--quiet')
+        git('symbolic-ref', 'HEAD', 'refs/heads/main')
     if setup.get('commit', True):
         git('add', '-A')
         git('commit', '--quiet', '--allow-empty', '-m', 'fixture')
@@ -336,6 +343,14 @@ def run_case(case, home, timeout, model=None, approval_mode='default', cli='gemi
         turns = [{'prompt': case['prompt'], 'expect': case['expect'], 'between': case.get('between'), 'new_session': True}] + case.get('turns', [])
         outputs = []
         previous_cli = cli
+        # Another CLI named by a later turn is looked for now: found missing at its turn, the turns before it are already billed.
+        executables = {cli: executable}
+        for turn in turns:
+            other = turn.get('cli', cli)
+            if other not in executables:
+                executables[other] = executable if stand_in else shutil.which(other)
+                if not executables[other]:
+                    return '', ['ERROR ' + other + ' not on the PATH: a turn of this case runs in it; nothing was sent, not a behaviour result'], 0
         for number, turn in enumerate(turns, 1):
             try:
                 # unchanged: as the turn found it. A later turn's "between" (a change made outside the agent) comes after the
@@ -352,8 +367,8 @@ def run_case(case, home, timeout, model=None, approval_mode='default', cli='gemi
             # A turn may name another CLI (a resume across CLIs): no conversation crosses them, so it starts afresh there.
             turn_cli = turn.get('cli', previous_cli)
             resume = not turn.get('new_session') and turn_cli == previous_cli
-            turn_executable = executable if (stand_in or turn_cli == cli) else shutil.which(turn_cli)
-            command = cli_command(turn_cli, turn_executable or turn_cli, case, timeout, model, approval_mode, turn['prompt'], resume=resume)
+            # --model names a model of the CLI the run was started with: another CLI keeps its own default.
+            command = cli_command(turn_cli, executables[turn_cli], case, timeout, model if turn_cli == cli else None, approval_mode, turn['prompt'], resume=resume)
             previous_cli = turn_cli
             output, failures = run_turn(command, run_dir, env, timeout, turn_cli, turn['expect'])
             if failures and not failures[0].startswith('ERROR'):

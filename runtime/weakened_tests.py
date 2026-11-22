@@ -101,7 +101,7 @@ def new_text(repo, path):
         return ''
 
 
-# --- A small YAML reader: block mappings and lists, flow {} and [], block scalars skipped -------------------------------
+# --- A small YAML reader: block mappings and lists, flow {} and [], block scalars kept as text -------------------------------
 
 def scan_quotes(line):
     """(the line with quoted text blanked, the quote still open at its end or None)."""
@@ -133,6 +133,19 @@ def depth(blanked):
 
 KEY = re.compile(r'''^("(?:[^"\\]|\\.)*"|'[^']*'|[^\s'"{\[#&*!|>%@`-][^:]*?|-[^\s:][^:]*?)\s*:(?:\s+|$)''')
 BLOCK_SCALAR = re.compile(r'^[|>][-+0-9]*$')
+BLOCK_HEADER = re.compile(r'(?:^|:\s+)(?:-\s+)*([|>][-+0-9]*)$')  # a line that opens a block scalar (key: |, - >-)
+# An anchor, an alias or a tag where a value starts (key: &a, - *a, [!!str x]). An unquoted != or * elsewhere is text.
+NODE_MARK = re.compile(r'(?:^\s*(?:-\s+)*|:\s+|[\[{,]\s*)(?:[&*][A-Za-z0-9_-]+|!!?[A-Za-z][\w/.-]*)(?=[\s,\]}]|$)')
+
+
+def scalar_block(style, raws):
+    """The text of a block scalar from its raw lines (nothing in it is a comment or a quote): literal (|) keeps its
+    lines, folded (>) joins them."""
+    while raws and not raws[-1].strip():
+        raws = raws[:-1]
+    margin = min((len(raw)-len(raw.lstrip(' ')) for raw in raws if raw.strip()), default=0)
+    rows = [raw[margin:].rstrip() for raw in raws]
+    return '\n'.join(rows) if style.startswith('|') else ' '.join(row.strip() for row in rows if row.strip())
 
 
 def parse_yaml(text):
@@ -145,7 +158,8 @@ def parse_yaml(text):
 
 
 def read_yaml(text):
-    raw_lines = [strip_comment(raw).rstrip() for raw in text.replace('\r\n', '\n').split('\n')]
+    originals = text.replace('\r\n', '\n').split('\n')
+    raw_lines = [strip_comment(raw).rstrip() for raw in originals]
     lines, i = [], 0
     while i < len(raw_lines):
         body = raw_lines[i]
@@ -155,16 +169,25 @@ def read_yaml(text):
         content = body.lstrip(' ')
         if content.startswith('\t'):
             raise YamlError('tab indentation')
+        indent = len(body)-len(content)
         blanked, quote = scan_quotes(content)
+        header = None if quote or depth(blanked) > 0 else BLOCK_HEADER.search(blanked)
+        if header:  # its lines are taken as they are, up to the first one that is not more indented
+            end = i
+            while end < len(originals) and (not originals[end].strip() or len(originals[end])-len(originals[end].lstrip(' ')) > indent):
+                end += 1
+            lines.append([indent, content, scalar_block(header.group(1), originals[i:end])])
+            i = end
+            continue
         while (quote or depth(blanked) > 0) and i < len(raw_lines):  # a quoted or flow value over several lines
             content += ' ' + raw_lines[i].strip()
             i += 1
             blanked, quote = scan_quotes(content)
         if quote or depth(blanked) > 0:
             raise YamlError('unterminated value')
-        if re.search(r'(^|[\s\[{,:])[&*!][^\s]', blanked):
+        if NODE_MARK.search(blanked):
             raise YamlError('anchors, aliases and tags are not read')
-        lines.append([len(body)-len(body.lstrip(' ')), content])
+        lines.append([indent, content, None])
     if not lines:
         return None
     value, i = block(lines, 0, lines[0][0])
@@ -210,12 +233,12 @@ def mapping(lines, i, indent):
         match = KEY.match(lines[i][1])
         if not match:
             raise YamlError('not a key: '+lines[i][1][:40])
-        key, rest = scalar(match.group(1)), lines[i][1][match.end():].strip()
+        key, rest, held = scalar(match.group(1)), lines[i][1][match.end():].strip(), lines[i][2]
         i += 1
         if not rest:
             value, i = child(lines, i, indent, same_level_list=True)
         elif BLOCK_SCALAR.match(rest):
-            value, i = '', skip_deeper(lines, i, indent)
+            value, i = held or '', skip_deeper(lines, i, indent)
         else:
             value, i = plain_value(lines, i, indent, rest)
         result[key] = value
@@ -232,10 +255,10 @@ def sequence(lines, i, indent):
             value, i = child(lines, i+1, indent)
         elif KEY.match(rest) and not rest.startswith(('{', '[')):
             column = indent + len(lines[i][1]) - len(rest)
-            lines[i] = [column, rest]
+            lines[i] = [column, rest, lines[i][2]]
             value, i = mapping(lines, i, column)
         elif BLOCK_SCALAR.match(rest):
-            value, i = '', skip_deeper(lines, i+1, indent)
+            value, i = lines[i][2] or '', skip_deeper(lines, i+1, indent)
         else:
             value, i = plain_value(lines, i+1, indent, rest)
         result.append(value)
@@ -430,16 +453,27 @@ def is_false(value):
     return value is False or (isinstance(value, str) and value.strip().lower() in ('false', 'no', 'off'))
 
 
+def is_switch(value):
+    """True for a value of enabled this script reads: absent, true or false."""
+    return value is None or isinstance(value, bool) or (isinstance(value, str) and value.strip().lower() in ('true', 'false', 'yes', 'no', 'on', 'off'))
+
+
 def compare_config(old, new):
     """[(kind, setting, before, after)] for one test's (or one project section's) settings, the rest as assertion_changed."""
+    # enabled and severity are settled here only when both values are ones this script reads; an expression it cannot
+    # read ("{{ var('x') }}") is left to the comparison below, which reports a changed setting.
     facts, handled = [], set()
     if is_false(new.get('enabled')) and not is_false(old.get('enabled')):
         facts.append(('test_disabled', 'enabled', old.get('enabled'), new.get('enabled')))
-    handled.add('enabled')
+        handled.add('enabled')
+    elif is_switch(old.get('enabled')) and is_switch(new.get('enabled')):
+        handled.add('enabled')
     old_severity, new_severity = str(old.get('severity') or 'error').lower(), str(new.get('severity') or 'error').lower()
     if new_severity == 'warn' and old_severity != 'warn':
         facts.append(('severity_lowered', 'severity', old_severity, new_severity))
-    handled.add('severity')
+        handled.add('severity')
+    elif old_severity in ('error', 'warn') and new_severity in ('error', 'warn'):
+        handled.add('severity')
     for setting in ('error_if', 'warn_if'):
         if old.get(setting) != new.get(setting):
             verdict = relaxed(old.get(setting), new.get(setting))

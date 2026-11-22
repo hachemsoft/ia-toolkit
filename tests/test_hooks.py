@@ -185,7 +185,9 @@ class SessionNewsTests(unittest.TestCase):
   (self.kit/'CHANGELOG.md').write_text('# Changelog\n\n## 0.47.0 (2026-11-10)\n\n- News at session start.\n\n## 0.46.0 (2026-11-01)\n\n- Older line.\n',encoding='utf-8')
   self.env={'HOME':str(self.home),'USERPROFILE':str(self.home)};self.state()
  def state(self,**extra):
-  s={'version':'0.47.0','team':'data-platform',**extra}
+  # 4.24.1: the hook shows a news copy only when state.json records it (files), as an installation does.
+  import hashlib;files={'.ai-kit/news/'+p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in self.kit.glob('*.md')}
+  s={'version':'0.47.0','team':'data-platform','files':files,**extra}
   (self.home/'.ai-kit/state.json').write_text(json.dumps(s),encoding='utf-8')
  def marker(self,**fields):
   p=self.home/'.ai-kit/news.json'
@@ -219,7 +221,7 @@ class SessionNewsTests(unittest.TestCase):
   import time;start=time.monotonic();c=self.context(run_hook(S,{'source':'startup'},{**self.env,'PATH':str(self.home)}));self.assertLess(time.monotonic()-start,1.0)
   self.assertIn('0.47.0',c);self.assertNotIn('last_check',self.marker())
  def test_missing_news_copies_still_announce_the_version(self):
-  (self.kit/'CHANGELOG.md').unlink()
+  (self.kit/'CHANGELOG.md').unlink();self.state()  # a content without a CHANGELOG: none installed, none recorded
   c=self.context(self.hook());self.assertIn('Kit version 0.47.0 installed.',c);self.assertEqual(self.hook(),{})
  def test_agy_input_gets_agy_output(self):
   # agy's SessionStart contract (its built-in hooks documentation): injectSteps with a nested systemMessage, persisted in the conversation.
@@ -228,7 +230,7 @@ class SessionNewsTests(unittest.TestCase):
   self.assertEqual(self.marker().get('announced_versions'),['0.47.0']);self.assertEqual(self.hook({'conversationId':'c2'}),{})
  def test_news_entries_targeted_expired_seen_and_malformed(self):
   self.marker(announced_versions=['0.47.0'])
-  (self.kit/'NEWS.md').write_text('# News\n\n## 2026-11-02 welcome : A channel for news\n\nFirst global entry.\n\n## 2026-11-02 analysts-only : For analysts\nteams: analysts\n\nNot for us.\n\n## 2026-01-01 expired : Old training\nuntil: 2026-01-31\n\nGone.\n\n## 2026-11-02 team-news : Team session\nteams: data-platform, other\n\nFor our team.\n\n## no id here\n\nIgnored.\n',encoding='utf-8')
+  (self.kit/'NEWS.md').write_text('# News\n\n## 2026-11-02 welcome : A channel for news\n\nFirst global entry.\n\n## 2026-11-02 analysts-only : For analysts\nteams: analysts\n\nNot for us.\n\n## 2026-01-01 expired : Old training\nuntil: 2026-01-31\n\nGone.\n\n## 2026-11-02 team-news : Team session\nteams: data-platform, other\n\nFor our team.\n\n## no id here\n\nIgnored.\n',encoding='utf-8');self.state()
   c=self.context(self.hook());self.assertIn('A channel for news',c);self.assertIn('First global entry.',c);self.assertIn('Team session',c)
   for absent in ('For analysts','Old training','no id here','Ignored.'):self.assertNotIn(absent,c)
   self.assertEqual(sorted(self.marker()['announced_news']),['team-news','welcome']);self.assertEqual(self.hook(),{})
@@ -253,6 +255,6 @@ class SessionNewsTests(unittest.TestCase):
  def test_role_placeholder_is_the_installer_one(self):
   from installer.cli import ROLE_PLACEHOLDER;self.assertEqual(self.module().ROLE_PLACEHOLDER,ROLE_PLACEHOLDER)
  def test_context_is_capped(self):
-  (self.kit/'CHANGELOG.md').write_text('# Changelog\n\n## 0.47.0\n\n'+('- a very long line of changes\n'*2000),encoding='utf-8')
+  (self.kit/'CHANGELOG.md').write_text('# Changelog\n\n## 0.47.0\n\n'+('- a very long line of changes\n'*2000),encoding='utf-8');self.state()
   self.assertLessEqual(len(self.context(self.hook())),8000)
 if __name__=='__main__':unittest.main()

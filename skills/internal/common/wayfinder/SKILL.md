@@ -3,7 +3,7 @@ name: wayfinder
 description: "Plan a huge chunk of work (more than one agent session can hold) as a shared map of decision tickets on your issue tracker, and resolve them one at a time until the way to the destination is clear. Use when the user types /map or explicitly asks for this step; do not activate on your own for unrelated requests."
 metadata:
   aikit-default: "false"
-  aikit-version: "1.1.2"
+  aikit-version: "1.1.3"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Map a piece of work too large for one session into decision tickets, resolved one by one."
@@ -122,7 +122,7 @@ User invokes with a loose idea.
 2. **Map the frontier.** Grill again, **breadth-first** this time: fan out across the whole space rather than deep on any one thread, surfacing the open decisions and the first steps takeable now. **If this surfaces no fog** (the way to the destination is already clear, the whole journey small enough for one session), you don't need a map. Stop and ask the user how they'd like to proceed.
 3. **Create the map** (label `wayfinder:map`): Destination and Notes filled in, Decisions-so-far empty, the fog sketched into **Not yet specified**.
 4. **Create the tickets you can specify now** as child issues of the map, then wire blocking edges in a **second pass** (issues need ids before they can reference each other). Write cross-references in that pass too, with real ids: a placeholder `#<n>` auto-links to an unrelated issue. Wiring sorts them into the frontier and the blocked; everything you can't yet specify stays in the fog: the **Not yet specified** section.
-5. **Fire the research subagents.** For each `research` ticket you just created, spin up a subagent that calls the Skill tool with "investigation" to resolve it in parallel, capturing its findings on a throwaway `research/<name>` branch with a context pointer from the ticket. Push the branch but open no PR: it is never merged.
+5. **Fire the research subagents.** For each `research` ticket you just created, spin up a subagent that calls the Skill tool with "investigation" to resolve it in parallel, capturing its findings on a throwaway `research/<name>` branch with a context pointer from the ticket. The branch is never merged: open no PR, and push it only when the person agreed to it in this session; otherwise it stays local and the ticket says so.
 6. Stop: charting is one session's work; it hand-resolves nothing.
 
 ### Work through the map

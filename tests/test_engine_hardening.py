@@ -191,14 +191,18 @@ class DoctorWithoutNetworkTests(unittest.TestCase):
         (folder/'.git').mkdir(parents=True)
         (folder/'VERSION').write_text('1.0.0\n', encoding='utf-8')
         calls = []
-        def run(command, *args, **kwargs):
+        def run(command, *args, **kwargs):  # 4.24.1: Git runs through installer/sources.py, which reads bytes
             calls.append(command)
-            listing = 'aaa\trefs/tags/v1.0.0\nbbb\trefs/tags/v1.2.0\nccc\trefs/tags/v1.10.0\nddd\trefs/tags/not-a-version\n'
-            return subprocess.CompletedProcess(command, 0, stdout=listing if 'ls-remote' in command else '', stderr='')
+            listing = b'aaa\trefs/tags/v1.0.0\nbbb\trefs/tags/v1.2.0\nccc\trefs/tags/v1.10.0\nddd\trefs/tags/not-a-version\n'
+            origin = b'https://git.example.org/group/ai-kit.git\n'
+            out = origin if 'remote.origin.url' in command or '--get-url' in command else listing if 'ls-remote' in command else b''
+            return subprocess.CompletedProcess(command, 0, stdout=out, stderr=b'')
         out = io.StringIO()
+        from installer import sources
         with mock.patch.object(doctor, 'source_folder', return_value=folder), mock.patch.object(doctor.shutil, 'which', return_value='/usr/bin/git'), \
-                mock.patch.object(doctor.subprocess, 'run', side_effect=run), contextlib.redirect_stdout(out):
-            doctor.release_check()
+                mock.patch.object(sources.subprocess, 'run', side_effect=run), mock.patch('installer.config.managed_path', return_value=self.home/'no-managed.toml'), \
+                contextlib.redirect_stdout(out):
+            doctor.release_check(self.home)
         self.assertIn('AI Kit 1.10.0 is published', out.getvalue())
         self.assertTrue(calls)
         for command in calls:

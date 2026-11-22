@@ -128,7 +128,7 @@ def allow_from_env_file(payload):
     for path in candidates:
         try:
             with open(path, encoding='utf-8', errors='replace') as handle:
-                if re.search(r'^\s*(export\s+)?AI_KIT_ALLOW_PROD\s*=', handle.read(), re.M):
+                if re.search(r'^\s*(export\s+)?AI_KIT_ALLOW_PROD\s*=', handle.read(), re.M | re.I):  # Windows reads a variable's name without case
                     return path
         except OSError:
             continue
@@ -140,8 +140,12 @@ def dbt_prod_guard(raw, payload):
     if only_mentions(raw):
         return None
     command = raw.replace('\\\n', ' ').replace('\\', '').replace("''", '').replace('""', '')
-    # `dbt`, `./dbt`, `/path/dbt`, `dbt.exe`, any case; also right after a quote, a backtick or a parenthesis (`sh -c "dbt …"`, `$(dbt …)`).
-    if not (re.search(r'(^|[\s;&|/"\'`(])dbt(\.exe)?(\s|$|["\'`)])', command, re.I) or re.search(r'dbtRunner|dbt\.cli', command)):
+    # `dbt`, `./dbt`, `/path/dbt`, `dbt.exe`, `dbt.cmd`, `dbt.bat`, any case; also right after a quote, a backtick or a parenthesis
+    # (`sh -c "dbt …"`, `$(dbt …)`). A backslash is read both ways, since the script cannot know the shell: dropped as a POSIX
+    # shell does (d\bt is dbt), and as the separator of a Windows path (.venv\Scripts\dbt.exe is dbt).
+    names_dbt = re.compile(r'(^|[\s;&|/"\'`(])dbt(\.(exe|cmd|bat))?(\s|$|["\'`)])', re.I)
+    windows = raw.replace('\\\n', ' ').replace('\\', '/').replace("''", '').replace('""', '')
+    if not (names_dbt.search(command) or names_dbt.search(windows) or re.search(r'dbtRunner|dbt\.cli', command)):
         return None
     command = re.sub(r"['\"],\s*['\"]", ' ', command)  # dbtRunner().invoke(['run', '--target', 'prod']): the list as words
     # The organization's extra targets add to the defaults; they can never remove them (a .env cannot turn the guard off).
@@ -187,6 +191,8 @@ def only_mentions(raw):
 # --- The programs a command runs (git-guard, bq-cost-guard, infra-prod-guard) ---
 
 HEREDOC = re.compile(r'<<-?\s*[\'"]?([A-Za-z_][A-Za-z0-9_]*)[\'"]?')
+# A redirection that holds an &: 2>&1, >&2, <&3, >&-, &>, &>>. Its & does not end the command; |& is a pipe.
+REDIRECTION = re.compile(r'\d*[<>]&(?:\d+|-)?|&>>?')
 SHELLS = ('sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'pwsh', 'powershell', 'cmd')
 # Programs that run the program named after them.
 WRAPPERS = ('sudo', 'doas', 'env', 'command', 'exec', 'time', 'nohup', 'nice', 'xargs', 'timeout', 'builtin')
@@ -219,6 +225,7 @@ def programs(command, depth=0):
     A backslash is read both ways, since the script cannot know the shell: as a POSIX shell reads it (g\\it is git) and as
     a Windows path (C:\\tools\\git.exe is git). A program found by either reading counts."""
     text = without_data_heredocs(command.replace('\\\r\n', ' ').replace('\\\n', ' '))
+    text = REDIRECTION.sub(' ', text.replace('|&', '|'))  # `git reset 2>&1 --hard` is one command
     found = read_programs(text.replace('\\', '/'), depth)
     if '\\' in text:
         found += [entry for entry in read_programs(text, depth) if entry not in found]
@@ -327,6 +334,8 @@ def git_guard(raw, payload):
             return refusal(payload, '`git clean` with -f deletes the files git does not track, for good. `git clean -n` shows them.' + RUN_IT_YOURSELF)
         if verb == 'checkout' and (any(a in WHOLE_TREE for a in rest) or short_flag(rest, 'f') or '--force' in rest):
             return refusal(payload, 'this `git checkout` discards the changes of the whole working tree, for good.' + RUN_IT_YOURSELF)
+        if verb == 'switch' and (short_flag(rest, 'f') or '--force' in rest or '--discard-changes' in rest):
+            return refusal(payload, 'this `git switch` discards the changes that are not committed, for good.' + RUN_IT_YOURSELF)
         if verb == 'restore' and any(a in WHOLE_TREE for a in rest):
             staged_only = ('--staged' in rest or short_flag(rest, 'S')) and not ('--worktree' in rest or short_flag(rest, 'W'))
             if not staged_only:
@@ -335,6 +344,8 @@ def git_guard(raw, payload):
             return refusal(payload, '`git branch -D` deletes a branch even when its commits are merged nowhere.' + RUN_IT_YOURSELF)
         if verb == 'worktree' and rest[:1] == ['remove'] and (short_flag(rest, 'f') or '--force' in rest):
             return refusal(payload, '`git worktree remove --force` deletes a worktree with the changes that are not committed in it, for good. Without --force, git removes it only when it is clean.' + RUN_IT_YOURSELF)
+        if verb == 'push' and '--mirror' in rest:
+            return refusal(payload, '`git push --mirror` overwrites every branch and tag of the remote with this clone\'s, and deletes the ones this clone does not have.' + RUN_IT_YOURSELF)
         if verb == 'push':
             refspecs = [a for a in rest if not a.startswith('-')][1:]  # after the remote
             targets = [r.lstrip('+').rsplit(':', 1)[-1].replace('refs/heads/', '') for r in refspecs]
@@ -386,6 +397,8 @@ KUBECTL_VALUE_OPTIONS = ('--context', '--cluster', '-n', '--namespace', '--kubec
 KUBECTL_CHANGES = ('delete', 'apply', 'replace', 'patch', 'scale', 'drain', 'edit', 'set', 'create')
 KUBECTL_ROLLOUT_CHANGES = ('restart', 'undo', 'pause', 'resume')
 
+TERRAGRUNT_FOLDER = ('--terragrunt-working-dir', '--working-dir')  # terragrunt runs in that folder, like terraform -chdir=
+
 def production_names():
     extra = [t.strip().lower() for t in os.environ.get('AI_KIT_PROD_TARGETS', '').split(',') if t.strip() and t.strip().lower() != 'none']
     return list(dict.fromkeys(list(DEFAULT_TARGETS) + extra))
@@ -428,7 +441,7 @@ def folders_below_repo(folder):
 def terraform_evidence(args, env, payload, names):
     """What names production for a terraform apply or destroy, or None."""
     folder = working_folder(payload)
-    for _option, value in option_values(args, ('-chdir',)):
+    for _option, value in option_values(args, ('-chdir',) + TERRAGRUNT_FOLDER):
         if names_production(value, names):
             return 'the folder "' + value + '"'
         folder = os.path.join(folder, value)
@@ -446,7 +459,7 @@ def terraform_evidence(args, env, payload, names):
 def unit_evidence(args, payload, names):
     """terragrunt run-all applies every unit under the folder: a unit folder that names production, or None."""
     folder = working_folder(payload)
-    for _option, value in option_values(args, ('--terragrunt-working-dir', '--working-dir')):
+    for _option, value in option_values(args, TERRAGRUNT_FOLDER):
         folder = os.path.join(folder, value)
     seen = 0
     for current, folders, _files in os.walk(folder):
@@ -483,7 +496,8 @@ def infra_prod_guard(raw, payload):
     for program, args, env in programs(raw):
         what = evidence = None
         if program in ('terraform', 'tofu', 'terragrunt'):
-            plain = [a for a in args if not a.startswith('-')]
+            # The words that are not options, nor the folder given to --working-dir (`terragrunt --working-dir envs/prod apply`).
+            plain = [a for at, a in enumerate(args) if not a.startswith('-') and not (at and args[at-1] in TERRAGRUNT_FOLDER)]
             verb, every = plain[0] if plain else None, False
             if program == 'terragrunt' and verb in ('run-all', 'run') and plain[1:]:  # run-all apply, run --all apply, run -- apply
                 verb, every = plain[1], plain[0] == 'run-all' or '--all' in args

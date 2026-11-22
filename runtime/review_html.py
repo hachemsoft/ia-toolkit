@@ -19,6 +19,7 @@ import re
 import stat
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 FOLD_LINES = 2000
@@ -459,9 +460,19 @@ def write_page(repo, guide_path, base, out):
     page = build_page(title, guide, files, hasher.hexdigest()[:16])
     if len(page) > 5_000_000:
         print('review_html.py: the page is %d MB; large files are folded, the rest is shown' % (len(page) // 1_000_000), file=sys.stderr)
-    temp = out.with_name('.'+out.name+'.tmp')
-    temp.write_text(page, encoding='utf-8', newline='\n')
-    os.replace(temp, out)
+    # A temporary file of its own (created, never opened by a name someone could plant), readable by the person only:
+    # the page holds the diff.
+    descriptor, temp = tempfile.mkstemp(prefix='.'+out.name+'.', suffix='.tmp', dir=str(out.parent))
+    try:
+        with os.fdopen(descriptor, 'w', encoding='utf-8', newline='\n') as handle:
+            handle.write(page)
+        os.replace(temp, out)
+    except BaseException:
+        try:
+            os.unlink(temp)
+        except OSError:
+            pass
+        raise
     return out
 
 

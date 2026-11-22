@@ -21,6 +21,7 @@ from .toml_files import parse_toml, read_toml, set_section_key  # noqa: F401 (al
 from .v2_commands import core_synced, resource_sources, user_edit, sync_configured  # noqa: F401 (re-exported)
 from .config import (team_mcp_gate, ManagedConfigError, load_managed, apply_values, locked_guardrails, filter_mcp, publication, managed_digest, AIKIT_FILE, check_source, load_aikit)  # noqa: F401 (re-exported)
 from .lifecycle import (PERSONAL_KEPT, plan_command, remove_command, uninstall)  # noqa: F401 (re-exported)
+from .bootstrap import older_tag, shipped_replaces  # noqa: F401 (older_tag re-exported)
 
 
 def command_lines(commands):
@@ -74,13 +75,20 @@ def user_context_text(identity):
     return template.replace('{identity}\n', 'Person: '+line+'\n' if line else '')
 
 
+WRITE_TOOLS = ('write_file', 'replace')  # the kit's names for the tools that change a file (hooks.json matchers)
+
+
 def agent_instruction(definition):
     """Shared opening of every agent prompt. Reviewers only read; an agent whose tools include the shell (the verifier)
     runs the checks its own instructions allow, and modifies nothing."""
     tools = definition.get('tools') or read_json(content_root()/'agents/defaults.json').get('tools', [])
-    scope = ('Modify no file yourself: the only change is the one a script your instructions below name makes and undoes; '
-             'run only the commands your instructions below allow.' if 'run_shell_command' in tools
-             else 'Read and search only: modify no file and run no command.')
+    shell = 'run_shell_command' in tools
+    if any(tool in WRITE_TOOLS for tool in tools):  # a Team's agent that writes: never told it only reads
+        scope = 'Modify only the files your instructions below name, ' + ('and run only the commands they allow.' if shell else 'and run no command.')
+    else:
+        scope = ('Modify no file yourself: the only change is the one a script your instructions below name makes and undoes; '
+                 'run only the commands your instructions below allow.' if shell
+                 else 'Read and search only: modify no file and run no command.')
     return ('Read the instructions and context of the current repo. Do not assume that the skills, '
             'the MCP tools or the full parent history are available. '
             'Ask the parent for anything missing. '+scope+'\n')
@@ -337,14 +345,6 @@ def friction_action(argv):
     return friction_module().main([*rest, *(['--sync'] if args.publish else []), '--home', str(args.home.resolve())])
 
 
-def older_tag(tag, version):
-    """True when the locked Core tag vX.Y.Z is older than this engine's version (a newer ZIP was extracted)."""
-    try:
-        return tuple(int(x) for x in tag.lstrip('v').split('-')[0].split('.')) < tuple(int(x) for x in version.split('.'))
-    except ValueError:
-        return False
-
-
 def interactive():
     """A person at a terminal: both ends, because on Windows a stdin redirected from NUL also reports isatty()."""
     return sys.stdin.isatty() and sys.stdout.isatty()
@@ -410,11 +410,11 @@ def main(argv=None):
     args = parser.parse_args(argv)
     # The package holds only the engine; the content of this run comes from the clone, the locked Core, the Core the
     # release ZIP ships, or the launcher's folder (installer/bootstrap.py). The commands that read none start without it.
-    from .bootstrap import needs_content, run_content
+    from .bootstrap import needs_content, run_content, tolerates_unreadable_core
     if not needs_content(args):
         return command_main(parser, args)
     try:
-        content = run_content(args.home.expanduser().resolve(), installing=args.action == 'init')
+        content = run_content(args.home.expanduser().resolve(), installing=args.action == 'init', repairing=tolerates_unreadable_core(args))
         shipped = content.__enter__()
     except (KitError, OSError) as exc:
         print('Error: '+redact(str(exc)), file=sys.stderr)
@@ -543,9 +543,10 @@ def command_main(parser, args):
                 return make_ui(args.plain).text('Repository URL of the Team '+name+' (https://... or git@...)') or None
             locked = bool(read_toml(home/'.ai-kit/lock.toml', {}).get('sources'))
             APPROVE[0] = confirm if interactive() else None
-            core_tag = ((read_toml(home/'.ai-kit/lock.toml', {}).get('sources') or {}).get('core') or {}).get('tag', '')
-            # The Core a release ZIP ships: activated at the first install, and by the installer of a newer ZIP.
-            first_shipped = SHIPPED[0] is not None and args.action == 'init' and (not locked or older_tag(core_tag, (ROOT/'VERSION').read_text(encoding='utf-8').strip()))
+            locked_core = (read_toml(home/'.ai-kit/lock.toml', {}).get('sources') or {}).get('core') or {}
+            # The Core a release ZIP ships: activated at the first install, and by the installer of a newer ZIP over the
+            # kit's own Core. An organization's Core is never replaced by it (bootstrap.shipped_replaces).
+            first_shipped = SHIPPED[0] is not None and args.action == 'init' and (not locked or shipped_replaces(locked_core, (ROOT/'VERSION').read_text(encoding='utf-8').strip()))
             if args.action == 'team':
                 action = 'team-use'
             elif args.action == 'rollback':

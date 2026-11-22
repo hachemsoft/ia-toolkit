@@ -173,7 +173,8 @@ def finalize(p: Plan, active: bool = True) -> None:
         outside = before.rstrip('\n')+('\n' if before.strip() and after.strip() else '')+after.lstrip('\n')
         block = None
         if active and rel.endswith('AGENTS.md'):
-            data = p.writes.get(p.user_file) or (p.user_file.read_bytes() if p.user_file.exists() else b'')
+            # "in", not "or": a USER.md this run empties is empty, not the file it replaces
+            data = p.writes[p.user_file] if p.user_file in p.writes else (p.user_file.read_bytes() if p.user_file.exists() else b'')
             if p.user_copy_refusal():
                 # The source stays as it is; Codex keeps the last copy it had, and the person is told why (once, for every CLI).
                 user_text = copied_user_text(old_block)
@@ -238,7 +239,9 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     user_file = home/'.ai-kit/context'/USER_CONTEXT
     if agents_md.exists() and user_file.exists():
         try:
-            current, why = user_file.read_text(encoding='utf-8').strip() in agents_md.read_text(encoding='utf-8'), ' (run ai-kit sync --offline after editing it)'
+            # The whole copy, not a piece of it: a shorter USER.md is found inside the older copy.
+            copy = copied_user_text(normalize_newlines(agents_md.read_text(encoding='utf-8')))
+            current, why = normalize_newlines(user_file.read_text(encoding='utf-8')).strip() == copy, ' (run ai-kit sync --offline after editing it)'
         except (OSError, UnicodeDecodeError):
             current, why = False, ' (USER.md or ~/.codex/AGENTS.md cannot be read as UTF-8 text: save it again as UTF-8, then ai-kit sync --offline)'
         status(current, 'Codex has the latest version of USER.md'+('' if current else why))

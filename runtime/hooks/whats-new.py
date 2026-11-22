@@ -140,17 +140,19 @@ def installed_bytes(home, state, rel, recorded_only=True):
 
 def whats_new(state, marker, news_dir, today, user_text='', read=None):
     """Lines to announce, and the marker updated. Pure: reads the copies in news_dir only, through read(path) -> text
-    (the file as it is by default; the session hook gives only what the kit installed); user_text is USER.md's text."""
+    (the file as it is by default; the session hook gives only what the kit installed, and None for a copy changed since:
+    its version is then neither announced nor marked as said); user_text is USER.md's text."""
     file_text = read or globals()['file_text']
     items, team = [], str(state.get('team') or '')
     version = str(state.get('version') or '').strip()
     announced_versions = [v for v in marker.get('announced_versions', []) if isinstance(v, str)]
     announced_news = [n for n in marker.get('announced_news', []) if isinstance(n, str)]
-    if version and version not in announced_versions:
-        section = changelog_section(file_text(os.path.join(news_dir, 'CHANGELOG.md')), version)
+    changelog = file_text(os.path.join(news_dir, 'CHANGELOG.md')) if version and version not in announced_versions else None
+    if changelog is not None:  # None from read(): the copy was changed outside the kit, said once it is restored
+        section = changelog_section(changelog, version)
         items.append('Kit version '+version+' installed.'+(' What changed:\n'+indent(section) if section else ''))
         announced_versions.append(version)
-    for entry in parse_news(file_text(os.path.join(news_dir, 'NEWS.md'))):
+    for entry in parse_news(file_text(os.path.join(news_dir, 'NEWS.md')) or ''):
         if entry['id'] in announced_news or not aimed_at(entry, team, today):
             continue
         items.append('News ('+entry['date']+') '+entry['title']+(':\n'+indent(entry['text']) if entry['text'] else '.'))
@@ -185,30 +187,53 @@ def answer(payload, text, person=None):
 CHECK_MISSING = ('AI Kit integrity: the kit\'s integrity check (~/.ai-kit/hooks/integrity.py) is missing or was changed, so changes to '
                  'what the kit installed are no longer reported. Say it to the person in the first line of your reply; they restore it '
                  'with: ai-kit sync --offline --restore')
+STATE_MISSING = ('AI Kit integrity: could not check what the kit installed: ~/.ai-kit/state.json is missing, unreadable or incomplete. '
+                 'Say it to the person in the first line of your reply; they run ai-kit doctor, then, if it reports a problem: '
+                 'ai-kit sync --offline --restore')
+CHECK = '.ai-kit/hooks/integrity.py'
 
 
 def integrity(home, state):
-    """(agent text, person text) of the integrity check next to this script, run in full at session start. When the kit
-    installed it and it is missing or changed, that is said instead: it cannot report on itself. (None, None) otherwise; a
-    session always starts."""
+    """(agent text, person text) of the integrity check next to this script, run in full at session start; (None, None) when
+    there is nothing to say. A session always starts. In ~/.ai-kit/hooks, the check runs only when the installation turned it
+    on (state.json `hooks`; a person may turn it off, IT may lock it on) and only when it is the script state.json records:
+    - state.json missing or unreadable: said, and no script is run (nothing vouches for the one on disk);
+    - the check turned off: nothing to say, nothing run;
+    - the check on but not recorded: state.json is incomplete, said, nothing run;
+    - the check on, missing or changed: said (it cannot report on itself).
+    Run from a kit folder that was never installed here, the check next to this script is the kit's own."""
     folder = os.path.dirname(os.path.abspath(__file__))
     script = os.path.join(folder, 'integrity.py')
-    expected = (state.get('files') or {}).get('.ai-kit/hooks/integrity.py') if isinstance(state.get('files'), dict) else None
-    # This copy sits in ~/.ai-kit/hooks: the kit installed it with the check, whatever state.json says today.
+    # This copy sits in ~/.ai-kit/hooks: the kit installed it, whatever state.json says today.
     installed = os.path.realpath(folder) == os.path.realpath(os.path.join(home, '.ai-kit', 'hooks'))
+    state_problem = (STATE_MISSING, 'AI Kit: could not check what the kit installed: ~/.ai-kit/state.json is missing, unreadable or '
+                     'incomplete. Run ai-kit doctor; to restore: ai-kit sync --offline --restore')
+    if not state:
+        if installed and not os.path.isfile(script):  # said too, without running anything
+            return tuple(text+' The integrity check itself (~/.ai-kit/hooks/integrity.py) is missing as well.' for text in state_problem)
+        return state_problem if installed else (None, None)
+    hooks = state.get('hooks')
+    if isinstance(hooks, dict) and 'integrity' not in hooks:
+        return None, None  # turned off: aikit.toml [hooks] integrity = false, when IT does not lock it
+    files = state.get('files') if isinstance(state.get('files'), dict) else {}
+    expected = files.get(CHECK)
+    if not isinstance(expected, str):
+        if installed:
+            return state_problem
+        expected = None
     try:
-        if expected:
-            import hashlib
-            with open(script, 'rb') as handle:
-                if hashlib.sha256(handle.read()).hexdigest() != expected:
-                    raise ValueError('changed')
+        with open(script, 'rb') as handle:
+            source = handle.read()
+        if expected is not None and hashlib.sha256(source).hexdigest() != expected:
+            raise ValueError('changed')
         import importlib.util
         spec = importlib.util.spec_from_file_location('ai_kit_integrity', script)
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        # The bytes just verified are the ones run: the file is not read a second time.
+        exec(compile(source, script, 'exec'), module.__dict__)
         return module.checked(home, full=True)
     except Exception:
-        if expected or installed:
+        if expected is not None or installed:
             return CHECK_MISSING, 'AI Kit: the integrity check ~/.ai-kit/hooks/integrity.py is missing or changed. To restore: ai-kit sync --offline --restore'
         return None, None
 
@@ -271,11 +296,16 @@ def main():
 
 
 def announcements(home, kit, state):
-    """What is new and the frictions waiting. The news copies are read only as the kit installed them: a copy changed
-    outside the kit is not shown (its text would enter the agent's context) and is not marked as said."""
+    """What is new and the frictions waiting. The news copies are read only as the kit installed them: a copy state.json
+    does not record is not read at all (a Core without NEWS.md installs none), and one changed outside the kit is not shown
+    (its text would enter the agent's context) and is not marked as said."""
+    files = state.get('files') if isinstance(state.get('files'), dict) else {}
     def installed_text(path):
-        data = installed_bytes(home, state, os.path.relpath(path, home).replace(os.sep, '/'), recorded_only=False)
-        return data.decode('utf-8', 'replace') if data is not None else ''
+        rel = os.path.relpath(path, home).replace(os.sep, '/')
+        if not isinstance(files.get(rel), str):
+            return ''  # not installed by the kit: nothing to say, nothing to show
+        data = installed_bytes(home, state, rel, recorded_only=True)
+        return data.decode('utf-8', 'replace') if data is not None else None
     marker_path = os.path.join(kit, MARKER)
     before = file_text(marker_path)
     items, marker = whats_new(state, read_json(marker_path), os.path.join(kit, 'news'), date.today().isoformat(),

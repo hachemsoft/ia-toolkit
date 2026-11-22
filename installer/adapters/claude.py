@@ -58,8 +58,23 @@ def command_text(command, prompt):
     return '\n'.join(header) + prompt.replace('{{args}}', '$ARGUMENTS').strip() + '\n'
 
 
+def fingerprint(value):
+    """The digest of a JSON value whatever the order of its keys: Claude Code rewrites its files and may reorder them."""
+    return digest(json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8'))
+
+
+def same(recorded, value):
+    """True when state.json's record is the one of this value. A record written by 4.24.0 or before (the digest of the
+    value as it was written, key order included) is recognised too: the first update after it must not read as an edit."""
+    return recorded in (fingerprint(value), digest(json_bytes(value)))
+
+
 def agent_text(name, definition, defaults, body):
-    tools = list(dict.fromkeys(TOOL_NAMES.get(t, t) for t in definition.get('tools', defaults.get('tools', []))))
+    # An agent that declares no tool gets the defaults (read and search), as its instructions say (cli.agent_instruction).
+    # Never an empty "tools:" line: Claude Code reads it as every tool of the session.
+    tools = list(dict.fromkeys(TOOL_NAMES.get(t, t) for t in definition.get('tools') or defaults.get('tools') or []))
+    if not tools:
+        raise KitError('Agent '+name+' has no tool, and agents/defaults.json names none: Claude Code would give it every tool of the session.')
     header = ['---', 'name: '+name, 'description: '+json.dumps(definition['description'], ensure_ascii=False), 'tools: '+', '.join(tools), '---', '']
     return '\n'.join(header) + body.strip() + '\n'
 
@@ -210,7 +225,7 @@ def finalize(p: Plan, active: bool = True) -> None:
     if not isinstance(hooks, dict) or not all(isinstance(hooks.get(e, []), list) for e in events):
         raise KitError('~/.claude/settings.json: hooks.'+' and hooks.'.join(events)+' must be lists; configuration left untouched.')
     mine = kit_hook_groups(hooks, events)
-    if mine and old_blocks.get(rel) != digest(json_bytes(mine)):
+    if mine and not same(old_blocks.get(rel), mine):
         if not p.restore:
             raise KitError('Kit hook edited by hand in ~/.claude/settings.json (hooks.'+' or hooks.'.join(events)+'): put it back or remove it, then ai-kit sync --offline.')
         p.notices.append('[Check] a kit hook in ~/.claude/settings.json was edited by hand: '+('the kit\'s part restored' if active else 'removed with the kit')+'; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
@@ -237,7 +252,7 @@ def finalize(p: Plan, active: bool = True) -> None:
             settings.pop('hooks', None)
         p.writes[path] = json_bytes(settings)
     if any(new_groups.values()):
-        p.blocks[rel] = digest(json_bytes([g for event in events for g in new_groups[event]]))
+        p.blocks[rel] = fingerprint([g for event in events for g in new_groups[event]])
     # ~/.claude.json: MCP servers
     rel = '.claude.json'
     path = p.home/rel
@@ -247,7 +262,7 @@ def finalize(p: Plan, active: bool = True) -> None:
     if not isinstance(servers, dict):
         raise KitError('~/.claude.json: mcpServers must be an object; configuration left untouched.')
     current = {name: servers[name] for name in previous if name in servers}
-    if current and old_blocks.get(rel) != digest(json_bytes(current)):
+    if current and not same(old_blocks.get(rel), current):
         if not p.restore:
             raise KitError('Kit MCP server edited by hand in ~/.claude.json: put it back or remove it, then ai-kit sync --offline.')
         p.notices.append('[Check] a kit MCP server in ~/.claude.json was edited by hand: '+('the kit\'s part restored' if active else 'removed with the kit')+'; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
@@ -255,14 +270,14 @@ def finalize(p: Plan, active: bool = True) -> None:
     for name in wanted:
         if name in servers and name not in previous:
             raise KitError('MCP name already in use in ~/.claude.json: '+name)
-    if current or wanted:
+    if (current or wanted) and current != wanted:  # the same servers, their keys in another order: the file is left as it is
         for name in current:
             servers.pop(name)
         servers.update(wanted)
         data['mcpServers'] = servers
         p.writes[path] = json_bytes(data)
     if wanted:
-        p.blocks[rel] = digest(json_bytes(wanted))
+        p.blocks[rel] = fingerprint(wanted)
 
 
 def summary(p: Plan) -> Optional[str]:
@@ -280,26 +295,25 @@ def claude_md_block(home: Path):
     except (KitError, OSError, UnicodeDecodeError):
         return None
 
-def settings_groups_digest(home: Path):
-    """The digest of the kit's hook groups in ~/.claude/settings.json, as recorded in state.json blocks."""
+def settings_groups(home: Path):
+    """The kit's hook groups in ~/.claude/settings.json (compared with state.json blocks by same()); None when there is
+    none or the file cannot be read."""
     try:
         settings = read_json(home/CLAUDE_DIR/'settings.json') if (home/CLAUDE_DIR/'settings.json').is_file() else {}
     except (KitError, OSError, ValueError):
         return None
     hooks = settings.get('hooks') if isinstance(settings, dict) and isinstance(settings.get('hooks'), dict) else {}
-    mine = kit_hook_groups(hooks, kit_events(read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})))
-    return digest(json_bytes(mine)) if mine else None
+    return kit_hook_groups(hooks, kit_events(read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {}))) or None
 
-def claude_json_digest(home: Path, state: dict):
-    """The digest of the kit's MCP servers in ~/.claude.json, as recorded in state.json blocks; None when they are gone or the
+def claude_json_servers(home: Path, state: dict):
+    """The kit's MCP servers in ~/.claude.json (compared with state.json blocks by same()); None when they are gone or the
     file cannot be read. The rest of the file is Claude Code's: it rewrites it at every session."""
     try:
         data = read_json(home/'.claude.json') if (home/'.claude.json').is_file() else {}
     except (KitError, OSError, ValueError):
         return None
     servers = data.get('mcpServers') if isinstance(data, dict) and isinstance(data.get('mcpServers'), dict) else {}
-    mine = {name: servers[name] for name in state.get('mcp') or {} if name in servers}
-    return digest(json_bytes(mine)) if mine else None
+    return {name: servers[name] for name in state.get('mcp') or {} if name in servers} or None
 
 def changed_blocks(home: Path, state: dict) -> list:
     """The shared files where the part the kit wrote no longer matches state.json (integrity check, doctor); the rest of
@@ -310,9 +324,10 @@ def changed_blocks(home: Path, state: dict) -> list:
     block = claude_md_block(home)
     if CLAUDE_DIR+'/CLAUDE.md' in blocks and (block is None or digest(block.encode('utf-8')) != blocks[CLAUDE_DIR+'/CLAUDE.md']):
         changed.append(CLAUDE_DIR+'/CLAUDE.md')
-    if state.get('hooks') and CLAUDE_DIR+'/settings.json' in blocks and settings_groups_digest(home) != blocks[CLAUDE_DIR+'/settings.json']:
+    groups, servers = settings_groups(home), claude_json_servers(home, state)
+    if state.get('hooks') and CLAUDE_DIR+'/settings.json' in blocks and (groups is None or not same(blocks[CLAUDE_DIR+'/settings.json'], groups)):
         changed.append(CLAUDE_DIR+'/settings.json')
-    if '.claude.json' in blocks and claude_json_digest(home, state) != blocks['.claude.json']:
+    if '.claude.json' in blocks and (servers is None or not same(blocks['.claude.json'], servers)):
         changed.append('.claude.json')
     return changed
 
@@ -332,8 +347,10 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     if kit_servers:
         data = read_json(home/'.claude.json') if (home/'.claude.json').is_file() else {}
         missing = [n for n in kit_servers if n not in (data.get('mcpServers') or {})]
-        status(not missing, 'MCP servers in ~/.claude.json'+(' (missing '+', '.join(missing)+': Claude Code may have rewritten the file while'
-               ' a session was open; close Claude Code, then ai-kit sync --offline)' if missing else ''))
+        edited = not missing and '.claude.json' in changed  # a kit server is there, but no longer the one the kit wrote
+        status(not missing and not edited, 'MCP servers in ~/.claude.json'+(' (missing '+', '.join(missing)+': Claude Code may have rewritten the file while'
+               ' a session was open; close Claude Code, then ai-kit sync --offline)' if missing else
+               ' (a kit server was changed outside the kit: to put it back, ai-kit sync --offline --restore)' if edited else ''))
     commands = sorted(rel.split('/')[2][:-3] for rel in state.get('files', {}) if rel.startswith(CLAUDE_DIR+'/commands/'))
     kit_skills = set((state.get('installed') or {}).get('skills', []))
     personal = sorted(c.name for c in (home/CLAUDE_DIR/'skills').iterdir() if c.is_dir() and c.name in kit_skills

@@ -11,7 +11,7 @@ import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from .core import (json_bytes)
+from .core import inside, json_bytes
 from .adapters import ADAPTERS
 
 
@@ -168,22 +168,30 @@ def resume_pending(home, kit):
     folder = kit/'backups'
     if not folder.is_dir():
         return None
-    for backup in sorted((p for p in folder.iterdir() if p.is_dir()), key=lambda p: p.name, reverse=True)[:1]:
+    # Only the folders the kit names (backup_folder), never a link: another folder in backups/ is not a backup of the kit.
+    dated = (p for p in folder.iterdir() if p.is_dir() and not p.is_symlink() and DATED_BACKUP.match(p.name))
+    for backup in sorted(dated, key=lambda p: p.name, reverse=True)[:1]:
         manifest_path = backup/'manifest.json'
         try:
             manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
         except (OSError, ValueError):
             return None
-        if manifest.get('status') != 'pending':
+        if not isinstance(manifest, dict) or manifest.get('status') != 'pending':
             return None
-        modes = manifest.get('modes') or {}
-        for saved in backup.rglob('*'):
-            if saved.is_file() and saved != manifest_path:
-                rel = saved.relative_to(backup)
-                mode = modes.get(rel.as_posix())
-                atomic_write(home/rel, saved.read_bytes(), mode if isinstance(mode, int) else None)
-        for rel in manifest.get('created', []):
-            (home/rel).unlink(missing_ok=True)
+        modes = manifest.get('modes') if isinstance(manifest.get('modes'), dict) else {}
+        created = manifest.get('created') if isinstance(manifest.get('created'), list) else []
+        # Every path is checked before the first write: inside the home folder, through no link (a manifest is a file a
+        # process could have written; what it names is never followed outside).
+        from .plan import refuse_links
+        saved_files = [saved for saved in sorted(backup.rglob('*')) if saved.is_file() and not saved.is_symlink() and saved != manifest_path]
+        restore = [(saved, inside(home, saved.relative_to(backup))) for saved in saved_files]
+        remove = [inside(home, str(rel)) for rel in created]
+        refuse_links(home, [target for _, target in restore] + remove)
+        for saved, target in restore:
+            mode = modes.get(saved.relative_to(backup).as_posix())
+            atomic_write(target, saved.read_bytes(), mode if isinstance(mode, int) else None)
+        for target in remove:
+            target.unlink(missing_ok=True)
         atomic_write(manifest_path, json_bytes({**manifest, 'status': 'restored'}), 0o600)
         return backup
     return None

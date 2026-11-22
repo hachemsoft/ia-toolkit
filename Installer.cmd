@@ -50,7 +50,8 @@ endlocal & exit /b %KIT_CODE%
 :try_python
 if not exist "%~1" where %1 >nul 2>nul || exit /b 0
 %* -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 3)" >nul 2>nul
-if not errorlevel 1 (
+rem Only 0 is a Python that runs: a crash at start answers a negative code (0xC0000135), which is below 1 too.
+if %ERRORLEVEL% EQU 0 (
   set "KIT_PY=%*"
   exit /b 0
 )

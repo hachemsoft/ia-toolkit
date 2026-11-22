@@ -231,7 +231,7 @@ def doctor(home, cwd=None, live=False):
     with contextlib.redirect_stdout(details):
         code = doctor_checks(home, cwd, problems, live)
         if live:
-            release_check()
+            release_check(home)
             code = max(code, live_checks(home, results=results))
     print_summary(home, read_json(home/'.ai-kit/state.json'), results if live else None, problems)
     print('\nDetails\n'+details.getvalue(), end='')
@@ -585,29 +585,34 @@ def doctor_checks(home, cwd=None, problems=None, live=False):
     return 1 if issues else 0
 
 
-def release_check():
+def release_check(home=None, managed_file=None):
     """doctor --live: a newer published version of the kit (git tags of the kit folder's remote), without blocking anything.
     The kit folder is the clone the launcher was started from (the installed package has no .git), else the code's own folder.
-    The tags are listed on the remote (ls-remote): nothing is fetched, so the clone is not changed and no program its
-    configuration names for a transfer is run."""
+    Git runs as for every source (installer/sources.py): the neutral environment (no variable of the session reaches it, no
+    global or system configuration), the origin's URL in canonical form (https or ssh only) and inside what IT allows
+    (managed.toml git.*); the clone's own configuration is only asked for that URL. The tags are listed on the remote
+    (ls-remote): nothing is fetched, so the clone is not changed. Any refusal or failure says nothing."""
+    from . import sources
+    from .sync import check_origin, git_settings
     folder = source_folder() or ROOT
     if not (folder/'.git').exists() or not shutil.which('git'):
         return
+    home = Path(home) if home is not None else Path.home()
+    kit = home/'.ai-kit'
     try:
-        # The clone's config is not trusted (0.51.1): no monitor, no hook, no credential helper, no ext:: transport, no prompt.
-        safe = ['git', '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath='+os.devnull, '-c', 'credential.helper=', '-c', 'protocol.ext.allow=never',
-                '-c', 'core.sshCommand=ssh', '-C', str(folder)]
-        listing = subprocess.run(safe+['ls-remote', '--tags', '--refs', 'origin', 'v*'], capture_output=True, text=True, timeout=20,
-                                 stdin=subprocess.DEVNULL, env={**os.environ, 'GIT_TERMINAL_PROMPT': '0', 'GCM_INTERACTIVE': 'never'}).stdout
-    except (OSError, subprocess.SubprocessError):
+        settings, _, _ = git_settings(home, load_managed(managed_file))
+        schemes = tuple(settings['allowed_schemes'])
+        origin = sources.git(['-C', str(folder), 'config', '--get', 'remote.origin.url'], kit, home=home, timeout=20).decode('utf-8', 'replace').strip()
+        if not origin:
+            return
+        url = check_origin(origin, settings)
+        tags = sources.remote_tags(url, kit, schemes, home=home)
+    except (KitError, OSError, ValueError):
         return
     current = (folder/'VERSION').read_text(encoding='utf-8').strip()
-    def key(version):
-        return tuple(int(x) for x in re.findall(r'\d+', version)[:3])
-    names = [line.rsplit('refs/tags/', 1)[-1].strip() for line in (listing or '').splitlines() if 'refs/tags/' in line]
-    tags = sorted((n for n in names if re.fullmatch(r'v\d+\.\d+\.\d+', n)), key=key, reverse=True)
-    if tags and key(tags[0]) > key(current):
-        print('[Info] AI Kit '+tags[0].lstrip('v')+' is published (this folder: '+current+'): get its ZIP, or git pull this clone, then run its installer.')
+    stable = sorted((t for t in tags if sources.STABLE_TAG.match(t)), key=sources.tag_key, reverse=True)
+    if stable and sources.STABLE_TAG.match('v'+current) and sources.tag_key(stable[0]) > sources.tag_key('v'+current):
+        print('[Info] AI Kit '+stable[0].lstrip('v')+' is published (this folder: '+current+'): get its ZIP, or git pull this clone, then run its installer.')
 
 
 def live_checks(home, results=None):

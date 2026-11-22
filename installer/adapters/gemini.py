@@ -517,8 +517,10 @@ def history(home, state):
                 continue
             ts = _ts(m.get('timestamp'))
             if m.get('type') == 'user':
-                shown = str(m.get('displayContent') or m.get('content') or '')
-                stripped = shown.strip()
+                shown = m.get('displayContent') or m.get('content') or ''
+                if isinstance(shown, list):  # text blocks ([{"text": …}]): their text, never the text Python prints for the list
+                    shown = ''.join(part.get('text', '') if isinstance(part, dict) else part if isinstance(part, str) else '' for part in shown)
+                stripped = str(shown).strip()
                 if stripped.startswith("[{'text': '"):
                     stripped = stripped[len("[{'text': '"):]
                 yield {'kind': 'prompt', 'session': session, 'ts': ts, 'text': stripped}

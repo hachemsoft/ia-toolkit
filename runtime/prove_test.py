@@ -366,7 +366,9 @@ def resolve_command(command):
         return None
     words = warehouse_words(command)
     if words is not None:
-        targets = [words[i+1] for i, a in enumerate(words[:-1]) if a == '--target'] + [a.split('=', 1)[1] for a in words if a.startswith('--target=')]
+        # Every form of the option, the short one too (-t prod, -t=prod, -tprod): the last one wins in the program, any one counts here.
+        targets = ([words[i+1] for i, a in enumerate(words[:-1]) if a in ('--target', '-t')] + [a.split('=', 1)[1] for a in words if a.startswith('--target=')]
+                   + [a[2:].lstrip('=') for a in words if a.startswith('-t') and not a.startswith('--') and len(a) > 2])
         if not targets:
             raise Unsupported('a warehouse command needs an explicit --target (the development target AGENTS.md declares)')
         extra = [t.strip().lower() for t in os.environ.get('AI_KIT_PROD_TARGETS', '').split(',') if t.strip()]

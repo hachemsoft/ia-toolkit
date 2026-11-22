@@ -10,9 +10,9 @@ from pathlib import Path
 import re
 
 from .config import check_source
-from .core import ROOT, KitError, content_from, load_commands, safe_id
+from .core import ROOT, KitError, content_from, content_root, load_commands, safe_id
 from .frontmatter import aikit_metadata, parse
-from .resolve import agent_catalog, skill_catalog
+from .resolve import agent_catalog, check_graph, skill_catalog
 
 
 def check_skills_module():
@@ -109,7 +109,15 @@ def team_problems(root, manifest):
     from .sync import TEAM_FORBIDDEN
     found = [f+': a Team repository may not hold it (only the Core does).' for f in TEAM_FORBIDDEN if (root/f).exists()]
     try:
-        skill_catalog(root)
+        # A Team skill may require a Core skill: the requirements are checked over the Core this kit holds, the Team on
+        # top; without a Core at hand (an engine-only package), only among the Team's own skills.
+        team = skill_catalog(root, check=False)
+        try:
+            core = skill_catalog(content_root(), check=False)
+        except KitError:
+            core = {}
+        check_graph({**core, **team} if core else {name: {**entry, 'requires': [n for n in entry.get('requires', []) if n in team]}
+                                                    for name, entry in team.items()})
         agent_catalog(root)
     except KitError as exc:
         return found + [str(exc)]

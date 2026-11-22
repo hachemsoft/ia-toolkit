@@ -28,8 +28,9 @@ def entry_from(meta, keys, rel):
     return {'path': rel, **entry}
 
 
-def skill_catalog(root):
-    """{name: entry}: every skills/**/SKILL.md, its folder name as identifier."""
+def skill_catalog(root, check=True):
+    """{name: entry}: every skills/**/SKILL.md, its folder name as identifier. check=False leaves the requirements
+    unchecked: a Team's skills, which may require the Core's, are checked once laid over it."""
     root = Path(root)
     catalog = {}
     for path in sorted((root/'skills').rglob('SKILL.md'), key=lambda p: p.as_posix()):
@@ -42,7 +43,8 @@ def skill_catalog(root):
         catalog[name] = entry_from(meta, SKILL_KEYS, path.parent.relative_to(root).as_posix())
         if 'description' not in catalog[name] and isinstance(meta.get('description'), str):
             catalog[name]['description'] = meta['description']  # no aikit-summary: the skill's own description
-    check_graph(catalog)
+    if check:
+        check_graph(catalog)
     return catalog
 
 

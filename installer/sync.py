@@ -8,6 +8,7 @@ Team source, the content is the package's own."""
 import contextlib
 from dataclasses import dataclass, field
 from pathlib import Path
+import re
 import shutil
 from typing import Dict, Optional
 
@@ -69,15 +70,32 @@ def check_origin(url, settings):
     return canonical
 
 
+def url_stem(text):
+    """A Git URL or URL prefix as IT may write it, in one form to compare: scp form (git@host:path) as ssh://, scheme and
+    host in lower case, no trailing '/' and no .git suffix."""
+    text = str(text).strip()
+    scp = re.match(r'^([A-Za-z0-9._-]+)@([A-Za-z0-9.-]+):(?!//)(.*)$', text)
+    if scp and '://' not in text:
+        text = 'ssh://'+scp.group(1)+'@'+scp.group(2)+'/'+scp.group(3)
+    scheme, separator, rest = text.partition('://')
+    if separator:
+        host, slash, path = rest.partition('/')
+        text = scheme.lower()+'://'+host.lower()+slash+path
+    text = text.rstrip('/')
+    return text[:-len('.git')] if text.endswith('.git') else text
+
+
 def check_team_allowed(url, managed):
-    """managed.toml teams.allowed (URL prefixes). Absent: any Team within the allowed hosts and groups; an empty list: no
-    Team at all (ADR 0015)."""
+    """managed.toml teams.allowed (URLs or URL prefixes, ending at a '/'). Absent: any Team within the allowed hosts and
+    groups; an empty list: no Team at all (ADR 0015). An entry matches however it is written: with or without .git, in scp
+    form, whatever the case of its host."""
     allowed = (managed or {}).get('teams', {}).get('allowed')
     if allowed is None:
         return
     if not allowed:
         raise SourceError('refused-origin', 'teams.allowed is empty in managed.toml: no Team is allowed (IT removes the key to lift the restriction): '+url)
-    if not any(url == a or url.startswith(a.rstrip('/')+'/') for a in allowed):
+    stem = url_stem(url)
+    if not any(stem == entry or stem.startswith(entry+'/') for entry in (url_stem(a) for a in allowed) if entry):
         raise SourceError('refused-origin', 'This Team is not in teams.allowed (managed.toml): '+url)
 
 
@@ -97,6 +115,12 @@ def materialize(kit, entry, settings, label):
     cache = cache_dir(kit, entry['url'])
     if not (cache/'HEAD').exists():
         raise SourceError('not-found', label+' '+entry['tag']+' is not in the local cache: run ai-kit sync (network needed).')
+    try:  # the cached tag is still the one locked: its signature below vouches for this commit, not for another
+        pointed = git(['rev-parse', '--verify', '--quiet', 'refs/tags/'+entry['tag']+'^{commit}'], kit, git_dir=cache).decode().strip()
+    except SourceError:
+        pointed = ''
+    if pointed != entry['commit']:
+        raise SourceError('invalid', 'The cached tag '+entry['tag']+' of '+label+' does not point to the commit lock.toml records: run ai-kit sync.')
     verify_signature(kit, cache, entry['tag'], settings.get('signers'))
     folder = new_temp()
     try:
@@ -110,9 +134,10 @@ def materialize(kit, entry, settings, label):
         raise
 
 
-def fetch_highest(kit, url, current, settings, label, bundle=None):
+def fetch_highest(kit, url, current, settings, label, bundle=None, home=None):
     """(entry, folder) for the highest eligible tag of url: ls-remote (or the tags of a bundle file, the offline origin of the
-    same URL), tag-moved check, fetch of that tag only, extraction."""
+    same URL), tag-moved check, fetch of that tag only, extraction. home: the home folder whose ~/.gitconfig gives the
+    credential helper and the TLS settings, when kit is not <home>/.ai-kit (a dry run works in a temporary copy)."""
     same_origin = current and current.get('url') == url
     if bundle:
         tags = bundle_tags(kit, bundle)
@@ -121,14 +146,14 @@ def fetch_highest(kit, url, current, settings, label, bundle=None):
         announced = {'commit': commit, 'tag_object': git(['rev-parse', 'refs/tags/'+tag], kit, git_dir=cache).decode().strip()}
         check_seen(kit, url, {tag: announced})
     else:
-        tags = remote_tags(url, kit, tuple(settings['allowed_schemes']))
+        tags = remote_tags(url, kit, tuple(settings['allowed_schemes']), home=home)
         check_seen(kit, url, tags)
         tag = choose_tag(tags, current['tag'] if same_origin else None, settings['allow_prerelease'])
         announced = tags[tag]
     if revoked(announced['commit'], settings):
         raise SourceError('revoked', label+' '+tag+' is revoked by IT (managed.toml git.revoked); nothing was changed.')
     if not bundle:
-        cache = fetch(kit, url, tag, announced['commit'], tuple(settings['allowed_schemes']))
+        cache = fetch(kit, url, tag, announced['commit'], tuple(settings['allowed_schemes']), home=home)
     verify_signature(kit, cache, tag, settings.get('signers'))
     folder = new_temp()
     try:
@@ -160,7 +185,8 @@ def overlay(base, team_folder, name):
             elif source.is_file():
                 shutil.copy2(source, merged/item)
         core_skills, core_agents = skill_catalog(merged), agent_catalog(merged)
-        for skill, entry in skill_catalog(team_folder).items():
+        # The Team alone is not checked for what its skills require: a Team skill may require a Core one (merged, below).
+        for skill, entry in skill_catalog(team_folder, check=False).items():
             if 'path' not in entry:
                 continue
             if core_skills.get(skill, {}).get('protected'):
@@ -246,7 +272,7 @@ def activation(home, action, dry_run=False, confirm=None, managed_file=None, tea
                 if core_url:
                     url = check_origin(core_url, settings)
                     if not (core and core.get('url') == url) and not anchored:
-                        tags = bundle_tags(store, bundle) if bundle else remote_tags(url, store, tuple(settings['allowed_schemes']))
+                        tags = bundle_tags(store, bundle) if bundle else remote_tags(url, store, tuple(settings['allowed_schemes']), home=home)
                         if not bundle:
                             check_seen(store, url, tags)
                         tag = choose_tag(tags, None, settings['allow_prerelease'])
@@ -254,12 +280,12 @@ def activation(home, action, dry_run=False, confirm=None, managed_file=None, tea
                         question = 'First use of this Core: '+url+' at '+tag+(' from the bundle '+str(bundle) if bundle else ' (commit '+tags[tag]['commit'][:12]+')')+'. Trust it?'
                         if confirm is None or not confirm(question):
                             raise KitError('First use of '+url+' needs your confirmation in a terminal: run ai-kit sync there.')
-                    new_core, folders['core'] = fetch_highest(store, url, core, settings, 'Core', bundle)
+                    new_core, folders['core'] = fetch_highest(store, url, core, settings, 'Core', bundle, home=home)
                     summary.append('Core '+new_core['tag']+' is already active.' if new_core == core else 'Core '+(core['tag']+' -> ' if core else '')+new_core['tag']+' ('+url+').')
                 if team and not bundle:  # offline: the Team stays at its locked version
                     check_origin(team['url'], settings)
                     check_team_allowed(team['url'], managed)
-                    new_team, folders['team'] = fetch_highest(store, team['url'], team, settings, 'Team '+team['name'])
+                    new_team, folders['team'] = fetch_highest(store, team['url'], team, settings, 'Team '+team['name'], home=home)
                     new_team = {'name': team['name'], **new_team}
                     known[team['name']] = new_team
                     summary.append('Team '+team['name']+' '+new_team['tag']+(' is already active.' if new_team == team else ' (was '+team['tag']+').'))
@@ -270,20 +296,21 @@ def activation(home, action, dry_run=False, confirm=None, managed_file=None, tea
                     result.writes[kit/AIKIT_FILE] = aikit_text(home, [('user', 'active_team', 'none')])
                     summary.append('Team '+(team['name'] if team else 'none')+' -> none (its cache is kept).')
                 else:
+                    # A Team lock.toml does not know yet is unknown, wherever its URL comes from (--url, aikit.toml, a question).
+                    if name not in known and (managed or {}).get('teams', {}).get('allow_unknown') is False:
+                        raise SourceError('refused-origin', 'Adding an unknown Team is refused by IT (managed.toml teams.allow_unknown = false): '+name+'.')
                     url = team_url or personal(home).get('teams', {}).get(name, {}).get('repo') or known.get(name, {}).get('url')
                     if not url:
                         url = ask_url(name) if ask_url else None
                         if not url:
                             raise KitError('Unknown Team '+name+': give its repository URL, ai-kit team use '+name+' --url <URL> (or run it in a terminal).')
-                        if (managed or {}).get('teams', {}).get('allow_unknown') is False:
-                            raise SourceError('refused-origin', 'Adding an unknown Team is refused by IT (managed.toml teams.allow_unknown = false).')
                     url = check_origin(url, settings)
                     check_team_allowed(url, managed)
                     cached = known.get(name)
                     if cached and cached['url'] == url and (cache_dir(store, url)/'HEAD').exists():
                         new_team = cached  # from the cache, no network; a newer version comes with sync
                     else:
-                        entry, folders['team'] = fetch_highest(store, url, None, settings, 'Team '+name)
+                        entry, folders['team'] = fetch_highest(store, url, None, settings, 'Team '+name, home=home)
                         new_team = {'name': name, **entry}
                     known[name] = new_team
                     result.writes[kit/AIKIT_FILE] = aikit_text(home, [('teams.'+name, 'repo', url), ('user', 'active_team', name)])
@@ -332,24 +359,30 @@ def activation(home, action, dry_run=False, confirm=None, managed_file=None, tea
 
 
 @contextlib.contextmanager
-def shipped_core(home, bundle):
-    """The highest tag of the shipped bundle, extracted into a temporary folder for this run (menus, checks); nothing is
-    recorded: the installation that follows activates it and writes lock.toml (activation with shipped=True)."""
-    kit = home/'.ai-kit'
-    kit.mkdir(parents=True, exist_ok=True)
+def shipped_core(home, bundle, managed_file=None):
+    """The highest tag of the shipped bundle, extracted into a temporary folder for this run (menus, checks). Nothing is
+    written under the home folder and nothing is recorded: the bundle is read in a temporary cache, and the installation that
+    follows activates it and writes lock.toml (activation with shipped=True). What IT revokes and signs applies here as
+    everywhere: a revoked commit or a tag no listed key signed is not read."""
     from .bootstrap import DEFAULT_CORE_URL
-    settings, core_url, _ = git_settings(home, load_managed(None))  # IT's enterprise.core wins
+    settings, core_url, _ = git_settings(home, load_managed(managed_file))  # IT's enterprise.core wins
     url = check_origin(core_url or DEFAULT_CORE_URL, settings)
-    tag = choose_tag(bundle_tags(kit, bundle), None, settings['allow_prerelease'])
-    cache, commit = fetch_bundle(kit, url, bundle, tag)
-    folder = new_temp()
+    work, folder = new_temp(), new_temp()
     try:
-        extract(kit, cache, commit, folder)
+        store = work/'.ai-kit'
+        store.mkdir()
+        tag = choose_tag(bundle_tags(store, bundle), None, settings['allow_prerelease'])
+        cache, commit = fetch_bundle(store, url, bundle, tag)
+        if revoked(commit, settings):
+            raise SourceError('revoked', 'The shipped Core '+tag+' is revoked by IT (managed.toml git.revoked); nothing was changed.')
+        verify_signature(store, cache, tag, settings.get('signers'))
+        extract(store, cache, commit, folder)
         if check_source(folder, engine_version()) is None:
             raise SourceError('invalid', 'The shipped Core '+tag+' has no aikit.toml manifest.')
         yield folder
     finally:
         remove_temp(folder)
+        remove_temp(work)
 
 
 def prune_all(kit):

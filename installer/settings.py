@@ -56,6 +56,13 @@ SHELLS = ('sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'cmd', 'powershell', 'pwsh
 WRAPPERS = ('su'+'do', 'doas', 'env', 'nohup', 'nice', 'time', 'timeout', 'xargs', 'command', 'exec', 'start', 'busybox')
 INLINE_CODE = {'node': ('-e', '--eval', '-p', '--print'), 'bun': ('-e', '--eval'), 'deno': ('eval',), 'python': ('-c',), 'py': ('-c',),
                'ruby': ('-e',), 'perl': ('-e', '-E'), 'php': ('-r',)}
+# The same code flag glued to other short options or to its code (python3 -Ic, node -pe, node -e"…"): a cluster of short
+# options that reaches the flag before an option that takes a value (python -W, -X, -m; node -r; ruby -I, -r; …).
+INLINE_GLUED = {'node': r'-[^-r]*[ep]', 'bun': r'-[^-]*e', 'python': r'-[^-WXm]*c', 'py': r'-[^-WXm]*c', 'ruby': r'-[^-Ir]*e',
+                'perl': r'-[^-IMm]*[eE]', 'php': r'-[^-dcfz]*r'}
+SHELL_SCRIPTS = ('.sh', '.bash', '.zsh', '.ps1')  # a script a shell runs: what it does is not what the approval shows
+# The launchers Windows installs as a .cmd or .bat script (npx.cmd): accepted under that name; any other batch file is a shell script.
+WINDOWS_LAUNCHERS = ('npx', 'npm', 'pnpm', 'pnpx', 'yarn', 'bunx', 'uvx', 'pipx')
 SHELL_FLAGS = ('/c', '/k', '-command', '-encodedcommand', '-enc', '-ec')  # compared without case: -Command, /C
 VARIABLE = re.compile(r'\$\{[A-Za-z_][A-Za-z0-9_]*\}')
 # A value that holds no secret: one ${VARIABLE}, alone or after a standard authentication scheme (Authorization = "Bearer ${TOKEN}").
@@ -69,10 +76,15 @@ def program(command):
 
 
 def runs_unseen(command, args):
-    """True when the command is a shell, a wrapper, or an interpreter given its code on the command line."""
+    """True when the command is a shell, a shell script, a wrapper, or an interpreter given its code on the command line
+    (the flag alone, glued to others, or as --flag=code)."""
     name = program(command)
+    file = Path(str(command or '').replace('\\', '/')).name.lower()
     interpreter = re.sub(r'[0-9.]+$', '', name)  # python3.12 is python
-    return (name in SHELLS or name in WRAPPERS or bool(re.search(r'[;&|`$<>]', command)) or any(a in INLINE_CODE.get(interpreter, ()) for a in args)
+    flags, glued = INLINE_CODE.get(interpreter, ()), INLINE_GLUED.get(interpreter)
+    inline = any(a in flags or a.partition('=')[0] in flags or bool(glued and re.match(glued, a)) for a in args)
+    script = file.endswith(SHELL_SCRIPTS) or (file.endswith(('.cmd', '.bat')) and name not in WINDOWS_LAUNCHERS)
+    return (name in SHELLS or name in WRAPPERS or script or bool(re.search(r'[;&|`$<>]', command)) or inline
             or any(a == '-c' or a.lower() in SHELL_FLAGS for a in args))
 
 
@@ -112,6 +124,14 @@ def validate_server(server):
         raise KitError('MCP: transport must be a string.')
     if key != 'command' and not server[key].startswith('https://'):
         raise KitError('Remote MCP: HTTPS URL expected.')
+    if key != 'command':
+        try:
+            parts = urlsplit(server[key])
+            named = parts.username is not None or parts.password is not None
+        except ValueError:
+            named = True
+        if named:  # https://allowed.example.org@other.example.org/ is other.example.org: the host must read as written
+            raise KitError('Remote MCP: no user name or password in the URL (https://host/path).')
     if 'args' in server and (not isinstance(server['args'],list) or not all(isinstance(x,str) for x in server['args'])):
         raise KitError('MCP: args must be a list of strings.')
     if 'required' in server and not isinstance(server['required'], bool):
@@ -139,13 +159,36 @@ def validate_server(server):
         for key, value in values.items():
             if TEMPLATE.fullmatch(value.strip()):
                 continue
-            if SECRET_NAME.search(key) or SECRET.search(key+'='+value):
+            if SECRET_NAME.search(key) or SECRET.search(value):  # the name says it (SECRET_NAME), or the value has a known token's form
                 raise KitError('MCP: '+field+' '+key+' holds a value that looks secret: write ${'+re.sub(r'[^A-Za-z0-9_]', '_', key).upper()
                                + '} instead and define that variable in your environment (docs/mcp.md).')
     return server
 
 
-SECRET_NAME = re.compile(r'(?i)(password|passwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|credential|authorization|auth)')
+class SecretName:
+    """A name that says its value is a secret, read by its words (API_TOKEN, accessToken, X-Api-Key, --client-secret): the
+    last word is the secret itself (token, password, secret, credential, authorization, auth), or a key of a secret kind
+    (api key, access key, private key). A word that only holds one of them (AUTHOR, --max-tokens), or a name that describes
+    something else about it (AUTH_TYPE, --auth-mode, --no-auth, SECRET_MANAGER_PROJECT, TOKEN_URL), is not one.
+    search(name) answers like a pattern: a true value or None."""
+    LAST = ('password', 'passwd', 'passphrase', 'secret', 'token', 'apikey', 'credential', 'credentials', 'authorization', 'auth')
+    KEYS = ('api', 'access', 'private', 'secret', 'signing', 'encryption')
+
+    def search(self, name):
+        spaced = re.sub(r'(?<=[a-z0-9])(?=[A-Z])', ' ', str(name or ''))  # accessToken: access token
+        words = [re.sub(r'\d+$', '', w) for w in re.split(r'[^A-Za-z0-9]+', spaced.lower())]
+        words = [w for w in words if w]
+        if words[-1:] == ['value']:
+            words = words[:-1]
+        if not words:
+            return None
+        last, before = words[-1], words[-2] if len(words) > 1 else ''
+        if last in self.LAST and not (last == 'auth' and before == 'no'):
+            return True
+        return True if last == 'key' and before in self.KEYS else None
+
+
+SECRET_NAME = SecretName()
 
 
 def git_identity(home):

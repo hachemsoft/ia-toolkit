@@ -116,16 +116,19 @@ class ReleaseCheckTests(unittest.TestCase):
             git('tag', 'v9.9.9')
             out = io.StringIO()
             with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': str(clone)}), contextlib.redirect_stdout(out):
-                cli.release_check()  # no remote: a tag that only this clone holds is not a published version
+                cli.release_check(Path(tmp)/'home')  # no remote: a tag that only this clone holds is not a published version
             self.assertEqual(out.getvalue(), '')
             remote = Path(tmp).parent/(Path(tmp).name+'-remote.git')
             try:
                 subprocess.run(['git', 'clone', '--quiet', '--bare', str(clone), str(remote)], check=True, capture_output=True)
-                git('remote', 'add', 'origin', str(remote))
+                git('remote', 'add', 'origin', 'file://'+remote.resolve().as_posix())
                 git('tag', '-d', 'v9.9.9')
                 before = sorted(p.name for p in (clone/'.git').rglob('*'))
-                with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': str(clone)}), contextlib.redirect_stdout(out):
-                    cli.release_check()  # the tags are listed on the remote; nothing is fetched into the clone
+                # 4.24.1: Git runs as for every source (https or ssh only); a local repository stands in through LOCAL_FOR_TESTS.
+                from installer import sources
+                with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': str(clone)}), mock.patch.object(sources, 'LOCAL_FOR_TESTS', True), \
+                        mock.patch('installer.config.managed_path', return_value=Path(tmp)/'no-managed.toml'), contextlib.redirect_stdout(out):
+                    cli.release_check(Path(tmp)/'home')  # the tags are listed on the remote; nothing is fetched into the clone
                 self.assertEqual(sorted(p.name for p in (clone/'.git').rglob('*')), before)
             finally:
                 shutil.rmtree(remote, ignore_errors=True)
@@ -147,7 +150,7 @@ class ReleaseCheckTests(unittest.TestCase):
             trap.chmod(0o755)
             git('config', 'core.fsmonitor', str(trap))
             with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': str(clone)}), contextlib.redirect_stdout(io.StringIO()):
-                cli.release_check()
+                cli.release_check(Path(tmp)/'home')
             self.assertFalse(ran.exists(), 'core.fsmonitor ran')
 
 

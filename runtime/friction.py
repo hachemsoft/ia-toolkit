@@ -100,8 +100,12 @@ def component_version(name, home=None):
             return kind[:-1] + ' ' + name + ' ' + str(version)
     return None
 
+PRIVATE_KEY = re.compile(r'-----BEGIN [A-Z ]*PRIVATE KEY-----.*?(?:-----END [A-Z ]*PRIVATE KEY-----|\Z)', re.S)
+
+
 def record(category, text, command='none', cli='unknown', source='person', home=None):
-    text = redact(' '.join(str(text).split()))[:300]
+    # A private key pasted over several lines goes whole, before the lines are joined: joined, only its first line reads as one.
+    text = redact(' '.join(PRIVATE_KEY.sub('[redacted]', str(text)).split()))[:300]
     command = (command or 'none').lstrip('/') or 'none'
     if not re.fullmatch(r'[a-z0-9:_-]{1,40}', command.lower()):
         command = 'none'  # a kit command name, nothing else: the field is never free text
@@ -268,8 +272,7 @@ def housekeep(home=None, retention_days=None, now=None):
             return (now - datetime.strptime(str(entry.get('ts')), '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)).days < days
         except ValueError:
             return True
-    kept = [e for e in found if recent(e)]
-    purged = len(found) - len(kept)
+    purged = sum(1 for e in found if not recent(e))
     if purged:
         lock = path + '.lock'
         descriptor = take_lock(lock)
@@ -278,6 +281,10 @@ def housekeep(home=None, retention_days=None, now=None):
         else:
             os.close(descriptor)
             try:
+                # Read again under the lock: an entry written since the first read must not be lost by the rewrite.
+                found = entries(home)[1]
+                kept = [e for e in found if recent(e)]
+                purged = len(found) - len(kept)
                 temp = path + '.tmp'
                 handle_fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
                 private(handle_fd)

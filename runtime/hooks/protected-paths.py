@@ -23,7 +23,7 @@ CONFIG_PATHS = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/engine.lock'
                 '.ai-kit/me/',
                 '.gemini/00_', '.gemini/10_', '.gemini/20_', '.gemini/settings.json', '.gemini/.env', '.gemini/config/plugins/ai-kit/',
                 '.gemini/antigravity-cli/settings.json',  # agy's permissions: the person's answers, never the agent's
-                '.codex/config.toml', '.codex/AGENTS.md', '.codex/AGENTS.override.md', '.codex/ai-kit/', '.claude/settings.json', '.claude/CLAUDE.md', '.claude/agents/ai-kit-',
+                '.codex/config.toml', '.codex/AGENTS.md', '.codex/AGENTS.override.md', '.codex/ai-kit/', '.claude/settings.json', '.claude/settings.local.json', '.claude/CLAUDE.md', '.claude/agents/ai-kit-',
                 '.claude.json',
                 # git's own configuration can redirect the kit's next fetch (url.insteadOf) or run a program (core.fsmonitor) (0.51.1).
                 '.gitconfig', '.config/git/config')
@@ -33,7 +33,7 @@ CONFIG_PATHS = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/engine.lock'
 REPO_CONFIG = ('.claude/settings.json', '.claude/settings.local.json',
                '.gemini/settings.json', '.gemini/.env', '.codex/config.toml')
 
-KIT_VARIABLES = re.compile(r'^\s*(export\s+)?(AI_KIT_[A-Z_]*|DBT_TARGET)\s*=', re.M)
+KIT_VARIABLES = re.compile(r'^\s*(export\s+)?(AI_KIT_[A-Z_]*|DBT_TARGET)\s*=', re.M | re.I)  # Windows reads a variable's name without case
 
 DOTENV_BLOCKED = 'Blocked by the kit: a .env file the agent writes must not set the kit\'s variables (AI_KIT_*) or DBT_TARGET.'
 
@@ -165,34 +165,41 @@ def without_data_heredocs(text):
                 skip_until = match.group(1)
     return '\n'.join(out)
 
-def normalised(text):
+def normalised(text, lower=True):
     """The text as the shell would resolve its paths: backslashes as /, quotes removed (~/".ai-kit"/x, overrides.tom'l'),
-    // and /./ collapsed. Lower case: protected names compare without case (macOS, Windows)."""
+    // and /./ collapsed. Lower case: protected names compare without case (macOS, Windows); lower=False keeps the case, for
+    a path to look for on disk (a case-sensitive system finds it only as written)."""
     text = text.replace('\\', '/').replace('"', '').replace("'", '')
     previous = None
     while previous != text:
         previous, text = text, text.replace('/./', '/')
-    return re.sub(r'/{2,}', '/', text).lower()
+    text = re.sub(r'/{2,}', '/', text)
+    return text.lower() if lower else text
+
+# A redirection that holds an &: 2>&1, >&2, <&3, >&-, &>, &>>. Its & does not end the command; |& is a pipe.
+REDIRECTION = re.compile(r'\d*[<>]&(?:\d+|-)?|&>>?')
 
 def shell_segments(command):
     """The pipelines of a shell line: split on new lines, ;, &&, || and &, after joining continued lines. A pipeline stays
     whole: in "echo path | xargs rm" the path and the write are in two commands of the same pipeline."""
     text = re.sub(r'(\\|`)\r?\n', ' ', command)
-    return [s for s in re.split(r'\r?\n|;|&&|\|\||&', without_data_heredocs(text)) if s.strip()]
+    text = REDIRECTION.sub(' ', without_data_heredocs(text).replace('|&', '|'))  # `ai-kit 2>&1 sync` is one command
+    return [s for s in re.split(r'\r?\n|;|&&|\|\||&', text) if s.strip()]
 
-def shell_words(pipeline):
-    """The words of a pipeline as the shell reads them, each normalised: a quoted word stays one word
-    ("C:\\Program Files\\Python311\\python.exe" is a program, not two words), | is a word of its own. With a quote left
-    open (the pipeline is a piece of a longer quoted text), the quotes are dropped and the words split on spaces."""
-    words, word, quote, started = [], [], None, False
-    for char in pipeline:
+def split_words(pipeline):
+    """The words of a pipeline as the shell reads them, as written: a quoted word stays one word
+    ("C:\\Program Files\\Python311\\python.exe" is a program, not two words) and keeps the quotes written inside it (the
+    text given to bash -c: '"/path with spaces/ai-kit" sync'), | is a word of its own. A quote left open (the pipeline is a
+    piece of a longer quoted text) is read as a space."""
+    words, word, quote, started, opened = [], [], None, False, 0
+    for at, char in enumerate(pipeline):
         if quote:
             if char == quote:
                 quote = None
             else:
                 word.append(char)
         elif char in '"\'':
-            quote, started = char, True
+            quote, started, opened = char, True, at
         elif char.isspace() or char == '|':
             if started or word:
                 words.append(''.join(word))
@@ -202,42 +209,54 @@ def shell_words(pipeline):
         else:
             word.append(char)
     if quote:
-        return [normalised(w) if w != '|' else w for w in pipeline.replace('|', ' | ').split()]
+        # The quote left open belongs to the longer text (pwsh -Command "& 'C:\\Program Files\\kit\\ai-kit.exe' sync": the
+        # piece after the & ends with the outer quote). Without it, the quoted words of the piece stay whole.
+        return split_words(pipeline[:opened] + ' ' + pipeline[opened+1:])
     if started or word:
         words.append(''.join(word))
-    return [normalised(w) if w != '|' else w for w in words]
+    return words
 
-def command_words(pipeline):
-    """(program, its words) for each program the shell runs in a pipeline, lower case, without the bracket that opens
-    them; after sudo, xargs, find -exec, bash -c… the next word is a program too, and the text bash -c is given is read
-    as words."""
+def shell_words(pipeline):
+    """The words of a pipeline (split_words), each normalised: lower case, no quote left."""
+    return [normalised(w) if w != '|' else w for w in split_words(pipeline)]
+
+def commands(pipeline):
+    """(program, its words, the same words with their case kept) for each program the shell runs in a pipeline, without
+    the bracket that opens them; after sudo, xargs, find -exec, bash -c… the next word is a program too, and the text
+    bash -c is given is read as a command line of its own. Program and words are lower case: names compare without case."""
     expect, current, found, text_runs = True, None, [], False
-    pending = shell_words(pipeline)
+    pending = split_words(pipeline)
     while pending:
-        word = pending.pop(0)
-        if word == '|':
+        written = pending.pop(0)
+        if written == '|':
             expect, text_runs = True, False
             continue
-        if text_runs and ' ' in word.strip():
-            pending[:0] = shell_words(word)  # bash -c "ai-kit sync": the quoted text is a command line
+        if text_runs and ' ' in written.strip():
+            pending[:0] = split_words(written)  # bash -c '"/my tools/ai-kit" sync': the quoted text is a command line
             text_runs = False
             continue
         text_runs = False
+        word = normalised(written)
         opens = word.startswith(('(', '$(', '`', '{'))
-        core = re.sub(r'^[\s`({$]+', '', word)
+        core, cased = (re.sub(r'^[\s`({$]+', '', w) for w in (word, normalised(written, lower=False)))
         if not (expect or opens):
             if found:
                 found[-1][1].append(core)
+                found[-1][2].append(cased)
             if (current in SHELLS and RUNS_TEXT.fullmatch(core)) or core in ('-exec', '-execdir', '-ok') or (current in CMD and core in ('/c', '/k')):
                 expect = text_runs = True  # bash -c '…', find … -exec, cmd /c: what follows is run
             continue
         if re.fullmatch(r'[a-z_][a-z0-9_]*=.*', core):
-            found.append(('=', [core]))  # VAR=value: an assignment, not a program
+            found.append(('=', [core], [cased]))  # VAR=value: an assignment, not a program
             continue
         current = core.rsplit('/', 1)[-1]
-        found.append((current, []))
+        found.append((current, [], []))
         expect = current in WRAPPERS or (core.startswith('-') and expect)
     return found
+
+def command_words(pipeline):
+    """(program, its words) for each program of a pipeline (commands), lower case."""
+    return [(program, words) for program, words, _cased in commands(pipeline)]
 
 PYTHONS = re.compile(r'(python[0-9.]*|py)(\.exe)?')
 
@@ -277,19 +296,26 @@ def kit_arguments(program, words):
 
 def kit_launcher_at(name, text, current):
     """True when the launcher a pipeline names sits with the kit's other launchers (scripts/ of a kit folder). The name alone
-    does not tell: another project has its own bootstrap.sh."""
-    script = next((w for w in shell_words(text) if w.rsplit('/', 1)[-1] == name), name)
-    folder = os.path.dirname(where(re.sub(r'^\$\{?home\}?', '~', script), current))
-    return all(os.path.isfile(os.path.join(folder, other)) for other in ('bootstrap.sh', 'launcher.py'))
+    does not tell: another project has its own bootstrap.sh. The path is looked for with the case it was written in (a
+    case-sensitive system tells Kit from kit): each word that ends with the name, a quoted path with spaces as one word,
+    then the words of a text given to bash -c "…"."""
+    whole = split_words(text)
+    written = whole + [w for word in whole if ' ' in word.strip() for w in split_words(word)]
+    scripts = [w for w in (normalised(word, lower=False) for word in written) if w.rsplit('/', 1)[-1].lower() == name] or [name]
+    for script in scripts:
+        folder = os.path.dirname(where(re.sub(r'^\$\{?home\}?', '~', script, flags=re.I), current))
+        if all(os.path.isfile(os.path.join(folder, other)) for other in ('bootstrap.sh', 'launcher.py')):
+            return True
+    return False
 
 def kit_command_reason(command, cwd):
     """Reason to refuse a kit subcommand the agent must not run, or None."""
     current = real(cwd)
     for pipeline in shell_segments(command):
         text = pipeline
-        for program, words in command_words(text):
+        for program, words, cased in commands(text):
             if program in CHANGES_DIRECTORY and words:
-                current = where(words[-1], current)
+                current = where(cased[-1], current)
             if PYTHONS.fullmatch(program) and '--sync' in words and any(w.endswith('/.ai-kit/bin/friction.py') for w in words):
                 return KIT_COMMAND_BLOCKED.format('friction --sync')  # publication is the person's approval (2.0.0)
             found = kit_arguments(program, words)
