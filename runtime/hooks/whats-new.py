@@ -11,7 +11,12 @@ never blocked or slowed by this script. What it announces, each once (marker ~/.
   - an offer of /me while the personal context (~/.ai-kit/context/USER.md) is still the one the installer created.
 Both are copies the installation writes from the active content: no network, no remote text in the agent's context. A newer
 Core is said by `ai-kit status` (from the last sync), never by this hook. Also runs the local friction upkeep (ADR 0023).
+
+The integrity check runs first and is answered whatever happens after it, state.json present or not: on Antigravity CLI
+this is the only place it runs. A copy or a script that is not the one the kit installed (its digest in state.json) is
+neither shown to the agent nor run: the integrity check names it instead.
 """
+import hashlib
 import json
 import os
 import re
@@ -117,8 +122,26 @@ def aimed_at(entry, team, today):
     return True
 
 
-def whats_new(state, marker, news_dir, today, user_text=''):
-    """Lines to announce, and the marker updated. Pure: reads the copies in news_dir only; user_text is USER.md's text."""
+def installed_bytes(home, state, rel, recorded_only=True):
+    """The bytes of a file under the home folder when they are the ones the kit installed (state.json `files`), else None:
+    missing, or changed since. A file state.json does not record is refused too (recorded_only: a script about to be run),
+    or read as it is (a copy to show: the integrity check judges the same way, by the recorded digest)."""
+    files = state.get('files') if isinstance(state.get('files'), dict) else {}
+    expected = files.get(rel)
+    if not isinstance(expected, str) and recorded_only:
+        return None
+    try:
+        with open(os.path.join(home, *rel.split('/')), 'rb') as handle:
+            data = handle.read()
+    except OSError:
+        return None
+    return data if not isinstance(expected, str) or hashlib.sha256(data).hexdigest() == expected else None
+
+
+def whats_new(state, marker, news_dir, today, user_text='', read=None):
+    """Lines to announce, and the marker updated. Pure: reads the copies in news_dir only, through read(path) -> text
+    (the file as it is by default; the session hook gives only what the kit installed); user_text is USER.md's text."""
+    file_text = read or globals()['file_text']
     items, team = [], str(state.get('team') or '')
     version = str(state.get('version') or '').strip()
     announced_versions = [v for v in marker.get('announced_versions', []) if isinstance(v, str)]
@@ -168,8 +191,11 @@ def integrity(home, state):
     """(agent text, person text) of the integrity check next to this script, run in full at session start. When the kit
     installed it and it is missing or changed, that is said instead: it cannot report on itself. (None, None) otherwise; a
     session always starts."""
-    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'integrity.py')
+    folder = os.path.dirname(os.path.abspath(__file__))
+    script = os.path.join(folder, 'integrity.py')
     expected = (state.get('files') or {}).get('.ai-kit/hooks/integrity.py') if isinstance(state.get('files'), dict) else None
+    # This copy sits in ~/.ai-kit/hooks: the kit installed it with the check, whatever state.json says today.
+    installed = os.path.realpath(folder) == os.path.realpath(os.path.join(home, '.ai-kit', 'hooks'))
     try:
         if expected:
             import hashlib
@@ -182,7 +208,7 @@ def integrity(home, state):
         spec.loader.exec_module(module)
         return module.checked(home, full=True)
     except Exception:
-        if expected:
+        if expected or installed:
             return CHECK_MISSING, 'AI Kit: the integrity check ~/.ai-kit/hooks/integrity.py is missing or changed. To restore: ai-kit sync --offline --restore'
         return None, None
 
@@ -203,8 +229,8 @@ def friction_upkeep(kit, state):
     """ADR 0023: the local friction upkeep (purge after the retention, waiting count) at session start, from the friction script
     the kit installed; any failure is silent and never delays the session beyond the script's own work."""
     script = os.path.join(kit, 'bin', 'friction.py')
-    if not os.path.isfile(script):
-        return 0
+    if installed_bytes(os.path.dirname(kit), state, '.ai-kit/bin/friction.py') is None:
+        return 0  # missing, or not the script the kit installed: never run (the integrity check reports it)
     try:
         import importlib.util
         spec = importlib.util.spec_from_file_location('ai_kit_friction_upkeep', script)
@@ -224,29 +250,47 @@ def main():
     output = {}
     try:
         if isinstance(payload, dict) and str(payload.get('source') or 'startup') in SOURCES:
-            kit = os.path.join(os.path.expanduser('~'), '.ai-kit')
+            home = os.path.expanduser('~')
+            kit = os.path.join(home, '.ai-kit')
             state = read_json(os.path.join(kit, 'state.json'))
-            if state:
-                marker_path = os.path.join(kit, MARKER)
-                before = file_text(marker_path)
-                items, marker = whats_new(state, read_json(marker_path), os.path.join(kit, 'news'), date.today().isoformat(),
-                                          file_text(os.path.join(kit, 'context', 'USER.md')))
-                after = json.dumps(marker, ensure_ascii=False, indent=1)
-                if after != before and items:
-                    write_marker(marker_path, after)
-                waiting = friction_upkeep(kit, state)
-                if waiting:
-                    items.append(str(waiting)+' friction(s) logged here wait for the person\'s approval before they reach the team\'s tracker: '
-                                 'they send them from a terminal with ai-kit friction --publish. Never run it yourself.')
-                agent, person = integrity(os.path.expanduser('~'), state)
-                text = context_text(items) if items else ''
-                if agent:  # the integrity check comes first: it is about what watches the agent
-                    text = agent + ('\n\n' + text if text else '')
-                if text:
-                    output = answer(payload, text, person)
+            # The integrity check first, state.json readable or not: it is about what watches the agent, and nothing
+            # after it (the news, the marker, the friction upkeep) can silence it.
+            agent, person = integrity(home, state)
+            try:
+                items = announcements(home, kit, state) if state else []
+            except Exception:
+                items = []
+            text = context_text(items) if items else ''
+            if agent:
+                text = agent + ('\n\n' + text if text else '')
+            if text:
+                output = answer(payload, text, person)
     except Exception:
         output = {}
     print(json.dumps(output, ensure_ascii=False))
+
+
+def announcements(home, kit, state):
+    """What is new and the frictions waiting. The news copies are read only as the kit installed them: a copy changed
+    outside the kit is not shown (its text would enter the agent's context) and is not marked as said."""
+    def installed_text(path):
+        data = installed_bytes(home, state, os.path.relpath(path, home).replace(os.sep, '/'), recorded_only=False)
+        return data.decode('utf-8', 'replace') if data is not None else ''
+    marker_path = os.path.join(kit, MARKER)
+    before = file_text(marker_path)
+    items, marker = whats_new(state, read_json(marker_path), os.path.join(kit, 'news'), date.today().isoformat(),
+                              file_text(os.path.join(kit, 'context', 'USER.md')), read=installed_text)
+    after = json.dumps(marker, ensure_ascii=False, indent=1)
+    if after != before and items:
+        try:
+            write_marker(marker_path, after)
+        except OSError:
+            pass  # said again at the next session rather than not at all
+    waiting = friction_upkeep(kit, state)
+    if waiting:
+        items.append(str(waiting)+' friction(s) logged here wait for the person\'s approval before they reach the team\'s tracker: '
+                     'they send them from a terminal with ai-kit friction --publish. Never run it yourself.')
+    return items
 
 
 if __name__ == '__main__':

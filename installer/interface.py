@@ -48,6 +48,19 @@ class Plan:
     restore: bool = False  # sync --restore: the kit's files and parts edited outside the kit are put back, the edited copy kept in the backup
     adapter_data: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # private data of an adapter, by NAME
     skill_notes: Dict[str, str] = field(default_factory=dict)  # appended to a skill's SKILL.md: optional skills not installed
+    keep_file: Callable[[Path], None] = lambda target: None  # a tracked file left as it is in this run: still the kit's, not removed
+
+    def user_copy_refusal(self) -> Any:
+        """Why USER.md is not copied where a CLI reads a copy of it (a secret, not plain text), or None. The person is told
+        once, whatever the number of CLIs; each adapter keeps the copy it had."""
+        from .core import USER_CONTEXT, user_context_refusal
+        data = self.writes[self.user_file] if self.user_file in self.writes else self.user_file.read_bytes() if self.user_file.exists() else b''
+        refusal = user_context_refusal(data)
+        notice = ('[Check] '+USER_CONTEXT+' not copied to the CLIs that read a copy of it: '+str(refusal)+'. They keep their previous copy until '
+                  'the file is fixed and ai-kit sync --offline runs again. The kit configuration itself is installed.')
+        if refusal and notice not in self.notices:
+            self.notices.append(notice)
+        return refusal
 
     def skill_file(self, skill: str, source: Path, src: Path) -> bytes:
         """Bytes of a skill file as installed: the source, plus for SKILL.md what to do without its optional skills."""

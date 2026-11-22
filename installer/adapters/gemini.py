@@ -11,7 +11,7 @@ from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
 from .. import resolve
-from ..core import (hook_parts, content_root, user_context_refusal, adopt_user_copy, LIVE_PROMPT, network_problem, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
+from ..core import (hook_parts, content_root, adopt_user_copy, LIVE_PROMPT, network_problem, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
                     rename_references, renamed_skill_file, renamed_notice, kit_name,
                     digest, merge_defaults, run_timed,
                     record_auto_friction, _ts)
@@ -220,9 +220,10 @@ def copy_context(p: Plan) -> None:
         data = p.writes[source] if source in p.writes else source.read_bytes()
         p.managed_write(gemini/name, data, 'Context file (copy)', restore=True)
     data = p.writes[p.user_file] if p.user_file in p.writes else p.user_file.read_bytes() if p.user_file.exists() else b''
-    if user_context_refusal(data):
-        return  # the orchestrator already says why; the previous copy stays
     copy, rel = gemini/USER_CONTEXT, HOME_DIR+'/'+USER_CONTEXT
+    if p.user_copy_refusal():
+        p.keep_file(copy)  # the previous copy stays, still the kit's: not removed as a file the kit no longer writes
+        return
     last = p.old_files.get(rel)
     if copy.exists() and last and digest(copy.read_bytes()) != last and adopt_user_copy(p, copy, last):
         data = p.writes[p.user_file]
@@ -304,7 +305,7 @@ def remove_kit_settings(p: Plan) -> None:
                     if not p.restore:  # sync --restore: the kit's entry is replaced
                         raise KitError('Kit guardrail modified in settings.json: '+name)
                     else:
-                        p.notices.append('[Check] a kit entry in ~/.gemini/settings.json was edited by hand: restored; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
+                        p.notices.append('[Check] a kit entry in ~/.gemini/settings.json was edited by hand: removed with the kit; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
             for event, groups in list(hooks.items()):
                 if isinstance(groups, list) and kit_hook_groups(groups):
                     kept = [g for i, g in enumerate(groups) if i not in kit_hook_groups(groups)]
@@ -321,7 +322,7 @@ def remove_kit_settings(p: Plan) -> None:
                     if not p.restore:  # sync --restore: the kit's entry is replaced
                         raise KitError('Kit MCP modified in settings.json: '+name)
                     else:
-                        p.notices.append('[Check] a kit entry in ~/.gemini/settings.json was edited by hand: restored; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
+                        p.notices.append('[Check] a kit entry in ~/.gemini/settings.json was edited by hand: removed with the kit; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
                 servers.pop(name, None)
         context = settings.get('context')
         if isinstance(context, dict) and isinstance(context.get('fileName'), list):

@@ -35,17 +35,20 @@ class _Hit:
     def group(self, _index):
         return self._target
 
-def default_target_hit(command, targets, payload):
+PROFILES_DIR = re.compile(r'--profiles-dir(?:\s+|=)(?:"([^"]+)"|\'([^\']+)\'|(\S+))')
+
+def default_target_hit(command, targets, payload, raw=None):
     """Without --target or DBT_TARGET, the default target comes from profiles.yml (--profiles-dir, DBT_PROFILES_DIR, ~/.dbt): block it if it is production."""
     if re.search(r'(?:--target|-t)(?:[\s=,]|$)|\bDBT_TARGET=', command, re.I):
         return None
     if os.environ.get('DBT_TARGET', '').lower() in targets:
         return _Hit(os.environ['DBT_TARGET'] + ' (DBT_TARGET in the environment)')
-    match = re.search(r'--profiles-dir[\s=]+[\'"]?([^\s\'"]+)', command)
+    match = PROFILES_DIR.search(raw if raw is not None else command)  # as written: a quoted folder, a Windows path
     cwd = payload.get('cwd') or (payload.get('workspacePaths') or [None])[0] or os.getcwd()
     candidates = []
     if match:
-        candidates.append(os.path.join(cwd, match.group(1)) if not os.path.isabs(match.group(1)) else match.group(1))
+        folder = os.path.expanduser(next(g for g in match.groups() if g))
+        candidates.append(folder if os.path.isabs(folder) else os.path.join(cwd, folder))
     if os.environ.get('DBT_PROFILES_DIR'):
         candidates.append(os.environ['DBT_PROFILES_DIR'])
     candidates += [cwd, os.path.join(os.path.expanduser('~'), '.dbt')]
@@ -54,11 +57,12 @@ def default_target_hit(command, targets, payload):
         try:
             with open(path, encoding='utf-8') as handle:
                 text = handle.read()
-        except OSError:
+        except (OSError, ValueError):
             continue
         # Minimal reading without PyYAML: the `target: <name>` lines indented one level under a profile, and the
         # common Jinja form target: "{{ env_var('DBT_TARGET', 'prod') }}", resolved from the environment or its default.
-        for line in re.findall(r'^[ \t]+target:[ \t]*(.+)$', text, re.M):
+        for line in re.findall(r'^[ \t]+target:[ \t]*(.*)$', text, re.M):
+            line = re.sub(r'(^|\s)#.*$', '', line).strip()  # a YAML comment is not a target
             jinja = re.search(r'env_var\(\s*[\'"]([A-Za-z0-9_]+)[\'"]\s*(?:,\s*[\'"]([A-Za-z0-9_-]+)[\'"])?', line)
             if jinja:
                 found = os.environ.get(jinja.group(1)) or jinja.group(2)
@@ -67,7 +71,10 @@ def default_target_hit(command, targets, payload):
             elif '{{' in line:
                 return _Hit(line.strip() + ' (a target only known when dbt runs, in ' + path + ')')
             else:
-                found = re.match(r'[\'"]?([A-Za-z0-9_-]+)', line.strip()).group(1)
+                name = re.match(r'[\'"]?([A-Za-z0-9_-]+)', line)
+                if not name:
+                    continue  # an empty target: dbt refuses to run with it
+                found = name.group(1)
             if found.lower() in targets:
                 return _Hit(found + ' (default target from ' + path + ')')
         return None
@@ -130,6 +137,8 @@ def allow_from_env_file(payload):
 def dbt_prod_guard(raw, payload):
     """A dbt command on a production target: a refusal, a note when the person allowed it, or None."""
     # The shell removes backslashes and glued quotes: d''bt, pr\od are dbt and prod. Python calls dbt too (dbtRunner).
+    if only_mentions(raw):
+        return None
     command = raw.replace('\\\n', ' ').replace('\\', '').replace("''", '').replace('""', '')
     # `dbt`, `./dbt`, `/path/dbt`, `dbt.exe`, any case; also right after a quote, a backtick or a parenthesis (`sh -c "dbt …"`, `$(dbt …)`).
     if not (re.search(r'(^|[\s;&|/"\'`(])dbt(\.exe)?(\s|$|["\'`)])', command, re.I) or re.search(r'dbtRunner|dbt\.cli', command)):
@@ -146,7 +155,7 @@ def dbt_prod_guard(raw, payload):
         unreadable = unreadable_target(command)
         if unreadable:
             return deny_output(payload, 'Blocked by the kit: the dbt target "' + unreadable + '" is only known when the command runs, so the kit cannot tell whether it is production. Write the target in plain text, for example --target dev.')
-        hits = default_target_hit(command, targets, payload)
+        hits = default_target_hit(command, targets, payload, raw)
     if not hits:
         return None
     if os.environ.get('AI_KIT_ALLOW_PROD') == '1':
@@ -155,6 +164,25 @@ def dbt_prod_guard(raw, payload):
             return {'systemMessage': 'ai-kit: dbt command on a production target allowed by AI_KIT_ALLOW_PROD=1.'}
         return deny_output(payload, 'Blocked by the kit: AI_KIT_ALLOW_PROD is set in ' + origin + ', a file the agent can write. Export it in the shell that starts the CLI instead.')
     return deny_output(payload, 'Blocked by the kit: dbt command on the production target "' + hits.group(1) + '". Use the development target declared in AGENTS.md. An authorised person can export AI_KIT_ALLOW_PROD=1 for this session.')
+
+# Programs that only print, search or record the words they are given: `echo "dbt run --target prod"`, a commit message.
+INERT = ('echo', 'printf', 'grep', 'egrep', 'fgrep', 'rg', 'cat', 'head', 'tail', 'less', 'more', 'wc', 'ls', 'cd', 'pwd', 'true', 'false',
+         'test', '[', 'mkdir', 'touch', 'sort', 'uniq', 'cut', 'tr', 'diff', 'date', 'gh', 'glab', 'jq', 'write-output', 'write-host',
+         'select-string', 'get-content')
+GIT_INERT = ('commit', 'log', 'grep', 'show', 'diff', 'add', 'status', 'push', 'tag', 'notes', 'stash', 'branch', 'switch', 'checkout')
+
+def only_mentions(raw):
+    """True when no program of the command can run what its words say: each one only prints, searches or records them.
+    Any other program (a shell, xargs, python, uv run, docker, a script) may run them: the command is read as before."""
+    found = programs(raw)
+    for program, args, _env in found:
+        if program == 'git':
+            verb = next((a for a in args if not a.startswith('-')), None)
+            if verb not in GIT_INERT or any(a in ('-c', '--exec', '-x') or a.startswith(('--exec=', '-c=')) for a in args):
+                return False
+        elif program not in INERT:
+            return False
+    return bool(found) and not re.search(r'>\s*\S*\.(sh|bash|zsh|ps1|cmd|bat)\b|[<>]\(', raw)
 
 # --- The programs a command runs (git-guard, bq-cost-guard, infra-prod-guard) ---
 
@@ -179,14 +207,24 @@ def without_data_heredocs(text):
     return '\n'.join(out)
 
 def program_name(word):
+    """git for /usr/bin/git, git.exe, and the launcher scripts Windows installs (bq.cmd, terraform.bat)."""
     name = word.rsplit('/', 1)[-1].lower()
-    return name[:-4] if name.endswith('.exe') else name
+    return name[:-4] if name.endswith(('.exe', '.cmd', '.bat')) else name
 
 def programs(command, depth=0):
     """(program, its arguments, the VAR=value written before it) for each program the shell would run: one per command of
     a line (; && || | and new lines), after sudo, env, xargs…, inside sh -c "…", eval, $(…) and backticks. A word that is
-    only an argument (echo "git reset --hard", grep "kubectl delete") is not a program."""
-    text = without_data_heredocs(command.replace('\\\r\n', ' ').replace('\\\n', ' ')).replace('\\', '/')
+    only an argument (echo "git reset --hard", grep "kubectl delete") is not a program.
+
+    A backslash is read both ways, since the script cannot know the shell: as a POSIX shell reads it (g\\it is git) and as
+    a Windows path (C:\\tools\\git.exe is git). A program found by either reading counts."""
+    text = without_data_heredocs(command.replace('\\\r\n', ' ').replace('\\\n', ' '))
+    found = read_programs(text.replace('\\', '/'), depth)
+    if '\\' in text:
+        found += [entry for entry in read_programs(text, depth) if entry not in found]
+    return found
+
+def read_programs(text, depth):
     text = re.sub(r'\r?\n', ' ; ', text)
     try:
         lexer = shlex.shlex(text, posix=True, punctuation_chars=';&|()')
@@ -300,11 +338,17 @@ def git_guard(raw, payload):
         if verb == 'push':
             refspecs = [a for a in rest if not a.startswith('-')][1:]  # after the remote
             targets = [r.lstrip('+').rsplit(':', 1)[-1].replace('refs/heads/', '') for r in refspecs]
+            head = [t for t in targets if t in ('HEAD', '@')]  # the branch checked out, pushed under its own name
+            if head:
+                branch = current_branch(folder)
+                targets = [t for t in targets if t not in head] + ([branch] if branch else [])
             plain = short_flag(rest, 'f') or '--force' in rest or any(r.startswith('+') for r in refspecs)
             lease = any(a.startswith('--force-with-lease') or a == '--force-if-includes' for a in rest)
             deletes = '--delete' in rest or short_flag(rest, 'd') or any(r.startswith(':') for r in refspecs)
             everything = '--all' in rest or '--mirror' in rest
-            if not targets and not everything:
+            if head:
+                unknown = branch is None
+            elif not targets and not everything:
                 branch = current_branch(folder)
                 targets = [branch] if branch else []
                 unknown = branch is None
@@ -313,7 +357,7 @@ def git_guard(raw, payload):
             hit = [t for t in targets if t in protected]
             if (plain or lease or deletes) and hit:
                 return refusal(payload, 'this `git push` rewrites or deletes the branch "' + hit[0] + '", which everyone shares.' + RUN_IT_YOURSELF)
-            if plain and (everything or unknown):
+            if (plain and unknown) or ((plain or lease) and everything):
                 return refusal(payload, 'this forced `git push` does not name its branch, so the kit cannot tell whether it is a main branch. Name the branch, for example `git push --force-with-lease origin my-branch`.')
     return None
 
@@ -329,7 +373,7 @@ def bq_cost_guard(raw, payload):
         if program != 'bq' or next((a for a in args if a in BQ_COMMANDS), None) != 'query':
             continue
         dry = any(re.fullmatch(r'--dry_run(=(true|1))?', a, re.I) for a in args)
-        capped = any(re.fullmatch(r'--maximum_bytes_billed(=[1-9][0-9]*)?', a) for a in args)
+        capped = any(re.fullmatch(r'0*[1-9][0-9]*', value) for _option, value in option_values(args, ('--maximum_bytes_billed',)))
         if not (dry or capped):
             return refusal(payload, '`bq query` without --dry_run or --maximum_bytes_billed: a query is billed by the bytes it reads. '
                            'Run it with --dry_run first to see the bytes, then with --maximum_bytes_billed=<bytes>.')
@@ -399,9 +443,26 @@ def terraform_evidence(args, env, payload, names):
             return 'the folder "' + name + '"'
     return None
 
+def unit_evidence(args, payload, names):
+    """terragrunt run-all applies every unit under the folder: a unit folder that names production, or None."""
+    folder = working_folder(payload)
+    for _option, value in option_values(args, ('--terragrunt-working-dir', '--working-dir')):
+        folder = os.path.join(folder, value)
+    seen = 0
+    for current, folders, _files in os.walk(folder):
+        folders[:] = [f for f in folders if not f.startswith('.')]
+        for name in folders:
+            if names_production(name, names):
+                return 'the folder "' + os.path.relpath(os.path.join(current, name), folder).replace(os.sep, '/') + '"'
+        seen += len(folders)
+        if seen > 2000 or current[len(folder):].count(os.sep) >= 4:
+            folders[:] = []
+    return None
+
 def kubectl_evidence(args, env, names):
     """What names production for a kubectl command, or None. Without --context, the current context of the kubeconfig."""
     chosen = option_values(args, ('--context', '--cluster', '-n', '--namespace'))
+    chosen += [('-n', a[2:]) for a in args if re.fullmatch(r'-n[^=-].*', a)]  # -nprod
     for option, value in chosen:
         if re.search(r'[$`]', value):
             return option + ' "' + value + '", only known when the command runs'
@@ -422,9 +483,13 @@ def infra_prod_guard(raw, payload):
     for program, args, env in programs(raw):
         what = evidence = None
         if program in ('terraform', 'tofu', 'terragrunt'):
-            verb = next((a for a in args if not a.startswith('-')), None)
+            plain = [a for a in args if not a.startswith('-')]
+            verb, every = plain[0] if plain else None, False
+            if program == 'terragrunt' and verb in ('run-all', 'run') and plain[1:]:  # run-all apply, run --all apply, run -- apply
+                verb, every = plain[1], plain[0] == 'run-all' or '--all' in args
             if verb in ('apply', 'destroy'):
-                what, evidence = program + ' ' + verb, terraform_evidence(args, env, payload, names)
+                what = program + (' run-all ' if every else ' ') + verb
+                evidence = terraform_evidence(args, env, payload, names) or (every and unit_evidence(args, payload, names))
         elif program == 'kubectl':
             words, index = [], 0
             while index < len(args):

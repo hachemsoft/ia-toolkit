@@ -91,6 +91,7 @@
         "tracker": {
           "type": "object",
           "description": "The team's tracker frictions go to: kind (gitlab|github), project (group/project), host, labels, sources.",
+          "additionalProperties": false,
           "properties": {
             "kind": {
               "enum": [

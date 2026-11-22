@@ -8,6 +8,9 @@ own check when the file moved), and the settings of the kit folder's .git/config
 from or what git runs (`kit_git`). A change is reported once per set of changes, to the agent (additionalContext) and to the
 person (systemMessage), with the command that restores it; never a decision, which would replace the tool's result. It
 writes only its marker, ~/.ai-kit/integrity.json, when something moved, and sends nothing.
+
+After a tool that only reads (READ_ONLY_TOOLS), it answers at once without looking at the disk: such a tool changed
+nothing, and the full check still runs at session start and after any tool that writes, runs a command or is not known.
 """
 import hashlib
 import json
@@ -29,8 +32,20 @@ SHOWN = 10
 SHARED = ('.claude/CLAUDE.md', '.claude/settings.json', '.codex/AGENTS.md', '.codex/config.toml', '.gemini/settings.json')
 # The settings of a clone's .git/config that decide where a fetch goes or what git runs (the kit runs git without hooks and
 # without global configuration): a branch's tracking or a pushed tag changes nothing here.
+# Tools that only read, by the names the CLIs give them (Claude Code; Gemini CLI; Antigravity CLI). Anything else, an MCP
+# tool or a name not listed, gets the full check.
+READ_ONLY_TOOLS = frozenset(('Read', 'Grep', 'Glob', 'read_file', 'grep_search', 'list_dir', 'find_by_name', 'view_file'))
 GIT_KEYS = re.compile(r'(remote\.[^=]*\.(url|pushurl)|url\.[^=]*\.(insteadof|pushinsteadof)|core\.(fsmonitor|hookspath|sshcommand|askpass|gitproxy)'
                       r'|include\.path|includeif\.[^=]*\.path|credential(\.[^=]*)?\.helper)')
+
+
+def use_utf8():
+    """The CLIs send and read UTF-8, whatever the console's code page (Windows: cp1252)."""
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding='utf-8')
+        except (AttributeError, ValueError):
+            pass
 
 
 def read_state(path):
@@ -61,10 +76,12 @@ def safe_rel(rel):
     return isinstance(rel, str) and bool(SAFE_NAME.fullmatch(rel)) and not rel.startswith('/') and '..' not in rel.split('/')
 
 
-def stamp(path):
-    """[size, mtime, ctime, inode] of a regular file, 'missing' when there is none, 'not a file' for anything else."""
+def stamp(path, follow=False):
+    """[size, mtime, ctime, inode] of a regular file, 'missing' when there is none, 'not a file' for anything else. A file
+    the kit owns is never a link: one put in its place is 'not a file', even to the same content today. follow: a file the
+    person shares with the kit (their settings, the kit folder's git configuration) may be a link to their own."""
     try:
-        info = os.stat(path)
+        info = os.stat(path) if follow else os.lstat(path)
     except (OSError, ValueError):
         return 'missing'
     if not stat.S_ISREG(info.st_mode):
@@ -159,17 +176,27 @@ def owned_changes(home, state, stamps, full):
     return changes, failed, fresh
 
 
-def git_changes(state):
-    """Changes to the settings of the kit clone's .git/config that GIT_KEYS names, as (name, digest)."""
+def git_changes(state, cache=None, full=False):
+    """(changes, cache): the changes to the settings of the kit clone's .git/config that GIT_KEYS names, as (name, digest),
+    and what the marker keeps to answer the next call without reading the file again: its path and stamp, what state.json
+    records, the changes found. The file is read again when it moved, when the record changed, and at session start (full)."""
     recorded = state.get('kit_git')
     if not isinstance(recorded, dict):
-        return []  # not recorded: the kit folder is not a clone
+        return [], None  # not recorded: the kit folder is not a clone
     folder = state.get('kit_dir')
+    key = hashlib.sha256(json.dumps([folder, recorded], sort_keys=True, default=str).encode('utf-8')).hexdigest()
+    if (not full and isinstance(cache, dict) and cache.get('key') == key and isinstance(cache.get('path'), str)
+            and isinstance(cache.get('stamp'), list) and isinstance(cache.get('changes'), list) and stamp(cache['path'], follow=True) == cache['stamp']):
+        return pairs(cache['changes']), cache
+    root = git_dir(folder) if isinstance(folder, str) else None
+    path = os.path.join(root, 'config') if root else None
+    before = stamp(path, follow=True) if path else None  # taken first: a change during the read shows at the next call
     current = kit_git_digests(folder) if isinstance(folder, str) else None
     if current is None:
-        return [('kit folder .git/config', 'not found')]
+        return [('kit folder .git/config', 'not found')], None
     names = sorted(set(recorded) | set(current))
-    return [('kit folder .git/config ' + n, current.get(n, 'removed')) for n in names if recorded.get(n) != current.get(n)]
+    changes = [('kit folder .git/config ' + n, current.get(n, 'removed')) for n in names if recorded.get(n) != current.get(n)]
+    return changes, {'key': key, 'path': path, 'stamp': before, 'changes': [list(c) for c in changes]}
 
 
 def adapters():
@@ -205,7 +232,7 @@ def shared_changes(home, state, marker, full):
     cannot load or their check fails, the files to judge are a check that failed, never taken for unchanged."""
     targets = state.get('targets') if isinstance(state.get('targets'), list) else []
     watched = [r for r in SHARED if r in (state.get('blocks') or {}) or (r == '.gemini/settings.json' and 'gemini' in targets)]
-    now = {rel: stamp(os.path.join(home, rel)) for rel in watched}
+    now = {rel: stamp(os.path.join(home, rel), follow=True) for rel in watched}
     cached, cached_failed = marker.get('shared_changed'), marker.get('shared_failed', [])
     if not full and now == marker.get('shared_stamps') and isinstance(cached, list) and isinstance(cached_failed, list):
         return pairs(cached), pairs(cached_failed), now
@@ -235,10 +262,11 @@ def check(home, state, marker, full=False):
     """(text for the agent, text for the person, marker updated): texts only for a set of changes not announced yet."""
     owned, owned_failed, fresh = owned_changes(home, state, marker.get('stamps') or {}, full)
     shared, shared_failed, shared_now = shared_changes(home, state, marker, full)
-    changes = sorted(set(owned) | set(shared) | set(git_changes(state)))
+    git, git_cache = git_changes(state, marker.get('git'), full)
+    changes = sorted(set(owned) | set(shared) | set(git))
     failed = sorted(set(owned_failed) | set(shared_failed))
     marker = {**marker, 'stamps': fresh, 'shared_stamps': shared_now, 'shared_changed': [list(c) for c in shared],
-              'shared_failed': [list(c) for c in shared_failed]}
+              'shared_failed': [list(c) for c in shared_failed], 'git': git_cache}
     return announce(marker, changes, failed)
 
 
@@ -334,14 +362,26 @@ def answer(payload, agent, person):
     return {'systemMessage': person, 'hookSpecificOutput': output}
 
 
+def tool_name(payload):
+    """The tool that just ran, by the name its CLI gives it (tool_name; Antigravity: toolCall.name); '' when not said."""
+    call = payload.get('toolCall') if isinstance(payload.get('toolCall'), dict) else {}
+    name = payload.get('tool_name') or call.get('name') or ''
+    return name if isinstance(name, str) else ''
+
+
 def main():
+    use_utf8()
     try:
         payload = json.load(sys.stdin)
     except Exception:
         payload = {}
+    payload = payload if isinstance(payload, dict) else {}
+    if tool_name(payload) in READ_ONLY_TOOLS:
+        print('{}')  # a tool that only reads changed nothing: no disk check
+        return
     try:
         agent, person = checked(os.path.expanduser('~'))
-        output = answer(payload if isinstance(payload, dict) else {}, agent, person)
+        output = answer(payload, agent, person)
     except Exception:
         output = {}
     print(json.dumps(output, ensure_ascii=False))

@@ -215,7 +215,7 @@ def doctor(home, cwd=None, live=False):
     if live:
         print('Checking the connection with a real call to the model (up to 90 s; your provider may bill it)…')
     with contextlib.redirect_stdout(details):
-        code = doctor_checks(home, cwd, problems)
+        code = doctor_checks(home, cwd, problems, live)
         if live:
             release_check()
             code = max(code, live_checks(home, results=results))
@@ -291,8 +291,9 @@ def command_checks(home, state, status):
               + ('' if os.name == 'nt' or recorded.get('startup_file') else '; add the line the installer gave to your shell startup file'))
 
 
-def tracker_checks(home, state, status):
-    """The friction tracker the organization set: the person's CLI present and signed in, frictions not sent yet."""
+def tracker_checks(home, state, status, live=False):
+    """The friction tracker the organization set: the person's CLI present, frictions not sent yet. Whether the CLI is signed
+    in is asked to its host (`auth status` is a network call): only by doctor --live."""
     config = state.get('friction_tracker')
     if not config:
         return
@@ -303,6 +304,8 @@ def tracker_checks(home, state, status):
     exe = shutil.which(cli) if cli else None
     if not exe:
         status(False, label+str(cli)+' not on the PATH: install it following your IT procedure, then '+str(cli)+' auth login; frictions stay local meanwhile')
+    elif not live:
+        status(True, label+cli+' found (sign-in not checked: doctor --live asks its host)')
     else:
         try:
             signed = run_timed([exe, 'auth', 'status'], 15, text=True, encoding='utf-8', errors='replace', stdin=subprocess.DEVNULL).returncode == 0
@@ -422,7 +425,7 @@ def gemini_hook_switches(home, status):
         status(False, 'Gemini CLI: hooksConfig.enabled = false in ~/.gemini/settings.json turns every hook off, the kit\'s guardrails included')
 
 
-def doctor_checks(home, cwd=None, problems=None):
+def doctor_checks(home, cwd=None, problems=None, live=False):
     issues = 0
     def status(ok,message):
         nonlocal issues
@@ -481,7 +484,7 @@ def doctor_checks(home, cwd=None, problems=None):
                 print('[Info] '+adapter.LABEL+' capabilities: '+' | '.join(parts))
         if 'gemini' in (state.get('targets') or []):
             gemini_hook_switches(home, status)
-        tracker_checks(home, state, status)
+        tracker_checks(home, state, status, live)
         news_checks(home, state, status)
         identity = state.get('user', {})
         print('Recorded identity: '+(identity.get('email') or identity.get('name') or 'none')+(' (source '+identity['source']+')' if identity.get('source') else ''))
@@ -570,19 +573,25 @@ def doctor_checks(home, cwd=None, problems=None):
 
 def release_check():
     """doctor --live: a newer published version of the kit (git tags of the kit folder's remote), without blocking anything.
-    The kit folder is the clone the launcher was started from (the installed package has no .git), else the code's own folder."""
+    The kit folder is the clone the launcher was started from (the installed package has no .git), else the code's own folder.
+    The tags are listed on the remote (ls-remote): nothing is fetched, so the clone is not changed and no program its
+    configuration names for a transfer is run."""
     folder = source_folder() or ROOT
     if not (folder/'.git').exists() or not shutil.which('git'):
         return
     try:
-        safe = ['git', '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath='+os.devnull, '-C', str(folder)]  # the clone's config is not trusted (0.51.1)
-        subprocess.run(safe+['fetch', '--tags', '--quiet'], capture_output=True, timeout=20)
-        tags = subprocess.run(safe+['tag', '--list', 'v*', '--sort=-v:refname'], capture_output=True, text=True, timeout=10).stdout.split()
+        # The clone's config is not trusted (0.51.1): no monitor, no hook, no credential helper, no ext:: transport, no prompt.
+        safe = ['git', '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath='+os.devnull, '-c', 'credential.helper=', '-c', 'protocol.ext.allow=never',
+                '-c', 'core.sshCommand=ssh', '-C', str(folder)]
+        listing = subprocess.run(safe+['ls-remote', '--tags', '--refs', 'origin', 'v*'], capture_output=True, text=True, timeout=20,
+                                 stdin=subprocess.DEVNULL, env={**os.environ, 'GIT_TERMINAL_PROMPT': '0', 'GCM_INTERACTIVE': 'never'}).stdout
     except (OSError, subprocess.SubprocessError):
         return
     current = (folder/'VERSION').read_text(encoding='utf-8').strip()
     def key(version):
         return tuple(int(x) for x in re.findall(r'\d+', version)[:3])
+    names = [line.rsplit('refs/tags/', 1)[-1].strip() for line in (listing or '').splitlines() if 'refs/tags/' in line]
+    tags = sorted((n for n in names if re.fullmatch(r'v\d+\.\d+\.\d+', n)), key=key, reverse=True)
     if tags and key(tags[0]) > key(current):
         print('[Info] AI Kit '+tags[0].lstrip('v')+' is published (this folder: '+current+'): get its ZIP, or git pull this clone, then run its installer.')
 

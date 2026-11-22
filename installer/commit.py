@@ -1,19 +1,23 @@
 """Writing a plan to disk: backup, atomic writes, rollback on any error, and backup retention."""
+import contextlib
 import json
 import os
 import re
 import shutil
 import signal
+import stat
 import tempfile
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from .core import (json_bytes)
 from .adapters import ADAPTERS
 
 
 BACKUPS_KEPT = 20
+BACKUP_STAMP = '%Y%m%dT%H%M%S%f'  # to the microsecond: the folders sort by name in the order they were made
+DATED_BACKUP = re.compile(r'\d{8}T\d{6,}-')
 
 
 class Stopped(KeyboardInterrupt):
@@ -41,7 +45,48 @@ def trap_stops():
 
 def release_stops(previous):
     for number, handler in previous.items():
-        signal.signal(number, handler)
+        if handler is not None:  # None: a handler not installed from Python, which signal.signal() cannot put back
+            signal.signal(number, handler)
+
+
+@contextlib.contextmanager
+def ignored_stops():
+    """While the files are put back, Ctrl+C, SIGTERM and SIGHUP are ignored: a restoration stopped half-way would leave a
+    mix of old and new files. SIGKILL and a power cut remain: the manifest stays pending and the next start resumes it."""
+    previous = {}
+    if threading.current_thread() is threading.main_thread():
+        for name in ('SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK'):
+            number = getattr(signal, name, None)
+            if number is not None:
+                try:
+                    previous[number] = signal.signal(number, signal.SIG_IGN)
+                except (OSError, ValueError):
+                    pass
+    try:
+        yield
+    finally:
+        release_stops(previous)
+
+
+def file_mode(path):
+    """The POSIX permission bits of an existing file, else None (Windows, or no file)."""
+    if os.name == 'nt':
+        return None
+    try:
+        return stat.S_IMODE(os.stat(path).st_mode)
+    except OSError:
+        return None
+
+
+def backup_folder(kit):
+    """A new backup folder name, after every existing one: two runs within the clock's resolution, or a clock set back,
+    still sort in the order they were made (resume_pending reads the last one)."""
+    folder = kit/'backups'
+    stamp = datetime.now(timezone.utc).strftime(BACKUP_STAMP)
+    latest = max((p.name.split('-')[0] for p in folder.iterdir() if p.is_dir() and DATED_BACKUP.match(p.name)), default='') if folder.is_dir() else ''
+    if stamp <= latest and len(latest) == len(stamp):
+        stamp = (datetime.strptime(latest, BACKUP_STAMP)+timedelta(microseconds=1)).strftime(BACKUP_STAMP)
+    return folder/(stamp+'-'+uuid.uuid4().hex[:8])
 
 
 def prune_backups(kit, keep=BACKUPS_KEPT):
@@ -49,7 +94,7 @@ def prune_backups(kit, keep=BACKUPS_KEPT):
     folder = kit/'backups'
     if not folder.is_dir():
         return
-    dated = sorted((p for p in folder.iterdir() if p.is_dir() and re.match(r'\d{8}T\d{6}-', p.name)), key=lambda p: p.name)
+    dated = sorted((p for p in folder.iterdir() if p.is_dir() and DATED_BACKUP.match(p.name)), key=lambda p: p.name)
     for old in dated[:-keep] if keep else dated:
         shutil.rmtree(old, ignore_errors=True)
 
@@ -58,15 +103,17 @@ def commit_changes(home, kit, writes, deletes, progress=None):
     """Backs up every file about to change, then writes and removes them; on any error or interruption, puts everything
     back. Returns (changed paths, backup folder)."""
     changed = list(writes)+deletes
-    backup = kit/'backups'/(datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')+'-'+uuid.uuid4().hex[:8])
-    originals = {}
+    backup = backup_folder(kit)
+    originals, modes = {}, {}
     for path in changed:
         originals[path] = path.read_bytes() if path.exists() else None
+        modes[path] = file_mode(path)
     step = progress or (lambda *_: None)
     if not changed:
         return changed, backup
     backup.mkdir(parents=True,exist_ok=True)
     previous = trap_stops()
+    manifest_path, manifest = backup/'manifest.json', None
     try:
         if os.name != 'nt':
             backup.chmod(0o700)
@@ -81,10 +128,12 @@ def commit_changes(home, kit, writes, deletes, progress=None):
                 dest.write_bytes(data)
                 if os.name != 'nt':
                     dest.chmod(0o600)
-        manifest = {'status':'pending','created':[p.relative_to(home).as_posix() for p,b in originals.items() if b is None],'restore':'Copy the backed-up files to the home folder; remove the created files only if unchanged.'}
-        (backup/'manifest.json').write_bytes(json_bytes(manifest))
-        if os.name != 'nt':
-            (backup/'manifest.json').chmod(0o600)
+        # modes: the backup copies are private (0600); the permission bits to give back are recorded here.
+        pending = {'status':'pending','created':[p.relative_to(home).as_posix() for p,b in originals.items() if b is None],
+                   'modes':{p.relative_to(home).as_posix(): mode for p, mode in modes.items() if mode is not None},
+                   'restore':'Copy the backed-up files to the home folder; remove the created files only if unchanged.'}
+        atomic_write(manifest_path, json_bytes(pending), 0o600)
+        manifest = pending
         for done, (path, data) in enumerate(writes.items(), 1):
             step('write', done, len(writes))
             atomic_write(path,data)
@@ -93,17 +142,22 @@ def commit_changes(home, kit, writes, deletes, progress=None):
             path.unlink()
             prune_empty_dirs(path.parent, next((home/d for d in managed_roots(home) if path.is_relative_to(home/d)), home/'.ai-kit'))
     except BaseException:
-        # A write error, Ctrl+C or a closed terminal during the writes: everything goes back as it was.
-        for path,data in originals.items():
-            if data is None:
-                path.unlink(missing_ok=True)
-            else:
-                atomic_write(path,data)
+        # A write error, Ctrl+C or a closed terminal during the writes: everything goes back as it was, without being
+        # stopped half-way. Then the manifest says so: left pending, the next start would put these copies back again, over
+        # what the person changed since. An error during the restoration itself leaves it pending, for that next start.
+        with ignored_stops():
+            for path,data in originals.items():
+                if data is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    atomic_write(path, data, modes[path])
+            if manifest is not None:
+                atomic_write(manifest_path, json_bytes({**manifest, 'status': 'restored'}), 0o600)
         raise
     finally:
         release_stops(previous)
     # Done once every write landed; a pending manifest at the next start means a machine stop during the writes.
-    (backup/'manifest.json').write_bytes(json_bytes({**manifest, 'status': 'done'}))
+    atomic_write(manifest_path, json_bytes({**manifest, 'status': 'done'}), 0o600)
     prune_backups(kit)
     return changed, backup
 
@@ -122,12 +176,15 @@ def resume_pending(home, kit):
             return None
         if manifest.get('status') != 'pending':
             return None
+        modes = manifest.get('modes') or {}
         for saved in backup.rglob('*'):
             if saved.is_file() and saved != manifest_path:
-                atomic_write(home/saved.relative_to(backup), saved.read_bytes())
+                rel = saved.relative_to(backup)
+                mode = modes.get(rel.as_posix())
+                atomic_write(home/rel, saved.read_bytes(), mode if isinstance(mode, int) else None)
         for rel in manifest.get('created', []):
             (home/rel).unlink(missing_ok=True)
-        manifest_path.write_bytes(json_bytes({**manifest, 'status': 'restored'}))
+        atomic_write(manifest_path, json_bytes({**manifest, 'status': 'restored'}), 0o600)
         return backup
     return None
 
@@ -148,12 +205,18 @@ def prune_empty_dirs(directory, stop):
         directory = directory.parent
 
 
-def atomic_write(path,data):
+def atomic_write(path, data, mode=None):
+    """Writes through a temporary file of the same folder. POSIX: the file keeps the permission bits it had (the execute
+    bit of the ai-kit command, the mode of a shell startup file), or takes `mode`; a new file is private (0600)."""
     path.parent.mkdir(parents=True,exist_ok=True)
+    if mode is None:
+        mode = file_mode(path)
     fd,tmp = tempfile.mkstemp(prefix='.ai-kit-',dir=path.parent)
     try:
         with os.fdopen(fd,'wb') as out:
             out.write(data)
+        if mode is not None and os.name != 'nt':
+            os.chmod(tmp, mode)
         os.replace(tmp,path)
     finally:
         if os.path.exists(tmp):

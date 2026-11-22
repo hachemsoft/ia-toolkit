@@ -1,5 +1,6 @@
 """V2 slice 7 (ADR 0023): the local friction upkeep (purge after the retention, waiting count) at session start and in engine
 commands; the same friction published once with its occurrences; personal data redacted; user edit."""
+import hashlib
 import contextlib
 from datetime import datetime, timedelta, timezone
 import importlib.util
@@ -76,7 +77,8 @@ class FrictionUpkeepTests(unittest.TestCase):
 
     def test_the_session_hook_says_how_many_wait_and_never_to_send_them(self):
         shutil.copy2(ROOT/'runtime/friction.py', (self.home/'.ai-kit/bin').mkdir() or self.home/'.ai-kit/bin/friction.py')
-        self.write_state(news={'check_remote': False})
+        # The session hook runs the friction script only as the kit installed it: its digest is in state.json.
+        self.write_state(news={'check_remote': False}, files={'.ai-kit/bin/friction.py': hashlib.sha256((self.home/'.ai-kit/bin/friction.py').read_bytes()).hexdigest()})
         self.log('waiting one')
         env = {**os.environ, 'HOME': str(self.home), 'USERPROFILE': str(self.home)}
         proc = subprocess.run([sys.executable, str(ROOT/'runtime/hooks/whats-new.py')], input=json.dumps({'source': 'startup'}),

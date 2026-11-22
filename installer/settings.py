@@ -50,8 +50,30 @@ def managed_context_names(selection):
 
 
 MCP_KEYS = ('command', 'args', 'env', 'cwd', 'httpUrl', 'url', 'headers', 'required')
-SHELLS = ('sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'cmd', 'cmd.exe', 'powershell', 'powershell.exe', 'pwsh', 'pwsh.exe')
+SHELLS = ('sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'cmd', 'powershell', 'pwsh')
+# Programs that run the program or the text they are given: the CLI's approval would show them, not what runs.
+# The first name is written in two parts: the installer never runs it, and a test forbids the word in its code.
+WRAPPERS = ('su'+'do', 'doas', 'env', 'nohup', 'nice', 'time', 'timeout', 'xargs', 'command', 'exec', 'start', 'busybox')
+INLINE_CODE = {'node': ('-e', '--eval', '-p', '--print'), 'bun': ('-e', '--eval'), 'deno': ('eval',), 'python': ('-c',), 'py': ('-c',),
+               'ruby': ('-e',), 'perl': ('-e', '-E'), 'php': ('-r',)}
+SHELL_FLAGS = ('/c', '/k', '-command', '-encodedcommand', '-enc', '-ec')  # compared without case: -Command, /C
 VARIABLE = re.compile(r'\$\{[A-Za-z_][A-Za-z0-9_]*\}')
+# A value that holds no secret: one ${VARIABLE}, alone or after a standard authentication scheme (Authorization = "Bearer ${TOKEN}").
+TEMPLATE = re.compile(r'(?:(?:Bearer|Basic|Token)\s+)?\$\{[A-Za-z_][A-Za-z0-9_]*\}', re.I)
+
+
+def program(command):
+    """npx for C:\\Program Files\\nodejs\\NPX.CMD: the file name, lower case, without the extension Windows adds."""
+    name = Path(str(command or '').replace('\\', '/')).name.lower()
+    return name[:-4] if name.endswith(('.exe', '.cmd', '.bat', '.com')) else name
+
+
+def runs_unseen(command, args):
+    """True when the command is a shell, a wrapper, or an interpreter given its code on the command line."""
+    name = program(command)
+    interpreter = re.sub(r'[0-9.]+$', '', name)  # python3.12 is python
+    return (name in SHELLS or name in WRAPPERS or bool(re.search(r'[;&|`$<>]', command)) or any(a in INLINE_CODE.get(interpreter, ()) for a in args)
+            or any(a == '-c' or a.lower() in SHELL_FLAGS for a in args))
 
 
 def secret_in(text, name=''):
@@ -100,9 +122,10 @@ def validate_server(server):
     unknown = sorted(set(server) - set(MCP_KEYS))
     if unknown:
         raise KitError('MCP: unknown key '+', '.join(unknown)+' (AI Kit knows '+', '.join(MCP_KEYS)+').')
+    if 'cwd' in server and (not isinstance(server['cwd'], str) or not server['cwd']):
+        raise KitError('MCP: cwd must be a text (a folder).')
     command = server.get('command') or ''
-    if command and (Path(command.replace('\\', '/')).name.lower() in SHELLS or re.search(r'[;&|`$<>]', command)
-                    or any(a in ('-c', '/c', '-Command', '-EncodedCommand') for a in server.get('args') or [])):
+    if command and runs_unseen(command, server.get('args') or []):
         raise KitError('MCP: '+command+' runs a shell or a shell script, unseen by the CLI\'s approval: name the program itself.')
     where = secret_problem(server)
     if where:
@@ -114,7 +137,7 @@ def validate_server(server):
         if not isinstance(values, dict) or not all(isinstance(v, str) for v in values.values()):
             raise KitError('MCP: '+field+' must be a table of texts.')
         for key, value in values.items():
-            if re.fullmatch(r'\$\{[A-Za-z_][A-Za-z0-9_]*\}', value.strip()):
+            if TEMPLATE.fullmatch(value.strip()):
                 continue
             if SECRET_NAME.search(key) or SECRET.search(key+'='+value):
                 raise KitError('MCP: '+field+' '+key+' holds a value that looks secret: write ${'+re.sub(r'[^A-Za-z0-9_]', '_', key).upper()

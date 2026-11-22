@@ -125,7 +125,7 @@ class PersonalContextTests(Base):
         agents = (self.home/'.codex/AGENTS.md').read_text(encoding='utf-8')
         self.assertIn('Valid preference', agents)
         self.assertNotIn('abcdefghijklmnop1234', agents)
-        self.assertTrue(any('not copied into ~/.codex/AGENTS.md' in n for n in notices))
+        self.assertTrue(any('USER.md not copied to the CLIs that read a copy of it' in n for n in notices))  # one notice for every CLI
         self.assertIn('Kit configuration', self.out)  # the installation itself went through
         user.write_text('Fixed preference\n', encoding='utf-8')
         self.run_kit()

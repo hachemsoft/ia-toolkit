@@ -15,7 +15,7 @@ import time
 # Configuration of the kit and of the CLIs, always protected: an agent must not be able to switch off its own guardrails.
 # Relative to the home folder; a trailing / protects a whole folder. ~/.ai-kit/learning/ (personal /learn progress) and
 # ~/.ai-kit/context/USER.md (the person's own file) stay writable. Every file the kit installed (state.json) is protected too.
-CONFIG_PATHS = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/sources/', '.ai-kit/state.json', '.ai-kit/hooks/', '.ai-kit/bin/', '.ai-kit/backups/',
+CONFIG_PATHS = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/engine.lock', '.ai-kit/sources/', '.ai-kit/state.json', '.ai-kit/hooks/', '.ai-kit/bin/', '.ai-kit/backups/',
                 '.ai-kit/runtime/', '.ai-kit/schemas/', '.ai-kit/context/00_', '.ai-kit/context/10_', '.ai-kit/context/20_',
                 # the news the session hook shows (their text enters the next session) and its marker
                 '.ai-kit/news/', '.ai-kit/news.json', '.ai-kit/integrity.json',
@@ -23,7 +23,7 @@ CONFIG_PATHS = ('.ai-kit/aikit.toml', '.ai-kit/lock.toml', '.ai-kit/sources/', '
                 '.ai-kit/me/',
                 '.gemini/00_', '.gemini/10_', '.gemini/20_', '.gemini/settings.json', '.gemini/.env', '.gemini/config/plugins/ai-kit/',
                 '.gemini/antigravity-cli/settings.json',  # agy's permissions: the person's answers, never the agent's
-                '.codex/config.toml', '.codex/AGENTS.md', '.codex/ai-kit/', '.claude/settings.json', '.claude/CLAUDE.md', '.claude/agents/ai-kit-',
+                '.codex/config.toml', '.codex/AGENTS.md', '.codex/AGENTS.override.md', '.codex/ai-kit/', '.claude/settings.json', '.claude/CLAUDE.md', '.claude/agents/ai-kit-',
                 '.claude.json',
                 # git's own configuration can redirect the kit's next fetch (url.insteadOf) or run a program (core.fsmonitor) (0.51.1).
                 '.gitconfig', '.config/git/config')
@@ -78,6 +78,34 @@ def target_paths(tool, args):
                 found.append(next(g for g in match.groups() if g).strip())
         return found
     return []
+
+def patch_additions(text):
+    """{file: the lines a patch adds to it} (Codex apply_patch, a unified diff): what a patch removes is not written."""
+    found, current = {}, []
+    for line in text.split('\n'):
+        match = PATCH_HEADER.match(line)
+        if match:
+            name = next(g for g in match.groups() if g).strip()
+            if line.startswith('*** Move to:'):
+                found[name] = found.get(name, '') + ''.join(found.get(c, '') for c in current)
+                current = current + [name]
+            else:
+                current = [name]
+                found.setdefault(name, '')
+        elif line.startswith('+') and not line.startswith('+++'):
+            for name in current:
+                found[name] += line[1:] + '\n'
+    return found
+
+def written_text(args):
+    """The text a write tool puts in its file: the whole content, or the new side of each replacement (Claude Code's
+    MultiEdit `edits`, agy's multi_replace_file_content `ReplacementChunks`). The text it removes is not written."""
+    parts = [args.get(key) for key in ('content', 'new_string', 'CodeContent', 'ReplacementContent')]
+    for key, inner in (('edits', 'new_string'), ('ReplacementChunks', 'ReplacementContent')):
+        chunks = args.get(key)
+        for chunk in chunks if isinstance(chunks, list) else []:
+            parts.append(chunk.get(inner) if isinstance(chunk, dict) else chunk)
+    return '\n'.join(part for part in parts if isinstance(part, str))
 
 def use_utf8():
     """The CLIs send and read UTF-8; on Windows the console defaults to cp1252: force UTF-8 for input and output."""
@@ -152,21 +180,56 @@ def shell_segments(command):
     text = re.sub(r'(\\|`)\r?\n', ' ', command)
     return [s for s in re.split(r'\r?\n|;|&&|\|\||&', without_data_heredocs(text)) if s.strip()]
 
+def shell_words(pipeline):
+    """The words of a pipeline as the shell reads them, each normalised: a quoted word stays one word
+    ("C:\\Program Files\\Python311\\python.exe" is a program, not two words), | is a word of its own. With a quote left
+    open (the pipeline is a piece of a longer quoted text), the quotes are dropped and the words split on spaces."""
+    words, word, quote, started = [], [], None, False
+    for char in pipeline:
+        if quote:
+            if char == quote:
+                quote = None
+            else:
+                word.append(char)
+        elif char in '"\'':
+            quote, started = char, True
+        elif char.isspace() or char == '|':
+            if started or word:
+                words.append(''.join(word))
+            if char == '|':
+                words.append('|')
+            word, started = [], False
+        else:
+            word.append(char)
+    if quote:
+        return [normalised(w) if w != '|' else w for w in pipeline.replace('|', ' | ').split()]
+    if started or word:
+        words.append(''.join(word))
+    return [normalised(w) if w != '|' else w for w in words]
+
 def command_words(pipeline):
-    """(program, its words) for each program the shell runs in a pipeline, lower case, without the quote or bracket that
-    opens them; after sudo, xargs, find -exec, bash -c… the next word is a program too."""
-    expect, current, found = True, None, []
-    for word in pipeline.replace('|', ' | ').split():
+    """(program, its words) for each program the shell runs in a pipeline, lower case, without the bracket that opens
+    them; after sudo, xargs, find -exec, bash -c… the next word is a program too, and the text bash -c is given is read
+    as words."""
+    expect, current, found, text_runs = True, None, [], False
+    pending = shell_words(pipeline)
+    while pending:
+        word = pending.pop(0)
         if word == '|':
-            expect = True
+            expect, text_runs = True, False
             continue
+        if text_runs and ' ' in word.strip():
+            pending[:0] = shell_words(word)  # bash -c "ai-kit sync": the quoted text is a command line
+            text_runs = False
+            continue
+        text_runs = False
         opens = word.startswith(('(', '$(', '`', '{'))
-        core = re.sub(r'^[\s"\'`({$]+', '', word).lower()
+        core = re.sub(r'^[\s`({$]+', '', word)
         if not (expect or opens):
             if found:
                 found[-1][1].append(core)
             if (current in SHELLS and RUNS_TEXT.fullmatch(core)) or core in ('-exec', '-execdir', '-ok') or (current in CMD and core in ('/c', '/k')):
-                expect = True  # bash -c '…', find … -exec, cmd /c: what follows is run
+                expect = text_runs = True  # bash -c '…', find … -exec, cmd /c: what follows is run
             continue
         if re.fullmatch(r'[a-z_][a-z0-9_]*=.*', core):
             found.append(('=', [core]))  # VAR=value: an assignment, not a program
@@ -205,6 +268,8 @@ def kit_arguments(program, words):
         index = next((i for i, w in enumerate(words) if not w.startswith('-')), None)
     elif program in SHELLS:
         index = next((i for i, w in enumerate(words) if w.rsplit('/', 1)[-1] in LAUNCHERS), None)
+    elif program in ('source', '.'):  # read into the current shell: it runs all the same
+        index = 0 if words else None
     else:
         return None
     name = words[index].rsplit('/', 1)[-1] if index is not None else ''
@@ -213,7 +278,7 @@ def kit_arguments(program, words):
 def kit_launcher_at(name, text, current):
     """True when the launcher a pipeline names sits with the kit's other launchers (scripts/ of a kit folder). The name alone
     does not tell: another project has its own bootstrap.sh."""
-    script = next((w for w in text.replace('|', ' ').split() if w.rsplit('/', 1)[-1] == name), name)
+    script = next((w for w in shell_words(text) if w.rsplit('/', 1)[-1] == name), name)
     folder = os.path.dirname(where(re.sub(r'^\$\{?home\}?', '~', script), current))
     return all(os.path.isfile(os.path.join(folder, other)) for other in ('bootstrap.sh', 'launcher.py'))
 
@@ -221,7 +286,7 @@ def kit_command_reason(command, cwd):
     """Reason to refuse a kit subcommand the agent must not run, or None."""
     current = real(cwd)
     for pipeline in shell_segments(command):
-        text = normalised(pipeline)
+        text = pipeline
         for program, words in command_words(text):
             if program in CHANGES_DIRECTORY and words:
                 current = where(words[-1], current)
@@ -339,9 +404,21 @@ def config_reason(absolute, directories, content=''):
         return DOTENV_BLOCKED
     return None
 
+def as_written(path):
+    """A path without the forms that name the same file another way: the Windows long path prefix (\\\\?\\C:\\…, \\\\?\\UNC\\…)
+    and a leading ~ (the home folder)."""
+    for prefix, kept in (('\\\\?\\UNC\\', '\\\\'), ('//?/UNC/', '//'), ('\\\\?\\', ''), ('//?/', ''), ('\\\\.\\', ''), ('//./', '')):
+        if path.upper().startswith(prefix):
+            path = kept + path[len(prefix):]
+            break
+    if path == '~' or path.startswith(('~/', '~\\')):
+        path = os.path.expanduser('~') + path[1:]
+    return path
+
 def check(file_path, cwd, content=''):
     """Reason for refusal if a write tool's file is protected configuration, otherwise None. The repo is found from the
     file itself (and from the launch folder): a file of another repo keeps that repo's CLI settings protected."""
+    file_path = as_written(file_path)
     absolute = real(file_path if os.path.isabs(file_path) else os.path.join(cwd, file_path))
     directories = list(dict.fromkeys(repo_dirs(os.path.dirname(absolute)) + repo_dirs(cwd)))
     reason = config_reason(absolute, directories, content)
@@ -426,9 +503,15 @@ def decide(payload):
     if not re.search(r'write|replace|edit|patch', tool, re.I):
         return None
     paths = target_paths(tool, args)
-    content = ' '.join(str(v) for k, v in (args.items() if isinstance(args, dict) else []) if k in ('content', 'new_string', 'CodeContent', 'ReplacementContent', 'edits'))
+    if not isinstance(args, dict):
+        args = {'input': args}
+    content, added = written_text(args), {}
+    if 'patch' in tool.lower():
+        for value in args.values():
+            for name, text in patch_additions(as_text(value)).items():
+                added[name] = added.get(name, '') + text
     for file_path in paths:
-        decision = check(file_path, cwd, content)
+        decision = check(file_path, cwd, added.get(file_path, content) if added else content)
         if decision:
             return decision
     return None

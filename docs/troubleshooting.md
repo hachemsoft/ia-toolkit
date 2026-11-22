@@ -34,7 +34,7 @@ The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) add: 2 when Python or th
 | `Another run of the kit installer is in progress (process N) …` | wait for the other window; a lock left by a stopped run is taken over |
 | `Another ai-kit command is changing files (…). Wait for it to finish, then run again.` | wait; a lock from a dead process is taken over |
 | `Kit not installed: run ai-kit init.` | run `ai-kit init` |
-| `This AI Kit holds no content and no Core is installed: …` | run the installer from the kit folder, or `ai-kit sync --from-bundle <core bundle>` |
+| `This AI Kit holds no content and no Core is installed: …` | run the installer from the kit folder |
 | `No Core source: set [core] repo = "<URL>" in ~/.ai-kit/aikit.toml, or IT sets enterprise.core in managed.toml. …` | set `[core] repo`, or ask IT; without a Core repository, `ai-kit init` installs the kit folder's content and `ai-kit sync --offline` re-applies it |
 | `Kit block of another version of the kit in <file>: remove it entirely, …` | remove the whole block from the file, from its start marker line to its end marker line, then run the command again |
 | `First use of <URL> needs your confirmation in a terminal: run ai-kit sync there.` | run `ai-kit sync` in a terminal and check the URL, tag and commit shown |

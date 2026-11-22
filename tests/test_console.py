@@ -42,6 +42,7 @@ class StyledOutputTests(unittest.TestCase):
         rich = Console(file=real, force_terminal=True, color_system='standard', width=200)
         self.assertIs(console.StyledOutput(rich, real).buffer, real.buffer)
 
+    @unittest.skipUnless(libraries(), 'rich not installed')
     def test_partial_writes_and_markup_characters_are_safe(self):
         self.assertEqual(ANSI.sub('', self.styled('[OK] a [bold]b[/] ' + '\n'.join(['x', '[Check] y']))), '[OK] a [bold]b[/] x\n[Check] y\n')
         from rich.console import Console

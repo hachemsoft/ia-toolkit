@@ -39,9 +39,10 @@ required = false
 | `required` | `true`: if the server is refused, the run fails and nothing changes |
 | `enabled` | on or off by default, as in the table above |
 
-- A value that looks secret in `env`, `headers`, `args` (`--token value`, `--token=value`) or the URL (a password, `?api_key=`) is refused: write `${VARIABLE}`, defined in each person's environment.
+- A value that looks secret in `env`, `headers`, `args` (`--token value`, `--token=value`) or the URL (a password, `?api_key=`) is refused: write `${VARIABLE}`, defined in each person's environment. A header may put a standard scheme before it: `Authorization = "Bearer ${DOCS_TOKEN}"` (`Bearer`, `Basic`, `Token`).
 - `trust` is refused: the CLI keeps asking before a server's tools act.
-- An unknown key, or a shell (or a shell script) as the command, is refused: name the program itself.
+- An unknown key, a shell (or a shell script) as the command, a wrapper (`env`, `xargs`, `nohup`…), or an interpreter given its code on the command line (`node -e`, `python -c`) is refused, whatever the case or the Windows extension (`Bash.EXE`, `-Command`, `/C`): name the program itself. `cwd` is a text.
+- `ai-kit validate --path <folder>` checks `mcp/servers.toml` with the same rules, before you tag.
 - Pin versions (`:1.2.3`, `pkg==1.2.3`, `pkg@1.2.3`), never `latest`.
 - A local server needs its program on the workstation, installed by your IT procedure.
 
@@ -62,7 +63,7 @@ In `managed.toml` `[mcp]` ([configuration](configuration.md#managedtoml-it)):
 
 | Key | Effect |
 | --- | --- |
-| `denied` | never installed: a name, a URL prefix (`https://host/path`) or an executable |
+| `denied` | never installed: a name, a URL prefix (`https://host/path`) or an executable, compared without case. `https://host` denies that host (any port, any path), not `https://host.other.test`; `https://host/api` denies `/api` and what is under it, not `/api2`; `npx` denies `npx.cmd` too |
 | `allow_stdio = false` | no local server at all |
 | `allowed_stdio` | only the local servers whose identity is listed |
 | `allowed_http` | only the remote servers whose identity is listed |
@@ -80,7 +81,7 @@ A Team brings its own servers, so the local ones are checked before they run:
 | local server, approved on this workstation | installed |
 | local server, not approved, at a terminal | the kit shows the command and asks: "Allow it on this workstation?" |
 | local server, not approved, no terminal | not installed |
-| `npx`, `uvx`, `bunx`, `pnpx` or `pipx` with a package without an exact version | refused |
+| `npx`, `uvx`, `bunx`, `pnpx` or `pipx` (also `npx.cmd`, `uvx.exe`…) with a package without an exact version | refused |
 | any refusal of a server marked `required` | the run fails: `MCP server <name> is required by the Team but …: nothing was changed.` |
 
 An approval is recorded once per identity, in `~/.ai-kit/state.json`.

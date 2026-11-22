@@ -54,7 +54,8 @@ def personal(home):
 def git_settings(home, managed):
     """Effective git.* keys: managed.toml wins key by key; the person may only allow prereleases when IT does not decide."""
     mine = personal(home)
-    settings = {'allowed_hosts': [], 'allowed_groups': [], 'allowed_schemes': ['https', 'ssh'], 'allow_prerelease': False, 'revoked': [], 'signers': []}
+    # allowed_hosts, allowed_groups: None restricts nothing; a list IT wrote, even empty, is the whole allowlist (ADR 0015).
+    settings = {'allowed_hosts': None, 'allowed_groups': None, 'allowed_schemes': ['https', 'ssh'], 'allow_prerelease': False, 'revoked': [], 'signers': []}
     if 'allow_prerelease' in mine.get('git', {}):
         settings['allow_prerelease'] = mine['git']['allow_prerelease']
     settings.update((managed or {}).get('git', {}))
@@ -69,19 +70,34 @@ def check_origin(url, settings):
 
 
 def check_team_allowed(url, managed):
-    """managed.toml teams.allowed (URL prefixes; empty: any Team within the allowed hosts and groups)."""
-    allowed = (managed or {}).get('teams', {}).get('allowed') or []
-    if allowed and not any(url == a or url.startswith(a.rstrip('/')+'/') for a in allowed):
+    """managed.toml teams.allowed (URL prefixes). Absent: any Team within the allowed hosts and groups; an empty list: no
+    Team at all (ADR 0015)."""
+    allowed = (managed or {}).get('teams', {}).get('allowed')
+    if allowed is None:
+        return
+    if not allowed:
+        raise SourceError('refused-origin', 'teams.allowed is empty in managed.toml: no Team is allowed (IT removes the key to lift the restriction): '+url)
+    if not any(url == a or url.startswith(a.rstrip('/')+'/') for a in allowed):
         raise SourceError('refused-origin', 'This Team is not in teams.allowed (managed.toml): '+url)
 
 
+def check_imposed_core(url, managed, settings):
+    """managed.toml enterprise.core: the Core applied is that one, whatever the path it comes by (the network, the cache,
+    the previous configuration)."""
+    imposed = (managed or {}).get('enterprise', {}).get('core')
+    if imposed and check_origin(imposed, settings) != url:
+        raise SourceError('refused-origin', 'The Core '+url+' is not the one IT imposes (managed.toml enterprise.core): run ai-kit sync to install it.')
+
+
 def materialize(kit, entry, settings, label):
-    """The tree of a lock entry extracted into a new temporary folder, its digest checked against the lock."""
+    """The tree of a lock entry extracted into a new temporary folder, its digest checked against the lock, and the tag's
+    signature against the keys IT lists today: a key IT removed no longer vouches for what the cache holds."""
     if revoked(entry['commit'], settings):
         raise SourceError('revoked', 'The commit '+entry['commit']+' ('+label+' '+entry['tag']+') is revoked by IT (managed.toml git.revoked).')
     cache = cache_dir(kit, entry['url'])
     if not (cache/'HEAD').exists():
         raise SourceError('not-found', label+' '+entry['tag']+' is not in the local cache: run ai-kit sync (network needed).')
+    verify_signature(kit, cache, entry['tag'], settings.get('signers'))
     folder = new_temp()
     try:
         if extract(kit, cache, entry['commit'], folder) != entry['tree_digest']:
@@ -213,6 +229,15 @@ def activation(home, action, dry_run=False, confirm=None, managed_file=None, tea
         known = dict(lock.get('known_teams', {}))
         folders, result, summary = {}, Activation(), []
         new_core, new_team = core, team
+        # A dry run writes nothing under the home folder: what it fetches to show the preview goes into a copy of the
+        # sources cache, in a temporary folder removed at the end (the tags seen are not recorded either).
+        store = kit
+        if dry_run:
+            folders['dry-run'] = new_temp()
+            store = folders['dry-run']/'.ai-kit'
+            store.mkdir()
+            if (kit/'sources').is_dir():
+                shutil.copytree(kit/'sources', store/'sources')
         try:
             if action == 'sync':
                 if not core_url and not team:
@@ -221,20 +246,20 @@ def activation(home, action, dry_run=False, confirm=None, managed_file=None, tea
                 if core_url:
                     url = check_origin(core_url, settings)
                     if not (core and core.get('url') == url) and not anchored:
-                        tags = bundle_tags(kit, bundle) if bundle else remote_tags(url, kit, tuple(settings['allowed_schemes']))
+                        tags = bundle_tags(store, bundle) if bundle else remote_tags(url, store, tuple(settings['allowed_schemes']))
                         if not bundle:
-                            check_seen(kit, url, tags)
+                            check_seen(store, url, tags)
                         tag = choose_tag(tags, None, settings['allow_prerelease'])
                         # First use of an origin outside managed mode: the person confirms what will be trusted (ADR 0016).
                         question = 'First use of this Core: '+url+' at '+tag+(' from the bundle '+str(bundle) if bundle else ' (commit '+tags[tag]['commit'][:12]+')')+'. Trust it?'
                         if confirm is None or not confirm(question):
                             raise KitError('First use of '+url+' needs your confirmation in a terminal: run ai-kit sync there.')
-                    new_core, folders['core'] = fetch_highest(kit, url, core, settings, 'Core', bundle)
+                    new_core, folders['core'] = fetch_highest(store, url, core, settings, 'Core', bundle)
                     summary.append('Core '+new_core['tag']+' is already active.' if new_core == core else 'Core '+(core['tag']+' -> ' if core else '')+new_core['tag']+' ('+url+').')
                 if team and not bundle:  # offline: the Team stays at its locked version
                     check_origin(team['url'], settings)
                     check_team_allowed(team['url'], managed)
-                    new_team, folders['team'] = fetch_highest(kit, team['url'], team, settings, 'Team '+team['name'])
+                    new_team, folders['team'] = fetch_highest(store, team['url'], team, settings, 'Team '+team['name'])
                     new_team = {'name': team['name'], **new_team}
                     known[team['name']] = new_team
                     summary.append('Team '+team['name']+' '+new_team['tag']+(' is already active.' if new_team == team else ' (was '+team['tag']+').'))
@@ -255,10 +280,10 @@ def activation(home, action, dry_run=False, confirm=None, managed_file=None, tea
                     url = check_origin(url, settings)
                     check_team_allowed(url, managed)
                     cached = known.get(name)
-                    if cached and cached['url'] == url and (cache_dir(kit, url)/'HEAD').exists():
+                    if cached and cached['url'] == url and (cache_dir(store, url)/'HEAD').exists():
                         new_team = cached  # from the cache, no network; a newer version comes with sync
                     else:
-                        entry, folders['team'] = fetch_highest(kit, url, None, settings, 'Team '+name)
+                        entry, folders['team'] = fetch_highest(store, url, None, settings, 'Team '+name)
                         new_team = {'name': name, **entry}
                     known[name] = new_team
                     result.writes[kit/AIKIT_FILE] = aikit_text(home, [('teams.'+name, 'repo', url), ('user', 'active_team', name)])
@@ -267,19 +292,21 @@ def activation(home, action, dry_run=False, confirm=None, managed_file=None, tea
                 previous = lock.get('previous', {})
                 if not previous.get('sources'):
                     raise KitError('Nothing to roll back to: lock.toml has no previous configuration.')
-                new_core, new_team = previous['sources'].get('core'), previous['sources'].get('team')
-                for entry in (new_core, new_team):
-                    if entry:
-                        check_origin(entry['url'], settings)  # an origin forbidden since is not reactivated
+                new_core, new_team = previous['sources'].get('core'), previous['sources'].get('team')  # origins checked below
                 result.writes[kit/AIKIT_FILE] = aikit_text(home, [('user', 'active_team', new_team['name'] if new_team else 'none')])
                 summary.append('Rollback: Core '+(new_core['tag'] if new_core else 'package')+', Team '+(new_team['name']+' '+new_team['tag'] if new_team else 'none')+' (a second rollback comes back).')
+            # What IT allows today applies to every path: a sync, the offline re-apply every command reads, a rollback.
+            if new_core:
+                check_origin(new_core['url'], settings)
+                check_imposed_core(new_core['url'], managed, settings)
+            if new_team:
+                check_origin(new_team['url'], settings)
+                check_team_allowed(new_team['url'], managed)
             # Content: Core extracted at its commit (or the package's), then the Team on top.
             if new_core and 'core' not in folders:
-                check_origin(new_core['url'], settings)
-                folders['core'] = materialize(kit, new_core, settings, 'Core')
+                folders['core'] = materialize(store, new_core, settings, 'Core')
             if new_team and 'team' not in folders:
-                check_origin(new_team['url'], settings)
-                folders['team'] = materialize(kit, new_team, settings, 'Team '+new_team['name'])
+                folders['team'] = materialize(store, new_team, settings, 'Team '+new_team['name'])
             content = folders.get('core')
             if new_team:
                 folders['merged'] = overlay(folders.get('core') or content_root(), folders['team'], new_team['name'])

@@ -3,12 +3,13 @@ name: tdd
 description: Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests.
 metadata:
   aikit-default: "true"
-  aikit-version: "1.2.0"
+  aikit-version: "1.2.1"
   aikit-origin: "upstream"
   aikit-optional-init-project-context: "not installed: ask the person for the repo's test commands"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Test-first development: red, green, refactor; integration tests preferred."
   aikit-category: "workflow"
+  aikit-optional-codebase-design: "not installed: reason on the interface with the code in front of you: what it exposes, what it hides"
   aikit-optional-code-review: "refactoring happens after green, as its own step, with the tests still passing"
 ---
 

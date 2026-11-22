@@ -49,8 +49,7 @@ class DefaultUnchangedTests(Base):
         gemini = json.loads((out/'gemini-cli/settings.json').read_text(encoding='utf-8'))
         self.assertEqual(set(gemini['hooks']), {'BeforeTool'})
         codex = tomllib.loads((out/'codex/requirements.toml').read_text(encoding='utf-8'))
-        self.assertNotIn('hooks', codex)
-        self.assertNotIn('features', codex)
+        self.assertEqual(set(codex['hooks']), {'PreToolUse'})  # the default guardrail, as in the two other files; no integrity check
         readme = (out/'README.txt').read_text(encoding='utf-8')
         self.assertNotIn('integrity', readme.split('agy')[0] if 'agy' in readme else readme)
 
@@ -145,7 +144,7 @@ class PolicyFilesTests(Base):
         codex = tomllib.loads((out/'codex/requirements.toml').read_text(encoding='utf-8'))
         self.assertIs(codex['features']['hooks'], True)
         post = codex['hooks']['PostToolUse']
-        self.assertIn(post[0].get('matcher', '*'), ('', '*'))  # every tool: Codex maps "" and "*" to All (hooks/src/engine/matcher.rs)
+        self.assertEqual(post[0].get('matcher'), '.*')  # every tool, written as the kit's own Codex block writes it (adapters/codex.py)
         handler = post[0]['hooks'][0]
         self.assertEqual(handler['type'], 'command')
         self.assertIn('integrity.py', handler['command'])

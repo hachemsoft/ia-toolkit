@@ -6,7 +6,8 @@ from types import SimpleNamespace
 from .core import USER_CONTEXT, KitError, read_json, digest, inside, check_state_schema
 from .adapters import ADAPTERS
 from . import command as kit_command
-from .commit import commit_changes, KIT_MANAGED
+from .commit import commit_changes, resume_pending, KIT_MANAGED
+from .sources import EngineLock
 from .doctor import source_folder
 
 
@@ -107,10 +108,22 @@ def remove_command(home, state, writes):
 def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
     """Removes what the kit installed and nothing else: the managed files it can recognise as unchanged, its blocks and
     entries in the CLIs' settings, and its state. Kept: the personal context (USER.md), aikit.toml, the backups,
-    frictions, the CLIs' folders and the person's own settings; a managed file modified by hand is kept and named.
+    frictions, the CLIs' folders and the person's own settings; a managed file modified by hand is kept and named. A kit
+    block or entry edited by hand inside one of the CLIs' files goes with the rest (left there, it would point to removed
+    files) and is named; the edited copy is in the backup of the run.
     No network, no model. confirm(report) -> bool is asked before any change (interactive); returns an exit code."""
     home = home.resolve()
     kit = home/'.ai-kit'
+    if dry_run or not kit.is_dir():
+        return _uninstall(home, kit, dry_run, confirm, progress, report)
+    with EngineLock(kit):  # one kit command changes files at a time; an activation stopped half-way is put back first
+        restored = resume_pending(home, kit)
+        if restored:
+            print('[Info] An activation was interrupted: the files of '+restored.name+' were put back before continuing.')
+        return _uninstall(home, kit, dry_run, confirm, progress, report)
+
+
+def _uninstall(home, kit, dry_run, confirm, progress, report):
     state = read_json(kit/'state.json')
     if not state:
         # Exit 0: a second uninstall, or uninstall --remove-runtime after an uninstall, still lets the launcher remove the runtime.
@@ -129,7 +142,7 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
             kept.append(rel+': modified since the kit installed it, kept; remove it yourself if you no longer need it')
             continue
         deletes.append(path)
-    cleanup = SimpleNamespace(home=home, state=state, old_files=old_files, writes=writes, deletes=deletes, blocks={}, notices=[], active=[])
+    cleanup = SimpleNamespace(home=home, state=state, old_files=old_files, writes=writes, deletes=deletes, blocks={}, notices=[], active=[], restore=True)
     for adapter in ADAPTERS:
         try:
             adapter.finalize(cleanup, active=False)
@@ -141,7 +154,7 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
     personal = [str(home/'.ai-kit/context'/USER_CONTEXT)] + [str(home/rel) for rel in PERSONAL_KEPT if (home/rel).exists()]
     def rel(path):
         return path.relative_to(home).as_posix()
-    summary = {'removed': [rel(d) for d in deletes], 'rewritten': sorted(rel(w) for w in writes), 'kept_modified': kept,
+    summary = {'removed': [rel(d) for d in deletes], 'rewritten': sorted(rel(w) for w in writes), 'kept_modified': kept, 'edited_removed': cleanup.notices,
                'personal': personal, 'home': str(home)}
     if report is not None:
         report.update(summary)
@@ -150,6 +163,8 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
         print('  Clean the kit entries in: '+line)
     for line in kept:
         print('[Check] '+line)
+    for line in cleanup.notices:
+        print(line)
     print('Kept: your personal context, aikit.toml, backups and frictions, the CLIs and their own settings.')
     if dry_run:
         print('Dry run: nothing changed.')
@@ -159,8 +174,7 @@ def uninstall(home, dry_run=False, confirm=None, progress=None, report=None):
         return 1
     changed, backup = commit_changes(home, kit, writes, deletes, progress)
     if (state.get('command') or {}).get('registry') and os.name == 'nt' and kit_command.real_home(home):
-        kit_command.registry_entry(False)
-        kit_command.announce_environment_change()
+        _registry_remove()  # a refusal is said, never raised: the files are already removed
     print('Kit configuration removed. Backup of every removed or cleaned file: '+str(backup))
     print('Your files kept: '+', '.join(personal))
     print('The kit\'s private Python environment ('+str(kit/'runtime')+') stays; the launcher removes it with uninstall --remove-runtime.')

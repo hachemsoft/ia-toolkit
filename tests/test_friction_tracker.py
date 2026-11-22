@@ -188,13 +188,20 @@ class TrackerTests(Base):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             cli.doctor(self.home)
-        self.assertIn('[OK] Friction tracker: gitlab tools/ai-kit, glab signed in', out.getvalue())
+        # Offline, doctor does not ask the tracker's host (auth status is a network call): doctor --live does.
+        self.assertIn('[OK] Friction tracker: gitlab tools/ai-kit, glab found (sign-in not checked: doctor --live asks its host)', out.getvalue())
+        from installer import doctor
+        lines = []
+        doctor.tracker_checks(self.home, read_json(self.home/'.ai-kit/state.json'), lambda ok, message: lines.append((ok, message)), live=True)
+        self.assertEqual(lines, [(True, 'Friction tracker: gitlab tools/ai-kit, glab signed in')])
         (self.bin/'fail').write_text('', encoding='utf-8')
         self.script('--category', 'rule', '--cli', 'claude', '--source', 'agent')
-        out = io.StringIO()
+        out, lines = io.StringIO(), []
         with contextlib.redirect_stdout(out):
             cli.doctor(self.home)
-        self.assertIn('[Check] Friction tracker: gitlab tools/ai-kit, glab not signed in', out.getvalue())
+            doctor.tracker_checks(self.home, read_json(self.home/'.ai-kit/state.json'), lambda ok, message: lines.append((ok, message)), live=True)
+        self.assertIn('glab not signed in', lines[0][1])
+        self.assertFalse(lines[0][0])
         self.assertIn('[Info] 1 friction not sent to the tracker yet: ai-kit friction --publish', out.getvalue())
         (self.bin/('glab'+('.cmd' if os.name == 'nt' else ''))).unlink()
         out = io.StringIO()

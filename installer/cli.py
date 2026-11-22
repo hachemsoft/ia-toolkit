@@ -78,7 +78,8 @@ def agent_instruction(definition):
     """Shared opening of every agent prompt. Reviewers only read; an agent whose tools include the shell (the verifier)
     runs the checks its own instructions allow, and modifies nothing."""
     tools = definition.get('tools') or read_json(content_root()/'agents/defaults.json').get('tools', [])
-    scope = ('Modify no file; run only the commands your instructions below allow.' if 'run_shell_command' in tools
+    scope = ('Modify no file yourself: the only change is the one a script your instructions below name makes and undoes; '
+             'run only the commands your instructions below allow.' if 'run_shell_command' in tools
              else 'Read and search only: modify no file and run no command.')
     return ('Read the instructions and context of the current repo. Do not assume that the skills, '
             'the MCP tools or the full parent history are available. '
@@ -192,6 +193,10 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
                 raise KitError(label+' existing file not managed by the kit: '+str(target))
         writes[target] = data
         files[rel] = digest(data)
+    def keep_file(target):
+        rel = target.relative_to(home).as_posix()
+        if rel in old_files and target.exists():
+            files[rel] = old_files[rel]
     # --- Neutral plan: what to install, with nothing specific to a CLI. ---
     context_names = managed_context_names(selection)
     commands = selected_commands(selected, manifest, allowed)
@@ -221,7 +226,7 @@ def apply(home, dry_run=False, user=None, target=None, team=None, choices=None, 
         kit_text=kit_text, practice_names=practice_names, practice_texts=practice_texts, user_file=context_dir/USER_CONTEXT, context_dir=context_dir,
         user_context_text=user_context_text(identity), agents=agents, hooks_dir=hooks_dir,
         restore=restore_edited, hook_manifest=hook_manifest, enabled_hooks=enabled_hooks, enabled_mcp=enabled_mcp, writes=writes, deletes=deletes,
-        managed_write=managed_write, 
+        managed_write=managed_write, keep_file=keep_file,
         agent_body=lambda definition: practices+'\n'+agent_instruction(definition)+'\n'+definition['instructions']+'\n')
     # Scripts shared by all CLIs: frictions, the review's test facts (ADR 0027), the verifier's proof (ADR 0033), the review page and enabled guardrails.
     for script in ('friction.py', 'weakened_tests.py', 'prove_test.py', 'review_html.py'):
@@ -401,31 +406,32 @@ def main(argv=None):
                 return 130
             except SystemExit as exc:  # the script's own argparse: usage already printed
                 return exc.code if isinstance(exc.code, int) else 2
+    parser = command_parser()
+    args = parser.parse_args(argv)
     # The package holds only the engine; the content of this run comes from the clone, the locked Core, the Core the
-    # release ZIP ships, or the launcher's folder (installer/bootstrap.py).
-    home_arg = next((argv[i+1] for i, a in enumerate(argv[:-1]) if a == '--home'), None) or next((a.split('=', 1)[1] for a in argv if a.startswith('--home=')), None)
-    from .bootstrap import run_content
+    # release ZIP ships, or the launcher's folder (installer/bootstrap.py). The commands that read none start without it.
+    from .bootstrap import needs_content, run_content
+    if not needs_content(args):
+        return command_main(parser, args)
     try:
-        content = run_content(Path(home_arg).expanduser().resolve() if home_arg else Path.home())
+        content = run_content(args.home.expanduser().resolve(), installing=args.action == 'init')
         shipped = content.__enter__()
     except (KitError, OSError) as exc:
         print('Error: '+redact(str(exc)), file=sys.stderr)
         return 3 if isinstance(exc, ManagedConfigError) else 2
     SHIPPED[0] = shipped
     try:
-        return command_main(argv)
+        return command_main(parser, args)
     finally:
         SHIPPED[0] = None
         content.__exit__(None, None, None)
 
 
 APPROVE = [None]  # a question for a Team's local MCP server, set by the command line when a person is at a terminal
-SHIPPED = [None]  # the Core bundle the release ZIP ships, while a first installation must activate it
+SHIPPED = [None]  # the Core bundle the release ZIP ships, for the installation that must activate it (first one, or older Core)
 
 
-def command_main(argv):
-    """The AI Kit command line (ADR 0025). Exit codes: 0 success, 1 refused or failed (nothing changed, or all
-    restored), 2 usage, 3 administered configuration unusable, 130 interrupted."""
+def command_parser():
     parser = argparse.ArgumentParser(prog='ai-kit' if _PACKAGE_DIR.name == 'ai_kit' else 'python3 -m installer', description='AI Kit — '+', '.join(a.LABEL for a in ADAPTERS)+'; Mac and Windows')
     parser.add_argument('action', nargs='?', choices=['init', 'sync', 'team', 'status', 'doctor', 'rollback', 'user', 'uninstall', 'usage', 'friction', 'managed-settings', 'validate', 'news'],
                         help='init: install, or check and re-apply; sync: the highest stable tag of your Core and Team (--dry-run, --offline: re-apply without network, --from-bundle FILE); '
@@ -459,7 +465,12 @@ def command_main(argv):
     parser.add_argument('--min-sessions', type=int, default=10, help='usage: minimum sessions before recommending (default 10)')
     parser.add_argument('--min-prompts', type=int, default=50, help='usage: minimum prompts before recommending (default 50)')
     parser.add_argument('--version', action='store_true', help='which copy of the kit runs, and with which Python')
-    args = parser.parse_args(argv)
+    return parser
+
+
+def command_main(parser, args):
+    """The AI Kit command line (ADR 0025). Exit codes: 0 success, 1 refused or failed (nothing changed, or all
+    restored), 2 usage, 3 administered configuration unusable, 130 interrupted."""
     if args.rest and args.action not in ('team', 'user'):
         parser.error('unexpected argument: '+' '.join(args.rest))
     if (args.add or args.title or args.id or args.teams or args.until) and args.action != 'news':

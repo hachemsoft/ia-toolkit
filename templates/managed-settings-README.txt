@@ -27,7 +27,7 @@ gemini-cli/settings.json, windows/gemini-cli/settings.json (system settings)
 codex/requirements.toml
   macOS and Linux  /etc/codex/requirements.toml
   Windows          %ProgramData%\OpenAI\Codex\requirements.toml
-  Keeps the sandbox on: the agent writes only inside the repo it works in.
+  Keeps the sandbox on: the agent writes only inside the repo it works in. Runs the guardrails ({hooks}) as managed hooks.
 
 The guardrails run each person's copy of the kit ($HOME/.ai-kit), so the kit stays installed per person, as usual.
 Antigravity CLI has no documented central policy: its guardrails stay those the kit installs.{integrity}{mcp}

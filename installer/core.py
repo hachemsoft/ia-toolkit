@@ -284,12 +284,15 @@ def rename_references(text, mapping):
     if not mapping:
         return text
     alternatives = '|'.join(re.escape(n) for n in sorted(mapping, key=len, reverse=True))
-    pattern = re.compile(r'(?<![\w/.-])(`|"|/|\$)?(' + alternatives + r')(?![\w-])(?=(`|"|\s+skill\b)?)')
+    pattern = re.compile(r'(?<![\w/.-])(`/?|"|/|\$)?(' + alternatives + r')(?![\w-])(?=(`|"|\s+skill\b)?)')
     def replace(match):
         opener, name, closer = match.group(1), match.group(2), match.group(3)
-        if not opener and not closer:
-            return match.group(0)  # a plain word: the CLI's context says how to read it
-        return (opener or '') + mapping[name]
+        if opener in ('/', '$', '`/'):
+            return opener + mapping[name]
+        # `name` and "name" are the whole quoted text: in `glab mr` or "docs/research", the word belongs to something else.
+        if (opener and closer == opener[0]) or (closer and closer.strip() == 'skill' and opener in (None, '`', '"')):
+            return (opener or '') + mapping[name]
+        return match.group(0)  # a plain word: the CLI's context says how to read it
     return pattern.sub(replace, text)
 
 def front_matter_name(text, name):

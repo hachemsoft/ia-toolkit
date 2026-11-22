@@ -88,16 +88,20 @@ def canonical_url(url, schemes=('https', 'ssh')):
 
 
 def authorize(url, git):
-    """SourceError(refused-origin) unless the canonical URL passes git.allowed_hosts and git.allowed_groups (empty: no
-    restriction outside managed mode)."""
+    """SourceError(refused-origin) unless the canonical URL passes git.allowed_hosts and git.allowed_groups. A key IT did
+    not write (None) restricts nothing; an empty list allows nothing (ADR 0015: an IT "none" is never read as "all")."""
     if url.startswith('file://') and LOCAL_FOR_TESTS:
         return
     parts = urlsplit(url)
-    hosts, groups = git.get('allowed_hosts') or [], git.get('allowed_groups') or []
-    if hosts and parts.hostname not in hosts:
+    hosts, groups = git.get('allowed_hosts'), git.get('allowed_groups')
+    if hosts is not None and parts.hostname not in hosts:
+        if not hosts:
+            raise SourceError('refused-origin', 'git.allowed_hosts is empty in managed.toml: no Git host is allowed (IT removes the key to lift the restriction): '+url)
         raise SourceError('refused-origin', 'Host '+str(parts.hostname)+' is not in git.allowed_hosts ('+', '.join(hosts)+'): '+url)
     path = parts.path.lstrip('/')
-    if groups and not any(path.startswith(g.strip('/')+'/') for g in groups):
+    if groups is not None and not any(path.startswith(g.strip('/')+'/') for g in groups):
+        if not groups:
+            raise SourceError('refused-origin', 'git.allowed_groups is empty in managed.toml: no group is allowed (IT removes the key to lift the restriction): '+url)
         raise SourceError('refused-origin', 'Group not in git.allowed_groups ('+', '.join(groups)+'): '+url)
 
 
@@ -285,16 +289,25 @@ def cache_dir(kit, url):
     return engine_dir(kit)/(source_id(url)+'.git')
 
 
+SSH_KEY_TYPE = re.compile(r'(ssh-|ecdsa-|sk-)[A-Za-z0-9@.-]+\s')  # a line of git.signers that starts with the key itself
+
+
 def verify_signature(kit, cache, tag, signers):
-    """IT's git.signers (SSH public keys, as in an allowed-signers file): the tag must carry an SSH signature from one of them."""
+    """IT's git.signers (SSH public keys, as in an allowed-signers file): the tag must carry an SSH signature from one of them,
+    and the signed tag object must be the one of this tag: a signed v1.0.0 served under another name is refused. A line
+    that already has its principal (name key-type key) is kept as it is; a bare key gets one."""
     if not signers:
         return
     allowed = engine_dir(kit)/'allowed_signers'
-    allowed.write_text(''.join('ai-kit '+key.strip()+'\n' for key in signers), encoding='utf-8')
+    allowed.write_text(''.join(('ai-kit ' if SSH_KEY_TYPE.match(key.strip()) else '')+key.strip()+'\n' for key in signers), encoding='utf-8')
     try:
         git(['-c', 'gpg.format=ssh', '-c', 'gpg.ssh.allowedSignersFile='+str(allowed), 'verify-tag', '--raw', tag], kit, git_dir=cache)
+        header = git(['cat-file', 'tag', 'refs/tags/'+tag], kit, git_dir=cache).decode('utf-8', 'replace').split('\n\n', 1)[0]
     except SourceError:
         raise SourceError('invalid', 'Tag '+tag+' is not signed by a key IT lists (managed.toml git.signers): nothing was changed.') from None
+    named = next((line[len('tag '):].strip() for line in header.splitlines() if line.startswith('tag ')), '')
+    if named != tag:
+        raise SourceError('invalid', 'Tag '+tag+' carries the signed tag object of '+(named or 'another tag')+': a signature is for one tag only. Nothing was changed.')
 
 
 def fetch(kit, url, tag, expected_commit, schemes=('https', 'ssh'), home=None):
@@ -355,35 +368,62 @@ def safe_path(path, seen_lower):
             raise SourceError('invalid', 'Two paths differ only by case (they clash on Windows and macOS): '+owner+', '+path)
 
 
+# What a Core or a Team may hold: text files, a few megabytes in all. Beyond these bounds the source is refused from its
+# listing, before one file is read. A source is read in batches, so the memory used does not grow with its size.
+MAX_FILES, MAX_FILE_BYTES, MAX_TOTAL_BYTES, BATCH_BYTES = 20000, 20 * 1024 * 1024, 200 * 1024 * 1024, 32 * 1024 * 1024
+
+
+def megabytes(size):
+    return str(max(1, size // (1024 * 1024)))+' MB'
+
+
 def extract(kit, cache, commit, dest, home=None):
     """The tree of commit written to dest (a new empty folder) with ls-tree and cat-file; returns its digest. Regular files only:
-    a symbolic link or a submodule is refused."""
-    listing = git(['ls-tree', '-r', '-z', '--full-tree', commit], kit, git_dir=cache, home=home)
-    entries, seen = [], {}
+    a symbolic link or a submodule is refused, and so is a tree beyond the bounds above."""
+    listing = git(['ls-tree', '-r', '-l', '-z', '--full-tree', commit], kit, git_dir=cache, home=home)
+    entries, seen, total = [], {}, 0
     for record in listing.split(b'\0'):
         if not record:
             continue
         meta, _, raw = record.partition(b'\t')
-        mode, kind, sha = meta.decode().split()
+        mode, kind, sha, size = meta.decode().split()
         path = raw.decode('utf-8')
         if kind != 'blob' or mode not in ('100644', '100755'):
             raise SourceError('invalid', 'The source holds '+('a symbolic link' if mode == '120000' else 'a submodule' if mode == '160000' else 'an entry of mode '+mode)+', refused: '+path)
         safe_path(path, seen)
-        entries.append((path, sha))
-    blobs = git(['cat-file', '--batch'], kit, git_dir=cache, input_bytes=''.join(sha+'\n' for _, sha in entries).encode(), home=home)
-    position, lines = 0, []
-    dest = Path(dest)
-    for path, sha in entries:
-        header_end = blobs.index(b'\n', position)
-        got_sha, kind, size = blobs[position:header_end].decode().split()
-        if got_sha != sha or kind != 'blob':
-            raise SourceError('invalid', 'Unexpected object while reading the source: '+path)
-        data = blobs[header_end+1:header_end+1+int(size)]
-        position = header_end+1+int(size)+1
-        target = dest.joinpath(*PurePosixPath(path).parts)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(data)
-        lines.append(path+'\0'+hashlib.sha256(data).hexdigest())
+        size = int(size)
+        if size > MAX_FILE_BYTES:
+            raise SourceError('invalid', 'The source holds a file larger than '+megabytes(MAX_FILE_BYTES)+', refused: '+path)
+        total += size
+        entries.append((path, sha, size))
+        if len(entries) > MAX_FILES:
+            raise SourceError('invalid', 'The source holds more than '+str(MAX_FILES)+' files, refused.')
+        if total > MAX_TOTAL_BYTES:
+            raise SourceError('invalid', 'The source holds more than '+megabytes(MAX_TOTAL_BYTES)+' in all, refused.')
+    batches, held = [[]], 0
+    for entry in entries:
+        if batches[-1] and held + entry[2] > BATCH_BYTES:
+            batches.append([])
+            held = 0
+        batches[-1].append(entry)
+        held += entry[2]
+    lines, dest = [], Path(dest)
+    for batch in batches:
+        if not batch:
+            continue
+        blobs = git(['cat-file', '--batch'], kit, git_dir=cache, input_bytes=''.join(sha+'\n' for _, sha, _size in batch).encode(), home=home)
+        position = 0
+        for path, sha, listed in batch:
+            header_end = blobs.index(b'\n', position)
+            got_sha, kind, size = blobs[position:header_end].decode().split()
+            if got_sha != sha or kind != 'blob' or int(size) != listed:
+                raise SourceError('invalid', 'Unexpected object while reading the source: '+path)
+            data = blobs[header_end+1:header_end+1+int(size)]
+            position = header_end+1+int(size)+1
+            target = dest.joinpath(*PurePosixPath(path).parts)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+            lines.append(path+'\0'+hashlib.sha256(data).hexdigest())
     return hashlib.sha256('\n'.join(sorted(lines)).encode('utf-8')).hexdigest()
 
 

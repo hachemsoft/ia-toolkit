@@ -3,6 +3,7 @@ folder with the same arguments, and that folder on the person's own PATH: the us
 marked block in the login shell's startup file on Mac and Linux. Chosen at init (yes by default), kept by sync, removed by
 uninstall. Only the launcher knows the
 kit folder: run otherwise, the kit writes no command and keeps an existing one as it is."""
+import ntpath
 import os
 import sys
 from pathlib import Path
@@ -98,8 +99,11 @@ def registry_entry(add, reg=None):
         except FileNotFoundError:
             value, kind = '', reg.REG_EXPAND_SZ
         parts = [part for part in str(value).split(';') if part]
+        def folder(part):
+            # %USERPROFILE% written as it is or already expanded (by a tool, or by hand): the same folder.
+            return ntpath.normcase(ntpath.normpath(ntpath.expandvars(part.strip().strip('"'))))
         def ours(part):
-            return part.strip().strip('"').rstrip('\\').lower() == REGISTRY_ENTRY.lower()
+            return folder(part) == folder(REGISTRY_ENTRY)
         present = any(ours(part) for part in parts)
         if add == present:
             return False

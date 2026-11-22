@@ -17,10 +17,12 @@ CATALOG = skill_catalog(ROOT)
 
 
 def cited(skill):
-    """Other catalog skills a skill's files cite by name (`name`, the name skill, /name)."""
+    """Other catalog skills a skill's files cite by name (`name`, the name skill, /name, and "name" on a line that calls the
+    Skill tool: a name that is no installed skill costs the agent a failed call and a retry)."""
     text = ''.join(f.read_text(encoding='utf-8') for f in (ROOT/CATALOG[skill]['path']).rglob('*.md'))
     return {other for other in CATALOG if other != skill and not CATALOG[other].get('replaced_by') and re.search(
-        r'(`/?'+re.escape(other)+r'`|\b'+re.escape(other)+r'\s+skill|skill\s+`?'+re.escape(other)+r'\b|/'+re.escape(other)+r'\b)', text)}
+        r'(`/?'+re.escape(other)+r'`|\b'+re.escape(other)+r'\s+skill|skill\s+`?'+re.escape(other)+r'\b|/'+re.escape(other)+r'\b'
+        r'|Skill tool[^\n]*"'+re.escape(other)+r'")', text)}
 
 
 class CatalogTests(unittest.TestCase):

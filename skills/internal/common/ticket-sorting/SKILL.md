@@ -3,12 +3,12 @@ name: ticket-sorting
 description: "Move issues and external PRs through a state machine of triage roles, categorise, verify, grill if needed, and write agent-ready briefs. Use when the user types /triage or explicitly asks for this step; do not activate on your own for unrelated requests."
 metadata:
   aikit-default: "false"
-  aikit-version: "1.1.1"
+  aikit-version: "1.1.2"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Move incoming tickets through a triage state machine until they are ready for an agent."
   aikit-category: "workflow"
-  aikit-requires: "grilling"
+  aikit-requires: "grilling,domain-modeling"
   aikit-optional-setup-workflow: "ask the person where the work is tracked (a ticket, a document, nothing); never require a tracker to continue"
 ---
 

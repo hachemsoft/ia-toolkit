@@ -116,7 +116,19 @@ class ReleaseCheckTests(unittest.TestCase):
             git('tag', 'v9.9.9')
             out = io.StringIO()
             with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': str(clone)}), contextlib.redirect_stdout(out):
-                cli.release_check()  # no remote: the fetch fails quietly, the local tags are read
+                cli.release_check()  # no remote: a tag that only this clone holds is not a published version
+            self.assertEqual(out.getvalue(), '')
+            remote = Path(tmp).parent/(Path(tmp).name+'-remote.git')
+            try:
+                subprocess.run(['git', 'clone', '--quiet', '--bare', str(clone), str(remote)], check=True, capture_output=True)
+                git('remote', 'add', 'origin', str(remote))
+                git('tag', '-d', 'v9.9.9')
+                before = sorted(p.name for p in (clone/'.git').rglob('*'))
+                with mock.patch.dict(os.environ, {'AI_KIT_SOURCE_DIR': str(clone)}), contextlib.redirect_stdout(out):
+                    cli.release_check()  # the tags are listed on the remote; nothing is fetched into the clone
+                self.assertEqual(sorted(p.name for p in (clone/'.git').rglob('*')), before)
+            finally:
+                shutil.rmtree(remote, ignore_errors=True)
         self.assertIn('AI Kit 9.9.9 is published (this folder: 0.34.0)', out.getvalue())
 
     @unittest.skipIf(os.name == 'nt', 'a shell script stands in for the trapped command')

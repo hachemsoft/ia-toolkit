@@ -1,23 +1,34 @@
 """managed-settings: the files IT deploys so that the kit's guardrails hold whatever a person or an agent changes on the
 workstation. Generated from the Core's guardrails and MCP servers and from managed.toml; nothing is installed, nothing outside the output folder is written."""
+import importlib.util
 import json
 from pathlib import Path
 
 from .core import ROOT, KitError, read_json, is_guardrail, hook_identity, with_followers, cli_event
 from .toml_files import toml_value
-from .settings import core_settings
+from .settings import core_settings, validate_server
 
-# Written by an agent, these would switch a guardrail off or change what every session loads. USER.md and
-# ~/.ai-kit/learning stay writable: /me and /learn write there.
-KIT_FILES = ('~/.ai-kit/aikit.toml', '~/.ai-kit/state.json', '~/.ai-kit/hooks/**', '~/.ai-kit/bin/**', '~/.ai-kit/backups/**',
-             '~/.ai-kit/runtime/**', '~/.ai-kit/schemas/**', '~/.ai-kit/me/**', '~/.ai-kit/context/00_*', '~/.ai-kit/context/10_*', '~/.ai-kit/context/20_*')
-CLAUDE_FILES = ('~/.claude/settings.json', '~/.claude/CLAUDE.md', '~/.claude/agents/ai-kit-*', '~/.claude/skills/ai-kit-*/**', '~/.claude.json')
+# What the kit installs for Claude Code beyond the guardrail's own list (its skills and commands are named in state.json,
+# which a policy file cannot read): written by an agent, these would change what every session loads.
+CLAUDE_FILES = ('~/.claude/skills/ai-kit-*/**', '~/.claude/commands/**')
 POSIX_PYTHON = '"$HOME/.ai-kit/runtime/venv/bin/python"'
 POSIX_HOOKS = '"$HOME/.ai-kit/hooks/'
 # Windows: Claude Code runs a hook through Git Bash, or PowerShell when the hook says so (hooks docs, field shell). The
 # Windows file asks for PowerShell, present on every workstation: $HOME expands there, and & runs a quoted program.
 WINDOWS_PYTHON = '& "$HOME\\.ai-kit\\runtime\\venv\\Scripts\\python.exe"'
 WINDOWS_HOOKS = '"$HOME\\.ai-kit\\hooks\\'
+
+
+def protected_paths():
+    """The home-folder paths an agent must not write, as Edit(...) patterns: one list, the one the protected-paths
+    guardrail enforces (runtime/hooks/protected-paths.py CONFIG_PATHS), so that the policy file IT deploys and the
+    guardrail never drift apart. An entry ending with / is a whole folder; with _ or -, a name prefix. USER.md and
+    ~/.ai-kit/learning are not in it: /me and /learn write there."""
+    spec = importlib.util.spec_from_file_location('ai_kit_protected_paths', ROOT/'runtime'/'hooks'/'protected-paths.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    paths = ['~/'+entry+('**' if entry.endswith('/') else '*' if entry.endswith(('_', '-')) else '') for entry in module.CONFIG_PATHS]
+    return tuple(dict.fromkeys(paths + list(CLAUDE_FILES)))
 
 
 def locked(org, manifest):
@@ -49,11 +60,17 @@ def declared(names, manifest):
 
 
 def org_servers(org):
-    """The MCP servers the Core defines (mcp/servers.toml): the only ones an MCP lock allows, named as the kit installs them."""
+    """The MCP servers the Core defines (mcp/servers.toml): the only ones an MCP lock allows, named as the kit installs them.
+    Each must be one the kit itself would install (validate_server: one transport, HTTPS, no shell, no trust, no secret):
+    a policy file never allows what an installation refuses."""
     found = {}
     for layer in [org.get('defaults', {})]:
         for name, entry in (layer.get('mcp') or {}).items():
             if isinstance(entry, dict) and isinstance(entry.get('server'), dict):
+                try:
+                    validate_server(entry['server'])
+                except KitError as exc:
+                    raise KitError('MCP server '+name+' of the Core (mcp/servers.toml) cannot go into the MCP lock: '+str(exc)) from None
                 found.setdefault('ai-kit-'+name, entry['server'])
     return found
 
@@ -93,7 +110,7 @@ def claude(names, manifest, hooks_only, mcp=None, windows=False):
         if is_guardrail(spec):
             group = {'matcher': hook_matcher(spec['matcher']), **group}  # a guardrail sees its tools; the integrity check every tool
         hooks.setdefault(cli_event(spec['event']), []).append(group)
-    settings = {'permissions': {'deny': ['Edit('+p+')' for p in KIT_FILES + CLAUDE_FILES]}, 'hooks': hooks}
+    settings = {'permissions': {'deny': ['Edit('+p+')' for p in protected_paths()]}, 'hooks': hooks}
     if hooks_only:
         settings['allowManagedHooksOnly'] = True
     if mcp is not None:
@@ -116,22 +133,25 @@ def gemini(names, manifest, windows=False):
 
 
 def codex(mcp=None, names=(), manifest=None):
-    """requirements.toml; with the integrity check locked, its managed hooks too (Codex reads [hooks] and [features] there,
-    openai/codex #18893; managed hooks need no approval): every tool after the call, whats-new at session start. The hooks
-    come last, so that a bare key of the MCP block stays at the top level."""
+    """requirements.toml, with the managed hooks (Codex reads [hooks] and [features] there, openai/codex #18893; managed
+    hooks need no approval): the guardrails every workstation enforces, locked or imposed by managed.toml, before each
+    tool; the integrity check, when locked, after each tool, and whats-new at session start. The matcher is the regular
+    expression the kit's own Codex block uses (.*): every tool. The hooks come last, so that a bare key of the MCP block
+    stays at the top level."""
     text = ('# Codex CLI requirements: the agent writes only inside the repo it works in (so never to ~/.codex or ~/.ai-kit),\n'
             '# and the person cannot start it without a sandbox or without approvals.\n'
             'allowed_sandbox_modes = ["read-only", "workspace-write"]\n'
             'allowed_approval_policies = ["untrusted", "on-request"]\n')
     if mcp is not None:
         text += '\n# MCP: only the servers the Core defines (mcp/servers.toml), by name and identity.\n'+codex_mcp(mcp)
-    hooks = [(spec, served) for _, spec, served in declared(names, manifest or {}) if not is_guardrail(spec)]
+    hooks = [(spec, served) for _, spec, served in declared(names, manifest or {})]
     if hooks:
-        text += ('\n# The integrity check IT locks (managed.toml): it reports a change to what the kit installed, it does not block.\n'
+        text += ('\n# The guardrails of the kit (they refuse before a tool call) and, when IT locks it (managed.toml), the integrity check\n'
+                 '# (it reports a change to what the kit installed, it does not block).\n'
                  '[features]\nhooks = true\n')
         for spec, served in hooks:
             event = cli_event(spec['event'])
-            text += ('\n[[hooks.'+event+']]\n'+('matcher = "*"\n' if event == 'PostToolUse' else '')+'\n[[hooks.'+event+'.hooks]]\ntype = "command"\n'
+            text += ('\n[[hooks.'+event+']]\n'+('matcher = ".*"\n' if event in ('PreToolUse', 'PostToolUse') else '')+'\n[[hooks.'+event+'.hooks]]\ntype = "command"\n'
                      'command = '+toml_value(command(spec, served=served))+'\n'
                      'command_windows = '+toml_value(cmd_command(spec, served))+'\n')
     return text
@@ -173,7 +193,8 @@ def managed_settings(out, hooks_only=False, mcp_only=False, managed_file=None):
     imposed = load_managed(managed_file)
     if imposed:
         off = [n for n, v in imposed.get('hooks', {}).items() if v is False]
-        names = with_followers([n for n in dict.fromkeys(list(names) + list(imposed.get('hooks', {}).get('locked', []))) if n not in off], manifest)
+        on = [n for n, v in imposed.get('hooks', {}).items() if v is True]  # hooks.<name> = true: imposed, so enforced like a locked one
+        names = with_followers([n for n in dict.fromkeys(list(names) + list(imposed.get('hooks', {}).get('locked', [])) + on) if n not in off], manifest)
         if mcp is not None:
             mcp, notices = filter_mcp(mcp, imposed)
             for line in notices:

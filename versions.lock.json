@@ -77,7 +77,7 @@
       "digest": "ce8df445771332e4"
     },
     "improve-codebase-architecture": {
-      "version": "1.1.0",
+      "version": "1.1.1",
       "digest": "520ef079ce23173b"
     },
     "init-project-context": {
@@ -117,7 +117,7 @@
       "digest": "6187ff83481d8d31"
     },
     "tdd": {
-      "version": "1.2.0",
+      "version": "1.2.1",
       "digest": "9b786d20c8f9891c"
     },
     "teach": {
@@ -125,7 +125,7 @@
       "digest": "ddbe33f046572ad8"
     },
     "ticket-sorting": {
-      "version": "1.1.1",
+      "version": "1.1.2",
       "digest": "b9d9fc49674b3c03"
     },
     "to-questionnaire": {
@@ -145,8 +145,8 @@
       "digest": "84343325c82b2d7c"
     },
     "wayfinder": {
-      "version": "1.1.1",
-      "digest": "8030e184715ab60b"
+      "version": "1.1.2",
+      "digest": "9e394183860f9513"
     },
     "workflow-guide": {
       "version": "1.0.1",

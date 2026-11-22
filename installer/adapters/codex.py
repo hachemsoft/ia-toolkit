@@ -7,8 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (USER_CONTEXT, KitError, digest, cli_event, split_block, place_block, command_skill_text, redact, user_context_refusal,
-                    skill_prefix, free_name, rename_references, renamed_skill_file, renamed_notice, _ts, live_call, LIVE_PROMPT, skills_read)
+from ..core import (USER_CONTEXT, KitError, digest, cli_event, split_block, place_block, command_skill_text, redact, skill_prefix, free_name, rename_references, renamed_skill_file, renamed_notice, _ts, live_call, LIVE_PROMPT, skills_read)
 
 CODEX_DIR = '.codex'
 # Managed block markers: no path, so they never change when a folder is renamed. Their text is an identifier: changing it
@@ -164,17 +163,14 @@ def finalize(p: Plan, active: bool = True) -> None:
         if old_block is not None and old_blocks.get(rel) != digest(normalize_newlines(written).encode('utf-8')):
             if not p.restore:
                 raise KitError('Kit block edited by hand in '+label+': move your changes outside the block (or into aikit.toml), remove the block, then ai-kit sync --offline.')
-            p.notices.append('[Check] the kit block in '+label+' was edited by hand: the kit\'s part restored; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
+            p.notices.append('[Check] the kit block in '+label+' was edited by hand: '+('the kit\'s part restored' if active else 'removed with the kit')+'; your copy is in ~/.ai-kit/backups/ (the folder of this run).')
         outside = before.rstrip('\n')+('\n' if before.strip() and after.strip() else '')+after.lstrip('\n')
         block = None
         if active and rel.endswith('AGENTS.md'):
             data = p.writes.get(p.user_file) or (p.user_file.read_bytes() if p.user_file.exists() else b'')
-            refusal = user_context_refusal(data)
-            if refusal:
-                # The source stays as it is; Codex keeps the last copy it had, and the person is told why.
+            if p.user_copy_refusal():
+                # The source stays as it is; Codex keeps the last copy it had, and the person is told why (once, for every CLI).
                 user_text = copied_user_text(old_block)
-                p.notices.append('[Check] '+USER_CONTEXT+' not copied into ~/.codex/AGENTS.md: '+refusal+'. Codex keeps its previous copy'
-                                 ' until the file is fixed and ai-kit sync --offline runs again. The kit configuration itself is installed.')
             else:
                 user_text = data.decode('utf-8')
             block = codex_context_block(p.kit_text, p.practice_texts, user_text, p.adapter_data.get(NAME, {}).get('renamed'))

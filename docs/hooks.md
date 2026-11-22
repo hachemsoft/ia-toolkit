@@ -46,7 +46,7 @@ The agent must not change, by mistake, the configuration that watches it: above 
 **Refused before the action:**
 
 - a write tool (write, edit, patch) whose file is protected: the path is exact. Protected: in `~/.ai-kit/`, `aikit.toml`, `lock.toml`, `sources/`, `state.json`, `hooks/`, `bin/`, `backups/`, `runtime/`, `schemas/`, `news/`, `news.json`, `me/` (the questions `/me` follows) and the rule layers `00_`, `10_`, `20_` in `context/`; the CLIs' settings and instruction files the kit manages, a CLI's own permissions file the kit leaves to you ([agy](cli/agy.md)) and every file the kit installed; `~/.gitconfig`, `~/.config/git/config`, the `.git/config` and `.git/hooks` of the kit folder, and the kit folder from another repo; in a repository, the CLI settings files that could turn hooks off ([CLI pages](cli/matrice.md)) and a `.env` that sets `AI_KIT_*` or `DBT_TARGET`. `USER.md` and `~/.ai-kit/learning/` stay writable;
-- the kit's commands that change the installation or bill a model call: `ai-kit init`, `sync`, `rollback`, `uninstall`, `team use`, `doctor --live`, `friction --publish`, wherever their options are written, also through `python -m ai_kit` or a launcher (`Installer.cmd`, `bootstrap.sh`, `bootstrap.ps1`, `launcher.py`). The agent tells you the command to run in a terminal. Reading commands (`status`, `doctor`, `usage`, `friction --list`) stay allowed.
+- the kit's commands that change the installation or bill a model call: `ai-kit init`, `sync`, `rollback`, `uninstall`, `team use`, `doctor --live`, `friction --publish`, wherever their options are written, also through `python -m ai_kit` (a quoted path with spaces included, `"C:\Program Files\Python311\python.exe" -m ai_kit sync`) or a launcher (`Installer.cmd`, `bootstrap.sh`, `bootstrap.ps1`, `launcher.py`), run or read into the shell (`source`, `.`). The agent tells you the command to run in a terminal. Reading commands (`status`, `doctor`, `usage`, `friction --list`) stay allowed.
 
 **Any other shell command runs.** Reading a shell command to guess what it writes never ends: each shell (bash, zsh, PowerShell, cmd) and each system has its own forms. Instead, after each tool call and at each session start, the integrity check compares the files the kit installed (and the settings of the kit folder's `.git/config` that decide where an update comes from) with what was recorded; a change is reported once, to the agent and to you, with the command that restores it (`ai-kit sync --offline --restore`).
 
@@ -79,17 +79,17 @@ Blocks the git commands that lose work with no way back:
 | `git restore .` | `git restore <file>`, `git restore --staged .` |
 | `git branch -D`, `git branch --delete --force` | `git branch -d` |
 | `git worktree remove --force` (`-f`) | `git worktree remove` (git itself refuses a worktree that is not clean) |
-| a forced push, or a branch deletion, on `main` or `master` (`--force`, `-f`, `+main`, `--force-with-lease`, `--delete`, `:main`) | `git push`, a forced push that names another branch |
+| a forced push, or a branch deletion, on `main` or `master` (`--force`, `-f`, `+main`, `--force-with-lease`, `--delete`, `:main`; `HEAD` and `@` are the branch checked out), or of every branch (`--all`, `--mirror` with `--force` or `--force-with-lease`) | `git push`, a forced push that names another branch |
 
 Add main branches with `AI_KIT_PROTECTED_BRANCHES` (comma-separated, for example `develop,release`). A forced push that names no branch reads the branch checked out (`.git/HEAD`); when it cannot be read, a plain `--force` is refused and `--force-with-lease` passes. There is no permission variable: the refusal tells the agent to let you run the command. The branch protection of your Git host stays the real barrier.
 
 ## `bq-cost-guard`
 
-Blocks `bq query` that has neither `--dry_run` nor `--maximum_bytes_billed=<bytes>`. The other `bq` commands pass. A default set in `.bigqueryrc` is not read: write the flag on the command.
+Blocks `bq query` that has neither `--dry_run` nor `--maximum_bytes_billed=<bytes>` with a number above zero (`0` is no cap). The other `bq` commands pass. A default set in `.bigqueryrc` is not read: write the flag on the command.
 
 ## `infra-prod-guard`
 
-Blocks `terraform apply` and `terraform destroy` (also `tofu`, `terragrunt`), and the `kubectl` commands that change a cluster (`delete`, `apply`, `replace`, `patch`, `scale`, `drain`, `edit`, `set`, `create`, `rollout restart|undo|pause|resume`), when something names production: `prod`, `production`, `prd` or the `AI_KIT_PROD_TARGETS` list, as one word of the name (`gke_project_prod_eu`, `envs/prod`, `app-prod`; not `product-api`).
+Blocks `terraform apply` and `terraform destroy` (also `tofu`, `terragrunt`, with `terragrunt run-all` and `run --all`, where a unit folder that names production counts), and the `kubectl` commands that change a cluster (`delete`, `apply`, `replace`, `patch`, `scale`, `drain`, `edit`, `set`, `create`, `rollout restart|undo|pause|resume`), when something names production: `prod`, `production`, `prd` or the `AI_KIT_PROD_TARGETS` list, as one word of the name (`gke_project_prod_eu`, `envs/prod`, `app-prod`; not `product-api`).
 
 | Program | What is read |
 | --- | --- |
@@ -108,7 +108,7 @@ Each refusal adds one line to `~/.ai-kit/refusals.jsonl`: the date and the guard
 
 ## `integrity`
 
-After each tool call (and at session start, through `whats-new`), compares what the kit installed with what `state.json` recorded:
+After each tool call (and at session start, through `whats-new`), compares what the kit installed with what `state.json` recorded. After a tool that only reads (`Read`, `Grep`, `Glob`, `read_file`, `grep_search`, `list_dir`, `find_by_name`, `view_file`) it answers at once without looking at the disk; the full check runs at session start and after any tool that writes, runs a command or is not in that list. At session start the check comes first, `state.json` readable or not, and a news copy or the friction script that is not the one the kit installed is neither shown to the agent nor run:
 
 - the files the kit owns (`~/.ai-kit/hooks/`, the rule layers, skills, commands, agents…): size, times and inode first, a digest when one of them moved, and always a digest at session start; a missing file counts;
 - the kit's part of the files it shares with a CLI (its block in `CLAUDE.md`, `AGENTS.md`, `config.toml`, its hooks in the CLI's `settings.json`): your own changes to the rest of these files, and the permissions a CLI records there, say nothing;
@@ -147,7 +147,8 @@ The generated `README.txt` says where each file goes, per system and per CLI. Wi
 ## Limits
 
 - A rule on the text of a command is defeated by an alias, a wrapper script or a program the hook does not know.
-- The kit's own commands are recognised in the text of a command: a commit message that quotes one (`git commit -m "run ai-kit sync"`) is refused too; reword it.
+- The kit's own commands are recognised in the words of a command: one quoted as a whole (`git commit -m "run ai-kit sync"`) passes; a quoted text that holds `;`, `&&` or a new line before the command is cut there and refused; reword it.
+- A backslash is read both ways, as a POSIX shell reads it (`g\it` is `git`) and as a Windows path (`C:\tools\git.exe`); `bq.cmd`, `git.exe` and `terraform.bat` are the programs they launch. `dbt-prod-guard` lets a command through when every program in it only prints, searches or records its words (`echo`, `grep`, `git commit -m`); any other program is read as before.
 - On Windows, which gives no change time for a file, an edit that keeps a file's size and sets its modification time back is seen only at session start, when every digest is recomputed.
 - Unless IT locks `integrity` in `managed.toml`, a person can turn it off in `aikit.toml`, and the policy files do not carry it (with `--managed-hooks-only`, the CLI then ignores it). Locked, it is in the policy file of each CLI that has one, except where a CLI's docs do not say which shell runs a hook on Windows; one CLI's managed hooks were written from its source code, not tried on a managed workstation ([per CLI](cli/matrice.md)).
 - Locked, the integrity check still runs the script in the person's `$HOME`: a shell command that replaces `integrity.py` and its recorded digest silences it until the next `ai-kit sync`, as it would a guardrail's script.

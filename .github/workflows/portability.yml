@@ -150,6 +150,8 @@ jobs:
           python3 new/scripts/launcher.py init --home "$home" --target all --user ci@example.org --command-on-path no </dev/null
           test -f "$home/.ai-kit/context/10_CORE.md"
           python3 -c "import json,sys; v=json.load(open(sys.argv[1]))['version']; w=open(sys.argv[2]).read().strip(); sys.exit(0 if v == w else 'state.json says '+v+', this commit is '+w)" "$home/.ai-kit/state.json" new/VERSION
+          # The Core too: the installer of a newer ZIP moves the locked Core to the tag it ships, not only the engine.
+          python3 -c "import sys,tomllib; t=tomllib.load(open(sys.argv[1],'rb'))['sources']['core']['tag']; w='v'+open(sys.argv[2]).read().strip(); sys.exit(0 if t == w else 'lock.toml says Core '+t+', this commit ships '+w)" "$home/.ai-kit/lock.toml" new/VERSION
           before=$(cd "$home" && find . -path ./.ai-kit/backups -prune -o -type f -print0 | sort -z | xargs -0 sha256sum)
           python3 new/scripts/launcher.py init --home "$home" --target all --user ci@example.org --command-on-path no </dev/null
           after=$(cd "$home" && find . -path ./.ai-kit/backups -prune -o -type f -print0 | sort -z | xargs -0 sha256sum)

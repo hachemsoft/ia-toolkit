@@ -242,7 +242,8 @@ def ensure_runtime(runtime, kind, read_only=False):
             pip(python, ['--no-index', '--find-links', str(KIT_DIR/'wheels'), '--force-reinstall', 'ai-kit=='+kit_version()])
         else:
             say('Installing the kit '+kit_version()+' from this folder (pip builds it; libraries from your configured package index)…')
-            subprocess.run([str(python), '-I', '-m', 'pip', 'uninstall', '--yes', '--quiet', 'ai-kit'], capture_output=True, env=clean_env())
+            # pip replaces the installed kit by the one it builds from this folder, even at the same version (a local folder
+            # is always reinstalled); removing it first would leave no kit at all when the build fails.
             pip(python, ['--constraint', str(KIT_DIR/'packaging'/'runtime.txt'), str(KIT_DIR)])
         if not runs(python):
             raise LauncherError('The kit package was installed but does not start in '+str(venv)+'.', 3)

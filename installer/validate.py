@@ -10,7 +10,7 @@ from pathlib import Path
 import re
 
 from .config import check_source
-from .core import ROOT, KitError, content_from, load_commands
+from .core import ROOT, KitError, content_from, load_commands, safe_id
 from .frontmatter import aikit_metadata, parse
 from .resolve import agent_catalog, skill_catalog
 
@@ -32,6 +32,7 @@ def problems(root, engine_version):
             found.append('aikit.toml: no manifest at the root (schema, name, kind, min_engine).')
     except KitError as exc:
         found.append(str(exc))
+    found += mcp_problems(root, manifest and manifest.get('kind') == 'team')
     if manifest and manifest.get('kind') == 'team':
         return found + team_problems(root, manifest)
     if (root/'organization.toml').is_file() or (root/'practices').is_dir() or (root/'profiles').is_dir():
@@ -71,6 +72,35 @@ def problems(root, engine_version):
     paths = [root/p for p in module.KIT_PATHS if (root/p).exists()]
     for path, line, rule, why in module.scan(paths, allowed):
         found.append(path.relative_to(root).as_posix()+(':'+str(line) if line else '')+': '+rule+': '+why)
+    return found
+
+
+def mcp_problems(root, team=False):
+    """mcp/servers.toml of a Core or a Team: each server is one the kit would install (validate_server), and a Team's
+    fetch-and-run launcher names an exact version, as the installation requires."""
+    from .config import unpinned_launcher
+    from .settings import validate_server
+    from .toml_files import read_toml
+    path, name = root/'mcp'/'servers.toml', 'mcp/servers.toml: '
+    if not path.is_file():
+        return []
+    try:
+        servers = read_toml(path).get('servers', {})
+    except KitError as exc:
+        return [name+str(exc)]
+    if not isinstance(servers, dict) or not all(isinstance(v, dict) for v in servers.values()):
+        return [name+'one table per server ([servers.<name>]).']
+    found = []
+    for key, entry in servers.items():
+        try:
+            safe_id(key)
+            if not isinstance(entry.get('enabled', True), bool):
+                raise KitError('enabled must be true or false.')
+            server = validate_server({k: v for k, v in entry.items() if k != 'enabled'})
+            if team and unpinned_launcher(server):
+                raise KitError('its launcher fetches a package without an exact version (name@1.2.3): the installation refuses it.')
+        except KitError as exc:
+            found.append(name+str(key)+': '+str(exc))
     return found
 
 

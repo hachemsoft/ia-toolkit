@@ -7,6 +7,7 @@ import json
 import os
 import re
 from pathlib import Path
+import stat
 import sys
 
 from .core import KitError, digest
@@ -15,6 +16,9 @@ from .toml_files import read_toml
 MANAGED_SCHEMAS = {1}
 FRICTION_CAPTURE = ('propose', 'auto', 'off')
 FRICTION_PUBLICATION = ('approval', 'auto', 'disabled')
+TRACKER_KEYS = ('kind', 'project', 'host', 'labels', 'sources')  # [frictions.tracker] is closed, like every table here
+# Windows: who may own managed.toml and its folder. SYSTEM, the Administrators group, TrustedInstaller.
+WINDOWS_TRUSTED_OWNERS = ('S-1-5-18', 'S-1-5-32-544', 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464')
 
 
 def _is_bool(value):
@@ -72,20 +76,90 @@ def managed_path():
 
 
 def ownership_problem(path):
-    """Why the current user could change this file, or None. POSIX: owned by root, neither the file nor its folder writable by the
-    user. Windows: the user cannot open it for writing (the read-only attribute alone is not enough)."""
+    """Why someone other than IT could change this file, or None."""
+    path = Path(path)
     if os.name == 'nt':
         try:
             with open(path, 'r+b'):
-                pass
+                writable = True
         except OSError:
-            return None
-        return 'the current user can write it'
-    if os.stat(path).st_uid != 0:
+            writable = False
+        return windows_ownership_problem(windows_owner(path), windows_owner(path.parent), writable)
+    return posix_ownership_problem(path)
+
+
+def posix_ownership_problem(path):
+    """POSIX: a regular file (not a link) owned by root in a folder owned by root, neither writable by a group or by other
+    users, and that the current user cannot write (an ACL the mode bits do not show). Run by root, the last check does
+    not apply: root writes everything, which is who IT is."""
+    path = Path(path)
+    file, folder = os.lstat(path), os.lstat(path.parent)
+    if stat.S_ISLNK(file.st_mode):
+        return 'it is a symbolic link'
+    if not stat.S_ISREG(file.st_mode):
+        return 'it is not a regular file'
+    if file.st_uid != 0:
         return 'it is not owned by root'
-    if os.access(path, os.W_OK) or os.access(path.parent, os.W_OK):
+    if file.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+        return 'its group or other users can write it'
+    if stat.S_ISLNK(folder.st_mode):
+        return 'its folder is a symbolic link'
+    if folder.st_uid != 0:
+        return 'its folder is not owned by root'
+    if folder.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+        return 'its folder is writable by its group or by other users'
+    if os.geteuid() != 0 and (os.access(path, os.W_OK) or os.access(path.parent, os.W_OK)):
         return 'the current user can write it or its folder'
     return None
+
+
+def windows_ownership_problem(file_owner, folder_owner, writable):
+    """Windows: the file and its folder are owned by SYSTEM, Administrators or TrustedInstaller (owner SIDs), and the
+    current user cannot open the file for writing. The owner decides: a person can create the file under C:\\ProgramData
+    and set it read-only, which makes it unwritable but still theirs. An owner that cannot be read is refused."""
+    if file_owner is None or folder_owner is None:
+        return 'its owner or the owner of its folder cannot be read'
+    if file_owner not in WINDOWS_TRUSTED_OWNERS:
+        return 'it is owned by '+file_owner+', not by Administrators or SYSTEM (icacls <file> /setowner Administrators)'
+    if folder_owner not in WINDOWS_TRUSTED_OWNERS:
+        return 'its folder is owned by '+folder_owner+', not by Administrators or SYSTEM'
+    if writable:
+        return 'the current user can write it'
+    return None
+
+
+def windows_owner(path):
+    """The owner SID of a file or folder as text (S-1-5-...), or None when it cannot be read. Windows only (advapi32)."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+        advapi32, kernel32 = ctypes.WinDLL('advapi32', use_last_error=True), ctypes.WinDLL('kernel32', use_last_error=True)
+        get_info = advapi32.GetNamedSecurityInfoW
+        get_info.argtypes = [wintypes.LPCWSTR, ctypes.c_int, wintypes.DWORD, ctypes.POINTER(ctypes.c_void_p), ctypes.c_void_p,
+                             ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p)]
+        get_info.restype = wintypes.DWORD
+        to_text = advapi32.ConvertSidToStringSidW
+        to_text.argtypes = [ctypes.c_void_p, ctypes.POINTER(wintypes.LPWSTR)]
+        to_text.restype = wintypes.BOOL
+        free = kernel32.LocalFree
+        free.argtypes = [ctypes.c_void_p]
+        free.restype = ctypes.c_void_p
+        owner, descriptor = ctypes.c_void_p(), ctypes.c_void_p()
+        # SE_FILE_OBJECT = 1, OWNER_SECURITY_INFORMATION = 1; the owner points inside the descriptor, freed once.
+        if get_info(str(path), 1, 1, ctypes.byref(owner), None, None, None, ctypes.byref(descriptor)) != 0:
+            return None
+        try:
+            text = wintypes.LPWSTR()
+            if not to_text(owner, ctypes.byref(text)):
+                return None
+            try:
+                return text.value
+            finally:
+                free(ctypes.cast(text, ctypes.c_void_p))
+        finally:
+            free(descriptor)
+    except Exception:  # noqa: BLE001 — unreadable for any reason: the caller refuses the file
+        return None
 
 
 def lockable_hooks():
@@ -148,6 +222,9 @@ def load_managed(path=None):
                 for check, text in checks:
                     if not check(values[key]):
                         refuse(table+'.'+key+' '+text)
+    unknown = sorted(set(data.get('frictions', {}).get('tracker', {})) - set(TRACKER_KEYS))
+    if unknown:
+        refuse('unknown key '+', '.join('frictions.tracker.'+k for k in unknown)+' (this version applies: '+', '.join(TRACKER_KEYS)+')')
     return data
 
 
@@ -183,8 +260,8 @@ FETCH_AND_RUN = ('npx', 'uvx', 'bunx', 'pnpx', 'pipx')
 
 def unpinned_launcher(server):
     """A fetch-and-run launcher (npx, uvx...) whose package has no exact version: what runs changes without anyone seeing it."""
-    command = Path(str(server.get('command') or '').replace('\\', '/')).name.lower()
-    if command not in FETCH_AND_RUN:
+    from .settings import program
+    if program(server.get('command')) not in FETCH_AND_RUN:
         return False
     packages = [a for a in server.get('args') or [] if not a.startswith('-') and a not in ('run', 'dlx', 'exec')]
     return not packages or not any(('==' in a) or re.search(r'@\d', a) for a in packages[:1])
@@ -232,12 +309,21 @@ def server_identity(server):
 
 
 def denied_match(short, server, denied):
-    """mcp.denied matches a server by name, by URL prefix (https://host/path) or by executable (name or full path)."""
-    address = server.get('httpUrl') or server.get('url') or ''
-    command = str(server.get('command') or '')
+    """mcp.denied matches a server by name, by URL prefix (https://host/path) or by executable (name or full path), without
+    case. A URL entry stops at a boundary: https://mcp.example.org denies that host (any port, any path), not
+    https://mcp.example.org.other.test; https://host/api denies /api and /api/…, not /api2. An executable entry matches the
+    file name with or without the extension Windows adds (npx denies npx.cmd)."""
+    from .settings import program
+    address = (server.get('httpUrl') or server.get('url') or '').lower()
+    command = str(server.get('command') or '').replace('\\', '/').lower()
     for entry in denied:
-        if entry == short or (address and '://' in entry and address.startswith(entry)) or (
-                command and (entry == command or entry == Path(command.replace('\\', '/')).name)):
+        if entry == short:
+            return True
+        lowered = str(entry).replace('\\', '/').lower()
+        if address and '://' in lowered and address.startswith(lowered) and (
+                len(address) == len(lowered) or lowered.endswith('/') or address[len(lowered)] in '/?#:'):
+            return True
+        if command and lowered in (command, command.rsplit('/', 1)[-1], program(command)):
             return True
     return False
 
@@ -397,6 +483,7 @@ def to_overrides(data):
 
 SOURCE_SCHEMAS = {1}
 TEAM_DEFAULTS = ('extra_skills', 'extra_agents', 'extra_commands', 'disabled_skills', 'disabled_agents', 'disabled_commands')
+TEAM_SWITCHES = ('parallel_agents',)  # true or false: the Team's default, the person's aikit.toml on top
 
 
 def version_tuple(text):
@@ -426,9 +513,10 @@ def check_source(root, engine_version):
     defaults = data.get('defaults', {})
     if 'defaults' in data and data.get('kind') != 'team':
         raise KitError(where+': [defaults] is for a Team repository (kind = "team").')
-    if not isinstance(defaults, dict) or set(defaults) - set(TEAM_DEFAULTS) or not all(
-            isinstance(v, list) and all(isinstance(n, str) and n for n in v) for v in defaults.values()):
-        raise KitError(where+': [defaults] accepts lists of names: '+', '.join(TEAM_DEFAULTS)+'.')
+    if not isinstance(defaults, dict) or set(defaults) - set(TEAM_DEFAULTS) - set(TEAM_SWITCHES) or not all(
+            isinstance(v, bool) if k in TEAM_SWITCHES else isinstance(v, list) and all(isinstance(n, str) and n for n in v)
+            for k, v in defaults.items()):
+        raise KitError(where+': [defaults] accepts lists of names ('+', '.join(TEAM_DEFAULTS)+') and true or false for '+', '.join(TEAM_SWITCHES)+'.')
     try:
         needed = version_tuple(data.get('min_engine', '0.0.0'))
     except ValueError:

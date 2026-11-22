@@ -72,7 +72,7 @@ Never write a secret here: `doctor` flags one. Write `${VARIABLE}` and define th
 
 ## `managed.toml` (IT)
 
-Closed schema (`schemas/managed.schema.json`). A file that is unreadable, writable by the user (POSIX: not owned by root, or its folder writable), has an unknown key or a wrong type is refused: every command that changes files stops with exit code 3 and nothing changes. A missing file means not administered. A key absent restricts nothing. An empty list (`[]`) restricts nothing either, except in the allow-lists that name what is permitted: `mcp.allowed_stdio = []` refuses every local server, `mcp.allowed_http = []` every remote server, and `git.allowed_schemes = []` every Git URL. An empty text (`""`) in a list, or `managed_schema = 1.0`, refuses the file: a restriction written wrong shows instead of vanishing.
+Closed schema (`schemas/managed.schema.json`). A file that is unreadable, changeable by someone other than IT (macOS and Linux: the file and its folder are owned by root, neither is writable by a group or by other users, the file is not a link; Windows: the file and its folder are owned by Administrators or SYSTEM, which the read-only attribute does not replace), has an unknown key or a wrong type is refused: every command that changes files stops with exit code 3 and nothing changes. A missing file means not administered. A key absent restricts nothing. An empty list (`[]`) restricts nothing either, except in the allow-lists that name what is permitted: `mcp.allowed_stdio = []` refuses every local server, `mcp.allowed_http = []` every remote server, `git.allowed_schemes = []` and `git.allowed_hosts = []` every Git URL, `git.allowed_groups = []` every group, and `teams.allowed = []` every Team ([ADR 0015](adr/0015-managed-wins-values-resolve-restrictions-all-apply.md)). What IT allows applies on every path: `sync`, the offline re-apply each command reads, and `rollback` check the Core IT imposes, the allowed origins and Teams, the revoked commits and the tag's signature again. An empty text (`""`) in a list, or `managed_schema = 1.0`, refuses the file: a restriction written wrong shows instead of vanishing.
 
 | Key | Value | Effect |
 | --- | --- | --- |
@@ -83,7 +83,7 @@ Closed schema (`schemas/managed.schema.json`). A file that is unreadable, writab
 | `[git] allowed_schemes` | `https`, `ssh` | schemes accepted (default both) |
 | `[git] allow_prerelease` | bool | replaces the person's choice |
 | `[git] revoked` | 40-hex commit SHAs | never activated, even by `rollback` |
-| `[git] signers` | SSH public keys | a tag must carry an SSH signature from one of them |
+| `[git] signers` | SSH public keys, or allowed-signers lines (`name key-type key`) | a tag must carry an SSH signature from one of them, made for that tag name |
 | `[teams] allowed` | Team URLs or prefixes | only these Teams |
 | `[teams] allow_unknown` | bool | `false`: no Team that is not already known |
 | `[hooks] locked` | guardrail names, or `integrity` (which keeps `whats-new` on too) | kept on, whatever anyone writes |
@@ -94,7 +94,7 @@ Closed schema (`schemas/managed.schema.json`). A file that is unreadable, writab
 | `[frictions] capture` | `propose`, `auto`, `off` | replaces the person's choice |
 | `[frictions] publication` | `approval`, `auto`, `disabled` | how frictions reach the tracker |
 | `[frictions] retention_days` | integer, 1 or more | local frictions purged after this (default 30) |
-| `[frictions] tracker` | table: `kind` (`gitlab`, `github`), `project`, `host`, `labels`, `sources` | where frictions go ([frictions](frictions.md)) |
+| `[frictions] tracker` | table: `kind` (`gitlab`, `github`), `project`, `host`, `labels`, `sources`; any other key refuses the file | where frictions go ([frictions](frictions.md)) |
 
 `ai-kit managed-settings --out <empty folder>` writes the CLI policy files IT can deploy, built from the Core and `managed.toml` ([guardrails](hooks.md#rules-it-can-enforce)).
 

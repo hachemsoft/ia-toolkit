@@ -29,11 +29,11 @@ class RollbackTests(unittest.TestCase):
         real = commit.atomic_write
         calls = []
 
-        def failing(path, data):
+        def failing(path, data, *mode):
             calls.append(path)
             if len(calls) == 3:
                 raise OSError('disk full')
-            real(path, data)
+            real(path, data, *mode)
         with mock.patch.object(commit, 'atomic_write', side_effect=failing), self.assertRaises(OSError):
             commit_changes(self.home, self.kit, writes, [self.gone])
         self.assertEqual(self.kept.read_text(encoding='utf-8'), 'before\n')
@@ -53,9 +53,9 @@ class RollbackTests(unittest.TestCase):
         real = commit.atomic_write
         calls = []
 
-        def killed(path, data):
+        def killed(path, data, *mode):
             calls.append(path)
-            real(path, data)
+            real(path, data, *mode)
             if len(calls) == 1:
                 os.kill(os.getpid(), signal.SIGTERM)  # a stopped process, after the first file landed
         before = signal.getsignal(signal.SIGTERM)

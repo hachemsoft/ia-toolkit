@@ -55,7 +55,7 @@ Each friction becomes one issue, created by your own `glab` or `gh`, signed in b
 | `auto` | IT only | sent as soon as logged |
 | `disabled` | IT, or you in your `aikit.toml` | stays local |
 
-The agent may not publish: `friction --publish` is refused to it ([guardrails](hooks.md)). At session start it says how many frictions wait for your approval; `doctor` shows the tracker's state.
+The agent may not publish: `friction --publish` is refused to it ([guardrails](hooks.md)). At session start it says how many frictions wait for your approval; `doctor` shows the tracker's CLI and the frictions not sent; `doctor --live` also asks the tracker's host whether you are signed in.
 
 ## Usage report
 
