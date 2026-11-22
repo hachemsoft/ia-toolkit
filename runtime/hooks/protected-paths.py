@@ -4,6 +4,7 @@ exact), and the kit's own commands that change the installation or bill a model 
 what a command changes is reported by the integrity check after the tool call and at session start (ADR 0030).
 Output: JSON {"decision": "deny", "reason": ...} or {} ({"decision": "ask"} for agy).
 """
+import itertools
 import json
 import os
 import re
@@ -139,9 +140,15 @@ SHELLS = {'sh', 'bash', 'zsh', 'dash', 'ksh', 'fish', 'pwsh', 'powershell'}
 
 CMD = {'cmd', 'cmd.exe'}  # cmd /c program: the next word is run
 
+# Shell keywords before a command (for … ; do ai-kit sync): the next word is a program, as after a wrapper (4.24.2).
+KEYWORDS = {'if', 'then', 'else', 'elif', 'do', 'while', 'until', '!', 'coproc', 'eval', 'iex', 'invoke-expression'}
+# Tools that run a program after their own `run` (uv run ai-kit sync).
+RUNNERS = {'uv', 'poetry', 'pdm', 'hatch', 'pipx', 'rye'}
+TIMEOUT_VALUES = ('-s', '-k', '--signal', '--kill-after')  # timeout's options followed by a value
+
 CHANGES_DIRECTORY = {'cd', 'pushd', 'chdir', 'set-location', 'sl', 'push-location'}
 
-HEREDOC = re.compile(r'<<-?\s*["\']?([A-Za-z_][A-Za-z0-9_]*)["\']?')
+HEREDOC = re.compile(r'(?<!<)<<(?!<)-?\s*(?:"([^"\n]+)"|\'([^\'\n]+)\'|([A-Za-z_][A-Za-z0-9_]*))')  # <<'END-NOTE' ends at END-NOTE
 
 BLOCKED = ('Blocked by the kit: "{}" is configuration of the kit or of a CLI; the agent does not change it. '
            'Reading it is fine. Tell the person what to change (then run ai-kit sync --offline).')
@@ -160,16 +167,18 @@ def without_data_heredocs(text):
         match = HEREDOC.search(line)
         if match:
             words = line[:match.start()].split()
-            # sudo bash <<EOF, cd x && sh <<EOF: any shell before the heredoc runs its body.
-            if not any(w.strip('"\'').rsplit('/', 1)[-1].lower() in SHELLS for w in words):
-                skip_until = match.group(1)
+            piped = [w for part in line[match.end():].split('|')[1:] for w in part.split()[:1]]
+            # sudo bash <<EOF, cd x && sh <<EOF, cat <<EOF | sh (4.24.2): a shell given the body runs it.
+            if not any(re.sub(r'\.exe$', '', w.strip('"\'').replace('\\', '/').rsplit('/', 1)[-1].lower()) in SHELLS
+                       for w in words + piped):
+                skip_until = next(group for group in match.groups() if group)
     return '\n'.join(out)
 
 def normalised(text, lower=True):
     """The text as the shell would resolve its paths: backslashes as /, quotes removed (~/".ai-kit"/x, overrides.tom'l'),
     // and /./ collapsed. Lower case: protected names compare without case (macOS, Windows); lower=False keeps the case, for
     a path to look for on disk (a case-sensitive system finds it only as written)."""
-    text = text.replace('\\', '/').replace('"', '').replace("'", '')
+    text = re.sub('["\'\u2018-\u201f]', '', text.replace('\\', '/'))  # typographic quotes too: PowerShell reads them as quotes
     previous = None
     while previous != text:
         previous, text = text, text.replace('/./', '/')
@@ -179,12 +188,182 @@ def normalised(text, lower=True):
 # A redirection that holds an &: 2>&1, >&2, <&3, >&-, &>, &>>. Its & does not end the command; |& is a pipe.
 REDIRECTION = re.compile(r'\d*[<>]&(?:\d+|-)?|&>>?')
 
-def shell_segments(command):
-    """The pipelines of a shell line: split on new lines, ;, &&, || and &, after joining continued lines. A pipeline stays
-    whole: in "echo path | xargs rm" the path and the write are in two commands of the same pipeline."""
+# Whether the last split of a line in a reading ended inside a quote (the line is then also read BLIND, on its own).
+QUOTE_LEFT_OPEN = {}
+
+# How a shell reads quotes, escapes and comments (4.24.2). The line is read every way that may apply, and a kit command found
+# by any reading is refused: the hook cannot tell which shell runs the line.
+POSIX, POWERSHELL, CMD_READING, BLIND = 'posix', 'powershell', 'cmd', 'blind'
+
+# Past this size a line is read as before 4.24.2 only (split on every operator, quotes or not): the quote reading is for
+# the lines an agent writes, and a huge line must never make the hook give up.
+DEEP_READING_LIMIT = 20000
+# What makes a line more than plain quotes: an escape (\\, `), $'…', a substitution $( ) (a quoting context of its own), a
+# here-document or here-string, PowerShell's @' '@ and <# #>, a typographic quote (PowerShell ends a string at one), a #
+# (bash reads it as a comment only at the start of a word) and PowerShell's --% (it stops parsing). Only a line with none
+# of them is read for its quotes alone; any other is also split on every operator, as before 4.24.2.
+UNSURE_QUOTES = re.compile("<<|<#|@'|@\"|`|\\$'|\\$\\(|\\\\|[\u2018-\u201f]|#|--%")
+
+def readings(command, run_by=None):
+    """The readings that may apply to this line: POSIX always; PowerShell when it holds a backquote or a backslash (its
+    escape is `, a backslash is a path separator); cmd for the text given to cmd /c (no escape there, ' is no quote). The
+    CLIs run their commands in bash or PowerShell, never in cmd."""
+    if len(command) > DEEP_READING_LIMIT:
+        return [BLIND]
+    found = [POSIX]
+    if '`' in command or '\\' in command:
+        found.append(POWERSHELL)
+    if run_by == 'cmd':
+        found.append(CMD_READING)
+    if UNSURE_QUOTES.search(command):
+        found.append(BLIND)  # where the quotes cannot be read with certainty, the line is refused as before 4.24.2
+    return found
+
+def shell_segments(command, reading=POSIX):
+    """The pipelines of a shell line: split on new lines, ;, &&, || and &, after joining continued lines, but never inside
+    quotes: echo "x & ai-kit sync" is one command, its & is text (4.24.2). A pipeline stays whole: in "echo path | xargs rm"
+    the path and the write are in two commands of the same pipeline. The reading decides the escape (\\ in POSIX, ` in
+    PowerShell, none in cmd), the quotes (' is no quote in cmd; $'…' escapes in POSIX) and the comments (# up to the end of
+    the line, not in cmd). A quote left open (a comment's apostrophe, another shell's syntax) hides nothing: the line is
+    then also split as if no quote were written (BLIND), as before 4.24.2."""
     text = re.sub(r'(\\|`)\r?\n', ' ', command)
     text = REDIRECTION.sub(' ', without_data_heredocs(text).replace('|&', '|'))  # `ai-kit 2>&1 sync` is one command
-    return [s for s in re.split(r'\r?\n|;|&&|\|\||&', text) if s.strip()]
+    text = re.sub(r'<#.*?(#>|$)', ' ; ', text, flags=re.S)  # a PowerShell block comment ends what is before it
+    if reading == BLIND:
+        return [s for s in re.split(r'\r?\n|;|&&|\|\||&', text) if s.strip()]
+    escape = {POSIX: '\\', POWERSHELL: '`'}.get(reading)
+    quotes = '"' if reading == CMD_READING else '"\''
+    segments, current, quote, at = [], [], None, 0
+    while at < len(text):
+        char, pair = text[at], text[at:at + 2]
+        escapes_here = quote in (None, '"', "$'") if reading == POSIX else quote != "'"
+        if escape and char == escape and escapes_here and at + 1 < len(text):
+            # An escaped quote outside quotes is a plain character: dropped, it opens nothing. Other pairs stay as written
+            # (a Windows path), only their second character never ends the command.
+            current.append('' if not quote and text[at + 1] in '"\'' else pair)
+            at += 2
+            continue
+        if quote:
+            if char == quote[-1]:
+                quote = None
+        elif reading == POSIX and pair == "$'":
+            quote = "$'"
+            current.append(pair)
+            at += 2
+            continue
+        elif char in quotes:
+            quote = char
+        elif char == '#' and reading != CMD_READING and (not current or current[-1].isspace()):
+            newline = text.find('\n', at)
+            at = len(text) if newline < 0 else newline  # a comment: up to the end of the line
+            continue
+        elif pair in ('&&', '||') or char in ';&\n':
+            segments.append(''.join(current))
+            current = []
+            at += 2 if pair in ('&&', '||') else 1
+            continue
+        current.append(char)
+        at += 1
+    segments.append(''.join(current))
+    found = [s for s in segments if s.strip()]
+    QUOTE_LEFT_OPEN[command, reading] = quote is not None
+    return found
+
+def posix_words(text):
+    """The words of a line as a POSIX shell reads them: \\" inside double quotes and \\x outside quotes are the plain
+    character (bash -c "eval \\"ai-kit sync\\"" gives eval the text ai-kit sync)."""
+    words, word, quote, started, at = [], [], None, False, 0
+    while at < len(text):
+        char = text[at]
+        if char == '\\' and quote != "'" and at + 1 < len(text) and (quote is None or text[at + 1] in '"\\$`'):
+            word.append(text[at + 1])
+            started, at = True, at + 2
+            continue
+        if quote:
+            if char == quote:
+                quote = None
+            else:
+                word.append(char)
+        elif char in '"\'':
+            quote, started = char, True
+        elif char.isspace():
+            if started or word:
+                words.append(''.join(word))
+            word, started = [], False
+        else:
+            word.append(char)
+        at += 1
+    if started or word:
+        words.append(''.join(word))
+    return words
+
+def shell_texts(pipeline):
+    """The texts this pipeline gives a shell to run as a command line of its own: bash -c '…', pwsh -Command "…",
+    cmd /c …, eval '…'. The words are read as a POSIX shell and as PowerShell or cmd read them (a backslash is a path
+    separator there); the texts of both readings are given."""
+    readings = (posix_words(pipeline), split_words(pipeline)) if '\\' in pipeline else (split_words(pipeline),)
+    for words in readings:
+        yield from texts_run_by_a_shell(words)  # (text, 'cmd' or None)
+
+def texts_run_by_a_shell(words):
+    """One pass from the end: where the next -c (or /c) is, for each word, so a long line costs its length, not its square."""
+    norm = [normalised(w) for w in words]
+    next_flag, next_slash_c, flag, slash_c = [None] * len(words), [None] * len(words), None, None
+    for index in range(len(words) - 1, -1, -1):
+        next_flag[index], next_slash_c[index] = flag, slash_c
+        if RUNS_TEXT.fullmatch(norm[index]):
+            flag = index
+        if norm[index] in ('/c', '/k'):
+            slash_c = index
+    for index, word in enumerate(norm):
+        program = re.sub(r'\.exe$', '', word.rsplit('/', 1)[-1])
+        if program in SHELLS:
+            at = next_flag[index]
+            if at is not None and at + 1 < len(words):
+                yield words[at + 1], None
+        elif program in CMD:
+            at = next_slash_c[index]
+            if at is not None:
+                yield ' '.join(words[at + 1:]), 'cmd'
+        elif program in ('eval', 'iex', 'invoke-expression') and index + 1 < len(words):
+            yield ' '.join(words[index + 1:]), None
+
+def substitutions(text):
+    """The commands of $( … ), ` … ` and the process substitutions <( … ), >( … ) outside single quotes: the shell runs them,
+    inside double quotes too (4.24.2)."""
+    found, quote, at = [], None, 0
+    while at < len(text):
+        char = text[at]
+        if char == '\\' and quote != "'":
+            at += 2
+            continue
+        if quote == "'":
+            quote = None if char == "'" else quote
+        elif char == "'" and quote is None:
+            quote = "'"
+        elif char == '"':
+            quote = None if quote == '"' else '"'
+        elif (text.startswith(('$(', '<(', '>('), at) and not text.startswith('$((', at)) and (quote is None or text[at] == '$'):
+            depth, end, inner = 1, at + 2, None
+            while end < len(text) and depth:
+                char_in = text[end]
+                if inner:
+                    inner = None if char_in == inner else inner  # a ) inside quotes does not close the substitution
+                elif char_in in '"\'':
+                    inner = char_in
+                else:
+                    depth += {'(': 1, ')': -1}.get(char_in, 0)
+                end += 1
+            found.append(text[at + 2:end - 1] if depth == 0 else text[at + 2:])
+            at = end
+            continue
+        elif char == '`':
+            end = text.find('`', at + 1)
+            found.append(text[at + 1:end] if end > 0 else text[at + 1:])
+            at = end + 1 if end > 0 else len(text)
+            continue
+        at += 1
+    return found
 
 def split_words(pipeline):
     """The words of a pipeline as the shell reads them, as written: a quoted word stays one word
@@ -216,10 +395,6 @@ def split_words(pipeline):
         words.append(''.join(word))
     return words
 
-def shell_words(pipeline):
-    """The words of a pipeline (split_words), each normalised: lower case, no quote left."""
-    return [normalised(w) if w != '|' else w for w in split_words(pipeline)]
-
 def commands(pipeline):
     """(program, its words, the same words with their case kept) for each program the shell runs in a pipeline, without
     the bracket that opens them; after sudo, xargs, find -exec, bash -c… the next word is a program too, and the text
@@ -238,7 +413,11 @@ def commands(pipeline):
         text_runs = False
         word = normalised(written)
         opens = word.startswith(('(', '$(', '`', '{'))
-        core, cased = (re.sub(r'^[\s`({$]+', '', w) for w in (word, normalised(written, lower=False)))
+        # (ai-kit sync), { ai-kit sync; }: the brackets around a word are not part of it (4.24.2: sync) was no action).
+        core, cased = (re.sub(r'[)`}]+$', '', re.sub(r'^[\s`({$]+', '', w)) for w in (word, normalised(written, lower=False)))
+        if opens and not core:
+            expect = True  # ( or { alone: the next word is the program
+            continue
         if not (expect or opens):
             if found:
                 found[-1][1].append(core)
@@ -251,12 +430,20 @@ def commands(pipeline):
             continue
         current = core.rsplit('/', 1)[-1]
         found.append((current, [], []))
-        expect = current in WRAPPERS or (core.startswith('-') and expect)
+        if current == 'timeout':  # timeout [options] DURATION program: the duration is no program
+            while pending and normalised(pending[0]).startswith('-'):
+                if normalised(pending.pop(0)) in TIMEOUT_VALUES and pending:
+                    pending.pop(0)
+            if pending and re.fullmatch(r'[0-9.]+[smhd]?', normalised(pending[0])):
+                pending.pop(0)
+            expect = True
+            continue
+        if current in RUNNERS and pending and normalised(pending[0]) == 'run':
+            pending.pop(0)
+            expect = True
+            continue
+        expect = current in WRAPPERS or current in KEYWORDS or (core.startswith('-') and expect)
     return found
-
-def command_words(pipeline):
-    """(program, its words) for each program of a pipeline (commands), lower case."""
-    return [(program, words) for program, words, _cased in commands(pipeline)]
 
 PYTHONS = re.compile(r'(python[0-9.]*|py)(\.exe)?')
 
@@ -308,11 +495,42 @@ def kit_launcher_at(name, text, current):
             return True
     return False
 
-def kit_command_reason(command, cwd):
-    """Reason to refuse a kit subcommand the agent must not run, or None."""
+# How much one line may make the hook read (the texts a shell runs, the substitutions, each in every reading): a text
+# costs 1, plus 1 per 200 characters. Past it the line is refused: a line built to be slow to read must not be let through
+# by a hook that gave up.
+READ_BUDGET = 400
+TOO_INTRICATE = ('Blocked by the kit: this command line nests too many shells or substitutions to be read for the kit\'s '
+                 'commands. Split it, or tell the person the command to run in a terminal.')
+
+def kit_command_reason(command, cwd, depth=0, budget=None, run_by=None):
+    """Reason to refuse a kit subcommand the agent must not run, or None. The line is read every way a shell may read it
+    (readings); the text a shell is given to run, and each substitution, is read the same way, as a line of its own."""
+    budget = budget if budget is not None else [READ_BUDGET]
+    pending = readings(command, run_by)
+    for reading in pending:  # each reading on its own, from the same folder: a cd counts once in each
+        reason = kit_command_in(shell_segments(command, reading), cwd, depth, budget)
+        if reason:
+            return reason
+        if QUOTE_LEFT_OPEN.get((command, reading)) and BLIND not in pending:
+            pending.append(BLIND)  # a quote this reading left open hides nothing: the line is also split as before
+    return None
+
+def kit_command_in(pipelines, cwd, depth, budget):
     current = real(cwd)
-    for pipeline in shell_segments(command):
+    for pipeline in pipelines:
         text = pipeline
+        if depth < 4 and len(text) <= DEEP_READING_LIMIT:
+            seen = set()
+            for inner, run_by in itertools.chain(shell_texts(text), ((s, None) for s in substitutions(text))):
+                if (inner, run_by) in seen:
+                    continue  # each text once
+                seen.add((inner, run_by))
+                budget[0] -= 1 + len(inner) // 200
+                if budget[0] < 0:
+                    return TOO_INTRICATE
+                reason = kit_command_reason(inner, current, depth + 1, budget, run_by)
+                if reason:
+                    return reason
         for program, words, cased in commands(text):
             if program in CHANGES_DIRECTORY and words:
                 current = where(cased[-1], current)

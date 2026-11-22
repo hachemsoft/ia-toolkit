@@ -48,8 +48,13 @@ def summary(log):
     return code, [line for line in lines if KEPT.search(line)]
 
 
-def utmctl(*args, stdin=None):
-    return subprocess.run([UTMCTL, *args], input=stdin, capture_output=True)
+def utmctl(*args, stdin=None, timeout=300):
+    """One utmctl call, ended after timeout seconds: a guest agent that stops answering must not hold the run forever
+    (2026-11-22: a file push waited 30 minutes). A call that timed out returns code 124, as timeout(1) does."""
+    try:
+        return subprocess.run([UTMCTL, *args], input=stdin, capture_output=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess([UTMCTL, *args], 124, b'', ('utmctl did not answer within ' + str(timeout) + 's').encode())
 
 
 def main(argv=None):

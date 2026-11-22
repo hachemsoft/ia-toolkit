@@ -37,5 +37,18 @@ class GuestScriptTests(unittest.TestCase):
         self.assertEqual(module().summary('Python 3.15.2\r\n'), (None, []))  # still running
 
 
+    def test_a_guest_agent_that_does_not_answer_ends_the_call(self):
+        # 2026-11-22: utmctl file push waited 30 minutes on a guest agent that no longer answered.
+        from unittest import mock
+        import subprocess
+        loaded = module()
+        def hangs(*args, **kwargs):
+            raise subprocess.TimeoutExpired(args[0], kwargs.get('timeout'))
+        with mock.patch.object(loaded.subprocess, 'run', side_effect=hangs) as run:
+            result = loaded.utmctl('file', 'push', 'Windows', 'C:\\x', stdin=b'')
+        self.assertIsNotNone(run.call_args.kwargs.get('timeout'))
+        self.assertNotEqual(result.returncode, 0)
+
+
 if __name__ == '__main__':
     unittest.main()

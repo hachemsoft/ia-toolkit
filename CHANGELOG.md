@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.24.2 (2026-11-22)
+
+The kit-command guardrail reads quotes as a shell does.
+
+- **Guardrails**: `protected-paths` no longer ends a command at a `;`, `&`, `&&` or `||` written inside quotes: `echo "x & ai-kit sync"`, a commit message or a search that names the command passes. Refused now, and refused by no earlier version: `$(ai-kit sync)` and backquotes, inside double quotes too; `(ai-kit sync)` and `{ ai-kit sync; }`; `eval "ai-kit sync"`; `echo \"x & ai-kit sync\"` (escaped quotes, a real `&`); `bash -c "eval \"ai-kit sync\""`. The text given to `bash -c`, `pwsh -Command`, `cmd /c`, `eval`, `iex` or `Invoke-Expression` is read as a command line of its own. A line is read as a POSIX shell reads it (`\` escapes, `$'…'`, `#` comments), as PowerShell does when it holds a backslash or a backquote, and as cmd does for the text given to `cmd /c` (`'` is no quote there); a quote left open, such as a comment's apostrophe, hides nothing; a `)` inside quotes does not end a `$( )`; a quoted heredoc delimiter is read whole (`<<'END-NOTE'`), and a here-string (`<<<`) is no heredoc. Only a plain line is read for its quotes alone: ASCII quotes, no escape (`\`, backquote), no `$'…'`, no `$( )`, no heredoc or here-string, no PowerShell `@' '@`, `<# #>` or `--%`, no `#`, no typographic quote, at most 20,000 characters. Any other line is also split on every operator, as before: never less refused than in 4.24.1. A PowerShell block comment ends the command before it; typographic quotes are read as quotes. Refused now too: a kit command after a shell keyword (`do`, `then`, `!`…), `timeout 600`, `uv run`, `poetry run` and the like, inside `<( )` and `>( )`, or in a heredoc piped to a shell (`cat <<EOF | sh`). Each reading follows its own `cd`. The line is refused when any reading runs the command, and when it nests too many shells or substitutions to be read (400 texts). Two functions left unused by 4.24.1 are removed.
+- **Tests**: `tests/test_guardrail_quoted_text.py` (the quoted forms, the substitutions, the texts run by a shell, the forms an independent review of this change found); `tests/test_dead_code.py` fails when a function or class of `installer/`, `runtime/` or `scripts/` is named by no code. `scripts/vm_tests.py` ends a call to the VM that no longer answers (5 minutes).
+
 ## 4.24.1 (2026-11-22)
 
 Fixes after an independent read of 4.24.0: three regressions of 4.23 and 4.24, and forms the checks did not read.
