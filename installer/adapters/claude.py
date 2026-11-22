@@ -28,7 +28,7 @@ KIT_HOOK = re.compile(r'[\\/]\.ai-kit[\\/]hooks[\\/]')
 # --- Adapter interface ---------------------------------------------------------------------------------------------
 NAME = 'claude'
 
-# V2 slice 4: what this CLI does with each kit capability (docs/v2/resources.md, measured); doctor shows it.
+# V2 slice 4: what this CLI does with each kit capability (docs/cli/matrice.md, measured); doctor shows it.
 CAPABILITIES = {
     'context': ('OK', 'imported by path'),
     'skills': ('OK', 'always prefixed ai-kit-'),

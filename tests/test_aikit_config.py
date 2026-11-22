@@ -1,5 +1,5 @@
 """The person's ~/.ai-kit/aikit.toml (3.0: the only settings file; overrides.toml is never read), the content manifest's
-min_engine, and the three closed schemas kept in line with the loaders (docs/v2/config.md)."""
+min_engine, and the three closed schemas kept in line with the loaders (docs/configuration.md)."""
 import contextlib
 import io
 import json

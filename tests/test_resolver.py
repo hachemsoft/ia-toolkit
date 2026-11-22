@@ -1,4 +1,4 @@
-"""V2 slices 3 and 8 (docs/v2/resources.md): resources describe themselves; the catalogs are rebuilt from the aikit-* metadata
+"""V2 slices 3 and 8 (docs/repositories.md): resources describe themselves; the catalogs are rebuilt from the aikit-* metadata
 (the catalog files are gone); a missing requirement or a cycle is refused; ai-kit validate reports
 what a content tree must fix before it is tagged."""
 from pathlib import Path

@@ -6,7 +6,7 @@ With this page you know what the `parallel` setting does, when it is worth turni
 
 One setting adds one short rule to the kit context (`00_KIT.md`), which every CLI reads. The rule tells the agent when to give parts of a task to sub-agents at the same time, and how the ones that write files stay out of each other's way. Nothing else is installed: no hook, no script, no new agent.
 
-Without the setting, the agent works as each CLI does by default. One exception: `/review` runs the read-only reviewers of a change at risk at once, whatever the setting ([ADR 0029](adr/0029-risk-based-security-review-by-independent-reviewers.md)); their cost is that of three reviewers, four for a change to agent configuration, plus blast-radius at the full level, at once or not.
+Without the setting, the agent works as each CLI does by default. One exception: `/review` runs the read-only reviewers of a change at risk at once, whatever the setting ([ADR 0029](adr/0029-risk-based-security-review-by-independent-reviewers.md)); their cost is that of three reviewers, four for a change to agent configuration, plus blast-radius at the full level and silent-failure-hunter when installed and the review is not quick, at once or not.
 
 ## When it is worth it
 
@@ -49,7 +49,7 @@ When a task splits into two or more independent parts, each worth an agent of it
 - When a worktree cannot be created (not a git repository, or the sandbox refuses), only one sub-agent writes at a time.
 ```
 
-The kit's own agents (reviewers, investigator, verifier) only read: they never need a worktree. The rule matters for the sub-agents a CLI provides to write code, and for the optional `implement-spec` skill, which follows it.
+The kit's reviewers and investigator only read; the verifier runs the repo's checks and `prove_test.py`, which swaps the change's files back to their base version and restores them ([review](review.md)) in the checkout it works in. None of them needs a worktree. The rule matters for the sub-agents a CLI provides to write code, and for the optional `implement-spec` skill, which follows it.
 
 ## What each CLI does
 

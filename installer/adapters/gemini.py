@@ -176,7 +176,7 @@ def print_live(home, timeout=90):
 # --- Adapter interface ---------------------------------------------------------------------------------------------
 NAME = 'gemini'
 
-# V2 slice 4: what this CLI does with each kit capability (docs/v2/resources.md, measured); doctor shows it.
+# V2 slice 4: what this CLI does with each kit capability (docs/cli/matrice.md, measured); doctor shows it.
 CAPABILITIES = {
     'context': ('DEGRADED', 'a copy: run ai-kit sync --offline after a change'),
     'skills': ('OK', 'each skill is also a command'),

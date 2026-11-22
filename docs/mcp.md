@@ -43,7 +43,7 @@ required = false
 - `trust` is refused: the CLI keeps asking before a server's tools act.
 - An unknown key, a shell (or a shell script) as the command, a wrapper (`env`, `xargs`, `nohup`…), or an interpreter given its code on the command line (`node -e`, `python -c`) is refused, whatever the case or the Windows extension (`Bash.EXE`, `-Command`, `/C`): name the program itself. `cwd` is a text.
 - `ai-kit validate --path <folder>` checks `mcp/servers.toml` with the same rules, before you tag.
-- Pin versions (`:1.2.3`, `pkg==1.2.3`, `pkg@1.2.3`), never `latest`.
+- Pin versions (`pkg==1.2.3`, `pkg@1.2.3`), never `latest`: refused for a Team's `npx`, `uvx`, `bunx`, `pnpx` or `pipx` server, advised for the Core's.
 - A local server needs its program on the workstation, installed by your IT procedure.
 
 ## Turning a server on or off

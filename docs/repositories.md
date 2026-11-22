@@ -9,7 +9,7 @@ With this page you publish a Core or a Team repository, understand how versions 
 | Core | the base everyone gets: skills, agents, commands, context, templates, workflows, `mcp/servers.toml` | IT's `enterprise.core`, else `[core] repo` in the person's `aikit.toml` |
 | Team | what one team adds: skills, agents, context, `mcp/servers.toml`, `[defaults]` | `ai-kit team use <name> --url <URL>` |
 
-Both are Git repositories with an `aikit.toml` manifest at their root (`schema`, `name`, `kind`, `min_engine`). A source whose `min_engine` is newer than the running AI Kit is refused. This repository is itself a Core: its own `aikit.toml` declares `name = "core"`.
+Both are Git repositories with an `aikit.toml` manifest at their root (`schema`, `name`; `kind`, `core` when absent; `min_engine`, optional). A source whose `min_engine` is newer than the running AI Kit is refused. This repository is itself a Core: its own `aikit.toml` declares `name = "core"`.
 
 ## Team repository
 

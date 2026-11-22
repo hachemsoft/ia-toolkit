@@ -1,4 +1,4 @@
-"""V2 slice 2 (ADR 0016, docs/v2/git-sync.md): Git sources, lock.toml, sync, rollback, resume. Local bare repositories only:
+"""V2 slice 2 (ADR 0016, docs/repositories.md): Git sources, lock.toml, sync, rollback, resume. Local bare repositories only:
 installer.sources.LOCAL_FOR_TESTS lets file:// through, by patching, never from the environment. No network."""
 import contextlib
 import hashlib

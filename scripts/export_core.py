@@ -1,4 +1,4 @@
-"""The kit's content as a Core repository in its V2 layout (V2 slice 8, docs/v2/resources.md): skills/<name>/ and agents/<name>.md
+"""The kit's content as a Core repository in its V2 layout (V2 slice 8, docs/repositories.md): skills/<name>/ and agents/<name>.md
 flattened from their category folders, the commands, context, templates, workflows, MCP servers, CHANGELOG.md and NEWS.md,
 and the manifest aikit.toml with kind = "core". The engine reads both layouts; this one is what a Core repository holds.
 

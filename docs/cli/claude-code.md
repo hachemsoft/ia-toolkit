@@ -70,5 +70,5 @@ Then `/guide I need to …` in a repository. `doctor --live` makes one real call
   format is not documented as stable, and an unknown line is skipped.
 - A Claude Code plugin would isolate the kit's names natively, but depends on Claude Code installing it at session start:
   not used.
-- Evals: `evals/run.py --cli claude` runs `claude -p` without shell or file writes; a real run is billed and needs
+- Evals: `evals/run.py --cli claude` runs `claude -p` with git's reads only, or file edits, pytest, git and `prove_test.py` for a `workspace-write` case ([evals](../evals.md)); a real run is billed and needs
   `--confirm-paid-run`.

@@ -1,5 +1,5 @@
 """V2 slice 4: every adapter states what it does with each kit capability (OK, DEGRADED, BLOCKED, with why), and doctor shows
-it for the CLIs installed, instead of hiding a degraded behaviour (docs/v2/resources.md)."""
+it for the CLIs installed, instead of hiding a degraded behaviour (docs/cli/matrice.md)."""
 import contextlib
 import io
 from pathlib import Path

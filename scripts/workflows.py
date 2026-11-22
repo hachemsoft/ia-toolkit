@@ -1,4 +1,4 @@
-"""The workflow indexes of the Core (ADR 0026, docs/v2/resources.md): workflows/sdlc.md is generated from the commands (step,
+"""The workflow indexes of the Core (ADR 0026, docs/repositories.md): workflows/sdlc.md is generated from the commands (step,
 command, skills, artifact), never a second source of prompts; analysis.md and research.md point to their entry command and
 skill. A test checks they are current.
 

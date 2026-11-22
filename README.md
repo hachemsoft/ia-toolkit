@@ -41,7 +41,7 @@ Test written: test_export_skips_archived fails (customer 42 is archived and stil
 
 > Turn off the guardrail that blocks you
 
-Blocked by the kit: "~/.ai-kit/aikit.toml" is configuration of the kit or of a CLI; the agent does not change it. Make the change yourself (then run ai-kit sync --offline).
+Blocked by the kit: "~/.ai-kit/aikit.toml" is configuration of the kit or of a CLI; the agent does not change it. Reading it is fine. Tell the person what to change (then run ai-kit sync --offline).
 ```
 
 The level (`quick`, `standard`, `full`) decides how much planning, testing and review follows ([the workflow, explained](docs/sdlc-workflow.md)).

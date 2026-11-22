@@ -11,14 +11,14 @@ Check these four points in a terminal (PowerShell or Command Prompt). If one is 
 | Python 3.11 or newer, with `venv` and `pip`, usable by your account | `python --version` (or `py -3 --version`) | `Python 3.11.x` or newer |
 | Git 2.29 or newer | `git --version` | `git version 2.29` or newer |
 | An account on the company's GitLab, with access to the kit's project and to your Team's | open the project's page in the browser | the page shows |
-| Your AI CLI installed and signed in (Claude Code, Gemini CLI or Codex) | start it once | it answers |
+| Your AI CLI installed and signed in (Claude Code, Codex CLI, Gemini CLI or Antigravity) | start it once | it answers |
 
 If you ran `pip install .` during an earlier try, remove that copy first: `pip uninstall ai-kit`.
 
 ## 2. Install
 
-1. Open the **Releases** page of the kit's project on the company's GitLab and download `ai-kit-<version>.zip` of the latest version (4.19.2 or newer). The `SHA256SUMS.txt` file next to it is for checking the download if you are asked to.
-2. Right-click the ZIP, **Extract All**, into a folder of yours (for example `Documents\ai-kit-4.19.2`).
+1. Open the **Releases** page of the kit's project on the company's GitLab and download `ai-kit-<version>.zip` of the latest version (4.24.1 or newer). The `SHA256SUMS.txt` file next to it is for checking the download if you are asked to.
+2. Right-click the ZIP, **Extract All**, into a folder of yours (for example `Documents\ai-kit-4.24.1`).
 3. In the extracted folder, double-click **`Installer.cmd`**. It creates the kit's private environment in your home folder, installs the kit from the ZIP (no download), then starts the setup.
 4. Answer the questions in the window:
    - **Identity**: "Detected identity: …", press Enter to confirm, or type your email address.
@@ -35,7 +35,7 @@ In the new terminal:
 
 | Command | What you should see |
 | --- | --- |
-| `ai-kit status` | the kit's version (4.19.2 or newer) and the active Core with its `vX.Y.Z` tag |
+| `ai-kit status` | the kit's version (4.24.1 or newer) and the active Core with its `vX.Y.Z` tag |
 | `ai-kit doctor` | a summary with no `[Check]` line; each `[Check]` says what to do |
 
 `ai-kit doctor` does not call the model and changes nothing. Do not run `ai-kit doctor --live` without a reason: it makes a real call to the model, which may be billed.
@@ -90,4 +90,4 @@ Still stuck: send the full output of `ai-kit doctor` to your pilot contact (read
 - No model call, except `ai-kit doctor --live` when you ask for it.
 - A backup in `~\.ai-kit\backups` at every run that changes files.
 
-To uninstall: `ai-kit uninstall --dry-run` shows what would be removed, then `ai-kit uninstall` asks for confirmation. Kept: your `USER.md`, your `aikit.toml` and the backups.
+To uninstall: `ai-kit uninstall --dry-run` shows what would be removed, then `ai-kit uninstall` asks for confirmation. Kept: your `USER.md`, your `aikit.toml`, `lock.toml`, the source cache, the backups, the frictions and `~/.ai-kit/learning`; a file you edited is kept and named.

@@ -59,7 +59,7 @@ command changes.
 - **Name taken**: when one of your skills has the name of a kit skill or command, yours is kept and the kit's is installed
   as `ai-kit-<name>`; the block says which name to type.
 - **`doctor --live`**: one real call with `codex exec` in a read-only sandbox, without saving the session; may be billed.
-- **Evals**: `python3 evals/run.py --cli codex` runs `codex exec` read-only; `/intent` in a case becomes `$intent`.
+- **Evals**: `python3 evals/run.py --cli codex` runs `codex exec` read-only, `workspace-write` for a case that asks for it ([evals](../evals.md)); `/intent` in a case becomes `$intent`.
 
 ## Troubleshooting
 

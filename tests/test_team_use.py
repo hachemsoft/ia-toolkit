@@ -1,4 +1,4 @@
-"""V2 slice 5 (docs/v2/git-sync.md "team use", docs/v2/cli.md): a Team from Git on top of the content, activated globally;
+"""V2 slice 5 (docs/repositories.md, ADR 0025): a Team from Git on top of the content, activated globally;
 known Teams activated from the cache without network; an unknown Team only with its URL; a Team never brings commands and
 never replaces a protected Core resource; rollback restores the previous Team. Local bare repositories, no network."""
 import contextlib

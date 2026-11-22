@@ -27,7 +27,7 @@ def agy_rules_text(context_names, context_dir='~/.gemini'):
 # --- Adapter interface ---------------------------------------------------------------------------------------------
 NAME = 'agy'
 
-# V2 slice 4: what this CLI does with each kit capability (docs/v2/resources.md, measured); doctor shows it.
+# V2 slice 4: what this CLI does with each kit capability (docs/cli/matrice.md, measured); doctor shows it.
 CAPABILITIES = {
     'context': ('OK', 'included'),
     'skills': ('OK', ''),

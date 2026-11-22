@@ -23,7 +23,7 @@ ai-kit doctor --live   # also one real call to the model (may be billed); --yes 
 | 3 | `managed.toml` cannot be applied: nothing changed, ask IT |
 | 130 | interrupted (Ctrl+C) |
 
-The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) add: 2 when Python or the kit folder is unusable, 3 when the kit package did not install, 4 when another installer run is in progress.
+The launchers (`Installer.cmd`, `scripts/bootstrap.sh`) pass the engine's code through and add: 2 when Python or the kit folder is unusable, 3 when the private environment or the kit package could not be installed or does not start, 4 when another installer run is in progress.
 
 ## Common messages
 

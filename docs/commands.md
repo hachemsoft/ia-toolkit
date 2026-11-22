@@ -30,7 +30,7 @@ The SDLC commands. `workflows/sdlc.md` is the same table, generated from `comman
 | --- | --- | --- | --- | --- |
 | Plan | `/intent` | default | `intent.md` | interview in rounds (grilling), glossary terms and decisions (domain-modeling) |
 | Plan | `/map` | optional | decision tickets | work too large for one session, decisions first (wayfinder) |
-| Design | `/spec` | default | `spec.md` | from the accepted intent, no new interview; one file, never a ticket (to-spec) |
+| Design | `/spec` | default | `spec.md` | from the accepted intent, no new interview; one file, never a ticket (to-spec, domain-modeling) |
 | Build | `/build` | default | diff and tests; `plan.md` for a full change | quick: the existing checks; standard and full: a failing acceptance test you approve before any code, then free slices (tdd's loop optional), then a review of the whole change (code-review) |
 | Build | `/design` | optional | interface sketch or prototype | module shapes compared (codebase-design), or a throwaway prototype |
 | Test | `/test` | default | real output of the checks | what changed and what depends on it; pastes the output (tdd) |
@@ -93,8 +93,8 @@ No skill shares a command's name, because some CLIs make a command of every skil
 ## Domain playbooks
 
 All optional, turned on by a Team or a person. Each, except architecture-decision, ends with a `## In the kit commands` section saying what it changes in
-the steps below, and a rationalizations table. The commands name no domain: `/build`, `/test`, `/diagnose`, `/intent`, `/review` and
-`/learn` tell the agent to follow the installed playbook matching the files or the task
+the steps below, and a rationalizations table. The commands name no domain: `/build`, `/diagnose`, `/intent`, `/review` and `/learn` tell the agent to follow the
+installed playbook matching the files or the task; `/test` reads a playbook's section only when AGENTS.md has no test table
 ([ADR 0021](adr/0021-workflow-extensions-reuse-the-playbook-section.md)).
 
 | Playbook | Extends | Role |

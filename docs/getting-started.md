@@ -84,7 +84,7 @@ ai-kit team use none                                                          # 
 | `ai-kit sync --from-bundle <file>` | the Core from a Git bundle file, such as `core/ai-kit-core.bundle` of a newer ZIP | no |
 | `ai-kit status` | what is active, and whether a newer tag was seen at the last sync | no |
 
-`sync` uses the Core repository of `[core] repo` in your `aikit.toml`, or `enterprise.core` set by IT, else the one recorded at the first install. A new engine version comes as a new ZIP (or `git pull` in a clone): run its installer the same way.
+`sync` uses the Core repository of `[core] repo` in your `aikit.toml`, or `enterprise.core` set by IT, else the one recorded at the first install. A new engine version comes as a new ZIP (or `git pull` in a clone): run its installer the same way. It never replaces an organization's Core: `sync` moves it.
 
 ## Go back
 

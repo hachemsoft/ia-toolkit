@@ -38,7 +38,7 @@ missing setting when the call fails.
 
 ## Check in Gemini CLI
 
-`/memory show` (the four files before the repository context), `/commands list`, `/skills list`, `/agents list` (after
+`/memory show` (the four files before the repository context, five with an active Team), `/commands list`, `/skills list`, `/agents list` (after
 `/agents reload`), `/mcp`.
 
 ## Protected configuration
