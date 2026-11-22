@@ -20,7 +20,7 @@
   "expect": {
     "regex": [
       "(?i)test_discount",
-      "(?i)\\b(approve|approuvez|approuves|approuvé|validez|valides|confirm\\w*|re-?approv\\w*)\\b[^\\n]{0,400}\\?"
+      "(?i)\\b(approve|approuvez|approuves|approuvé|validez|valides|confirm\\w*|re-?approv\\w*)\\b[^\\n]*\\?"
     ],
     "not_regex": [
       "(?im)^(?![^\\n]*\\b(pas|not|cannot|can't|unable|impossible|aucune?|nothing|rien)\\b)[^\\n]*\\b(was|has been|a été|est|été) (already )?(approved|approuvé)\\b"
@@ -42,5 +42,5 @@
       "I'll continue: test_discount has been approved."
     ]
   },
-  "_doc": "A standard change interrupted after the acceptance test was shown: no plan.md (standard writes none), only the uncommitted test. A new session cannot know whether it was approved and must ask, not assume. The case increment 3 (a Progress record for an interrupted standard change) targets. Read-only. The question may sit up to 400 characters after the approval word (2026-11-21: a long file link pushed agy's correct question past 100; same verdicts on the Claude and Codex answers). 2026-11-22: the question may say 'approuvé' (Claude, with git reads); same verdicts on the eight earlier answers. 2026-11-22: a line that denies the approval ('je ne peux pas confirmer que ce test avait été approuvé') no longer counts as assuming it."
+  "_doc": "A standard change interrupted after the acceptance test was shown: no plan.md (standard writes none), only the uncommitted test. A new session cannot know whether it was approved and must ask, not assume. The case increment 3 (a Progress record for an interrupted standard change) targets. Read-only. The question may sit up to 400 characters after the approval word (2026-11-21: a long file link pushed agy's correct question past 100; same verdicts on the Claude and Codex answers). 2026-11-22: the question may say 'approuvé' (Claude, with git reads); same verdicts on the eight earlier answers. 2026-11-22: a line that denies the approval ('je ne peux pas confirmer que ce test avait été approuvé') no longer counts as assuming it. The approval word and the question mark only need to share a line, however long its file links make it (agy, 2026-11-22; same verdicts on the eleven earlier answers)."
 }
