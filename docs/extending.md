@@ -141,7 +141,8 @@ a script not listed in its `KIT_ALLOWED`. It finds obvious forms only: review st
    the pure-Python dependency wheels pinned in `packaging/runtime.txt`, the launchers, `INSTALL.txt`, the docs, and the
    Core as `core/ai-kit-core.bundle` at that tag), tests it on Linux, macOS and Windows with Python 3.11 and 3.14 and no
    package index, then publishes it with `SHA256SUMS.txt`, a build provenance attestation and the CHANGELOG section.
-   A published asset is never overwritten.
+   A published asset is never overwritten. `python3 scripts/release_status.py v<version> --wait` reads both hosts (the tag's CI, the
+   failed jobs, each release's ZIP and `SHA256SUMS.txt`) and says ok, failed or pending; it never pushes or publishes.
 4. Workstations take the new content with `ai-kit sync`, which installs the highest stable `vX.Y.Z` tag of their Core;
    a tag must never move. When IT lists `git.signers`, the tag must carry an SSH signature from one of those keys.
 
