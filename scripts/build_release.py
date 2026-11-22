@@ -24,6 +24,8 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 # What a person needs next to the wheels: the launchers, the version, the licence, how to start, and the documentation.
+# docs/sdlc holds the specs of the kit's own changes: working papers, of no use to the people who install the kit.
+NOT_SHIPPED = ('docs/sdlc',)
 SHIPPED = ('Installer.cmd', 'scripts/bootstrap.sh', 'scripts/bootstrap.ps1', 'scripts/launcher.py', 'VERSION', 'README.md', 'CHANGELOG.md', 'LICENSE', 'docs')
 
 INSTALL_TXT = """AI Kit {version}
@@ -98,6 +100,20 @@ def core_bundle(version, worktree, dest, clone):
     run(['git', '-C', str(repo), 'bundle', 'create', '--quiet', str(dest), 'refs/tags/'+tag], env=env)
 
 
+def ship(source, payload):
+    """SHIPPED copied from the staging copy into the ZIP's content, without NOT_SHIPPED."""
+    for rel in SHIPPED:
+        src = source/rel
+        if src.is_dir():
+            left_out = {(source/name).resolve() for name in NOT_SHIPPED}
+            shutil.copytree(src, payload/rel, ignore=lambda folder, names: [n for n in names if (Path(folder)/n).resolve() in left_out])
+        elif src.is_file():
+            (payload/rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, payload/rel)
+        else:
+            raise SystemExit('Missing from the repository: '+rel)
+
+
 def environment_python(folder):
     return folder/('Scripts' if os.name == 'nt' else 'bin')/('python.exe' if os.name == 'nt' else 'python')
 
@@ -128,15 +144,7 @@ def main(argv=None):
         run([str(environment_python(check)), '-I', '-m', 'pip', 'install', '--quiet', '--no-index', '--find-links', str(wheels), 'ai-kit=='+version],
             env={**os.environ, 'PIP_USER': '0'})
         run([str(environment_python(check)), '-I', '-c', 'import ai_kit.cli, rich, questionary; from ai_kit.core import ROOT; assert (ROOT/"VERSION").is_file() and not (ROOT/"skills").exists()'])
-        for rel in SHIPPED:
-            src = source/rel
-            if src.is_dir():
-                shutil.copytree(src, payload/rel)
-            elif src.is_file():
-                (payload/rel).parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(src, payload/rel)
-            else:
-                raise SystemExit('Missing from the repository: '+rel)
+        ship(source, payload)
         # The package holds only the engine; the content travels as a git bundle of this repository at v<version>
         # (this repository is the Core), activated offline by the first installation.
         core_bundle(version, args.worktree, payload/'core'/'ai-kit-core.bundle', tmp/'core-clone')

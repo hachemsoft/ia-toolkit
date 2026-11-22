@@ -6,11 +6,15 @@ import hashlib
 import json
 import re
 
-from .core import ROOT, KitError, inside, read_json
+from .core import KitError, content_root, inside, read_json
 from .frontmatter import strip_aikit
 from .resolve import agent_catalog, skill_catalog
 
-LOCK = ROOT/'versions.lock.json'
+
+def lock_path():
+    """The lock of the content in use: the kit's own, or the one of the Core or Team tree being read (content_from)."""
+    return content_root()/'versions.lock.json'
+
 SEMVER = re.compile(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)')
 CATALOGS = (('skills', 'skills/<name>/SKILL.md metadata aikit-version'), ('agents', 'agents/<name>.md metadata aikit-version'))
 BUILD = {'skills': skill_catalog, 'agents': agent_catalog}
@@ -38,7 +42,7 @@ def content_digest(path):
 
 def catalog_versions():
     """{kind: {name: version}} from the catalogs (entries with a path; a skill replaced_by another has none)."""
-    return {kind: {name: entry.get('version') for name, entry in BUILD[kind](ROOT).items() if 'path' in entry}
+    return {kind: {name: entry.get('version') for name, entry in BUILD[kind](content_root()).items() if 'path' in entry}
             for kind, rel in CATALOGS}
 
 
@@ -47,9 +51,9 @@ def current():
     result = {}
     for kind, rel in CATALOGS:
         entries = {}
-        for name, entry in BUILD[kind](ROOT).items():
+        for name, entry in BUILD[kind](content_root()).items():
             if 'path' in entry:
-                entries[name] = {'version': entry.get('version'), 'digest': content_digest(inside(ROOT, entry['path']))}
+                entries[name] = {'version': entry.get('version'), 'digest': content_digest(inside(content_root(), entry['path']))}
         result[kind] = entries
     return result
 
@@ -57,7 +61,7 @@ def current():
 def problems(lock=None):
     """What stops the lock from being written: a missing or invalid version, a content changed under the same version,
     a version going down."""
-    lock = read_json(LOCK) if lock is None else lock
+    lock = read_json(lock_path()) if lock is None else lock
     found = []
     for kind, entries in current().items():
         for name, now in sorted(entries.items()):
@@ -78,7 +82,7 @@ def problems(lock=None):
 
 def stale(lock=None):
     """Components whose lock entry no longer matches (new, removed, or a new version): versions.py --update records them."""
-    lock = read_json(LOCK) if lock is None else lock
+    lock = read_json(lock_path()) if lock is None else lock
     now = current()
     return sorted(kind[:-1] + ' ' + name for kind in now for name in set(now[kind]) | set(lock.get(kind, {}))
                   if now[kind].get(name) != lock.get(kind, {}).get(name))
@@ -88,4 +92,4 @@ def write_lock():
     found = problems()
     if found:
         raise KitError('\n'.join(found))
-    LOCK.write_text(json.dumps(current(), indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+    lock_path().write_text(json.dumps(current(), indent=2, ensure_ascii=False) + '\n', encoding='utf-8')

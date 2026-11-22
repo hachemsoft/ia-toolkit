@@ -85,12 +85,12 @@
       "digest": "e1b2a6699d5fa034"
     },
     "investigation": {
-      "version": "1.0.0",
-      "digest": "4b27d457ae5a8aab"
+      "version": "1.1.0",
+      "digest": "f05b94a185088c43"
     },
     "manual-steps": {
-      "version": "1.0.0",
-      "digest": "3771d3fc9c70433a"
+      "version": "1.0.1",
+      "digest": "5d908984ae38993b"
     },
     "mr": {
       "version": "1.1.0",
@@ -101,20 +101,20 @@
       "digest": "678876c92e1d487e"
     },
     "retrospective": {
-      "version": "1.1.1",
-      "digest": "40a6b1dd32c9942c"
+      "version": "1.1.2",
+      "digest": "59b34f78d9cb0a62"
     },
     "review-guide": {
       "version": "1.2.0",
       "digest": "ed75beec1a0e7ef1"
     },
     "routing": {
-      "version": "1.0.3",
-      "digest": "24fc99b434e7b136"
+      "version": "1.0.4",
+      "digest": "389f105229751483"
     },
     "setup-workflow": {
-      "version": "1.1.1",
-      "digest": "6187ff83481d8d31"
+      "version": "1.1.2",
+      "digest": "8ea7f6450c0c80a1"
     },
     "tdd": {
       "version": "1.2.1",

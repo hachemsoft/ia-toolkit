@@ -35,6 +35,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+CLIS = ('gemini', 'agy', 'codex', 'claude')
 BETWEEN_GIT = ('checkout', 'switch', 'add', 'commit', 'stash')  # a closed list: the runner only ever touches the temporary copy
 
 def load_cases(folder, only=None):
@@ -70,6 +71,9 @@ def turns_problem(case):
     turns = case.get('turns', [])
     if not isinstance(turns, list):
         return 'turns must be a list'
+    for named in [case.get('cli')] + [turn.get('cli') for turn in turns if isinstance(turn, dict)]:
+        if named is not None and named not in CLIS:
+            return 'unknown CLI ' + str(named) + ' (one of ' + ', '.join(CLIS) + ')'
     paths = []
     for number, turn in enumerate([{'prompt': case['prompt'], 'expect': case['expect'], 'between': case.get('between')}] + turns, 1):
         if not isinstance(turn, dict) or not isinstance(turn.get('prompt'), str) or not isinstance(turn.get('expect'), dict):
@@ -116,8 +120,11 @@ def check(output, expect):
     return failures
 
 def api_error(returncode, output):
-    """Tells an infrastructure failure (API, quota, authentication) apart from a behaviour failure."""
-    match = re.search(r'status: (\d{3})', output) or re.search(r'(?<![.:\d])\b(401|402|403|429|5\d\d)\b[^\n]*(error|Error|quota|billing|permission)', output)
+    """Tells an infrastructure failure (API, quota, authentication) apart from a behaviour failure. A "status: NNN" counts
+    when it is an error status (4xx, 5xx) and, for a run that succeeded, only on the error stream: a model answer may quote
+    one ("returns status: 200")."""
+    stderr = output.split('\n--- stderr ---\n', 1)[1] if '\n--- stderr ---\n' in output else ''
+    match = re.search(r'status: ([45]\d{2})', output if returncode != 0 else stderr) or re.search(r'(?<![.:\d])\b(401|402|403|429|5\d\d)\b[^\n]*(error|Error|quota|billing|permission)', output)
     if match:
         return 'API ' + match.group(1) + ': model answer unavailable (authentication, quota or billing), not a behaviour failure'
     if 'headless mode cannot prompt for' in output:
@@ -175,8 +182,14 @@ def blocked(case, state, baseline, cli=None):
     """Why a case does not run: its preconditions, or a skeleton from ai-kit new whose prompt is still to write (never sent to a model)."""
     if '<…' in case['prompt']:
         return ['skeleton to complete: its prompt and criteria are placeholders']
-    if case.get('turns') and cli is not None and cli not in RESUMABLE:
-        return ['several turns: resume not supported by the runner for ' + cli + ' (claude and codex only)']
+    if case.get('cli') and cli is not None and case['cli'] != cli:
+        return ['this case starts in one CLI: it runs with --cli ' + case['cli'] + ' only']
+    previous = case.get('cli') or cli
+    for turn in case.get('turns', []):  # a turn that resumes stays in the CLI before it; another CLI starts afresh
+        current = turn.get('cli', previous)
+        if cli is not None and current == previous and not turn.get('new_session') and current not in RESUMABLE:
+            return ['several turns: resume not supported by the runner for ' + current + ' (claude and codex only)']
+        previous = current
     return unmet_preconditions(case, state) if case.get('requires') and not baseline else []
 
 def unmet_preconditions(case, state):
@@ -278,8 +291,11 @@ def cli_command(cli, executable, case, timeout, model, approval_mode, prompt=Non
     if cli == 'claude':
         # Claude Code: print mode, no shell and no file write, as the Gemini policy does; skills and agents stay available.
         # A writable case: file edits are accepted without a prompt (print mode cannot answer one), and of the shell only the
-        # test runner and git, for the correction loop (decided 2026-11-21); Claude Code has no sandbox of its own here.
-        locked = (['--permission-mode', 'acceptEdits', '--allowedTools', 'Bash(python -m pytest:*)', 'Bash(python3 -m pytest:*)', 'Bash(git:*)']
+        # test runner and git, for the correction loop (decided 2026-11-21), and the kit's proof script, which the verifier
+        # runs to show a test fails without the code (it runs the test command it is given, in the case's temporary copy);
+        # Claude Code has no sandbox of its own here.
+        locked = (['--permission-mode', 'acceptEdits', '--allowedTools', 'Bash(python -m pytest:*)', 'Bash(python3 -m pytest:*)', 'Bash(git:*)',
+                   'Bash(python3 ~/.ai-kit/bin/prove_test.py:*)', 'Bash(python ~/.ai-kit/bin/prove_test.py:*)']
                   if case.get('sandbox') == 'workspace-write' else
                   # A read-only case: no write, and of the shell only git's reads, as Codex's read-only sandbox allows them.
                   ['--disallowedTools', 'Write,Edit,NotebookEdit', '--allowedTools', 'Bash(git status:*)', 'Bash(git branch:*)', 'Bash(git log:*)', 'Bash(git diff:*)'])
@@ -293,7 +309,7 @@ def cli_command(cli, executable, case, timeout, model, approval_mode, prompt=Non
     # activate_skill stays available. Plan mode blocks skill activation in Gemini 0.65 and would skew the evaluation.
     return [executable, '--approval-mode', approval_mode, '--skip-trust', '--policy', str(policy)] + (['-m', model] if model else []) + ['-p', prompt]
 
-def run_case(case, home, timeout, model=None, approval_mode='default', cli='gemini', executable=None):
+def run_case(case, home, timeout, model=None, approval_mode='default', cli='gemini', executable=None, stand_in=False):
     """Runs the case's turns in one temporary copy. Returns the output of every turn, the failures of the first turn that
     failed (later turns are not sent) and the number of turns run."""
     fixture = case.get('cwd')
@@ -312,6 +328,7 @@ def run_case(case, home, timeout, model=None, approval_mode='default', cli='gemi
         run_dir = cwd / case['subdir'] if case.get('subdir') else cwd
         turns = [{'prompt': case['prompt'], 'expect': case['expect'], 'between': case.get('between'), 'new_session': True}] + case.get('turns', [])
         outputs = []
+        previous_cli = cli
         for number, turn in enumerate(turns, 1):
             try:
                 # unchanged: as the turn found it. A later turn's "between" (a change made outside the agent) comes after the
@@ -325,8 +342,13 @@ def run_case(case, home, timeout, model=None, approval_mode='default', cli='gemi
             except (OSError, subprocess.CalledProcessError) as exc:
                 outputs.append('=== turn ' + str(number) + ' ===\n')
                 return '\n'.join(outputs), ['ERROR turn ' + str(number) + ': the runner could not prepare it (' + str(exc) + '): not a behaviour result'], number
-            command = cli_command(cli, executable or cli, case, timeout, model, approval_mode, turn['prompt'], resume=not turn.get('new_session'))
-            output, failures = run_turn(command, run_dir, env, timeout, cli, turn['expect'])
+            # A turn may name another CLI (a resume across CLIs): no conversation crosses them, so it starts afresh there.
+            turn_cli = turn.get('cli', previous_cli)
+            resume = not turn.get('new_session') and turn_cli == previous_cli
+            turn_executable = executable if (stand_in or turn_cli == cli) else shutil.which(turn_cli)
+            command = cli_command(turn_cli, turn_executable or turn_cli, case, timeout, model, approval_mode, turn['prompt'], resume=resume)
+            previous_cli = turn_cli
+            output, failures = run_turn(command, run_dir, env, timeout, turn_cli, turn['expect'])
             if failures and not failures[0].startswith('ERROR'):
                 failures += file_failures(cwd, turn['expect'], before)
             elif not failures:
@@ -431,7 +453,7 @@ def main(argv=None):
         started = time.monotonic()
         while True:
             attempts += 1
-            output, failures, turns = run_case(case, args.home.resolve(), int(case.get('timeout', args.timeout)), args.model, args.approval_mode, args.cli, executable)
+            output, failures, turns = run_case(case, args.home.resolve(), int(case.get('timeout', args.timeout)), args.model, args.approval_mode, args.cli, executable, bool(args.stand_in))
             infra = bool(failures) and failures[0].startswith('ERROR')
             if not infra or attempts > args.retries:
                 break

@@ -429,6 +429,32 @@ class MultiTurnTests(unittest.TestCase):
         self.assertIn('git push', str(refused.exception))
         self.assertEqual(self.argv(), [])
 
+    def test_a_turn_may_switch_cli_and_then_starts_a_new_session(self):
+        """Resume across CLIs (mission, level C): the case sets turn 1's CLI, a later turn names another; no conversation
+        crosses CLIs, so that turn starts afresh in the other CLI, in the same repository."""
+        self.case([{'cli': 'codex', 'prompt': 'I approved the test yesterday. Go on.', 'expect': {'contains': ['done']}}], cli='claude')
+        code, out, report = self.run_cases('claude', STAND_IN_ANSWERS='Which discount? ||done')
+        self.assertEqual(code, 0, out)
+        calls = self.argv()
+        self.assertEqual(len(calls), 2, out)
+        self.assertEqual(calls[0][0], '-p')
+        self.assertEqual(calls[1][:2], ['exec', '--skip-git-repo-check'])
+        self.assertNotIn('resume', calls[1])
+        self.assertEqual(report['results'][0].get('turns'), 2)
+
+    def test_a_case_that_sets_its_cli_runs_only_with_that_cli(self):
+        self.case([], cli='claude')
+        code, out, report = self.run_cases('codex')
+        self.assertEqual(report['results'][0]['status'], 'SKIP', out)
+        self.assertIn('--cli claude', report['results'][0]['failures'][0])
+        self.assertEqual(self.argv(), [])
+
+    def test_an_unknown_cli_in_a_turn_is_refused_when_the_cases_load(self):
+        self.case([{'cli': 'cursor', 'prompt': 'Go on.', 'expect': {}}], cli='claude')
+        with self.assertRaises(SystemExit) as refused:
+            self.run_cases('claude')
+        self.assertIn('cursor', str(refused.exception))
+
     def test_a_between_the_runner_cannot_do_is_an_error_not_a_crash(self):
         self.case([{'between': {'git': [['checkout', 'no-such-branch']]}, 'prompt': 'Go on.', 'expect': {}}])
         code, out, report = self.run_cases('claude', STAND_IN_ANSWERS='Which discount? ||done')
@@ -460,7 +486,9 @@ class MultiTurnTests(unittest.TestCase):
         self.assertIn('--allowedTools', command)
         allowed = command[command.index('--allowedTools') + 1:]
         allowed = allowed[:next((i for i, a in enumerate(allowed) if a.startswith('--')), len(allowed))]
-        self.assertEqual(sorted(allowed), ['Bash(git:*)', 'Bash(python -m pytest:*)', 'Bash(python3 -m pytest:*)'])
+        # 4.24, contract changed on purpose: the kit's proof script too, which the verifier runs (case 31); nothing else of the shell.
+        self.assertEqual(sorted(allowed), ['Bash(git:*)', 'Bash(python -m pytest:*)', 'Bash(python ~/.ai-kit/bin/prove_test.py:*)',
+                                           'Bash(python3 -m pytest:*)', 'Bash(python3 ~/.ai-kit/bin/prove_test.py:*)'])
         plain = evals_run.cli_command('claude', 'claude', {'prompt': '/build x'}, 60, None, 'default')
         # A read-only case reads git only (contract changed on purpose 2026-11-22): no test runner, no write.
         self.assertFalse([a for a in plain if 'pytest' in a], plain)

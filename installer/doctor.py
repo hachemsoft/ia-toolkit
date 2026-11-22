@@ -15,6 +15,7 @@ from .core import (hook_parts, _PACKAGE_DIR, ROOT, USER_CONTEXT, SECRET, KitErro
 from . import versions
 from .adapters import ADAPTERS
 from .interface import DoctorContext, LiveCheck
+from .config import filter_mcp, load_managed, team_mcp_gate
 from .settings import core_selection, context_folder, managed_context_names, merge_settings, core_settings, personal_settings, recorded_targets, resolve_mcp, setting_differences, team_settings, unknown_keys, version_changes
 
 
@@ -75,7 +76,7 @@ def guardrail_checks(home, state, status):
             status(blocks(answer), 'Guardrail '+name+': synthetic test, the script blocks a known case when run (this does not prove the CLI calls it)')
 
 
-REPO_SKILL_DIRS = ('.agents/skills', '.gemini/skills', '.codex/skills')
+REPO_SKILL_DIRS = ('.agents/skills', '.gemini/skills', '.codex/skills', '.claude/skills')
 # A skills folder that some CLIs read in the home folder, where the kit writes nothing.
 SHARED_SKILL_DIRS = ('.agents/skills',)
 
@@ -154,9 +155,22 @@ def mcp_report(home, state):
     servers, undefined = resolve_mcp(core_settings().get('defaults', {}).get('mcp', {}), selection.get('mcp', []), mine, team)
     # A server the person or the team turned off is said so.
     off = sorted({n for layer in (mine, team) for n, v in (layer or {}).items() if v is False} - set(servers) - set(undefined))
+    # What an installation keeps: not the servers IT refuses (managed.toml), nor a Team's local server nobody approved (ADR 0022).
+    try:
+        managed = load_managed(None)
+        kept, _ = filter_mcp({'ai-kit-'+name: server for name, server in servers.items()}, managed)
+        team_servers = {n: e.get('server', {}) for n, e in (team or {}).items() if isinstance(e, dict) and e.get('team')}
+        kept, _, _ = team_mcp_gate(kept, team_servers, managed, state.get('mcp_approvals'), None)
+    except KitError:  # managed.toml refused, or a required server refused: only what the last sync installed is sure
+        kept = state.get('mcp') or {}
+    refused = [name for name in servers if 'ai-kit-'+name not in kept]
+    servers = [name for name in servers if 'ai-kit-'+name in kept]
     lines = []
     if servers:
         lines.append('Data connections (MCP): '+', '.join(servers)+' configured; connection not verified (check it with your CLI\'s MCP command).')
+    if refused:
+        lines.append('Data connections (MCP): '+', '.join(refused)+' not installed: refused by IT (managed.toml) or, for a Team\'s local server, '
+                     'waiting for your approval (ai-kit sync in a terminal; docs/mcp.md).')
     if undefined or off:
         missing = [n+' not provided by your organization yet' for n in undefined] + [n+' turned off (in your aikit.toml or by your team)' for n in off]
         about = 'the SQL and dbt files' if {'bigquery', 'dbt'} & set(undefined + off) else 'the files'
@@ -436,7 +450,7 @@ def doctor_checks(home, cwd=None, problems=None, live=False):
                 problems.append(message)
     status(sys.version_info >= (3,11),'Python 3.11 minimum')
     # managed.toml (2.0.0): say which settings IT imposes, or why the file is refused (every change then exits 3).
-    from .config import ManagedConfigError, drift, load_managed, summary
+    from .config import ManagedConfigError, drift, summary
     managed = None
     try:
         managed = load_managed(None)

@@ -50,9 +50,12 @@ BACKUP = '.ai-kit-proof'
 TAIL = 4000
 DEFAULT_TIMEOUT = 420  # under the verifier's 10 minutes, so the run ends before the agent is stopped
 TEST_DIRS = {'test', 'tests', '__tests__', 'spec'}
-TEST_NAMES = ('test_*.py', '*_test.py', '*_test.go', '*.test.js', '*.test.ts', '*.test.jsx', '*.test.tsx', '*.spec.js',
+TEST_NAMES = ('test_*.py', '*_test.py', 'conftest.py', '*_test.go', '*.test.js', '*.test.ts', '*.test.jsx', '*.test.tsx', '*.spec.js',
               '*.spec.ts', '*.spec.jsx', '*.spec.tsx', '*Test.java', '*Tests.java', '*Spec.scala', '*Test.php')
 WAREHOUSE = {'dbt'}
+# Programs that start another one: the warehouse command is then behind them (uv run dbt, poetry run dbt, python -m dbt).
+RUNNERS = {'uv', 'uvx', 'poetry', 'pipx', 'pdm', 'hatch', 'pipenv', 'rye', 'conda', 'mamba', 'micromamba', 'python', 'python3', 'py'}
+PROD_TARGETS = ('prod', 'production', 'prd')  # as the dbt-prod-guard: the AI_KIT_PROD_TARGETS list adds to them
 
 
 class RepoError(Exception):
@@ -90,6 +93,15 @@ def resolve_base(repo, base):
     raise RepoError('no base: pass --base (no origin/HEAD, main or master)')
 
 
+GENERATED = ('__pycache__', '.pytest_cache', '.mypy_cache', '.ruff_cache')
+
+
+def generated(path):
+    """A file a tool rewrites while the tests run (bytecode, caches): not part of the change. Swapped, it was rewritten by
+    the run, and the restore stopped on its new digest (an untracked __pycache__ in a repo that does not ignore it)."""
+    return path.endswith(('.pyc', '.pyo')) or any(part in GENERATED for part in path.split('/'))
+
+
 def changes(repo, merge_base):
     """[(status, old_path, new_path)] from the merge base to the working tree, untracked files included as added."""
     fields = git(repo, 'diff', '--no-ext-diff', '--no-textconv', '-M', '--name-status', '-z', merge_base).split('\0')
@@ -103,7 +115,7 @@ def changes(repo, merge_base):
             found.append((status, fields[i+1], fields[i+1]))
             i += 2
     for path in filter(None, git(repo, 'ls-files', '--others', '--exclude-standard', '-z').split('\0')):
-        if path.split('/')[0] != BACKUP:
+        if path.split('/')[0] != BACKUP and not generated(path):
             found.append(('A', path, path))
     return found
 
@@ -182,24 +194,20 @@ def plan(repo, merge_base, entries, is_code):
     """{path: (bytes, mode) or None}: the base state of every file to swap (None: absent on the base, set aside)."""
     target = {}
     for status, old, new in entries:
-        if status == 'D':
-            code = is_code(old)
-        elif status in 'RC':
-            code = is_code(new) or is_code(old)
-        else:
-            code = is_code(new)
-        if not code:
+        # Each side of a rename or a copy is judged on its own: code renamed into a test keeps the test (the new side) and
+        # gets the code back (the old side); only a side that is code is touched.
+        sides = [(new, False)] if status in 'AC' else [(old, True)] if status == 'D' else [(new, False), (old, True)] if status == 'R' else [(new, True)]
+        sides = [(rel, on_base) for rel, on_base in sides if is_code(rel)]
+        if not sides:
             continue
         if status == 'T':
             raise Unsupported('a file changed type (link or submodule): '+new)
-        paths = [new] + ([old] if status == 'R' else [])
-        for rel in paths:
+        for rel, on_base in sides:
             if current(repo/rel) in ('link', 'other'):
                 raise Unsupported('not a regular file: '+rel)
-        if status in 'RC' or status == 'A':
-            target[new] = None
-        if status in 'MDR':
-            rel = old if status == 'R' else new
+            if not on_base:
+                target[rel] = None
+                continue
             mode = base_mode(repo, merge_base, rel)
             if mode not in ('100644', '100755'):
                 raise Unsupported('not a regular file on the base: '+rel)
@@ -356,10 +364,31 @@ def resolve_command(command):
     program = shutil.which(command[0])
     if program is None:
         return None
-    name = Path(command[0]).name.lower()
-    if Path(name).stem in WAREHOUSE and '--target' not in command and not any(a.startswith('--target=') for a in command):
-        raise Unsupported('a warehouse command needs an explicit --target (the development target AGENTS.md declares)')
+    words = warehouse_words(command)
+    if words is not None:
+        targets = [words[i+1] for i, a in enumerate(words[:-1]) if a == '--target'] + [a.split('=', 1)[1] for a in words if a.startswith('--target=')]
+        if not targets:
+            raise Unsupported('a warehouse command needs an explicit --target (the development target AGENTS.md declares)')
+        extra = [t.strip().lower() for t in os.environ.get('AI_KIT_PROD_TARGETS', '').split(',') if t.strip()]
+        if any(t.strip('\'"').lower() in (*PROD_TARGETS, *extra) for t in targets):
+            raise Unsupported('a proof never runs a warehouse command on a production target: use the development target AGENTS.md declares')
     return [program, *command[1:]]
+
+
+def warehouse_words(command):
+    """The words of the warehouse command COMMAND runs, itself or behind a runner (uv run dbt, poetry run dbt, python -m dbt:
+    the program is looked for in the two words that follow the runner's options, so `uv run pytest dbt` is taken for one and
+    asked for its target); None for any other command."""
+    def name(word):
+        return Path(Path(word).name.lower()).stem
+    if name(command[0]) in WAREHOUSE:
+        return command
+    if name(command[0]) not in RUNNERS:
+        return None
+    start = next((i+1 for i, word in enumerate(command) if i and word in ('run', '-m')), 1)
+    plain = [i for i in range(start, len(command)) if not command[i].startswith('-')][:2]  # two: one option may take a value
+    # After the first word, only a bare name counts: tests/dbt is a folder given to another program.
+    return next((command[i:] for i in plain if name(command[i]) in WAREHOUSE and (i == start or not re.search(r'[\\/]', command[i]))), None)
 
 
 # --- Modes -------------------------------------------------------------------------------------------------------------

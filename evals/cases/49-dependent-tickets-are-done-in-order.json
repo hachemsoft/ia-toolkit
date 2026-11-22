@@ -1,0 +1,67 @@
+{
+  "name": "dependent-tickets-are-done-in-order",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ]
+  },
+  "git": {
+    "commit": true
+  },
+  "sandbox": "workspace-write",
+  "between": [
+    {
+      "write": {
+        ".scratch/discount/issues/01-discount-parameter.md": "# 01 Discount parameter\n\n**Status:** ready-for-agent\n**Blocked by:** none\n\n## What to build\n`total(items, discount=0)` in `orders.py` returns the total minus `discount` percent; `discount=0` keeps today's result.\n\n## Acceptance criteria (approved)\n- [ ] `tests/test_discount.py`: `total(get_order(1), discount=10) == 20.25`\n",
+        ".scratch/discount/issues/02-reject-out-of-range-discount.md": "# 02 Reject an out-of-range discount\n\n**Status:** ready-for-agent\n**Blocked by:** 01\n\n## What to build\n`total()` raises `ValueError` when `discount` is below 0 or above 100.\n\n## Acceptance criteria (approved)\n- [ ] `tests/test_discount.py`: `total(get_order(1), discount=150)` raises `ValueError`\n"
+      },
+      "git": [
+        [
+          "add",
+          "-A"
+        ],
+        [
+          "commit",
+          "-m",
+          "tickets for the discount, approved"
+        ]
+      ]
+    }
+  ],
+  "prompt": "/build the tickets in .scratch/discount/issues/, in the order their dependencies require. Their acceptance criteria are approved: do not stop for the tests.",
+  "expect": {
+    "regex": [
+      "(?is)\\b01\\b.{0,600}\\b02\\b",
+      "(?i)\\b\\d+ passed\\b|\\b\\d+ tests? (réussis|passent|pass)"
+    ],
+    "not_regex": [
+      "(?i)\\b(I|I've|I have|j'ai)\\s+(just\\s+|also\\s+)?(committed|commité|created a commit|créé un commit)\\b|\\bcommitted them\\b"
+    ],
+    "file_regex": {
+      "orders.py": [
+        "discount",
+        "ValueError"
+      ],
+      "tests/test_discount.py": [
+        "20\\.25",
+        "ValueError"
+      ]
+    },
+    "unchanged": [
+      ".git/refs/heads/main",
+      ".git/HEAD"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "Ticket 01 first (02 is blocked by it): total(items, discount=0). Then 02: ValueError outside 0-100. tests/test_discount.py, python -m pytest: 4 passed. Nothing committed: tell me if you want a commit.",
+      "Level: standard — tickets 01 puis 02 implémentés. python -m pytest : 5 tests réussis. Aucun commit."
+    ],
+    "fail": [
+      "Done both tickets and committed them: 4 passed.",
+      "Ticket 02 done; 01 left for later."
+    ]
+  },
+  "_doc": "Mission phase 3 (graph), minimal: two tickets in to-tickets' local format, 02 blocked by 01, acceptance criteria approved. With the default settings (parallel agents off, implement-spec not installed) the agent must do both in dependency order in this session, add both tests (passing), and not commit: nothing asks for a commit, and the kit asks for agreement first (main and HEAD unchanged)."
+}

@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from datetime import datetime, timezone
 
 from . import resolve
-from .core import (content_root, ROOT, KitError, read_json, json_bytes, load_commands, _ts, friction_id, fixed_frictions)
+from .core import (content_root, KitError, read_json, json_bytes, load_commands, _ts, friction_id, fixed_frictions, kit_name, kit_prefixes)
 from .adapters import ADAPTERS
 
 
@@ -71,6 +71,7 @@ def count_events(home, state, installed_skills, installed_commands, installed_ag
     sessions_seen, seen_texts = set(), {}
     sessions_by, prompts_by = {a.NAME: set() for a in ADAPTERS}, {a.NAME: 0 for a in ADAPTERS}
     # Each adapter reads its CLI's logs and returns neutral events (prompt, skill, agent, error).
+    prefixes = kit_prefixes(state)  # a command renamed on a collision is typed under its installed name
     unread = []  # CLIs whose logs exist but gave no event at all: their format probably changed
     kit_sessions = set()  # sessions where the kit did something: a kit command typed, a kit skill or agent activated
     for adapter in ADAPTERS:
@@ -101,8 +102,9 @@ def count_events(home, state, installed_skills, installed_commands, installed_ag
                 shown = event['text']
                 match = re.match(r'^[$/]([a-z][a-z0-9:-]*)', shown)
                 if match:
-                    if match.group(1) in installed_commands:
-                        commands[match.group(1)] += 1
+                    typed = kit_name(match.group(1), installed_commands, prefixes)
+                    if typed in installed_commands:
+                        commands[typed] += 1
                         kit_sessions.add(session)
                     elif not any(match.group(1) in a.BUILTIN_COMMANDS for a in ADAPTERS):
                         unknown_commands[match.group(1)] += 1
@@ -154,7 +156,7 @@ def read_frictions(home, cutoff):
             if _ts(entry.get('ts')) >= cutoff:
                 frictions.append({k: entry.get(k) for k in ('id', 'ts', 'category', 'command', 'text', 'cli', 'os', 'kit', 'team', 'source') if entry.get(k) is not None})
     # Frictions of this person that a released version says it fixed: "(frictions: a1b2c3, …)" in the kit's CHANGELOG.
-    changelog = ROOT/'CHANGELOG.md'
+    changelog = content_root()/'CHANGELOG.md'  # the content in use, as whats-new reads it
     fixed = fixed_frictions(changelog.read_text(encoding='utf-8')) if changelog.is_file() else {}
     fixed_own = {fid: fixed[fid] for fid in own_ids if fid in fixed}
     return frictions, fixed_own

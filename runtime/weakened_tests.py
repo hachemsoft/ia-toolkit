@@ -8,12 +8,17 @@ textconv neutralized, reads files, writes nothing, opens no connection, calls no
 Usage: python3 weakened_tests.py [--base REF] [--repo PATH]
 Scope: the same as the review: the branch's commits since the merge base with REF (default origin/HEAD, else main, else
 master), the staged and unstaged changes, and the new untracked files.
+What it reads: for every language, a test file deleted or moved (a file in a test folder, or named like one next to the
+code: test_*.py, *_test.go, *.test.ts…); inside a file, dbt only: generic tests and unit tests of the properties files,
+singular tests (a .sql whose query changed), project-wide test settings. A test weakened inside a Python, Go or
+TypeScript file gives no fact: it is counted in files_unrecognized, and the review reads the diff.
 Output (stdout, JSON): {"schema": 1, "base", "merge_base", "error", "facts": [...], "families_seen", "files_unrecognized",
 "files_unreadable", "truncated"}. Exit code 0 when the output is valid (with or without facts), 2 when the repository
 cannot be read. A file it cannot read is listed in files_unreadable and gives no fact: never a false one.
 """
 import argparse
 import difflib
+import fnmatch
 import json
 import os
 import re
@@ -25,6 +30,9 @@ SCHEMA = 1
 MAX_FACTS = 200
 MAX_COMPARED = 1_000_000  # bytes: a bigger added file is never compared to find a moved test file
 TEST_DIRS = {'test', 'tests', '__tests__', 'spec'}
+# A test file that sits next to the code it tests, by its name (the same names as runtime/prove_test.py).
+TEST_NAMES = ('test_*.py', '*_test.py', '*_test.go', '*.test.js', '*.test.ts', '*.test.jsx', '*.test.tsx', '*.spec.js',
+              '*.spec.ts', '*.spec.jsx', '*.spec.tsx', '*Test.java', '*Tests.java', '*Spec.scala', '*Test.php')
 DBT_RESOURCE_PATHS = {'model-paths': ['models'], 'seed-paths': ['seeds'], 'snapshot-paths': ['snapshots'],
                       'analysis-paths': ['analyses'], 'macro-paths': ['macros'], 'test-paths': ['tests']}
 DBT_CONFIG = ('severity', 'error_if', 'warn_if', 'enabled', 'where', 'limit', 'fail_calc', 'store_failures')
@@ -322,6 +330,15 @@ def dbt_tests(doc):
             key, n = '.'.join(context+[str(name)])+'#'+str(n), n+1
         keys.add(key)
         found.append({'key': key, 'context': context, 'name': str(name), 'type': str(kind), 'args': args})
+    def add_unit(item):
+        # A unit test (unit_tests:): what it feeds the model (given) and what it expects are its assertion; config holds enabled.
+        if isinstance(item, dict) and isinstance(item.get('name'), str):
+            context = ['unit_tests', str(item.get('model') or '')]
+            key = '.'.join(context+[item['name']])
+            if key not in keys:
+                keys.add(key)
+                found.append({'key': key, 'context': context, 'name': item['name'], 'type': 'unit_test',
+                              'args': {k: v for k, v in item.items() if k not in ('name', 'model', 'description')}})
     def walk(node, context):
         if isinstance(node, dict):
             here = context+[node['name']] if isinstance(node.get('name'), str) else context
@@ -329,6 +346,9 @@ def dbt_tests(doc):
                 if key in ('tests', 'data_tests') and isinstance(value, list):
                     for item in value:
                         add(here, item)
+                elif key == 'unit_tests' and isinstance(value, list) and not context:
+                    for item in value:
+                        add_unit(item)
                 elif isinstance(value, (dict, list)):
                     walk(value, here)
         elif isinstance(node, list):
@@ -347,7 +367,7 @@ def dbt_nodes(doc):
             if here is not context:
                 found.add(tuple(here))
             for key, value in node.items():
-                if key not in ('tests', 'data_tests') and isinstance(value, (dict, list)):
+                if key not in ('tests', 'data_tests', 'unit_tests') and isinstance(value, (dict, list)):
                     walk(value, here)
         elif isinstance(node, list):
             for item in node:
@@ -461,7 +481,8 @@ def fact(kind, path, family=None, line=None, test=None, before=None, after=None,
 
 
 def is_test_path(path):
-    return any(part in TEST_DIRS for part in path.split('/')[:-1])
+    parts = path.split('/')
+    return any(part in TEST_DIRS for part in parts[:-1]) or any(fnmatch.fnmatchcase(parts[-1], pattern) for pattern in TEST_NAMES)
 
 
 def under(root, rel):
@@ -548,6 +569,13 @@ def analyse(repo, merge_base):
                 facts.append(fact('test_file_deleted', old, family))
         elif status == 'R':
             facts.append(fact('test_moved', old, family, moved_to=new))
+        elif family == 'dbt' and status == 'M':
+            # A singular test is one query: when it changed (not only its layout), what it asserts may have; the review judges.
+            try:
+                if ' '.join(old_text(repo, merge_base, old).split()) != ' '.join(new_text(repo, new).split()):
+                    facts.append(fact('assertion_changed', new, 'dbt', test=Path(new).stem))
+            except (OSError, UnicodeDecodeError, AttributeError):
+                unreadable.append(new)
         elif family is None:
             unrecognized += 1
     for root in sorted(dbt.roots):

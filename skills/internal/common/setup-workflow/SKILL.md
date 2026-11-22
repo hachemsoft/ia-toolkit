@@ -4,21 +4,21 @@ description: "Configure this repo for the engineering skills: set up its issue t
 disable-model-invocation: true
 metadata:
   aikit-default: "true"
-  aikit-version: "1.1.1"
+  aikit-version: "1.1.2"
   aikit-origin: "upstream"
   aikit-license: "skills/LICENSE-UPSTREAM-MIT"
   aikit-summary: "Configure a repo for the flow: ticket tracker (GitHub, GitLab, local), triage labels, location of the glossary and the ADRs. Run once per repo."
   aikit-category: "setup"
-  aikit-optional-domain-modeling: "not installed in this profile: skip that part, or add it with extra_skills"
-  aikit-optional-grill-with-docs: "not installed in this profile: skip that part, or add it with extra_skills"
-  aikit-optional-grilling: "not installed in this profile: skip that part, or add it with extra_skills"
-  aikit-optional-improve-codebase-architecture: "not installed in this profile: skip that part, or add it with extra_skills"
-  aikit-optional-mr: "not installed in this profile: skip that part, or add it with extra_skills"
-  aikit-optional-prototype: "not installed in this profile: skip that part, or add it with extra_skills"
-  aikit-optional-ticket-sorting: "not installed in this profile: skip that part, or add it with extra_skills"
-  aikit-optional-to-spec: "not installed in this profile: skip that part, or add it with extra_skills"
-  aikit-optional-to-tickets: "not installed in this profile: skip that part, or add it with extra_skills"
-  aikit-optional-wayfinder: "not installed in this profile: skip that part, or add it with extra_skills"
+  aikit-optional-domain-modeling: "not installed here: skip that part, or add it with extra_skills"
+  aikit-optional-grill-with-docs: "not installed here: skip that part, or add it with extra_skills"
+  aikit-optional-grilling: "not installed here: skip that part, or add it with extra_skills"
+  aikit-optional-improve-codebase-architecture: "not installed here: skip that part, or add it with extra_skills"
+  aikit-optional-mr: "not installed here: skip that part, or add it with extra_skills"
+  aikit-optional-prototype: "not installed here: skip that part, or add it with extra_skills"
+  aikit-optional-ticket-sorting: "not installed here: skip that part, or add it with extra_skills"
+  aikit-optional-to-spec: "not installed here: skip that part, or add it with extra_skills"
+  aikit-optional-to-tickets: "not installed here: skip that part, or add it with extra_skills"
+  aikit-optional-wayfinder: "not installed here: skip that part, or add it with extra_skills"
 ---
 
 # Setup Workflow Skills
@@ -50,11 +50,11 @@ Look at the current repo to understand its starting state. Read whatever exists;
 
 Summarise what's present and what's missing. Then take the sections in order. One section, one answer, then the next.
 
-Lead each section with the recommended answer so the user can accept it in a word. Give a one-line explainer only when the choice genuinely branches; skip the section entirely when exploration already settled it (Section B when `triage` isn't installed, Section C when there's no monorepo).
+Lead each section with the recommended answer so the user can accept it in a word. Give a one-line explainer only when the choice genuinely branches; skip the section entirely when exploration already settled it (Section B when `ticket-sorting` isn't installed, Section C when there's no monorepo).
 
 **Section A: Issue tracker.**
 
-> Explainer: The "issue tracker" is where issues live for this repo. Skills like `to-tickets`, `triage`, and `to-spec` read from and write to it. They need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.
+> Explainer: The "issue tracker" is where issues live for this repo. Skills like `to-tickets`, `ticket-sorting`, and `to-spec` read from and write to it. They need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.
 
 Default posture: these skills were designed for GitHub. If a `git remote` points at GitHub, propose that. If a `git remote` points at GitLab (`gitlab.com` or a self-hosted host), propose GitLab. Otherwise (or if the user prefers), offer:
 
@@ -71,7 +71,7 @@ If it is installed, ask exactly one question:
 
 > Do you want to keep the default triage labels? (recommended: **yes**)
 
-The defaults are the five canonical roles, each label string equal to its name: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. On **yes**, write them as-is. Only if the user says no, usually because their tracker already uses other names (e.g. `bug:triage` for `needs-triage`), collect the overrides so `triage` applies existing labels instead of creating duplicates.
+The defaults are the five canonical roles, each label string equal to its name: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. On **yes**, write them as-is. Only if the user says no, usually because their tracker already uses other names (e.g. `bug:triage` for `needs-triage`), collect the overrides so `ticket-sorting` applies existing labels instead of creating duplicates.
 
 **Section C: Domain docs.** Default to **single-context** (one `GLOSSARY.md` + `docs/adr/` at the repo root). This fits almost every repo; write it without asking.
 
@@ -82,7 +82,7 @@ Offer **multi-context** (a root `GLOSSARY-MAP.md` pointing to per-context `GLOSS
 Show the user a draft of:
 
 - The `## Agent skills` block to add to `AGENTS.md` (see step 4)
-- The contents of `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and `docs/agents/triage-labels.md` (the last only when `triage` is installed)
+- The contents of `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and `docs/agents/triage-labels.md` (the last only when `ticket-sorting` is installed)
 
 Let them edit before writing.
 
@@ -113,7 +113,7 @@ The block:
 [one-line summary of layout: "single-context" or "multi-context"]. See `docs/agents/domain.md`.
 ```
 
-Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `triage` is installed and Section B ran. When it isn't, both are omitted.
+Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `ticket-sorting` is installed and Section B ran. When it isn't, both are omitted.
 
 When Section B ran on GitHub or GitLab, create each configured label the tracker lacks (`gh label create` / `glab label create`).
 
@@ -122,7 +122,7 @@ Then write the docs files using the seed templates in this skill folder as a sta
 - [issue-tracker-github.md](./issue-tracker-github.md): GitHub issue tracker
 - [issue-tracker-gitlab.md](./issue-tracker-gitlab.md): GitLab issue tracker
 - [issue-tracker-local.md](./issue-tracker-local.md): local-markdown issue tracker
-- [triage-labels.md](./triage-labels.md): label mapping (only if `triage` is installed)
+- [triage-labels.md](./triage-labels.md): label mapping (only if `ticket-sorting` is installed)
 - [domain.md](./domain.md): domain doc consumer rules + layout
 
 For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch using the user's description.

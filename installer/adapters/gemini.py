@@ -12,7 +12,7 @@ from typing import Optional
 from ..interface import DoctorContext, Plan, Status
 from .. import resolve
 from ..core import (hook_parts, content_root, adopt_user_copy, LIVE_PROMPT, network_problem, EMAIL, USER_CONTEXT, CONTEXT_NAME, KitError, read_json, json_bytes, skill_prefix, free_name,
-                    rename_references, renamed_skill_file, renamed_notice, kit_name,
+                    rename_references, renamed_skill_file, renamed_notice, kit_name, kit_prefixes,
                     digest, merge_defaults, run_timed,
                     record_auto_friction, _ts)
 
@@ -286,6 +286,9 @@ def agent_markdown(p: Plan, agent: str, definition: dict, tool_names=None) -> by
     header += ['timeout_mins: '+str(definition.get('timeout_mins', agent_defaults['timeout_mins'])), '---']
     return ('\n'.join(header)+'\n\n'+p.agent_body(definition)).encode('utf-8')
 
+# A context layer the kit copied into ~/.gemini: 10_CORE.md, 20_TEAM2.md.
+LAYER_FILE = r'\.gemini/\d\d_[A-Z0-9_]+\.md'
+
 def was_installed(state):
     """Gemini was a target of the previous installation."""
     return NAME in ((state.get('installed') or {}).get('clis') or [])
@@ -326,7 +329,7 @@ def remove_kit_settings(p: Plan) -> None:
                 servers.pop(name, None)
         context = settings.get('context')
         if isinstance(context, dict) and isinstance(context.get('fileName'), list):
-            layers = {rel.split('/', 1)[1] for rel in p.old_files if re.fullmatch(r'\.gemini/\d\d_[A-Z_]+\.md', rel)}
+            layers = {rel.split('/', 1)[1] for rel in p.old_files if re.fullmatch(LAYER_FILE, rel)}
             context['fileName'] = [n for n in context['fileName'] if n not in layers and n != USER_CONTEXT]
         p.writes[settings_file] = json_bytes(settings)
 
@@ -343,7 +346,7 @@ def finalize(p: Plan, active: bool = True) -> None:
     settings = read_json(settings_file)
     merge_defaults(settings, read_json(Path(__file__).resolve().parent/'gemini_defaults.json'))
     # Authentication and model belong to the CLI and the IT procedure: the kit writes neither.
-    retired = [rel.split('/',1)[1] for rel in p.old_files if re.fullmatch(r'\.gemini/\d\d_[A-Z_]+\.md', rel)]
+    retired = [rel.split('/',1)[1] for rel in p.old_files if re.fullmatch(LAYER_FILE, rel)]
     merge_context_filenames(settings, p.context_names, retired)
     original_hooks = settings.get('hooks')
     if original_hooks is not None and not isinstance(original_hooks, dict):
@@ -414,21 +417,38 @@ def installed_skills(home, state):
     return [s for s in names if (home/'.gemini/skills'/s/'SKILL.md').is_file()]
 
 def changed_blocks(home: Path, state: dict) -> list:
-    """~/.gemini/settings.json when a hook the kit declared there is gone or changed (integrity check); the rest of the file
-    is the person's."""
-    if NAME not in state.get('targets', [NAME]) or not state.get('hooks'):
+    """~/.gemini/settings.json when what the kit put there is gone or changed (integrity check): a hook it declared, a
+    switch that turns its hooks off (hooksConfig), one of its MCP servers, a kit layer in context.fileName. The rest of the
+    file is the person's."""
+    if NAME not in state.get('targets', [NAME]):
         return []
+    rel = '.gemini/settings.json'
     try:
-        settings = read_json(home/'.gemini/settings.json')
+        settings = read_json(home/rel)
     except (KitError, OSError, ValueError):
-        return ['.gemini/settings.json']
-    hooks = settings.get('hooks') if isinstance(settings, dict) and isinstance(settings.get('hooks'), dict) else {}
-    present = all(isinstance(hooks.get(h['event']), list) and settings_group(h['group']) in hooks[h['event']] for h in state['hooks'].values())
-    return [] if present else ['.gemini/settings.json']
+        return [rel]
+    settings = settings if isinstance(settings, dict) else {}
+    def table(key):
+        return settings[key] if isinstance(settings.get(key), dict) else {}
+    kit_hooks = state.get('hooks') or {}
+    hooks, switches = table('hooks'), table('hooksConfig')
+    if not all(isinstance(hooks.get(h['event']), list) and settings_group(h['group']) in hooks[h['event']] for h in kit_hooks.values()):
+        return [rel]
+    disabled = switches.get('disabled') if isinstance(switches.get('disabled'), list) else []
+    names = {h.get('name') for spec in kit_hooks.values() for h in spec['group']['hooks']}
+    if kit_hooks and (switches.get('enabled') is False or names & {n for n in disabled if isinstance(n, str)}):
+        return [rel]
+    if any(table('mcpServers').get(name) != server for name, server in (state.get('mcp') or {}).items()):
+        return [rel]
+    layers = [f.split('/', 1)[1] for f in state.get('files') or {} if re.fullmatch(LAYER_FILE, f) or f == '.gemini/'+USER_CONTEXT]
+    listed = table('context').get('fileName')
+    listed = [listed] if isinstance(listed, str) else listed if isinstance(listed, list) else []
+    return [rel] if any(name not in listed for name in layers) else []
 
 def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     """Gemini-specific checks: executable, active account, personal context, commands, shadowed skills, settings."""
-    status(bool(shutil.which(COMMAND)),'Gemini CLI on the PATH. If missing: follow the approved IT procedure.')
+    if not shutil.which(COMMAND):
+        print('[Info] Gemini CLI set up by the kit but not on the PATH.')  # as for the other CLIs: prepared, not a failure
     active = gemini_active_account(home)
     identity = state.get('user', {})
     if active:
@@ -439,9 +459,10 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     installed_commands = sorted(rel.split('/')[2][:-5] for rel in state.get('files',{}) if rel.startswith('.gemini/commands/'))
     by_name = {c['name']: c for c in ctx.load_commands()}
     # Installed names may carry the prefix given on a collision with one of the person's own: compare by kit name.
-    present_skills = {kit_name(s, set((state.get('installed') or {}).get('skills', []))) for s in skills}
+    prefixes = kit_prefixes(state)
+    present_skills = {kit_name(s, set((state.get('installed') or {}).get('skills', [])), prefixes) for s in skills}
     for installed_name in installed_commands:
-        name = kit_name(installed_name, by_name)
+        name = kit_name(installed_name, by_name, prefixes)
         missing = [s for s in by_name.get(name,{}).get('skills',[]) if s not in present_skills]
         status(name in by_name and not missing,'Command /'+installed_name+': skills present'+(' (missing '+', '.join(missing)+')' if missing else ''))
     print('[Info] '+str(len(skills))+' skills, '+str(len(installed_commands))+' commands; skill descriptions injected on every turn: '+str(skill_description_weight(home, skills))+' bytes.')
@@ -483,6 +504,7 @@ def session_logs(home):
 
 def history(home, state):
     """Usage events read from the Gemini session logs: prompts, activated skills, called agents, errors."""
+    kit_skills, prefixes = set((state.get('installed') or {}).get('skills', [])), kit_prefixes(state)
     for path in session_logs(home):
         try:
             data = json.loads(path.read_text(encoding='utf-8'))
@@ -507,7 +529,7 @@ def history(home, state):
                 for call in m.get('toolCalls', []) or []:
                     name = call.get('name', '')
                     if name == 'activate_skill':
-                        yield {'kind': 'skill', 'session': session, 'ts': ts, 'name': str((call.get('args') or {}).get('name',''))}
+                        yield {'kind': 'skill', 'session': session, 'ts': ts, 'name': kit_name(str((call.get('args') or {}).get('name','')), kit_skills, prefixes)}
                     elif name.startswith('ai-kit-'):
                         yield {'kind': 'agent', 'session': session, 'ts': ts, 'name': name}
             else:

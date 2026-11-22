@@ -71,7 +71,7 @@ A case may add `turns`: later prompts run in the same temporary copy, each one r
 says `"new_session": true`. Before a turn, `between` does what a person would do outside the agent: `write`
 (`{"path": "text"}`), `delete` (`["path"]`), `git` (a closed list: `checkout`, `switch`, `add`, `commit`, `stash`); a list of such steps runs them in order. A `between` at the top
 level of the case prepares the repository before the first turn: the state a previous session left (a commit on a
-branch, a file changed since), built without a billed turn. Each
+branch, a file changed since), built without a billed turn. A case may set `cli` (the CLI of its first turn: it then runs with that `--cli` only) and a turn another `cli`: that turn starts a new session in that CLI, in the same repository (a resume across CLIs). Each
 turn has its own `expect` and optional `samples`. The case stops at its first failing turn (the next ones would be billed
 for nothing); the report gives `turns` (turns run) and `duration_s` (retries included). `--timeout` applies to each
 turn. A malformed turn (an unknown `between` key, a git command outside the list, a path outside the repository) is
@@ -134,6 +134,9 @@ refused when the cases load, `--dry-run` included, before any call. Turns leave 
 | `standard-resume-without-a-plan` | py-api-mini | a standard change interrupted after its test was shown, no `plan.md`: a new session asks whether the test is approved instead of assuming it |
 | `loop-fixes-the-code-not-the-test` | py-api-mini | an approved test and a half-done `orders.py` returning cents: the agent fixes the code until `3 passed`, runs the checks itself and touches no test |
 | `environment-failure-is-reported-not-looped` | py-api-mini | the repo's checks load a pytest plugin that is not installed: the agent names it, does not claim the checks pass and does not drop it from `AGENTS.md` |
+| `claude-to-codex-resumes-the-work` | py-api-mini | resume across CLIs: Claude Code writes the acceptance test and stops; a new Codex session, told the test was approved, finishes the work (3 passed), keeps the test and does not commit |
+| `codex-to-claude-resumes-the-work` | py-api-mini | the same, from Codex to Claude Code |
+| `dependent-tickets-are-done-in-order` | py-api-mini | two tickets in to-tickets' local format, the second blocked by the first: both done in order, their tests pass, and no commit without agreement |
 
 ## Results
 

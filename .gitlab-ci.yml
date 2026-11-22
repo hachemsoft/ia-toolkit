@@ -1,6 +1,7 @@
 # The same model-free checks as .github/workflows/portability.yml, for an organization's GitLab copy of the kit.
 # No API key, no CLI installed, and AI_KIT_NO_LIVE=1 refuses any real call. Linux runners only: the macOS and Windows
-# jobs of the GitHub workflow have no equivalent on a default GitLab runner. On a vX.Y.Z tag, publish-release attaches the
+# jobs of the GitHub workflow have no equivalent on a default GitLab runner. release-zip-test installs the ZIP with no package
+# index reachable, as a workstation will. On a vX.Y.Z tag, publish-release attaches the
 # ZIP to the tag's GitLab release (scripts/gitlab_release.py); the runner of release-zip needs a package index for the wheels. Images are pinned by tag; pin them by digest if your registry policy asks for it.
 variables:
   AI_KIT_NO_LIVE: "1"
@@ -51,10 +52,25 @@ release-zip:
     paths: [dist/*.zip]
     expire_in: 30 days
 
+release-zip-test:
+  # The ZIP people download, extracted and installed by its launcher with no package index reachable: its own wheels only.
+  stage: release
+  image: python:${PYTHON}
+  needs: [release-zip]
+  variables:
+    GIT_DEPTH: 0  # 3.0: the launcher tests build a ZIP whose Core bundle needs the whole history
+    PIP_INDEX_URL: "http://127.0.0.1:9/simple"
+  parallel:
+    matrix:
+      - PYTHON: ["3.11", "3.14"]
+  script:
+    - export AI_KIT_RELEASE_ZIP="$PWD/$(ls dist/*.zip)"
+    - python -m unittest discover -s tests -p test_enterprise_install.py -v
+
 publish-release:
   stage: publish
   image: python:3.12
-  needs: [release-zip]
+  needs: [release-zip, release-zip-test]
   rules:
     - if: $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/
   script:

@@ -132,7 +132,7 @@ A test guards each.
 - **No model call** in `init`, `sync`, `status`, `doctor`, `uninstall` or the tests (`scripts/offline_tests.py` takes the CLIs off the PATH); only `doctor --live --yes` calls one. **No network** except `init`, `sync` and `team` towards allowed Git hosts, and `doctor --live`, which fetches the tags of a cloned kit folder.
 - **No administrator rights**: everything under the home folder; the only change outside the kit's files is your own PATH, when you choose the `ai-kit` command.
 - **Every skill and agent has a version**, raised at each change (`versions.lock.json`).
-- **Small and readable**: no `installer/` module over 800 lines; the kit context under 3,800 characters and each command under 4,000, because they load at every session.
+- **Small and readable**: no `installer/` module over 800 lines; the kit context under 4,300 characters and each command under 4,000 (4,200 for `/build`), because they load at every session.
 
 ## What the kit does not control
 

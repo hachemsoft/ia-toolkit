@@ -309,11 +309,35 @@ def renamed_skill_file(data, src, source, mapping, own_name):
     return text.encode('utf-8')
 
 
-def kit_name(name, known):
-    """The kit name behind an installed name: tdd for ai-kit-tdd, whatever prefix was used; the name itself otherwise."""
+def kit_name(name, known, prefixes=(DEFAULT_PREFIX,)):
+    """The kit name behind an installed name: tdd for ai-kit-tdd. Only a prefix the kit gives (prefixes: skill_prefix, see
+    kit_prefixes) counts: a person's create-mr is not the kit's mr. The name itself otherwise."""
     if name in known:
         return name
-    return next((k for k in sorted(known, key=len, reverse=True) if len(name) > len(k) and name.endswith(k)), name)
+    return next((name[len(p):] for p in prefixes if p and name.startswith(p) and name[len(p):] in known), name)
+
+def kit_prefixes(state):
+    """The prefixes the kit's skills and commands carry in this installation, read from the names it installed (state.json
+    files), with the default one: the logs of a CLI name a skill or a command as it was installed."""
+    installed = state.get('installed') or {}
+    known = set(installed.get('skills') or []) | set(installed.get('commands') or [])
+    found = {DEFAULT_PREFIX}
+    for rel in state.get('files') or {}:
+        match = re.match(r'^\.[a-z]+/(?:skills/([^/]+)/|commands/([^/]+)\.[a-z]+$)', rel)
+        name = (match.group(1) or match.group(2)) if match else None
+        if not name or name in known:
+            continue
+        kit = next((k for k in sorted(known, key=len, reverse=True) if name.endswith(k)), None)
+        if kit:
+            found.add(name[:-len(kit)])
+    return tuple(sorted(found))
+
+def import_path(home, path):
+    """How a CLI's file names a kit file it includes: from ~ for the person's own home (no space or accent to quote),
+    absolute otherwise (--home, a trial)."""
+    if home == Path.home().resolve():
+        return '~/'+path.relative_to(home).as_posix()
+    return path.as_posix()
 
 def renamed_notice(label, skills, commands, sigil='/'):
     """One line saying which kit skills and commands a CLI received under another name, and why."""
@@ -324,9 +348,9 @@ def renamed_notice(label, skills, commands, sigil='/'):
 
 SKILL_READ = re.compile(r'[\\/]skills[\\/]+([A-Za-z0-9_-]+)[\\/]+SKILL\.md')
 
-def skills_read(text, kit_skills):
+def skills_read(text, kit_skills, prefixes=(DEFAULT_PREFIX,)):
     """The kit skills whose SKILL.md a tool call reads (a CLI loading a skill reads its file), by kit name."""
-    names = {kit_name(m.group(1), kit_skills) for m in SKILL_READ.finditer(text)}
+    names = {kit_name(m.group(1), kit_skills, prefixes) for m in SKILL_READ.finditer(text)}
     return sorted(n for n in names if n in kit_skills)
 
 LIVE_PROMPT = 'Reply with OK only.'
@@ -403,10 +427,11 @@ def load_commands():
     commands.sort(key=lambda c: (c['order'], c['name']))
     return commands
 
-def command_skill_text(command):
-    """Command skill, for CLIs whose commands are skills: same name as the command, prompt without {{args}}."""
+def command_skill_text(command, sigil='/'):
+    """Command skill, for CLIs whose commands are skills: same name as the command, prompt without {{args}}. sigil: how the
+    CLI's person types a command ($ in Codex)."""
     body = command['prompt'].replace('{{args}}', 'the text the user typed after the command, or the current conversation')
-    description = 'Kit command /'+command['name']+'. '+command['description']+'. Use when the user types /'+command['name']+' or explicitly asks for this step; do not activate on your own for unrelated requests.'
+    description = 'Kit command '+sigil+command['name']+'. '+command['description']+'. Use when the user types '+sigil+command['name']+' or explicitly asks for this step; do not activate on your own for unrelated requests.'
     return '---\nname: '+command['name']+'\ndescription: '+json.dumps(description)+'\n---\n\n'+body.strip()+'\n'
 
 def run_timed(command, timeout, **kwargs):

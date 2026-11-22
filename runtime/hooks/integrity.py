@@ -3,7 +3,7 @@
 way on every system, whatever made it (ADR 0030).
 
 Compared with state.json: the files the kit owns (`files`; size, times and inode first, a digest when one of them moved;
-always a digest at session start), the kit's part of the five files it shares with a CLI (`blocks`; judged by the adapter's
+always a digest at session start), the kit's part of the six files it shares with a CLI (`blocks`; judged by the adapter's
 own check when the file moved), and the settings of the kit folder's .git/config that decide where the next update comes
 from or what git runs (`kit_git`). A change is reported once per set of changes, to the agent (additionalContext) and to the
 person (systemMessage), with the command that restores it; never a decision, which would replace the tool's result. It
@@ -12,14 +12,13 @@ writes only its marker, ~/.ai-kit/integrity.json, when something moved, and send
 After a tool that only reads (READ_ONLY_TOOLS), it answers at once without looking at the disk: such a tool changed
 nothing, and the full check still runs at session start and after any tool that writes, runs a command or is not known.
 """
-import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import stat
 import sys
-import tempfile
+# hashlib, tempfile and pathlib are loaded where they are used: a call that finds nothing moved needs none of them, and they
+# are most of what this script costs after the start of Python (they bring shutil, bz2, lzma and random with them).
 
 MARKER = 'integrity.json'
 SELF = '.ai-kit/hooks/integrity.py'  # the check itself, recorded by every installation
@@ -29,7 +28,7 @@ SAFE_NAME = re.compile(r'[A-Za-z0-9._/@-]{1,160}')  # a name shown in a message:
 MAX_BYTES = 32 * 1024 * 1024  # a file the kit installed is far smaller: a bigger one counts as changed, unread
 SHOWN = 10
 # The files the kit shares with a CLI whose part an adapter judges (changed_blocks); others are not looked at.
-SHARED = ('.claude/CLAUDE.md', '.claude/settings.json', '.codex/AGENTS.md', '.codex/config.toml', '.gemini/settings.json')
+SHARED = ('.claude/CLAUDE.md', '.claude/settings.json', '.claude.json', '.codex/AGENTS.md', '.codex/config.toml', '.gemini/settings.json')
 # The settings of a clone's .git/config that decide where a fetch goes or what git runs (the kit runs git without hooks and
 # without global configuration): a branch's tracking or a pushed tag changes nothing here.
 # Tools that only read, by the names the CLIs give them (Claude Code; Gemini CLI; Antigravity CLI). Anything else, an MCP
@@ -94,6 +93,7 @@ def file_digest(path):
     try:
         if os.path.getsize(path) > MAX_BYTES:
             return 'too large'
+        import hashlib
         sha = hashlib.sha256()
         with open(path, 'rb') as handle:
             for chunk in iter(lambda: handle.read(1024 * 1024), b''):
@@ -129,6 +129,7 @@ def kit_git_digests(folder):
     root = git_dir(folder) if folder else None
     if not root:
         return None
+    import hashlib
     found = {}
     try:
         with open(os.path.join(root, 'config'), encoding='utf-8', errors='replace') as handle:
@@ -184,7 +185,7 @@ def git_changes(state, cache=None, full=False):
     if not isinstance(recorded, dict):
         return [], None  # not recorded: the kit folder is not a clone
     folder = state.get('kit_dir')
-    key = hashlib.sha256(json.dumps([folder, recorded], sort_keys=True, default=str).encode('utf-8')).hexdigest()
+    key = json.dumps([folder, recorded], sort_keys=True, default=str)  # recorded holds digests, never a value
     if (not full and isinstance(cache, dict) and cache.get('key') == key and isinstance(cache.get('path'), str)
             and isinstance(cache.get('stamp'), list) and isinstance(cache.get('changes'), list) and stamp(cache['path'], follow=True) == cache['stamp']):
         return pairs(cache['changes']), cache
@@ -207,17 +208,17 @@ def adapters():
         return [claude, codex, gemini]
     except Exception:
         pass
-    root = Path(__file__).resolve().parents[2]
-    if not (root/'installer'/'adapters').is_dir():
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+    if not os.path.isdir(os.path.join(root, 'installer', 'adapters')):
         return []
     try:
-        sys.path.insert(0, str(root))
+        sys.path.insert(0, root)
         from installer.adapters import claude, codex, gemini
         return [claude, codex, gemini]
     except Exception:
         return []
     finally:
-        if sys.path and sys.path[0] == str(root):
+        if sys.path and sys.path[0] == root:
             sys.path.pop(0)
 
 
@@ -241,6 +242,7 @@ def shared_changes(home, state, marker, full):
     modules = adapters()
     if not modules:
         return [], [(rel, 'kit adapters not loadable') for rel in watched], now
+    from pathlib import Path
     changed, failed = set(), []
     for module in modules:
         try:
@@ -272,7 +274,10 @@ def check(home, state, marker, full=False):
 
 def announce(marker, changes, failed):
     """Healthy (nothing), drift (changes) or check failed (failures), said once per set: (agent, person, marker)."""
-    key = hashlib.sha256(json.dumps([changes, failed]).encode('utf-8')).hexdigest() if changes or failed else ''
+    key = ''
+    if changes or failed:
+        import hashlib
+        key = hashlib.sha256(json.dumps([changes, failed]).encode('utf-8')).hexdigest()
     announced, marker['announced'] = marker.get('announced'), key
     if not key or key == announced:
         return None, None, marker
@@ -308,17 +313,20 @@ def person_message(listed):
 
 def write_marker(path, data):
     """Writes the marker through a temporary file of its own (never a fixed name another hook could race or a link could
-    redirect), readable by its owner only."""
-    folder = os.path.dirname(path)
-    handle, temporary = tempfile.mkstemp(prefix='.integrity-', dir=folder)
+    redirect), readable by its owner only. A kit folder that is gone or cannot be written to keeps no marker: the change is
+    then announced at each call, never hidden."""
+    import tempfile
+    temporary = None
     try:
+        handle, temporary = tempfile.mkstemp(prefix='.integrity-', dir=os.path.dirname(path))
         with os.fdopen(handle, 'w', encoding='utf-8') as out:
             json.dump(data, out)
         os.chmod(temporary, 0o600)
         os.replace(temporary, path)
     except OSError:
         try:
-            os.unlink(temporary)
+            if temporary:
+                os.unlink(temporary)
         except OSError:
             pass
 
@@ -344,10 +352,7 @@ def checked(home, full=False):
         return None, None  # never installed here: nothing to check
     agent, person, after = check(home, state, before, full)
     if after != before:
-        try:
-            write_marker(path, after)
-        except OSError:
-            pass
+        write_marker(path, after)
     return agent, person
 
 

@@ -54,7 +54,7 @@ What is missing:
 | Gap | Observed |
 | --- | --- |
 | The Core accepts **one** context file only | `installer/settings.py`: the selection is `['core']`, one `context/NN-core.md` |
-| No size cap on the rule layers | only the `00_KIT` **template** is capped (3 800 characters, `tests/test_context_layers.py`) |
+| No size cap on the rule layers | only the `00_KIT` **template** is capped (4 300 characters, `tests/test_context_layers.py`) |
 | The **rendered** `00_KIT.md` is not capped | 6 312 characters on one workstation: the generated list of commands and playbooks is not counted |
 | No cap on a playbook's description | the ten kit playbooks range from 232 to 341 characters; each is read at every exchange |
 | No written guide on where a requirement goes | nothing in `docs/extending.md` |

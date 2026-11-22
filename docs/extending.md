@@ -77,8 +77,8 @@ a test.
 
 | Text | Budget | Test | Why this size |
 | --- | --- | --- | --- |
-| kit context (`templates/kit-context.md`, installed as `00_KIT.md`) | under 3,800 characters | `tests/test_context_layers.py` | loaded at every session; 3,700 at 0.17.0, raised to 3,800 on 2026-10-31 for the `Level:` line |
-| each command prompt (`commands/*.md`, after its front matter) | under 4,000 characters | `tests/test_commands.py` | loaded when the command runs, on every CLI |
+| kit context (`templates/kit-context.md`, installed as `00_KIT.md`) | under 4,300 characters | `tests/test_context_layers.py` | loaded at every session; 3,700 at 0.17.0, raised to 3,800 on 2026-10-31 for the `Level:` line, then to 4,300 for the rule on resuming earlier work (4.21.0, 4.22.0) |
+| each command prompt (`commands/*.md`, after its front matter) | under 4,000 characters (4,200 for `/build`, since 4.23.3) | `tests/test_commands.py` | loaded when the command runs, on every CLI |
 | an `installer/` module | under 800 lines | `tests/test_invariants.py` | readable in one sitting ([architecture](architecture.md)) |
 
 When a change does not fit, move detail out before raising a budget: what only one domain needs goes to its playbook,

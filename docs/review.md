@@ -60,7 +60,10 @@ standard or full level, when it is missing ([project context](project-context.md
 ## Tests a change weakens
 
 A model under pressure can "make the tests pass" by changing the tests. Before the Tests pass, a read-only script
-(`runtime/weakened_tests.py`) lists from the diff the tests deleted, disabled or relaxed. The review judges each
+(`runtime/weakened_tests.py`) lists from the diff the tests deleted, disabled or relaxed. What it reads today: for every language,
+a test file deleted or moved (in a test folder, or named like one next to the code: `test_*.py`, `*_test.go`, `*.test.ts`…);
+inside a file, dbt only (generic and unit tests of the properties files, a singular test whose query changed, project-wide
+test settings). A test relaxed inside a Python, Go or TypeScript file gives no fact: the Tests pass reads the diff. The review judges each
 fact: covered by a contract you named (in the session, or in the change's `spec.md`, `intent.md` or `plan.md`), it is an
 intended test change, listed as such; otherwise it is an Important finding. A commit message never counts as a contract,
 since the agent writes it. The script never blocks, so a contract changed on purpose stays possible. Decision:

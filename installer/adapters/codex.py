@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (USER_CONTEXT, KitError, digest, cli_event, split_block, place_block, command_skill_text, redact, skill_prefix, free_name, rename_references, renamed_skill_file, renamed_notice, _ts, live_call, LIVE_PROMPT, skills_read)
+from ..core import (USER_CONTEXT, KitError, digest, cli_event, split_block, place_block, command_skill_text, redact, skill_prefix, free_name, rename_references, renamed_skill_file, renamed_notice, _ts, live_call, LIVE_PROMPT, skills_read, kit_prefixes)
 
 CODEX_DIR = '.codex'
 # Managed block markers: no path, so they never change when a folder is renamed. Their text is an identifier: changing it
@@ -116,6 +116,9 @@ def doctor_hint():
 def present(home):
     return bool(shutil.which('codex')) or (home/CODEX_DIR).is_dir()
 
+def was_installed(state):
+    return NAME in ((state.get('installed') or {}).get('clis') or [])
+
 codex_present = present
 
 def install(p: Plan) -> None:
@@ -140,7 +143,7 @@ def install(p: Plan) -> None:
         if command['name'] in p.selected:
             continue  # a skill with the same name serves as the command
         named = {**command, 'name': commands[command['name']], 'prompt': rename_references(command['prompt'], mapping)}
-        p.managed_write(root/named['name']/'SKILL.md', command_skill_text(named).encode('utf-8'), 'Codex command skill')
+        p.managed_write(root/named['name']/'SKILL.md', command_skill_text(named, '$').encode('utf-8'), 'Codex command skill')
         p.managed_write(root/named['name']/'agents'/'openai.yaml', CODEX_EXPLICIT_ONLY.encode('utf-8'), 'Codex command skill')
     p.adapter_data.setdefault(NAME, {})['renamed'] = mapping
     notice = renamed_notice(LABEL, names, commands, '$')
@@ -154,7 +157,10 @@ def install(p: Plan) -> None:
         agents[name] = (definition['description'], str(role_file))
 
 def finalize(p: Plan, active: bool = True) -> None:
-    """Managed blocks in ~/.codex/AGENTS.md and ~/.codex/config.toml; the rest of both files is left alone. Inactive: removes the blocks."""
+    """Managed blocks in ~/.codex/AGENTS.md and ~/.codex/config.toml; the rest of both files is left alone. Inactive: removes the blocks
+    a previous installation put there; a Codex the kit never configured is not read."""
+    if not active and not was_installed(p.state):
+        return
     old_blocks = p.state.get('blocks', {})
     for rel, markers, position, label in ((CODEX_DIR+'/AGENTS.md', CODEX_MD, 'top', '~/.codex/AGENTS.md'), (CODEX_DIR+'/config.toml', CODEX_TOML, 'end', '~/.codex/config.toml')):
         path = p.home/rel
@@ -175,8 +181,8 @@ def finalize(p: Plan, active: bool = True) -> None:
                 user_text = data.decode('utf-8')
             block = codex_context_block(p.kit_text, p.practice_texts, user_text, p.adapter_data.get(NAME, {}).get('renamed'))
         elif active:
-            if p.enabled_hooks and re.search(r'^\s*(hooks\.)?(PreToolUse|SessionStart)\s*=', outside, re.M):
-                raise KitError('~/.codex/config.toml already defines hooks.PreToolUse or hooks.SessionStart in another form: the kit cannot add its hooks without rewriting it.')
+            if p.enabled_hooks and re.search(r'^\s*(hooks\.)?(PreToolUse|PostToolUse|SessionStart)\s*=', outside, re.M):
+                raise KitError('~/.codex/config.toml already defines hooks.PreToolUse, hooks.PostToolUse or hooks.SessionStart in another form: the kit cannot add its hooks without rewriting it.')
             if re.search(r'^\s*\[\s*(agents|mcp_servers)\.ai-kit-', outside, re.M):
                 raise KitError('~/.codex/config.toml already contains ai-kit- entries outside the kit block: remove them, then ai-kit sync --offline.')
             # Guardrails served by one script give the same pair: written once.
@@ -231,8 +237,11 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     agents_md = home/CODEX_DIR/'AGENTS.md'
     user_file = home/'.ai-kit/context'/USER_CONTEXT
     if agents_md.exists() and user_file.exists():
-        current = user_file.read_text(encoding='utf-8').strip() in agents_md.read_text(encoding='utf-8')
-        status(current, 'Codex has the latest version of USER.md'+('' if current else ' (run ai-kit sync --offline after editing it)'))
+        try:
+            current, why = user_file.read_text(encoding='utf-8').strip() in agents_md.read_text(encoding='utf-8'), ' (run ai-kit sync --offline after editing it)'
+        except (OSError, UnicodeDecodeError):
+            current, why = False, ' (USER.md or ~/.codex/AGENTS.md cannot be read as UTF-8 text: save it again as UTF-8, then ai-kit sync --offline)'
+        status(current, 'Codex has the latest version of USER.md'+('' if current else why))
     if (home/CODEX_DIR/'AGENTS.override.md').exists():
         status(False, '~/.codex/AGENTS.override.md exists: Codex reads it instead of AGENTS.md, the kit context is ignored')
     if state.get('hooks'):
@@ -246,12 +255,12 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
 
 def hook_approval(home):
     """(records found, message) about Codex approving the kit guardrails, never more than can be said. Codex records an
-    approval under [hooks.state."<config file>:pre_tool_use:<group>:<hook>"] with a trusted_hash; the kit does not know how
+    approval under [hooks.state."<config file>:pre_tool_use:<group>:<hook>"] (also post_tool_use, session_start) with a trusted_hash; the kit does not know how
     that hash is computed, nor which group indexes are its own when other hooks exist, so a record found is not proof that
     the kit's guardrails are the ones approved. No record at all means they are not approved."""
     config = home/CODEX_DIR/'config.toml'
     text = config.read_text(encoding='utf-8') if config.is_file() else ''
-    records = re.findall(r'^\[hooks\.state\."(?![^"]*<session-flags>)[^"]*config\.toml:(?:pre_tool_use|session_start):\d+:\d+"\]', text, re.M)
+    records = re.findall(r'^\[hooks\.state\."(?![^"]*<session-flags>)[^"]*config\.toml:(?:pre_tool_use|post_tool_use|session_start):\d+:\d+"\]', text, re.M)
     if not records:
         return False, ('Codex: kit guardrails approved in Codex (not yet: no approval recorded; start codex and answer'
                        ' "Trust all and continue", otherwise they never run)')
@@ -272,12 +281,18 @@ def live(home):
 def history(home, state):
     """~/.codex/history.jsonl: one line per prompt (session_id, ts in seconds, text); commands typed as $intent or /intent."""
     path = home/CODEX_DIR/'history.jsonl'
-    if not path.is_file() or not any(rel.startswith(CODEX_DIR+'/skills/') for rel in state.get('files', {})):
+    if not any(rel.startswith(CODEX_DIR+'/skills/') for rel in state.get('files', {})):
         return
-    for line in path.read_text(encoding='utf-8', errors='replace').splitlines():
+    try:
+        lines = path.read_text(encoding='utf-8', errors='replace').splitlines() if path.is_file() else []
+    except OSError:
+        lines = []
+    for line in lines:  # a missing prompt file does not hide the sessions
         try:
             entry = json.loads(line)
         except ValueError:
+            continue
+        if not isinstance(entry, dict):
             continue
         stamp = entry.get('ts', 0)
         if not isinstance(stamp, (int, float)):
@@ -288,7 +303,7 @@ def history(home, state):
 def session_events(home, state):
     """~/.codex/sessions/**/rollout-*.jsonl: a kit skill counts when a tool call reads its SKILL.md, an agent when
     spawn_agent names an ai-kit-* role; error events count as errors."""
-    kit_skills = set((state.get('installed') or {}).get('skills', []))
+    kit_skills, prefixes = set((state.get('installed') or {}).get('skills', [])), kit_prefixes(state)
     for path in sorted((home/CODEX_DIR/'sessions').glob('**/rollout-*.jsonl')):
         try:
             lines = path.read_text(encoding='utf-8', errors='replace').splitlines()
@@ -317,5 +332,5 @@ def session_events(home, state):
                         role = ''
                     if role.startswith('ai-kit-'):
                         yield {'kind': 'agent', 'session': session, 'ts': ts, 'name': role}
-                for name in skills_read(call, kit_skills):
+                for name in skills_read(call, kit_skills, prefixes):
                     yield {'kind': 'skill', 'session': session, 'ts': ts, 'name': name}

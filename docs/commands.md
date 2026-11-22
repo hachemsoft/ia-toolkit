@@ -58,6 +58,7 @@ English; the content is in the team's language. The agent never commits or pushe
 | `/handoff` | optional | a handover note for another session or person | handover |
 | `/wizard` | optional | an interactive bash wizard for steps only a human can do | manual-steps |
 | `/audit` | optional | HTML report of modules to deepen, then an interview | improve-codebase-architecture |
+| `/news` | optional | writes an announcement in the `NEWS.md` of the Core repository open in the session, shown once at session start after the Core's next tag ([guardrails](hooks.md#whats-new)) | none |
 
 An optional command is turned on by a Team (`extra_commands` in its `[defaults]`) or by the person (`extra_commands` in
 `~/.ai-kit/aikit.toml` `[user]`, then `ai-kit sync --offline`). A command is installed only when all its skills are.

@@ -30,8 +30,9 @@ class DriftTests(unittest.TestCase):
 
     def test_an_option_gone_fails_and_a_newer_version_is_reported(self):
         with tempfile.TemporaryDirectory() as folder:
-            self.stand_in(folder, 'claude', '9.0.0 (Claude Code)', '-p, --print  --model <m>')  # --disallowedTools gone
-            self.stand_in(folder, 'codex', 'codex-cli 9.0.0', '--skip-git-repo-check --ephemeral --color --sandbox <mode>')
+            # 4.24: the options of the writable and resumed eval cases are relied on too (contract changed on purpose).
+            self.stand_in(folder, 'claude', '9.0.0 (Claude Code)', '-p, --print  --model <m> --allowedTools --permission-mode -c, --continue')  # --disallowedTools gone
+            self.stand_in(folder, 'codex', 'codex-cli 9.0.0', '--skip-git-repo-check --ephemeral --color --sandbox <mode> --model --last')
             code, out = self.run_drift(folder)
         self.assertEqual(code, 1)
         self.assertIn('[Broken] Claude Code 9.0.0', out)

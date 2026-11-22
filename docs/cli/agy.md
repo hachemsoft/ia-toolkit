@@ -1,6 +1,7 @@
 # Antigravity CLI (agy)
 
-What the kit does for agy. Verified on agy 1.4.7, agent tools and logs again on 1.4.12. Shared concepts:
+What the kit does for agy. Verified on agy 1.5.14: the plugin (`agy plugin validate`), the agents' tool names, print mode
+and the shape of the conversation files; the prompt history was last read on 1.4.12. Shared concepts:
 [CLI matrix](matrice.md).
 
 ## Install
@@ -24,7 +25,7 @@ commands, artifacts, `USER.md`, repositories and `~/.ai-kit/aikit.toml` stay the
 | File | Role |
 | --- | --- |
 | `plugin.json` | name, description, kit version |
-| `rules/AGENTS.md` | always-on rules that include the layers and `USER.md` by path (`@[00_kit](~/.ai-kit/context/00_KIT.md)`, …): no copy |
+| `rules/AGENTS.md` | always-on rules that include the layers and `USER.md` by path, one `@[00_kit]` line per file: it names `~/.ai-kit/context/00_KIT.md` in your own home, the full path under another `--home`; no copy |
 | `agents/ai-kit-*.md` | the installed agents, with agy's tool names (`read_file`, `grep_search`, `list_dir`, `run_command`); since agy 1.5.14 `view_file` and `read_file` are one tool, and an agent listing both does not start ("tool name conflict: multiple tools resolved with name read_file", 4.22.2) |
 | `hooks.json` | the guardrails and the `whats-new` hook; the scripts read agy's payload (`toolCall.args.CommandLine`) and always answer with a `decision`, which agy requires (an answer without one is refused, with no reason shown): `deny` to refuse, `ask` to let the call through, which hands it to agy's own permission flow (`allow` would approve it without your rules or prompt: seen with agy 1.5.8, fixed in 4.7.1); `SessionStart` answers in agy's own contract, `{"injectSteps": [{"systemMessage": {"systemMessage": "…"}}]}`, recognised by the input's `conversationId` |
 | `mcp_config.json` | the MCP servers that are on |

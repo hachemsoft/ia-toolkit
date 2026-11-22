@@ -13,7 +13,7 @@ import shutil
 from typing import Optional
 
 from ..interface import DoctorContext, Plan, Status
-from ..core import (content_root, ROOT, USER_CONTEXT, KitError, digest, cli_event, split_block, place_block, json_bytes, read_json, _ts, live_call, LIVE_PROMPT, DEFAULT_PREFIX, skill_prefix, rename_references, renamed_skill_file)
+from ..core import (content_root, ROOT, USER_CONTEXT, import_path, kit_name, kit_prefixes, KitError, digest, cli_event, split_block, place_block, json_bytes, read_json, _ts, live_call, LIVE_PROMPT, DEFAULT_PREFIX, skill_prefix, rename_references, renamed_skill_file)
 
 CLAUDE_DIR = '.claude'
 # The marker text is an identifier: changing it would orphan the blocks already installed.
@@ -62,13 +62,6 @@ def agent_text(name, definition, defaults, body):
     tools = list(dict.fromkeys(TOOL_NAMES.get(t, t) for t in definition.get('tools', defaults.get('tools', []))))
     header = ['---', 'name: '+name, 'description: '+json.dumps(definition['description'], ensure_ascii=False), 'tools: '+', '.join(tools), '---', '']
     return '\n'.join(header) + body.strip() + '\n'
-
-
-def import_path(home, path):
-    """How CLAUDE.md names a file: from ~ for the person's own home (no space or accent to quote), absolute otherwise."""
-    if home == Path.home().resolve():
-        return '~/'+path.relative_to(home).as_posix()
-    return path.as_posix()
 
 
 def block_text(p: Plan, prefix, renamed):
@@ -297,6 +290,17 @@ def settings_groups_digest(home: Path):
     mine = kit_hook_groups(hooks, kit_events(read_json(ROOT/'runtime/hooks/hooks.json').get('hooks', {})))
     return digest(json_bytes(mine)) if mine else None
 
+def claude_json_digest(home: Path, state: dict):
+    """The digest of the kit's MCP servers in ~/.claude.json, as recorded in state.json blocks; None when they are gone or the
+    file cannot be read. The rest of the file is Claude Code's: it rewrites it at every session."""
+    try:
+        data = read_json(home/'.claude.json') if (home/'.claude.json').is_file() else {}
+    except (KitError, OSError, ValueError):
+        return None
+    servers = data.get('mcpServers') if isinstance(data, dict) and isinstance(data.get('mcpServers'), dict) else {}
+    mine = {name: servers[name] for name in state.get('mcp') or {} if name in servers}
+    return digest(json_bytes(mine)) if mine else None
+
 def changed_blocks(home: Path, state: dict) -> list:
     """The shared files where the part the kit wrote no longer matches state.json (integrity check, doctor); the rest of
     each file is the person's or the CLI's and is not looked at."""
@@ -308,6 +312,8 @@ def changed_blocks(home: Path, state: dict) -> list:
         changed.append(CLAUDE_DIR+'/CLAUDE.md')
     if state.get('hooks') and CLAUDE_DIR+'/settings.json' in blocks and settings_groups_digest(home) != blocks[CLAUDE_DIR+'/settings.json']:
         changed.append(CLAUDE_DIR+'/settings.json')
+    if '.claude.json' in blocks and claude_json_digest(home, state) != blocks['.claude.json']:
+        changed.append('.claude.json')
     return changed
 
 def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
@@ -364,11 +370,10 @@ def history(home, state):
     if not root.is_dir():
         return
     kit_skills = set((state.get('installed') or {}).get('skills', []))
+    prefixes = kit_prefixes(state)
     def unprefixed(name):
-        """The kit name of a skill called with its prefix (ai-kit-tdd → tdd), whatever the prefix was."""
-        if name in kit_skills:
-            return name
-        return next((s for s in sorted(kit_skills, key=len, reverse=True) if len(name) > len(s) and name.endswith(s)), name)
+        """The kit name of a skill called with the kit's prefix (ai-kit-tdd → tdd); a person's create-mr stays create-mr."""
+        return kit_name(name, kit_skills, prefixes)
     for path in sorted(root.glob('*/*.jsonl')):
         try:
             lines = path.read_text(encoding='utf-8', errors='replace').splitlines()

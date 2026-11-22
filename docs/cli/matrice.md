@@ -8,7 +8,7 @@ receives it through its adapter (`installer/adapters/`), in the place and form i
 | CLI | Adapter | Verified on | Page |
 | --- | --- | --- | --- |
 | Gemini CLI | maintained, no longer extended | 0.65 | [Gemini CLI](gemini.md) |
-| Antigravity CLI (agy) | integrated | 1.4.12 | [Antigravity CLI](agy.md) |
+| Antigravity CLI (agy) | integrated | 1.5.14 (plugin, agent tools, print mode, conversation files) | [Antigravity CLI](agy.md) |
 | Codex CLI | integrated | 0.164 (files, repo skills and evals) | [Codex CLI](codex.md) |
 | Claude Code | integrated | 2.1.316 (files and evals in `claude -p`) | [Claude Code](claude-code.md) |
 

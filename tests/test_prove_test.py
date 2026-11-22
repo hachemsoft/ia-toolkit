@@ -160,6 +160,17 @@ class ModesTests(unittest.TestCase):
             self.assertFalse(prove_test.is_test_path(path), path)
         self.assertTrue(prove_test.is_test_path('checks/acceptance.py', ['checks/acceptance.py']))
 
+    def test_files_python_regenerates_are_not_part_of_the_change(self):
+        """Eval dependent-tickets-are-done-in-order on Codex (2026-11-22): an untracked __pycache__/orders.cpython-312.pyc was
+        swapped, the test run rewrote it, the restore found another digest and stopped ('not restored')."""
+        repo = self.repo({'orders.py': 'X = 1\n'})
+        repo.write({'orders.py': 'X = 2\n', 'tests/test_x.py': 'assert True\n', '__pycache__/orders.cpython-312.pyc': 'bytecode',
+                    'tests/__pycache__/test_x.cpython-312.pyc': 'bytecode', '.pytest_cache/v/cache/nodeids': '[]'})
+        script = 'import pathlib; pathlib.Path("__pycache__/orders.cpython-312.pyc").write_text("rewritten")'
+        code, out = repo.run('prove', '--test', 'tests/test_x.py', '--', sys.executable, '-B', '-c', script)
+        self.assertEqual(set(out['swapped']), {'orders.py'}, out)
+        self.assertNotIn('not restored', json.dumps(out))
+
     def test_added_deleted_and_renamed_code_files_are_swapped_and_restored(self):
         repo = self.repo({'old.py': 'X = 1\n', 'gone.py': 'Y = 2\n', 'deep/keep.py': 'Z = 3\n'})
         repo.git('mv', 'old.py', 'new.py')

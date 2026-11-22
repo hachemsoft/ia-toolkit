@@ -1,0 +1,89 @@
+{
+  "name": "codex-to-claude-resumes-the-work",
+  "cli": "codex",
+  "cwd": "py-api-mini",
+  "requires": {
+    "commands": [
+      "build"
+    ]
+  },
+  "git": {
+    "commit": true
+  },
+  "sandbox": "workspace-write",
+  "prompt": "/build total() must accept an optional discount percentage: total(items, discount=0) returns the total minus that percentage. Write the acceptance test in tests/test_discount.py, show it failing, then stop for my approval. Do not commit.",
+  "expect": {
+    "regex": [
+      "(?i)\\b(approv\\w*|approuv\\w*|valid\\w*|confirm\\w*)\\b"
+    ],
+    "files_present": [
+      "tests/test_discount.py"
+    ],
+    "unchanged": [
+      "orders.py",
+      ".git/refs/heads/main"
+    ]
+  },
+  "samples": {
+    "pass": [
+      "Level: standard. tests/test_discount.py fails on its assertion. Do you approve this acceptance test before I change orders.py?"
+    ],
+    "fail": [
+      "Level: standard. Done: total() applies the discount, 3 passed."
+    ]
+  },
+  "turns": [
+    {
+      "cli": "claude",
+      "prompt": "Yesterday, in another tool, I approved tests/test_discount.py as written. Pick up the discount work where it stopped. Do not commit.",
+      "expect": {
+        "regex": [
+          "(?i)test_discount",
+          "(?i)\\b(approv\\w*|approuv\\w*|valid\\w*|confirm\\w*)\\b"
+        ],
+        "unchanged": [
+          "tests/test_discount.py",
+          "orders.py",
+          ".git/refs/heads/main"
+        ]
+      },
+      "samples": {
+        "pass": [
+          "Found tests/test_discount.py, untracked, nothing records its approval. Is this the test you approved yesterday, as written?"
+        ],
+        "fail": [
+          "orders.py updated, 3 passed.",
+          "Picked up: implemented the discount."
+        ]
+      }
+    },
+    {
+      "prompt": "Yes, that is the test I approved. Go on.",
+      "expect": {
+        "regex": [
+          "(?i)\\b\\d+ passed\\b|\\b\\d+ tests? (réussis|passent|pass)"
+        ],
+        "unchanged": [
+          "tests/test_discount.py",
+          ".git/refs/heads/main"
+        ],
+        "file_regex": {
+          "orders.py": [
+            "discount"
+          ]
+        }
+      },
+      "samples": {
+        "pass": [
+          "orders.py: total(items, discount=0). python -m pytest: 3 passed. Approved test unchanged; not committed.",
+          "orders.py: total(items, discount=0). python -m pytest: 4 passed. Approved test unchanged; not committed."
+        ],
+        "fail": [
+          "Do you approve the test?",
+          "orders.py updated; I could not run the tests."
+        ]
+      }
+    }
+  ],
+  "_doc": "Mission level C (resume across CLIs): turn 1 runs in codex (writes the acceptance test, asks for approval, stops); turn 2 starts afresh in claude, which only has the repository. The person says the test was approved elsewhere: the kit's rule (ADR 0028, a go-ahead does not cover an unseen test) makes the second CLI show the test as it is and ask once, touching nothing; turn 3, resumed in the same CLI, confirms, and the work is finished (3 passed), the test kept, nothing committed. Rewritten 2026-11-22 after the first runs, where both CLIs rightly asked again instead of trusting a word about another tool. 2026-11-22: turns 1 and 2 are judged on the files (orders.py, the test and main unchanged), the answer only has to speak of the approval: four correct ways of asking had escaped the patterns."
+}

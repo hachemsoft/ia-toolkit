@@ -3,7 +3,7 @@
 
 Usage: python3 ~/.ai-kit/bin/friction.py --category <command|skill|guardrail|rule|docs|tool|auth|other> [--command <name>] [--cli gemini|agy|codex|claude] --text "<one sentence>"
        python3 ~/.ai-kit/bin/friction.py --list [N]     the last N frictions (10)
-       python3 ~/.ai-kit/bin/friction.py --sync         send to the tracker what was not sent
+       python3 ~/.ai-kit/bin/friction.py --sync         send to the tracker what was not sent (ai-kit friction --publish)
 The context (kit version, team, system) is added automatically. Nothing is sent, unless IT set a friction tracker
 (managed.toml [frictions.tracker], recorded by the installation in state.json): then a friction whose
 source is in its `sources` (agent by default: --source agent when the agent logs on its own) is created as an issue
@@ -31,7 +31,7 @@ SEND_TIMEOUT = 30
 # What looks like a secret (API keys and tokens of common services, bearer tokens, password=..., private keys): never kept
 # in a friction or shown in a diagnosis. installer/core.py imports it from here (one list).
 SECRET = re.compile(r'AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9_-]{20,}|sk_(?:live|test)_[A-Za-z0-9]{16,}|gh[pousr]_[A-Za-z0-9]{30,}'
-                    r'|github_pat_[A-Za-z0-9_]{20,}|glpat-[A-Za-z0-9_-]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}'
+                    r'|github_pat_[A-Za-z0-9_]{20,}|glpat-[A-Za-z0-9_-]{20,}|gl(?:rt|dt)-[A-Za-z0-9_-]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|A(?:KIA|SIA)[0-9A-Z]{16}'
                     r'|ya29\.[0-9A-Za-z_-]{20,}|hf_[A-Za-z0-9]{30,}|npm_[A-Za-z0-9]{30,}|dapi[0-9a-f]{32}|GOCSPX-[A-Za-z0-9_-]{20,}'
                     r'|https://hooks\.slack\.com/services/[A-Za-z0-9/]{20,}'
                     r'|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----'
@@ -42,9 +42,10 @@ SECRET = re.compile(r'AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9_-]{20,}|sk_(?:live|te
 
 # ADR 0023: what could identify a person or a machine is redacted too, before a friction is stored or sent.
 PERSONAL = ((re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'), '[email]'),
-            (re.compile(r'(?:/Users|/home)/[^/\s]+|[A-Za-z]:\\Users\\[^\\\s]+'), '~'),
+            (re.compile(r'(?:/Users|/home)/[^/\s]+|[A-Za-z]:[\\/](?i:users)[\\/][^\\/\s]+'), '~'),
             (re.compile(r'\b(?:[a-z0-9-]+\.)+(?:internal|corp|lan|local|intra)\b', re.I), '[host]'))
 RETENTION_DAYS = 30
+STALE_LOCK = 600  # seconds: the rewrite takes far less; an older lock was left by a process that died
 
 def redact(text):
     text = SECRET.sub('[redacted]', str(text))
@@ -240,6 +241,21 @@ def unsent(home=None, config=None):
         pending.append(seen[mark])
     return pending
 
+def take_lock(lock):
+    """The lock file's descriptor, or None when another process holds it. A lock older than STALE_LOCK was left by a process
+    that died (the purge would otherwise never run again): it is removed, once, and taken."""
+    for attempt in (1, 2):
+        try:
+            return os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        except OSError:
+            try:
+                if attempt == 2 or datetime.now().timestamp() - os.stat(lock).st_mtime < STALE_LOCK:
+                    return None
+                os.unlink(lock)
+            except OSError:
+                return None
+    return None
+
 def housekeep(home=None, retention_days=None, now=None):
     """Local upkeep (ADR 0023), run at session start and by engine commands: entries older than the retention are purged
     (a rewrite under a lock, atomic; skipped when another process holds the lock), and the frictions waiting for the
@@ -256,9 +272,8 @@ def housekeep(home=None, retention_days=None, now=None):
     purged = len(found) - len(kept)
     if purged:
         lock = path + '.lock'
-        try:
-            descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-        except OSError:
+        descriptor = take_lock(lock)
+        if descriptor is None:
             purged = 0  # another process is rewriting it: next time
         else:
             os.close(descriptor)
@@ -288,7 +303,7 @@ def sync(home=None):
         status, detail = send(entry, home, config)
         lines.append(entry['id'] + ': ' + send_line(status, detail))
         if status == 'failed':
-            lines.append(str(len(pending) - len(lines) + 1) + ' friction(s) still to send: fix the cause, then --sync again.')
+            lines.append(str(len(pending) - len(lines) + 1) + ' friction(s) still to send: fix the cause, then run ai-kit friction --publish again.')
             break
     return lines
 

@@ -11,14 +11,15 @@ from typing import Optional
 from . import gemini
 from ..interface import DoctorContext, Plan, Status
 from ..core import (ROOT, USER_CONTEXT, json_bytes, hook_command, hook_identity, cli_event, command_skill_text, skill_prefix, free_name, rename_references,
-                    renamed_notice, live_call, LIVE_PROMPT, skills_read)
+                    renamed_notice, live_call, LIVE_PROMPT, skills_read, import_path, kit_prefixes)
 
 AGY_PLUGIN = '.gemini/config/plugins/ai-kit'
 
-def agy_rules_text(context_names, context_dir='.gemini'):
+def agy_rules_text(context_names, context_dir='~/.gemini'):
+    """context_dir: the folder of the layers as the rules name it (import_path: from ~ in the person's own home)."""
     lines = ['# AI Kit', '', 'Always-on kit rules, shared with the other CLIs. The files included below are the source: do not copy them here.', '']
     for name in list(context_names)+[USER_CONTEXT]:
-        lines.append('@['+name[:-3].lower()+'](~/'+context_dir+'/'+name+')')
+        lines.append('@['+name[:-3].lower()+']('+context_dir+'/'+name+')')
         lines.append('')
     lines += ['Kit commands: each command is a skill with the same name; `/guide` explains where to start. Also read `AGENTS.md`, `GLOSSARY.md` and `REVIEW.md` in the current repo.']
     return '\n'.join(lines)+'\n'
@@ -37,7 +38,7 @@ CAPABILITIES = {
 }
 LABEL = 'Antigravity CLI'
 COMMAND = 'agy'
-VERIFIED = '1.4.12'  # the CLI version the kit was last checked on (docs/cli/matrice.md); doctor says when a newer one runs
+VERIFIED = '1.5.14'  # the CLI version the kit was last checked on (docs/cli/matrice.md); doctor says when a newer one runs
 HOME_DIR = '.gemini'
 BUILTIN_COMMANDS = {'help', 'planning', 'agents', 'model', 'models', 'permissions', 'config', 'diff', 'keybindings', 'remote-control', 'login', 'logout', 'clear', 'quit', 'exit'}
 MANAGED_PREFIXES = (AGY_PLUGIN+'/',)
@@ -73,7 +74,7 @@ def install(p: Plan) -> None:
     plugin = p.home/AGY_PLUGIN
     manifest_json = {'name': 'ai-kit', 'displayName': 'AI Kit', 'description': 'AI Kit context, commands, guardrails and agents, shared with the other CLIs.', 'version': (ROOT/'VERSION').read_text(encoding='utf-8').strip()}
     p.managed_write(plugin/'plugin.json', json_bytes(manifest_json), 'Plugin agy')
-    p.managed_write(plugin/'rules'/'AGENTS.md', agy_rules_text(p.context_names, p.context_dir.relative_to(p.home).as_posix()).encode('utf-8'), 'Plugin agy')
+    p.managed_write(plugin/'rules'/'AGENTS.md', agy_rules_text(p.context_names, import_path(p.home, p.context_dir)).encode('utf-8'), 'Plugin agy')
     if gemini.NAME not in p.active:
         # agy reads skills from ~/.gemini/skills: without Gemini, put them there.
         gemini.write_skills(p)
@@ -128,6 +129,10 @@ def doctor(home: Path, state: dict, status: Status, ctx: DoctorContext) -> None:
     plugin_dir = home/AGY_PLUGIN
     if not plugin_dir.is_dir():
         return
+    if 'whats-new' not in (state.get('hooks') or {}):
+        # agy has no hook after a tool: the integrity check runs there only when whats-new starts it.
+        print('[Check] '+LABEL+': whats-new is off, so the integrity check never runs in agy (it runs there at session start, through whats-new);'
+              ' turn whats-new back on in ~/.ai-kit/aikit.toml ([hooks]), then ai-kit sync --offline.')
     if shutil.which('agy'):
         try:
             proc = subprocess.run(['agy','plugin','validate',str(plugin_dir)],capture_output=True,text=True,encoding='utf-8',timeout=60)
@@ -150,12 +155,16 @@ def live(home):
 def history(home, state):
     """~/.gemini/antigravity-cli/history.jsonl: one JSON line per typed prompt (display, timestamp in ms, conversationId)."""
     path = home/'.gemini/antigravity-cli/history.jsonl'
-    if not path.is_file():
-        return
-    for line in path.read_text(encoding='utf-8', errors='replace').splitlines():
+    try:
+        lines = path.read_text(encoding='utf-8', errors='replace').splitlines() if path.is_file() else []
+    except OSError:
+        lines = []
+    for line in lines:  # a missing prompt file does not hide the conversations
         try:
             entry = json.loads(line)
         except ValueError:
+            continue
+        if not isinstance(entry, dict):
             continue
         stamp = entry.get('timestamp', 0)
         if not isinstance(stamp, (int, float)):
@@ -167,11 +176,13 @@ def conversation_events(home, state):
     """~/.gemini/antigravity-cli/conversations/<id>.db, opened read-only: kit skills read and ai-kit-* agents invoked,
     dated by the conversation's last write (the steps' own times are not readable)."""
     import sqlite3
-    kit_skills = set((state.get('installed') or {}).get('skills', []))
+    kit_skills, prefixes = set((state.get('installed') or {}).get('skills', [])), kit_prefixes(state)
     for path in sorted((home/'.gemini/antigravity-cli/conversations').glob('*.db')):
         session, ts = 'agy:'+path.stem, path.stat().st_mtime
         try:
-            with contextlib.closing(sqlite3.connect('file:'+path.as_posix()+'?mode=ro', uri=True)) as db:
+            # as_uri: a drive letter, a space, # or ? in the path stay a path (Windows: file:///C:/...). A short wait: a
+            # conversation agy is writing is left out, not waited for.
+            with contextlib.closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro', uri=True, timeout=0.5)) as db:
                 payloads = [row[0] for row in db.execute('select step_payload from steps order by idx') if isinstance(row[0], bytes)]
         except sqlite3.Error:
             continue  # another format, or a conversation being written: left out
@@ -186,5 +197,5 @@ def conversation_events(home, state):
                 if call.group(1) in seen:
                     continue
                 seen.add(call.group(1))
-                for name in skills_read(call.group(1).decode('utf-8', 'replace'), kit_skills):
+                for name in skills_read(call.group(1).decode('utf-8', 'replace'), kit_skills, prefixes):
                     yield {'kind': 'skill', 'session': session, 'ts': ts, 'name': name}

@@ -23,7 +23,7 @@ Documentation for the supported CLIs, to reread when a version changes. The veri
 - **Skill discipline**: [agent-skills](https://github.com/addyosmani/agent-skills), Addy Osmani. Rationalization tables (anti-rationalization) in each playbook, adversarial review by a doubter agent (`/review full`), one verb per step.
 - **Other public skill collections and a published comparison of skill packs**: ceremony matches the stakes, and each installed skill has a context cost, hence the usage review. They are not named here: the kit names only the CLIs it targets and the sources it redistributes ([ADR 0009](adr/0009-generic-public-repository-in-english.md)).
 
-The domain playbooks (Java, infrastructure, architecture, Data) and the installer are specific to the kit.
+The domain playbooks (code change, infrastructure, architecture, Data) and the installer are specific to the kit.
 
 **Third-party catalogs to evaluate**, not redistributed:
 - https://github.com/dbt-labs/dbt-agent-skills
