@@ -20,6 +20,7 @@ from unittest import mock
 from installer import bootstrap, cli, command, commit, lifecycle
 from installer.core import ROOT, KitError, read_json
 from installer.toml_files import read_toml
+from test_git_sources import remove_repository  # Windows: Git's object files are read-only
 
 GIT_ENV = {**os.environ, 'GIT_CONFIG_NOSYSTEM': '1', 'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_AUTHOR_NAME': 't', 'GIT_AUTHOR_EMAIL': 't@example.org',
            'GIT_COMMITTER_NAME': 't', 'GIT_COMMITTER_EMAIL': 't@example.org'}
@@ -214,7 +215,7 @@ class NewerZipTests(unittest.TestCase):
 
     def test_repair_commands_run_when_the_locked_core_cannot_be_read(self):
         self.installer(self.old)
-        shutil.rmtree(self.home/'.ai-kit/sources')  # the cache is gone: the locked Core cannot be extracted
+        remove_repository(self.home/'.ai-kit/sources')  # the cache is gone: the locked Core cannot be extracted
         code, out, err = self.run_kit(self.new, 'status', '--home', str(self.home))
         self.assertNotEqual(code, 0)  # a command that needs the content still says why it cannot run
         self.assertIn('not in the local cache', err)
@@ -235,13 +236,13 @@ class NewerZipTests(unittest.TestCase):
 
     def test_the_installer_of_a_newer_zip_repairs_a_locked_core_that_cannot_be_read(self):
         self.installer(self.old)
-        shutil.rmtree(self.home/'.ai-kit/sources')
+        remove_repository(self.home/'.ai-kit/sources')
         self.assertNotEqual(self.run_kit(self.old, 'status', '--home', str(self.home))[0], 0)  # only the installer repairs
         code, out, err = self.installer(self.old)  # the same ZIP ships the locked tag: the cache is filled again
         self.assertEqual(code, 0, err)
         self.assertEqual(self.core_tag(), 'v1.0.0')
         self.assertEqual(self.run_kit(self.old, 'status', '--home', str(self.home))[0], 0)
-        shutil.rmtree(self.home/'.ai-kit/sources')
+        remove_repository(self.home/'.ai-kit/sources')
         code, out, err = self.installer(self.new)  # a newer ZIP: its Core is activated
         self.assertEqual(code, 0, err)
         self.assertEqual(self.core_tag(), 'v'+self.version)

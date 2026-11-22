@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.23.1 (2026-11-22)
+
+The 4.23.0 tests pass on Windows; nothing changes on workstations.
+
+- **Tests**: `tests/test_lifecycle_hardening.py` removed the kit's Git source cache with `shutil.rmtree`, which Windows refuses on Git's read-only object files (`WinError 5`), so the Windows jobs of 4.23.0 failed and its GitHub release was not published (the GitLab one was, from Linux). They use `remove_repository` from `tests/test_git_sources.py`, written for that case.
+- **Evals**: `standard-resume-without-a-plan` no longer reads a sentence that denies the approval as assuming it.
+
 ## 4.23.0 (2026-11-22)
 
 A hardening pass on the engine, the session hooks and the guardrails: cases where the kit failed, wrote when it should not, or let a command or a setting through. No new feature.
