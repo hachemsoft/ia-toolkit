@@ -264,18 +264,17 @@ def cli_command(cli, executable, case, timeout, model, approval_mode, prompt=Non
     policy = ROOT / 'evals' / 'policy.toml'
     prompt = case['prompt'] if prompt is None else prompt
     if cli == 'codex':
-        # Codex: exec in a read-only sandbox, ephemeral session; kit commands are called $intent, not /intent.
+        # Codex: exec in a read-only sandbox; kit commands are called $intent, not /intent. Never --ephemeral: an ephemeral
+        # session cannot start a sub-agent ("collab spawn failed: ... no rollout found for thread id"), nor be resumed.
         if prompt.startswith('/'):
             prompt = '$' + prompt[1:]
         if resume:
             # `codex exec resume` takes no --sandbox: the resumed turn runs with the session's settings (not verified).
             return [executable, 'exec', 'resume', '--last', '--skip-git-repo-check'] + (['-m', model] if model else []) + [prompt]
-        # A multi-turn case keeps its session (no --ephemeral) so that the next turn can resume it.
-        ephemeral = [] if case.get('turns') else ['--ephemeral']
         # A case that must write (the verifier's proof) asks for "sandbox": "workspace-write": the agent writes in the case's
         # temporary copy, never in the person's repository.
         sandbox = 'workspace-write' if case.get('sandbox') == 'workspace-write' else 'read-only'
-        return [executable, 'exec', '--skip-git-repo-check'] + ephemeral + ['--color', 'never', '-s', sandbox] + (['-m', model] if model else []) + [prompt]
+        return [executable, 'exec', '--skip-git-repo-check', '--color', 'never', '-s', sandbox] + (['-m', model] if model else []) + [prompt]
     if cli == 'claude':
         # Claude Code: print mode, no shell and no file write, as the Gemini policy does; skills and agents stay available.
         # A writable case: file edits are accepted without a prompt (print mode cannot answer one), and of the shell only the

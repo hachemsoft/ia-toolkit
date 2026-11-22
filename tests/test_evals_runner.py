@@ -446,7 +446,7 @@ class MultiTurnTests(unittest.TestCase):
     def test_single_turn_command_lines_are_exactly_the_previous_ones(self):
         plain = {'prompt': '/build x'}
         self.assertEqual(evals_run.cli_command('codex', 'codex', plain, 60, None, 'default'),
-                         ['codex', 'exec', '--skip-git-repo-check', '--ephemeral', '--color', 'never', '-s', 'read-only', '$build x'])
+                         ['codex', 'exec', '--skip-git-repo-check', '--color', 'never', '-s', 'read-only', '$build x'])
         # 2026-11-22, contract changed on purpose: a read-only case lets the agent read git (status, branch, log, diff), as
         # Codex's read-only sandbox and Antigravity's --sandbox do; writes stay disallowed.
         self.assertEqual(evals_run.cli_command('claude', 'claude', plain, 60, None, 'default'),
@@ -505,7 +505,9 @@ class MultiTurnTests(unittest.TestCase):
 
     def test_a_single_turn_case_keeps_its_command_and_reports_turns_and_duration(self):
         plain = {'prompt': '/build x'}
-        self.assertIn('--ephemeral', evals_run.cli_command('codex', 'codex', plain, 60, None, 'default'))
+        # 2026-11-22, contract changed on purpose: an ephemeral Codex session cannot start a sub-agent ("collab spawn failed:
+        # ... no rollout found for thread id"), so no case runs ephemeral; the kit's reviewers then run as for a person.
+        self.assertNotIn('--ephemeral', evals_run.cli_command('codex', 'codex', plain, 60, None, 'default'))
         self.assertNotIn('-c', evals_run.cli_command('claude', 'claude', plain, 60, None, 'default'))
         (self.cases/'single.json').write_text(json.dumps({'name': 'single', 'prompt': '/build x', 'expect': {'regex': ['\\?']}}), encoding='utf-8')
         code, out, report = self.run_cases('claude')
