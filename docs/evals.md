@@ -29,10 +29,10 @@ Each case runs in a temporary copy of a fixture (`evals/fixtures/`) with writes 
 
 | CLI | How writes and shell are denied |
 | --- | --- |
-| Gemini CLI | default approval mode with the `evals/policy.toml` policy (skill activation allowed, shell and writes denied) |
+| Gemini CLI | default approval mode with the `evals/policy.toml` policy (skill activation allowed, writes denied, of the shell only `git status`, `git branch`, `git log`, `git diff`); kept because organizations still use it, although its documentation says Antigravity CLI replaced it on 18 June 2026 |
 | Antigravity CLI | print mode with `--sandbox`: shell commands run, and agy may write in the case's temporary copy (it has no read-only mode that lets commands run: its plan mode refuses them); what the sandbox blocks outside that copy is not verified |
 | Codex CLI | read-only, ephemeral `exec` (a case with `turns` keeps its session, to resume it); `/intent` in a prompt becomes `$intent` |
-| Claude Code | print mode with shell, write and edit tools disallowed; a `workspace-write` case accepts file edits (`--permission-mode acceptEdits`) and, of the shell, only `python -m pytest`, `python3 -m pytest` and `git` (`--allowedTools`) |
+| Claude Code | print mode with write and edit tools disallowed and, of the shell, git's reads only (`git status`, `branch`, `log`, `diff`); a `workspace-write` case accepts file edits (`--permission-mode acceptEdits`) and, of the shell, only `python -m pytest`, `python3 -m pytest` and `git` (`--allowedTools`) |
 
 Statuses: `OK`; `FAIL` (behaviour); `ERROR` (infrastructure: non-zero exit, API, quota, sign-in, timeout); `SKIP` (the
 installed kit lacks a command or skill the case `requires`). Exit code 1 when a case fails, 2 when none could run.

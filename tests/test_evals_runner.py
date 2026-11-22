@@ -447,8 +447,11 @@ class MultiTurnTests(unittest.TestCase):
         plain = {'prompt': '/build x'}
         self.assertEqual(evals_run.cli_command('codex', 'codex', plain, 60, None, 'default'),
                          ['codex', 'exec', '--skip-git-repo-check', '--ephemeral', '--color', 'never', '-s', 'read-only', '$build x'])
+        # 2026-11-22, contract changed on purpose: a read-only case lets the agent read git (status, branch, log, diff), as
+        # Codex's read-only sandbox and Antigravity's --sandbox do; writes stay disallowed.
         self.assertEqual(evals_run.cli_command('claude', 'claude', plain, 60, None, 'default'),
-                         ['claude', '-p', '/build x', '--disallowedTools', 'Bash,Write,Edit,NotebookEdit'])
+                         ['claude', '-p', '/build x', '--disallowedTools', 'Write,Edit,NotebookEdit',
+                          '--allowedTools', 'Bash(git status:*)', 'Bash(git branch:*)', 'Bash(git log:*)', 'Bash(git diff:*)'])
 
     def test_a_writable_claude_case_may_run_the_tests_and_git_only(self):
         """Increment 2 (correction loop): the agent must run the checks itself; print mode cannot ask, so the writable case
@@ -459,7 +462,20 @@ class MultiTurnTests(unittest.TestCase):
         allowed = allowed[:next((i for i, a in enumerate(allowed) if a.startswith('--')), len(allowed))]
         self.assertEqual(sorted(allowed), ['Bash(git:*)', 'Bash(python -m pytest:*)', 'Bash(python3 -m pytest:*)'])
         plain = evals_run.cli_command('claude', 'claude', {'prompt': '/build x'}, 60, None, 'default')
-        self.assertNotIn('--allowedTools', plain)
+        # A read-only case reads git only (contract changed on purpose 2026-11-22): no test runner, no write.
+        self.assertFalse([a for a in plain if 'pytest' in a], plain)
+        self.assertIn('Write,Edit,NotebookEdit', plain)
+
+    def test_gemini_may_read_git_and_nothing_else_of_the_shell(self):
+        """2026-11-22, Gemini CLI 0.65.0, four paid probes: a global deny of run_shell_command removes the tool (an allow rule
+        is never reached); a [[rule]] with commandPrefix and decision = "allow" runs git status and git branch, and refuses
+        touch, and git status && touch."""
+        policy = (ROOT/'evals/policy.toml').read_text(encoding='utf-8')
+        self.assertNotRegex(policy, r'name = "Deny shell"')
+        self.assertIn('commandPrefix = ["git status", "git branch", "git log", "git diff"]', policy)
+        self.assertIn('decision = "allow"', policy)
+        for denied in ('write_file', 'replace'):
+            self.assertRegex(policy, r'action = "deny"\ntoolName = "' + denied + '"')
 
     def test_agy_runs_every_case_in_its_sandbox(self):
         """2026-11-21, agy 1.5.14: print mode refuses every shell command the person has not approved word for word, and

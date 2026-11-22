@@ -1,14 +1,18 @@
-# Gemini policy for the evaluations: activate skills without confirmation, refuse every write and every shell.
+# Gemini policy for the evaluations: activate skills without confirmation, refuse every write, and of the shell allow git's reads only.
 [[rules]]
 name = "Allow skill activation"
 description = "The evaluations measure the skills; their activation must not wait for a confirmation."
 action = "allow"
 toolName = "activate_skill"
 
-[[rules]]
-name = "Deny shell"
-action = "deny"
+# Of the shell, only git's reads: a global deny would remove the tool, and an allow rule for a prefix would never be
+# reached; without a rule, a command that needs a confirmation is refused in non-interactive mode. Checked on Gemini CLI
+# 0.65.0 (2026-11-22): git status and git branch run, touch and "git status && touch" are denied by the policy.
+[[rule]]
 toolName = "run_shell_command"
+commandPrefix = ["git status", "git branch", "git log", "git diff"]
+decision = "allow"
+priority = 200
 
 [[rules]]
 name = "Deny write_file"

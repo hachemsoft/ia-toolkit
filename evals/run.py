@@ -281,7 +281,9 @@ def cli_command(cli, executable, case, timeout, model, approval_mode, prompt=Non
         # A writable case: file edits are accepted without a prompt (print mode cannot answer one), and of the shell only the
         # test runner and git, for the correction loop (decided 2026-11-21); Claude Code has no sandbox of its own here.
         locked = (['--permission-mode', 'acceptEdits', '--allowedTools', 'Bash(python -m pytest:*)', 'Bash(python3 -m pytest:*)', 'Bash(git:*)']
-                  if case.get('sandbox') == 'workspace-write' else ['--disallowedTools', 'Bash,Write,Edit,NotebookEdit'])
+                  if case.get('sandbox') == 'workspace-write' else
+                  # A read-only case: no write, and of the shell only git's reads, as Codex's read-only sandbox allows them.
+                  ['--disallowedTools', 'Write,Edit,NotebookEdit', '--allowedTools', 'Bash(git status:*)', 'Bash(git branch:*)', 'Bash(git log:*)', 'Bash(git diff:*)'])
         return [executable] + (['-c'] if resume else []) + ['-p', prompt] + locked + (['--model', model] if model else [])
     if cli == 'agy':
         # Antigravity: print mode refuses every shell command the person has not approved word for word, and drops the whole
