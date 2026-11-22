@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.23.2 (2026-11-22)
+
+The test suite passes on Windows, checked on a Windows VM before the tag; nothing changes on workstations.
+
+- **Parallel tests**: `test_organization` added a Team layer to the repository's `context/` while another test file was copying the repository, so the Windows / Python 3.14 job of 4.23.1 failed (`WinError 2`); it uses a copy of the content, like `test_core_team_layers`. The GitHub releases of 4.23.0 and 4.23.1 were not published (their Windows jobs failed); GitLab has them.
+- **Windows without Python on the PATH**: `scripts/offline_tests.py` reached `python3` through a copy of `python.exe`, which does not start away from its DLLs (`0xC0000135`); it writes a `.cmd` that calls the program where it is.
+- Checked: the full suite on a Windows 11 VM (Python 3.15, arm64): 946 tests, OK, 78 skipped.
+
 ## 4.23.1 (2026-11-22)
 
 The 4.23.0 tests pass on Windows; nothing changes on workstations.
