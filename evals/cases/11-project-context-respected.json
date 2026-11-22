@@ -11,10 +11,18 @@
     "contains": [
       "make check"
     ],
-    "not_contains": [
-      "ruff check src",
-      "python -m pytest tests"
+    "not_regex": [
+      "(?im)^\\s*(?:[-*]|\\d+\\.|\\|[^|\\n]*\\|)\\s*`(ruff check src|python -m pytest tests)`"
     ]
   },
-  "_doc": "The repo's AGENTS.md wins: its make targets, not the tools they wrap."
+  "_doc": "The repo's AGENTS.md wins: its make targets, not the tools they wrap. 2026-11-22: the wrapped tools may be quoted to explain the make target; only proposing them as commands to run (a list item or a table row) fails.",
+  "samples": {
+    "pass": [
+      "Commandes, d'après AGENTS.md :\n| # | Commande |\n| 1 | `make check-changed` |\n| 2 | `make check` |\nRisque : `make check-changed` lance `ruff check src && python -m pytest tests -k changed`, qui ne couvre pas src/app.py."
+    ],
+    "fail": [
+      "- `ruff check src`\n- `python -m pytest tests`\n- `make check`",
+      "| 1 | `python -m pytest tests` | the tests |\n| 2 | `make check` | full |"
+    ]
+  }
 }
