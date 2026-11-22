@@ -120,7 +120,12 @@ def main(argv):
         kept = clean_path()
         for name, path in (('python3', sys.executable), ('python', sys.executable), ('git', shutil.which('git')), ('sh', shutil.which('sh'))):
             if path and str(Path(path).parent) not in kept:
-                target = tools/(name+('.exe' if os.name == 'nt' and not name.endswith('.exe') else ''))
+                if os.name == 'nt':
+                    # A copy of python.exe or git.exe does not start away from its DLLs (0xC0000135, seen on a Windows VM
+                    # where Python is not on SYSTEM's PATH): a .cmd calls the program where it is.
+                    (tools/(name+'.cmd')).write_text('@"' + str(path) + '" %*\r\n', encoding='utf-8')
+                    continue
+                target = tools/name
                 try:
                     target.symlink_to(path)
                 except OSError:
