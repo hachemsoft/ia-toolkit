@@ -4,6 +4,7 @@ import contextlib
 import io
 import os
 import re
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,7 +13,7 @@ from unittest import mock
 from installer import cli, settings
 from installer.cli import doctor, merge_settings, setting_differences
 from installer.config import load_aikit, to_overrides
-from installer.core import KitError, ROOT, read_json
+from installer.core import KitError, ROOT, content_from, read_json
 from installer.toml_files import read_toml
 from personal import write_personal
 from presets import apply_as  # noqa: E402
@@ -21,6 +22,18 @@ IDENTITY = {'email': 'first.last@example.com', 'source': 'test'}
 
 
 class OrganizationTests(unittest.TestCase):
+    def content_copy(self):
+        """A copy of the content to add a Team layer to: the repository's context/ is read by the other test files at the
+        same time when the suite runs in parallel (Windows CI of 4.23.1: a copy of the repository met the file mid-way)."""
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        content = Path(temp.name)/'content'
+        shutil.copytree(ROOT, content, ignore=shutil.ignore_patterns('.git', 'build', 'dist', 'docs', 'evals', 'tests', '__pycache__', '.codegraph'))
+        reading = content_from(content)
+        reading.__enter__()
+        self.addCleanup(reading.__exit__, None, None, None)
+        return content
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -67,9 +80,8 @@ class OrganizationTests(unittest.TestCase):
         self.assertIn('Your aikit.toml changes the Core or Team defaults: hooks.dbt-prod-guard', out.getvalue())
 
     def test_team_selects_its_practices_whatever_the_profile(self):
-        team_file = ROOT/'context/20-kit-test-team.md'
+        team_file = self.content_copy()/'context/20-kit-test-team.md'
         team_file.write_text('# Test team practices\n- Rule of the test team.\n', encoding='utf-8')
-        self.addCleanup(team_file.unlink)
         state = self.install('java-developer', team='kit-test-team')
         self.assertEqual(state['team'], 'kit-test-team')
         self.assertTrue((self.home/'.gemini/20_KIT_TEST_TEAM.md').is_file())
@@ -78,9 +90,8 @@ class OrganizationTests(unittest.TestCase):
         self.assertEqual(self.install('java-developer')['team'], 'kit-test-team')
 
     def test_team_none_leaves_the_team(self):
-        team_file = ROOT/'context/20-kit-test-team.md'
+        team_file = self.content_copy()/'context/20-kit-test-team.md'
         team_file.write_text('# Test team practices\n', encoding='utf-8')
-        self.addCleanup(team_file.unlink)
         self.install('general', team='kit-test-team')
         state = self.install('general', team='none')
         self.assertIsNone(state['team'])
