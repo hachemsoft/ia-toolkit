@@ -61,7 +61,7 @@ denied tools for that case), `git` (a real repository: the fixture committed, th
 first and reject the second, without a model). Two more criteria read the files after the answer: `file_regex`
 (`{"path": ["pattern"]}`) and `unchanged` (`["path"]`: the file is as the turn found it), with paths from the repository's
 root (no "any depth" match). The report keeps an answer whole when short, else its start and its end. A bare file name (`intent.md`) matches at any depth. Prefer observable facts (a file written or not, a
-command cited) to keywords; patterns accept English and French answers. When the agent gets something wrong twice, the
+command cited) to keywords; patterns accept English and French answers. After changing a criterion, `python3 evals/rescore.py <report.json …>` judges the recorded answers again, turn by turn, without a model (answers only: the file criteria need the run's copy): the earlier verdicts must stay. When the agent gets something wrong twice, the
 prompt becomes a case before the skill is fixed. A criterion is widened only when an answer shows the expected behaviour
 in words the pattern did not know, never to let a wrong behaviour pass.
 

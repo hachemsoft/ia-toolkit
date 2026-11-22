@@ -5,6 +5,7 @@ import io
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -572,3 +573,32 @@ class ReportAndSandboxTests(unittest.TestCase):
     def test_the_proof_case_asks_for_it(self):
         case = json.loads((ROOT/'evals/cases/31-build-proves-the-acceptance-test.json').read_text(encoding='utf-8'))
         self.assertEqual(case.get('sandbox'), 'workspace-write')
+
+
+class RescoreTests(unittest.TestCase):
+    """evals/rescore.py replays the current criteria of a case on answers already recorded, turn by turn, without a model:
+    a widened criterion must keep the earlier verdicts (AGENTS.md)."""
+
+    def test_each_turn_of_a_recorded_answer_is_judged_again(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            cases = base/'cases'
+            cases.mkdir()
+            (cases/'resume.json').write_text(json.dumps({'name': 'resume', 'prompt': '/build x', 'expect': {'regex': ['\\?']},
+                                                         'turns': [{'prompt': 'Go on.', 'expect': {'contains': ['3 passed']}}]}), encoding='utf-8')
+            output = ('=== turn 1 ===\nApprove this test?\n--- stderr ---\nnoise\n'
+                      '=== turn 2 ===\npytest: 2 passed\n--- stderr ---\nquoted 3 passed in stderr only\n')
+            report = base/'run.json'
+            report.write_text(json.dumps({'meta': {'cli': 'claude'}, 'results': [
+                {'name': 'resume', 'status': 'OK', 'output': output},
+                {'name': 'gone', 'status': 'OK', 'output': 'x'}]}), encoding='utf-8')
+            proc = subprocess.run([sys.executable, str(ROOT/'evals/rescore.py'), '--cases', str(cases), str(report)],
+                                  capture_output=True, text=True, encoding='utf-8')
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            out = proc.stdout
+            self.assertRegex(out, r'resume .*recorded OK')
+            self.assertRegex(out, r'turn 1: OK')
+            self.assertRegex(out, r'turn 2: FAIL .*3 passed')  # stderr is not the answer
+            self.assertIn('gone', out)
+            self.assertIn('no such case', out)
+            self.assertIn('files not re-checked', out)
